@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+  <h1 class="mb-3">{{ pageTitle }}</h1>
+
+  <div class="d-flex gap-2 mb-4">
+    <a class="btn btn-outline-primary" href="{{ path('app_home') }}">Home</a>
+    <a class="btn btn-outline-secondary" href="{{ path('app_dashboard') }}">Dashboard</a>
+  </div>
+
+  {% if submitted %}
+    <div class="alert alert-info">
+      <div class="fw-bold mb-2">Submitted data</div>
+      <pre class="mb-0">{{ data|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+    </div>
+  {% endif %}
+
+  {{ form_start(form) }}
+
+  <div class="row">
+    {{ f.field(form.title, {col: 'col-12 col-md-6', help: 'Regular text input'}) }}
+    {{ f.datetime_local(form.startsAt, {col: 'col-12 col-md-6', help: 'Rendered as datetime-local'}) }}
+
+    {# Render priority as a range slider for the demo #}
+    {{ f.range_slider(form.priority, {col: 'col-12', min: 0, max: 10, step: 1, help: 'Range slider with live value'}) }}
+
+    {# Multi-select: we’ll render the Symfony field as default for now, and later add a macro for Symfony ChoiceType #}
+    <div class="col-12 mb-3">
+      {{ form_row(form.departments) }}
+    </div>
+  </div>
+
+  <button class="btn btn-primary">{{ form.save.vars.label }}</button>
+
+  {{ form_end(form) }}
+</div>
+{% endblock %}

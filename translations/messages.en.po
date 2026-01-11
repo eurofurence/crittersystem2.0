@@ -1,0 +1,2 @@
+msgid "ui.app.title"
+msgstr "Volunteer Management System"
