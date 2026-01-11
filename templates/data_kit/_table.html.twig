@@ -1,0 +1,26 @@
+{% import 'components/data/_macros.twig' as d %}
+
+{{ d.table_start() }}
+  <thead>
+    <tr>
+      <th style="width: 80px;">ID</th>
+      <th>Name</th>
+      <th style="width: 140px;">Status</th>
+      <th style="width: 120px;" class="text-end">Members</th>
+      <th style="width: 140px;" class="text-end">Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for r in rows %}
+      <tr>
+        <td>{{ r.id }}</td>
+        <td class="fw-semibold">{{ r.name }}</td>
+        <td>{{ d.status_badge(r.status) }}</td>
+        <td class="text-end">{{ r.members }}</td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-secondary" href="#">View</a>
+        </td>
+      </tr>
+    {% endfor %}
+  </tbody>
+{{ d.table_end() }}

@@ -1,0 +1,8 @@
+<turbo-frame id="data_table_frame">
+  {% if rows is empty %}
+    {% import 'components/data/_macros.twig' as d %}
+    {{ d.empty_state('No matches', { message: 'Try a different search term.' }) }}
+  {% else %}
+    {{ include('data_kit/_table.html.twig', {rows: rows}) }}
+  {% endif %}
+</turbo-frame>

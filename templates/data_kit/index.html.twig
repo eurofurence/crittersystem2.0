@@ -1,0 +1,54 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+  {{ d.page_header(pageTitle, {
+    subtitle: 'Cards, badges, empty states, tables, and Turbo Frame refresh patterns.',
+    actions: [
+      {label: 'Back to Form Kit', href: path('app_form_kit'), class: 'btn btn-outline-primary'}
+    ]
+  }) }}
+
+  <h2 class="h5 mt-4">Badges</h2>
+  <div class="d-flex gap-2 flex-wrap mb-3">
+    {{ d.badge('Default') }}
+    {{ d.badge('Success', 'text-bg-success') }}
+    {{ d.badge('Warning', 'text-bg-warning') }}
+    {{ d.badge('Danger', 'text-bg-danger') }}
+    {{ d.status_badge('Active') }}
+    {{ d.status_badge('Pending') }}
+    {{ d.status_badge('Disabled') }}
+    {{ d.status_badge('Rejected') }}
+  </div>
+
+  <h2 class="h5">Card + Table</h2>
+  {{ d.card('Departments (static demo)', include('data_kit/_table.html.twig', {rows: rows})) }}
+
+  <h2 class="h5 mt-4">Empty State</h2>
+  {{ d.empty_state('Nothing here yet', {
+    message: 'Once you create your first department, it will show up in this list.',
+    actionLabel: 'Create department',
+    actionHref: '#',
+    actionClass: 'btn btn-primary'
+  }) }}
+
+  <hr class="my-4">
+
+  <h2 class="h5">Turbo Frame: Debounced search + table refresh</h2>
+
+  {{ f.search_input('q', {
+    label: 'Search departments',
+    placeholder: 'Type e.g. "reg" or "it"...',
+    debounceMs: 250,
+    turboFrame: 'data_table_frame',
+    url: path('app_data_kit_table_frame'),
+    help: 'This reloads only the table frame (no full page refresh).'
+  }) }}
+
+  <turbo-frame id="data_table_frame" src="{{ path('app_data_kit_table_frame') }}" loading="lazy"></turbo-frame>
+</div>
+{% endblock %}

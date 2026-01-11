@@ -1,0 +1,139 @@
+{# templates/components/data/_macros.twig #}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro page_header(title, options = {}) %}
+  {# options:
+     - subtitle: string
+     - actions: array of {label, href, class}
+  #}
+  <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-0">{{ title }}</h1>
+      {% if options.subtitle is defined and options.subtitle %}
+        <div class="text-muted">{{ options.subtitle }}</div>
+      {% endif %}
+    </div>
+
+    {% if options.actions is defined and options.actions %}
+      <div class="d-flex gap-2">
+        {% for a in options.actions %}
+          <a href="{{ a.href }}" class="{{ a.class|default('btn btn-primary') }}">
+            {{ a.label }}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro card(title, body, options = {}) %}
+  {# options:
+     - footer: string/html
+     - headerRight: string/html
+  #}
+  <div class="card mb-3">
+    {% if title is not empty %}
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="fw-bold">{{ title }}</div>
+        {% if options.headerRight is defined %}{{ options.headerRight|raw }}{% endif %}
+      </div>
+    {% endif %}
+    <div class="card-body">
+      {{ body|raw }}
+    </div>
+    {% if options.footer is defined %}
+      <div class="card-footer">
+        {{ options.footer|raw }}
+      </div>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro badge(text, style = 'text-bg-secondary') %}
+  <span class="badge {{ style }}">{{ text }}</span>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro status_badge(status) %}
+  {# normalize common statuses; extend as needed #}
+  {% set s = status|lower %}
+  {% if s in ['active','enabled','open','ok','approved'] %}
+    {{ _self.badge(status, 'text-bg-success') }}
+  {% elseif s in ['pending','waiting','draft'] %}
+    {{ _self.badge(status, 'text-bg-warning') }}
+  {% elseif s in ['disabled','closed','inactive'] %}
+    {{ _self.badge(status, 'text-bg-secondary') }}
+  {% elseif s in ['error','blocked','rejected','failed'] %}
+    {{ _self.badge(status, 'text-bg-danger') }}
+  {% else %}
+    {{ _self.badge(status, 'text-bg-info') }}
+  {% endif %}
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro empty_state(title, options = {}) %}
+  {# options:
+     - message: string
+     - actionLabel/actionHref/actionClass
+  #}
+  <div class="border rounded p-4 text-center text-muted">
+    <div class="fw-bold text-dark mb-1">{{ title }}</div>
+    {% if options.message is defined and options.message %}
+      <div class="mb-3">{{ options.message }}</div>
+    {% endif %}
+
+    {% if options.actionLabel is defined and options.actionHref is defined %}
+      <a href="{{ options.actionHref }}" class="{{ options.actionClass|default('btn btn-primary') }}">
+        {{ options.actionLabel }}
+      </a>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro table_start(options = {}) %}
+  {# options:
+     - striped, hover, compact
+  #}
+  {% set classes = ['table'] %}
+  {% if options.striped|default(true) %}{% set classes = classes|merge(['table-striped']) %}{% endif %}
+  {% if options.hover|default(true) %}{% set classes = classes|merge(['table-hover']) %}{% endif %}
+  {% if options.compact|default(false) %}{% set classes = classes|merge(['table-sm']) %}{% endif %}
+
+  <div class="table-responsive">
+    <table class="{{ classes|join(' ') }}">
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro table_end() %}
+    </table>
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro pagination(current, totalPages, options = {}) %}
+  {# Simple pager placeholder. Later we’ll replace with Pagerfanta/KnpPaginator etc. #}
+  {% if totalPages <= 1 %}
+    {# nothing #}
+  {% else %}
+    <nav aria-label="Pagination">
+      <ul class="pagination mb-0">
+        {% for p in 1..totalPages %}
+          <li class="page-item {% if p == current %}active{% endif %}">
+            <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    </nav>
+  {% endif %}
+{% endmacro %}
