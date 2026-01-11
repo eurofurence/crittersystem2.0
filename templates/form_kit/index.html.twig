@@ -19,6 +19,27 @@
     </div>
   {% endif %}
 
+
+    <hr class="my-4">
+
+    <h2 class="h4 mb-3">Debounced Search (Turbo Frame)</h2>
+
+    {{ f.search_input('q', {
+        label: 'Department search',
+        placeholder: 'Type e.g. "reg" or "sec"...',
+        debounceMs: 250,
+        turboFrame: 'kit_search_frame',
+        help: 'Updates results via Turbo Frame using ?q= parameter'
+       })
+    }}
+
+    <turbo-frame
+        id="kit_search_frame"
+        src="{{ path('app_form_kit_search_frame') }}"
+        loading="lazy"
+    ></turbo-frame>
+
+
   {{ form_start(form) }}
 
   <div class="row">
@@ -30,12 +51,17 @@
 
     {# Multi-select: we’ll render the Symfony field as default for now, and later add a macro for Symfony ChoiceType #}
     <div class="col-12 mb-3">
-      {{ form_row(form.departments) }}
+        {{ f.choice_multiple(form.departments, {
+        col: 'col-12',
+        size: 6,
+        help: 'ChoiceType multiple rendered via macro'
+        }) }}
     </div>
   </div>
 
   <button class="btn btn-primary">{{ form.save.vars.label }}</button>
 
   {{ form_end(form) }}
+  
 </div>
 {% endblock %}

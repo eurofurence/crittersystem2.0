@@ -35,6 +35,8 @@
   </div>
 {% endmacro %}
 
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
 {% macro datetime_local(row, options = {}) %}
   {% set col = options.col|default('col-12') %}
   <div class="{{ col }} mb-3">
@@ -53,6 +55,8 @@
     {{ form_errors(row) }}
   </div>
 {% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
 
 {% macro range_slider(row, options = {}) %}
   {% set col = options.col|default('col-12') %}
@@ -87,6 +91,8 @@
   </div>
 {% endmacro %}
 
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
 {% macro search_input(name, options = {}) %}
   {% set col = options.col|default('col-12') %}
   {% set id = options.id|default('search_' ~ name) %}
@@ -107,6 +113,8 @@
     {% endif %}
   </div>
 {% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
 
 {% macro multi_select(name, choices, selected = [], options = {}) %}
   {% set col = options.col|default('col-12') %}
@@ -132,5 +140,54 @@
     {% if options.help is defined %}
       <div class="form-text">{{ options.help }}</div>
     {% endif %}
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro choice(row, options = {}) %}
+  {# Renders ChoiceType select nicely with Bootstrap.
+     options:
+     - col, label, help
+  #}
+  {% set col = options.col|default('col-12') %}
+  <div class="{{ col }} mb-3">
+    {{ form_label(row, options.label|default(null), {'label_attr': {'class': 'form-label'}}) }}
+
+    {% set cls = (row.vars.attr.class|default('') ~ ' form-select')|trim %}
+    {{ form_widget(row, {'attr': row.vars.attr|merge({'class': cls}) }) }}
+
+    {% if options.help is defined %}
+      <div class="form-text">{{ options.help }}</div>
+    {% endif %}
+
+    {{ form_errors(row) }}
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro choice_multiple(row, options = {}) %}
+  {# For ChoiceType multiple (select[multiple]) #}
+  {% set col = options.col|default('col-12') %}
+  <div class="{{ col }} mb-3">
+    {{ form_label(row, options.label|default(null), {'label_attr': {'class': 'form-label'}}) }}
+
+    {% set cls = (row.vars.attr.class|default('') ~ ' form-select')|trim %}
+    {% set size = options.size|default(row.vars.attr.size|default(6)) %}
+
+    {{ form_widget(row, {
+      'attr': row.vars.attr|merge({
+        'class': cls,
+        'size': size,
+        'data-multiselect': '1'
+      })
+    }) }}
+
+    {% if options.help is defined %}
+      <div class="form-text">{{ options.help }}</div>
+    {% endif %}
+
+    {{ form_errors(row) }}
   </div>
 {% endmacro %}

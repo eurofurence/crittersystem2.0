@@ -35,4 +35,30 @@ final class FormKitController extends AbstractController
         //     'controller_name' => 'FormKitController',
         // ]);
     }
+
+    #[Route('/dev/kit/search-frame', name: 'app_form_kit_search_frame')]
+    public function searchFrame(Request $request): Response
+    {
+        $q = trim((string) $request->query->get('q', ''));
+
+        $items = [
+            'Logistics',
+            'Registration',
+            'Ops',
+            'Security',
+            'IT',
+            'Stage',
+            'Communications',
+            'Sponsors',
+        ];
+
+        if ($q !== '') {
+            $items = array_values(array_filter($items, static fn (string $v) => str_contains(mb_strtolower($v), mb_strtolower($q))));
+        }
+
+        return $this->render('form_kit/_search_frame.html.twig', [
+            'q' => $q,
+            'items' => $items,
+        ]);
+    }
 }

@@ -1,0 +1,19 @@
+<turbo-frame id="kit_search_frame">
+  <div class="card">
+    <div class="card-body">
+      <div class="fw-bold mb-2">
+        Search results {% if q %}<span class="text-muted">for “{{ q }}”</span>{% endif %}
+      </div>
+
+      {% if items is empty %}
+        <div class="text-muted">No matches.</div>
+      {% else %}
+        <ul class="mb-0">
+          {% for item in items %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+</turbo-frame>
