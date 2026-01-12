@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+{% import 'components/notification/_macros.twig' as n %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block body %}
+    <div class="container py-4">
+    {{ d.page_header(pageTitle, {
+        subtitle: 'Flash messages, alerts, and optional toasts',
+        actions: [
+        {label: 'Back to Modal Kit', href: path('app_modal_kit'), class: 'btn btn-outline-secondary'}
+        ]
+    }) }}
+
+    <h2 class="h5 mt-4">Inline Alerts</h2>
+    {{ n.alert('success', 'This is a success alert.') }}
+    {{ n.alert('info', 'This is an info alert.', {dismissible: true}) }}
+    {{ n.alert('warning', 'This is a warning alert.') }}
+    {{ n.alert('danger', 'This is a danger alert.', {dismissible: true}) }}
+
+    <h2 class="h5 mt-5">Toast (optional)</h2>
+
+        <button class="btn btn-outline-primary"
+                type="button"
+                data-toast-target="#demoToast">
+        Show toast
+        </button>
+
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+        {{ n.toast('demoToast', 'Heads up!', 'This is a toast notification.', {
+            type: 'primary',
+            delay: 4000
+        }) }}
+    </div>
+    </div>
+{% endblock %}

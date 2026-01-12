@@ -1,0 +1,61 @@
+{# templates/components/notification/_macros.twig #}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro alert(type, message, options = {}) %}
+  {# type: success | danger | warning | info | secondary
+     options:
+     - dismissible (bool)
+     - icon (string, optional)
+  #}
+  {% set dismissible = options.dismissible|default(false) %}
+  <div class="alert alert-{{ type }} {% if dismissible %}alert-dismissible fade show{% endif %}" role="alert">
+    {% if options.icon is defined %}
+      <span class="me-2" aria-hidden="true">{{ options.icon }}</span>
+    {% endif %}
+    {{ message }}
+
+    {% if dismissible %}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    {% endif %}
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro flash_messages(app) %}
+  {# Renders all Symfony flash messages using standardized styling #}
+  {% for type, messages in app.flashes %}
+    {% for message in messages %}
+      {{ _self.alert(type, message, { dismissible: true }) }}
+    {% endfor %}
+  {% endfor %}
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro toast(id, title, message, options = {}) %}
+  {# options:
+     - delay (ms, default 5000)
+     - autohide (bool, default true)
+     - type (Bootstrap color)
+  #}
+  <div class="toast align-items-center text-bg-{{ options.type|default('secondary') }} border-0"
+       id="{{ id }}"
+       role="alert"
+       aria-live="assertive"
+       aria-atomic="true"
+       data-bs-delay="{{ options.delay|default(5000) }}"
+       data-bs-autohide="{{ options.autohide|default(true) ? 'true' : 'false' }}">
+    <div class="d-flex">
+      <div class="toast-body">
+        <strong class="me-2">{{ title }}</strong>
+        {{ message }}
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto"
+              data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
