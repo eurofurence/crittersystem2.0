@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+{% import 'components/modal/_macros.twig' as m %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block body %}
+<div class="container py-4">
+  {{ d.page_header(pageTitle, {
+    subtitle: 'Confirmation, form, and detail modals',
+    actions: [
+      {label: 'Back to Data Kit', href: path('app_data_kit'), class: 'btn btn-outline-secondary'}
+    ]
+  }) }}
+
+  <h2 class="h5 mt-4">Confirmation Modal</h2>
+  <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDelete">
+    Delete department
+  </button>
+
+  {{ m.confirm(
+    'confirmDelete',
+    'Delete department',
+    'This action cannot be undone. Are you sure?',
+    {
+      confirmLabel: 'Delete',
+      confirmClass: 'btn-danger'
+    }
+  ) }}
+
+  <h2 class="h5 mt-5">Detail Modal</h2>
+  <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detailModal">
+    View details
+  </button>
+
+  {{ m.detail(
+    'detailModal',
+    'Department details',
+    '<dl class="row">
+        <dt class="col-sm-4">Name</dt><dd class="col-sm-8">Logistics</dd>
+        <dt class="col-sm-4">Status</dt><dd class="col-sm-8">Active</dd>
+        <dt class="col-sm-4">Members</dt><dd class="col-sm-8">42</dd>
+     </dl>',
+    { size: 'modal-lg' }
+  ) }}
+
+  <h2 class="h5 mt-5">Form Modal</h2>
+  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#formModal">
+    Create department
+  </button>
+
+  {{ m.form_modal(
+    'formModal',
+    'Create department',
+    '<form>
+        <div class="mb-3">
+          <label class="form-label">Name</label>
+          <input class="form-control">
+        </div>
+     </form>',
+    { submitLabel: 'Create' }
+  ) }}
+</div>
+{% endblock %}

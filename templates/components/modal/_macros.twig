@@ -1,0 +1,109 @@
+{# templates/components/modal/_macros.twig #}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro confirm(id, title, message, options = {}) %}
+  {# options:
+     - confirmLabel
+     - cancelLabel
+     - confirmClass (btn-danger / btn-primary)
+     - formAction (optional POST action)
+  #}
+  <div class="modal fade" id="{{ id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ title }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          {{ message }}
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            {{ options.cancelLabel|default('Cancel') }}
+          </button>
+
+          {% if options.formAction is defined %}
+            <form method="post" action="{{ options.formAction }}">
+              <button type="submit"
+                      class="btn {{ options.confirmClass|default('btn-danger') }}">
+                {{ options.confirmLabel|default('Confirm') }}
+              </button>
+            </form>
+          {% else %}
+            <button type="button"
+                    class="btn {{ options.confirmClass|default('btn-danger') }}"
+                    data-bs-dismiss="modal">
+              {{ options.confirmLabel|default('Confirm') }}
+            </button>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro form_modal(id, title, formHtml, options = {}) %}
+  {# options:
+     - size (modal-lg / modal-xl)
+     - submitLabel
+  #}
+  <div class="modal fade" id="{{ id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog {{ options.size|default('') }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ title }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          {{ formHtml|raw }}
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            {{ options.submitLabel|default('Save') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro detail(id, title, bodyHtml, options = {}) %}
+  {# options:
+     - size (modal-lg / modal-xl)
+  #}
+  <div class="modal fade" id="{{ id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog {{ options.size|default('') }}">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ title }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          {{ bodyHtml|raw }}
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
