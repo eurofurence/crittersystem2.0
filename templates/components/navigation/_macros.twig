@@ -1,0 +1,98 @@
+{# templates/components/navigation/_macros.twig #}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro nav_item(label, routeName, options = {}) %}
+{# options:
+    - icon (optional)
+    - exact (bool, default true)
+    - params (route params)
+    - badge (optional)
+    - class (optional)
+#}
+{% set params = options.params|default({}) %}
+{% set current = app.request.attributes.get('_route') %}
+{% set isActive = false %}
+{% if options.exact|default(true) %}
+    {% set isActive = (current == routeName) %}
+{% else %}
+    {% set isActive = current starts with routeName %}
+{% endif %}
+
+<li class="nav-item">
+    <a class="nav-link {% if isActive %}active{% endif %} {{ options.class|default('') }}"
+    href="{{ path(routeName, params) }}"
+    {% if isActive %}aria-current="page"{% endif %}>
+    {% if options.icon is defined %}<span class="me-2" aria-hidden="true">{{ options.icon }}</span>{% endif %}
+    {{ label }}
+    {% if options.badge is defined %}<span class="badge text-bg-secondary ms-2">{{ options.badge }}</span>{% endif %}
+    </a>
+</li>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro sidebar_item(label, routeName, options = {}) %}
+{# Similar to nav_item but for sidebar list-group style #}
+{% set params = options.params|default({}) %}
+{% set current = app.request.attributes.get('_route') %}
+
+{% set isActive = false %}
+{% if options.exact|default(true) %}
+    {% set isActive = (current == routeName) %}
+{% else %}
+    {% set isActive = current starts with routeName %}
+{% endif %}
+
+<a class="list-group-item list-group-item-action d-flex align-items-center gap-2
+            {% if isActive %}active{% endif %}"
+    href="{{ path(routeName, params) }}"
+    {% if isActive %}aria-current="page"{% endif %}>
+    {% if options.icon is defined %}<span aria-hidden="true">{{ options.icon }}</span>{% endif %}
+    <span class="flex-grow-1">{{ label }}</span>
+    {% if options.badge is defined %}<span class="badge text-bg-secondary">{{ options.badge }}</span>{% endif %}
+</a>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro navbar(appName, options = {}) %}
+{# options:
+    - brandRoute (default app_home)
+    - right: array of {label, route, class}
+#}
+{% set brandRoute = options.brandRoute|default('app_home') %}
+
+<nav class="navbar navbar-expand-lg bg-body-tertiary border-bottom">
+    <div class="container-fluid">
+    <a class="navbar-brand fw-semibold" href="{{ path(brandRoute) }}">{{ appName }}</a>
+
+    <button class="navbar-toggler" type="button"
+            data-bs-toggle="collapse" data-bs-target="#mainNavbar"
+            aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="mainNavbar">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+        {{ options.left|default('')|raw }}
+        </ul>
+
+        <div class="d-flex gap-2">
+        {{ options.right|default('')|raw }}
+        </div>
+    </div>
+    </div>
+</nav>
+{% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro sidebar(title, contentHtml) %}
+<div class="card">
+    <div class="card-header fw-semibold">{{ title }}</div>
+    <div class="list-group list-group-flush">
+    {{ contentHtml|raw }}
+    </div>
+</div>
+{% endmacro %}

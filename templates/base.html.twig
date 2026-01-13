@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>{% block title %}Welcome!{% endblock %}</title>
+        <title>{% block title %}VMS{% endblock %}</title>
         
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
         {% block stylesheets %}
@@ -14,12 +14,43 @@
         {% endblock %}
     </head>
     <body>
+        {# COMPONENTS #}
+        {% import 'components/navigation/_macros.twig' as nav %}
         {% import 'components/notification/_macros.twig' as n %}
 
+        {# NAVBAR #}
+        {% block navbar %}
+
+            {% set left %}
+            {{ nav.nav_item('Home', 'app_home', {icon:'🏠'}) }}
+            {{ nav.nav_item('Dashboard', 'app_dashboard', {icon:'📊'}) }}
+            {{ nav.nav_item('Navigation Kit', 'app_navigation_kit', {icon:'🧭'}) }}
+            {% endset %}
+
+            {{ nav.navbar('VMS', { left: left }) }}
+        {% endblock %}
+
+        {# FLASH MESSAGES #}
         <div class="container mt-3">
-        {{ n.flash_messages(app) }}
+            {{ n.flash_messages(app) }}
         </div>
 
-        {% block body %}{% endblock %}
+        {# This section to be removed - commented due to the main layout and side bar
+            {% block body %}{% endblock %}
+        #}
+
+        {# MAIN LAYOUT #}
+        <div class="container py-3">
+            <div class="row g-3">
+            <aside class="col-12 col-lg-3">
+                {% block sidebar %}{% endblock %}
+            </aside>
+
+            <main class="col-12 col-lg-9">
+                {% block body %}{% endblock %}
+            </main>
+            </div>
+        </div>
+
     </body>
 </html>

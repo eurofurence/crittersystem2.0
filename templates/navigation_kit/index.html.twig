@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% import 'components/navigation/_macros.twig' as nav %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block sidebar %}
+  {% set items %}
+    {{ nav.sidebar_item('Home', 'app_home', {icon: '🏠'}) }}
+    {{ nav.sidebar_item('Dashboard', 'app_dashboard', {icon: '📊'}) }}
+    {{ nav.sidebar_item('Form Kit', 'app_form_kit', {icon: '🧩'}) }}
+    {{ nav.sidebar_item('Data Kit', 'app_data_kit', {icon: '📋'}) }}
+    {{ nav.sidebar_item('Modal Kit', 'app_modal_kit', {icon: '🪟'}) }}
+    {{ nav.sidebar_item('Notification Kit', 'app_notification_kit', {icon: '🔔'}) }}
+    {{ nav.sidebar_item('Navigation Kit', 'app_navigation_kit', {icon: '🧭'}) }}
+  {% endset %}
+
+  {{ nav.sidebar('Dev Kits', items) }}
+{% endblock %}
+
+{% block body %}
+  {{ d.page_header(pageTitle, {
+    subtitle: 'Navbar + sidebar with consistent active state and layout slots.',
+    actions: [
+      {label: 'Go to Data Kit', href: path('app_data_kit'), class: 'btn btn-outline-primary'}
+    ]
+  }) }}
+
+  <div class="card">
+    <div class="card-body">
+      <p class="mb-0">
+        This page exists to verify:
+        <span class="fw-semibold">navbar renders</span>,
+        <span class="fw-semibold">sidebar renders</span>,
+        and <span class="fw-semibold">active state</span> works based on route name.
+      </p>
+    </div>
+  </div>
+{% endblock %}
