@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Event Configuration{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Event Configuration', {
+    subtitle: 'Global event settings and timeline.',
+    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ form_start(form) }}
+    <h2 class="h6">General</h2>
+    <div class="row">
+      {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
+      {{ f.choice(form.accessMode, {col: 'col-12 col-md-6', help: 'Who can access the system'}) }}
+      {{ f.field(form.welcomeMessage, {col: 'col-12'}) }}
+    </div>
+
+    <h2 class="h6 mt-2">Timeline</h2>
+    <div class="row">
+      {{ f.field(form.buildupStart, {col: 'col-12 col-md-3'}) }}
+      {{ f.field(form.eventStart, {col: 'col-12 col-md-3'}) }}
+      {{ f.field(form.eventEnd, {col: 'col-12 col-md-3'}) }}
+      {{ f.field(form.teardownEnd, {col: 'col-12 col-md-3'}) }}
+    </div>
+
+    <h2 class="h6 mt-2">Appearance</h2>
+    <div class="row">
+      {{ f.choice(form.defaultTheme, {col: 'col-12 col-md-6'}) }}
+    </div>
+
+    <button class="btn btn-primary mt-2">Save</button>
+  {{ form_end(form) }}
+{% endblock %}

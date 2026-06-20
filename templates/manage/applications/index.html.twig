@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Membership Applications{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Membership Applications', {
+    subtitle: 'Pending requests to join restricted volunteer types.',
+    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% if pending is empty %}
+    {{ d.empty_state('All caught up', {message: 'There are no pending membership requests.'}) }}
+  {% else %}
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>Volunteer</th><th>Volunteer type</th><th>Requested</th><th class="text-end">Decision</th></tr></thead>
+      <tbody>
+        {% for m in pending %}
+          <tr>
+            <td class="fw-semibold">{{ m.user.name }}</td>
+            <td>{{ m.volunteerType.name }}</td>
+            <td class="small text-muted">{{ m.createdAt|date('D, d M H:i') }}</td>
+            <td class="text-end text-nowrap">
+              <form method="post" action="{{ path('app_manage_vt_member_confirm', {id: m.volunteerType.id, membershipId: m.id}) }}" class="d-inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('confirm' ~ m.id) }}">
+                <button class="btn btn-sm btn-outline-success">Confirm</button>
+              </form>
+              <form method="post" action="{{ path('app_manage_vt_member_remove', {id: m.volunteerType.id, membershipId: m.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Deny {{ m.user.name|e('js') }}?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('remove' ~ m.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Deny</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

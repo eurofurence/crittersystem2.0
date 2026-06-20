@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ news.title }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(news.title, {
+    subtitle: news.createdAt|date('D, d M Y H:i') ~ (news.author ? ' · ' ~ news.author.name : ''),
+    actions: [{label: '← All news', href: path('app_news_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <div class="card mb-3 {{ news.highlighted ? 'border-warning' : '' }}">
+    <div class="card-body">
+      {% if news.staffOnly %}{{ d.badge('Staff only', 'text-bg-secondary') }}{% endif %}
+      <p class="mb-0 mt-2">{{ news.fullText|nl2br }}</p>
+    </div>
+  </div>
+
+  <h2 class="h5">Comments ({{ news.comments|length }})</h2>
+  {% for comment in news.comments %}
+    <div class="card mb-2"><div class="card-body py-2">
+      <div class="small text-muted">{{ comment.author ? comment.author.name : 'Unknown' }} · {{ comment.createdAt|date('D, d M H:i') }}</div>
+      <div>{{ comment.text|nl2br }}</div>
+    </div></div>
+  {% else %}
+    <p class="text-muted">No comments yet.</p>
+  {% endfor %}
+
+  <form method="post" action="{{ path('app_news_comment', {id: news.id}) }}" class="mt-3">
+    <input type="hidden" name="_token" value="{{ csrf_token('comment' ~ news.id) }}">
+    <div class="mb-2">
+      <label class="form-label" for="comment-text">Add a comment</label>
+      <textarea id="comment-text" name="text" class="form-control" rows="2" required></textarea>
+    </div>
+    <button class="btn btn-primary btn-sm">Post comment</button>
+  </form>
+{% endblock %}

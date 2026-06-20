@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Volunteer Types{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Volunteer Types', {subtitle: 'Join the teams you want to help with. Restricted types need confirmation.'}) }}
+
+  {% if rows is empty %}
+    {{ d.empty_state('No volunteer types', {message: 'There are no volunteer types to join yet.'}) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr><th>Type</th><th>Status</th><th class="text-end">Action</th></tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ row.type.name }}
+                {% if row.type.restricted %}{{ d.badge('Restricted', 'text-bg-warning') }}{% endif %}
+                {% if row.type.staffOnly %}{{ d.badge('Staff', 'text-bg-secondary') }}{% endif %}
+              </div>
+              {% if row.type.description %}<div class="text-muted small">{{ row.type.description }}</div>{% endif %}
+            </td>
+            <td>
+              {% if row.membership is null %}<span class="text-muted">Not a member</span>
+              {% elseif row.membership.supporter %}{{ d.badge('Supporter', 'text-bg-primary') }}
+              {% elseif row.membership.confirmed %}{{ d.badge('Member', 'text-bg-success') }}
+              {% else %}{{ d.badge('Pending confirmation', 'text-bg-warning') }}{% endif %}
+            </td>
+            <td class="text-end">
+              {% if row.membership is null %}
+                <form method="post" action="{{ path('app_membership_join', {id: row.type.id}) }}" class="d-inline">
+                  <input type="hidden" name="_token" value="{{ csrf_token('join' ~ row.type.id) }}">
+                  <button class="btn btn-sm btn-primary">Join</button>
+                </form>
+              {% else %}
+                <form method="post" action="{{ path('app_membership_leave', {id: row.type.id}) }}" class="d-inline"
+                      onsubmit="return confirm('Leave &quot;{{ row.type.name|e('js') }}&quot;?');">
+                  <input type="hidden" name="_token" value="{{ csrf_token('leave' ~ row.type.id) }}">
+                  <button class="btn btn-sm btn-outline-danger">Leave</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

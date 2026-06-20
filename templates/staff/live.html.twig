@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/notification/_macros.twig' as n %}
+
+{% block title %}Live Status{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Live Status', {
+    subtitle: 'Who is on duty right now.',
+    actions: [{label: '← Staff overview', href: path('app_staff_overview'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% if understaffed is not empty %}
+    {{ n.alert('warning', 'No one is on duty in: ' ~ understaffed|map(dep => dep.name)|join(', '), {icon: '⚠️'}) }}
+  {% endif %}
+
+  {% if byDepartment is empty %}
+    {{ d.empty_state('Nobody on duty', {message: 'No staff are currently on duty.'}) }}
+  {% else %}
+    <div class="row g-3">
+      {% for group in byDepartment %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between">
+              <span class="fw-semibold">{{ group.department ? group.department.name : 'No specific area' }}</span>
+              {{ d.badge(group.records|length ~ ' on duty', 'text-bg-success') }}
+            </div>
+            <ul class="list-group list-group-flush">
+              {% for r in group.records %}
+                <li class="list-group-item d-flex justify-content-between">
+                  <span>{{ r.user.name }}</span>
+                  <span class="text-muted small">{{ r.durationHours|round(1) }}h</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

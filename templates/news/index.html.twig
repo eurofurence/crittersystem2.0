@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}News{% endblock %}
+
+{% block body %}
+  {{ d.page_header('News', {
+    subtitle: 'Latest announcements.',
+    actions: is_granted('admin_news') ? [{label: 'Manage news', href: path('app_manage_news_index'), class: 'btn btn-outline-primary'}] : []
+  }) }}
+
+  {% if items is empty %}
+    {{ d.empty_state('No news yet', {message: 'Check back later for announcements.'}) }}
+  {% else %}
+    {% for n in items %}
+      <div class="card mb-3 {{ n.highlighted ? 'border-warning' : '' }}">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <h2 class="h5 mb-1">
+              <a href="{{ path('app_news_show', {id: n.id}) }}" class="text-decoration-none">{{ n.title }}</a>
+            </h2>
+            <div class="d-flex flex-wrap gap-1">
+              {% if n.pinned %}{{ d.badge('Pinned', 'text-bg-primary') }}{% endif %}
+              {% if n.meeting %}{{ d.badge('Meeting', 'text-bg-info') }}{% endif %}
+              {% if n.staffOnly %}{{ d.badge('Staff', 'text-bg-secondary') }}{% endif %}
+            </div>
+          </div>
+          <div class="text-muted small mb-2">
+            {{ n.createdAt|date('D, d M Y H:i') }}{% if n.author %} · {{ n.author.name }}{% endif %}
+          </div>
+          <p class="mb-1">{{ n.preview|nl2br }}</p>
+          {% if n.hasMore %}<a href="{{ path('app_news_show', {id: n.id}) }}">Read more →</a>{% endif %}
+          <div class="text-muted small mt-2">{{ n.comments|length }} comment(s)</div>
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endblock %}

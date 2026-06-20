@@ -1,0 +1,119 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Theme Kit · {{ active_theme.name }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Theme Kit', {
+    subtitle: 'Component showcase for theme development. Switch themes without saving below.',
+    actions: [{label: 'Save as my theme', href: path('app_settings_theme'), class: 'btn btn-outline-primary'}]
+  }) }}
+
+  {# ---- Theme switcher (preview via ?theme=<slug>, no save) ---- #}
+  <div class="card mb-3"><div class="card-body">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      <span class="text-muted small">Active:</span>
+      <code class="me-2">{{ active_theme.slug }}</code>
+      {{ d.badge(active_theme.type|capitalize, active_theme.type == 'dark' ? 'text-bg-dark' : 'text-bg-secondary') }}
+      <span class="vr mx-2"></span>
+      {% for t in themes %}
+        <a class="btn btn-sm {{ t.slug == active_theme.slug ? 'btn-primary' : 'btn-outline-secondary' }}"
+           href="{{ path('app_theme_kit') }}?theme={{ t.slug }}">
+          {{ t.name }}
+        </a>
+      {% endfor %}
+    </div>
+    <div class="text-muted small mt-2">
+      Theme files live under <code>assets/themes/</code>. Editing one is reflected
+      on the next page load — <strong>no compilation needed for development</strong>.
+      For production deploys, ask the admin to run
+      <code>php bin/console asset-map:compile</code>.
+    </div>
+  </div></div>
+
+  {# ---- Component showcase ---- #}
+  <h2 class="h5">Typography</h2>
+  <h1>H1 Heading</h1><h2>H2 Heading</h2><h3>H3 Heading</h3>
+  <p class="lead">A lead paragraph standing in for an introductory sentence.</p>
+  <p>Body copy with a <a href="#">link</a>, <strong>bold</strong>, <em>italic</em> and <code>inline code</code>.</p>
+  <p class="text-muted small">Muted small text for captions.</p>
+
+  <h2 class="h5 mt-4">Buttons</h2>
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    {% for v in ['primary','secondary','success','danger','warning','info','dark','light'] %}
+      <button class="btn btn-{{ v }}">{{ v|capitalize }}</button>
+    {% endfor %}
+  </div>
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    {% for v in ['primary','secondary','success','danger','warning','info','dark','light'] %}
+      <button class="btn btn-outline-{{ v }}">{{ v|capitalize }}</button>
+    {% endfor %}
+  </div>
+
+  <h2 class="h5 mt-4">Badges &amp; alerts</h2>
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    {% for v in ['primary','secondary','success','danger','warning','info','dark','light'] %}
+      <span class="badge text-bg-{{ v }}">{{ v }}</span>
+    {% endfor %}
+  </div>
+  <div class="row g-2">
+    {% for v in ['primary','success','warning','danger','info'] %}
+      <div class="col-12 col-md-6"><div class="alert alert-{{ v }} mb-0">An <strong>{{ v }}</strong> alert.</div></div>
+    {% endfor %}
+  </div>
+
+  <h2 class="h5 mt-4">Cards</h2>
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4"><div class="card"><div class="card-body">
+      <h3 class="h6">Plain card</h3><p class="mb-0">Body text inside a card.</p>
+    </div></div></div>
+    <div class="col-12 col-md-4"><div class="card border-primary"><div class="card-header bg-primary text-white">Primary header</div><div class="card-body">
+      <p class="mb-0">Card with a coloured header.</p>
+    </div></div></div>
+    <div class="col-12 col-md-4"><div class="card border-warning"><div class="card-body">
+      <h3 class="h6">Highlighted</h3><p class="mb-0">Used by news/cert UI.</p>
+    </div></div></div>
+  </div>
+
+  <h2 class="h5 mt-4">Forms</h2>
+  <form class="row g-2 mb-3">
+    <div class="col-12 col-md-6">
+      <label class="form-label" for="tk-name">Name</label>
+      <input id="tk-name" class="form-control" placeholder="Type here">
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label" for="tk-sel">Role</label>
+      <select id="tk-sel" class="form-select"><option>One</option><option>Two</option></select>
+    </div>
+    <div class="col-12 col-md-3 d-flex align-items-end">
+      <button class="btn btn-primary w-100" type="button">Submit</button>
+    </div>
+    <div class="col-12">
+      <div class="form-check"><input class="form-check-input" type="checkbox" id="tk-c1" checked>
+        <label class="form-check-label" for="tk-c1">Checked option</label></div>
+    </div>
+  </form>
+
+  <h2 class="h5 mt-4">Table</h2>
+  <div class="table-responsive"><table class="table table-striped table-hover">
+    <thead><tr><th>#</th><th>Name</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Alice</td><td>{{ d.badge('Active', 'text-bg-success') }}</td></tr>
+      <tr><td>2</td><td>Bob</td><td>{{ d.badge('Pending', 'text-bg-warning') }}</td></tr>
+      <tr><td>3</td><td>Carol</td><td>{{ d.badge('Closed', 'text-bg-secondary') }}</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2 class="h5 mt-4">Navigation</h2>
+  <ul class="nav nav-tabs mb-2">
+    <li class="nav-item"><a class="nav-link active" href="#">Active</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">Link</a></li>
+    <li class="nav-item"><a class="nav-link disabled">Disabled</a></li>
+  </ul>
+  <nav><ul class="pagination">
+    <li class="page-item"><a class="page-link" href="#">«</a></li>
+    <li class="page-item active"><span class="page-link">1</span></li>
+    <li class="page-item"><a class="page-link" href="#">2</a></li>
+    <li class="page-item"><a class="page-link" href="#">»</a></li>
+  </ul></nav>
+{% endblock %}

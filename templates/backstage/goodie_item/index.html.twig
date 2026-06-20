@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Goodie Items{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Goodie Items', {
+    subtitle: 'Rewards volunteers can claim once they reach the required hours.',
+    actions: [
+      {label: '← Backstage', href: path('app_backstage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New item', href: path('app_backstage_goodie_item_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if items is empty %}
+    {{ d.empty_state('No items yet', {
+      message: 'Add goodie items for volunteers to earn.',
+      actionLabel: '+ New item',
+      actionHref: path('app_backstage_goodie_item_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead><tr><th>Item</th><th>Category</th><th>Required hours</th><th>Max / person</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        {% for i in items %}
+          <tr class="{{ i.active ? '' : 'opacity-75' }}">
+            <td>
+              <div class="fw-semibold">{{ i.name }}</div>
+              {% if i.description %}<div class="text-muted small">{{ i.description }}</div>{% endif %}
+            </td>
+            <td>{{ i.category.name }}</td>
+            <td>{{ i.requiredHours|round(2) }}</td>
+            <td>{{ i.maxPerPerson ?? '∞' }}</td>
+            <td>{% if i.active %}{{ d.badge('Active', 'text-bg-success') }}{% else %}{{ d.badge('Inactive', 'text-bg-secondary') }}{% endif %}</td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_backstage_goodie_item_edit', {id: i.id}) }}">Edit</a>
+              <form method="post" action="{{ path('app_backstage_goodie_item_delete', {id: i.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete &quot;{{ i.name|e('js') }}&quot;?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ i.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

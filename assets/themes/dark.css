@@ -1,0 +1,35 @@
+/*
+ * Dark theme — uses Bootstrap 5.3's built-in `data-bs-theme="dark"` colour
+ * tokens, then nudges the surfaces a touch darker for OLED-friendly contrast
+ * and softens the borders so the UI doesn't feel boxed in.
+ *
+ * The theme is applied when the layout sets `data-bs-theme="dark"` on <html>;
+ * Bootstrap takes care of inverting every component for us.
+ */
+
+[data-bs-theme="dark"] {
+  --bs-body-bg: #15171a;
+  --bs-tertiary-bg: #1c1f24;
+  --bs-secondary-bg: #23262c;
+  --bs-border-color: #2c3038;
+  --bs-border-color-translucent: rgba(255, 255, 255, .08);
+  --bs-link-color: #6ea8fe;
+  --bs-link-hover-color: #9ec5fe;
+  --bs-primary: #4f86d6;
+  --bs-primary-rgb: 79, 134, 214;
+}
+
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .accordion-item {
+  background-color: var(--bs-tertiary-bg);
+  border-color: var(--bs-border-color);
+}
+
+[data-bs-theme="dark"] .table {
+  --bs-table-bg: transparent;
+}
+
+/* The dated landing's timeline cards look better with a subtle outline in dark mode. */
+[data-bs-theme="dark"] .card.text-center.h-100 {
+  background-color: var(--bs-secondary-bg);
+}

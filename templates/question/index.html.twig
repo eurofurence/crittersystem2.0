@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}My Questions{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Ask a Question', {
+    subtitle: 'Submit a question and see the answers here.',
+    actions: [{label: 'FAQ', href: path('app_faq_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <form method="post" action="{{ path('app_questions_ask') }}" class="card mb-4">
+    <div class="card-body">
+      <input type="hidden" name="_token" value="{{ csrf_token('ask') }}">
+      <label class="form-label" for="q-text">Your question</label>
+      <textarea id="q-text" name="text" class="form-control mb-2" rows="3" required></textarea>
+      <button class="btn btn-primary">Submit</button>
+    </div>
+  </form>
+
+  <h2 class="h5">Your questions</h2>
+  {% if questions is empty %}
+    <p class="text-muted">You haven't asked anything yet.</p>
+  {% else %}
+    {% for q in questions %}
+      <div class="card mb-2"><div class="card-body">
+        <div class="small text-muted">{{ q.createdAt|date('D, d M Y H:i') }}</div>
+        <div class="fw-semibold">{{ q.text|nl2br }}</div>
+        {% if q.answered %}
+          <hr class="my-2">
+          <div class="text-success small">Answered{% if q.answerer %} by {{ q.answerer.name }}{% endif %}:</div>
+          <div>{{ q.answer|nl2br }}</div>
+        {% else %}
+          <div class="text-muted small mt-1">Awaiting an answer…</div>
+        {% endif %}
+      </div></div>
+    {% endfor %}
+  {% endif %}
+{% endblock %}

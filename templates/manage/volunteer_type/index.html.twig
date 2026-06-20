@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Volunteer Types{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Volunteer Types', {
+    subtitle: 'Role categories volunteers can join.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New volunteer type', href: path('app_manage_volunteer_type_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if volunteerTypes is empty %}
+    {{ d.empty_state('No volunteer types yet', {
+      message: 'Create the first volunteer type so people can join it.',
+      actionLabel: '+ New volunteer type',
+      actionHref: path('app_manage_volunteer_type_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Contact</th>
+          <th>Flags</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for vt in volunteerTypes %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ vt.name }}</div>
+              {% if vt.description %}<div class="text-muted small">{{ vt.description }}</div>{% endif %}
+            </td>
+            <td class="small">
+              {{ vt.contactName ?: '—' }}
+              {% if vt.contactDect %}<div class="text-muted">DECT {{ vt.contactDect }}</div>{% endif %}
+              {% if vt.contactEmail %}<div class="text-muted">{{ vt.contactEmail }}</div>{% endif %}
+            </td>
+            <td>
+              <div class="d-flex flex-wrap gap-1">
+                {% if vt.restricted %}{{ d.badge('Restricted', 'text-bg-warning') }}{% endif %}
+                {% if vt.shiftSelfSignup %}{{ d.badge('Self-signup', 'text-bg-info') }}{% endif %}
+                {% if vt.showOnDashboard %}{{ d.badge('Dashboard', 'text-bg-secondary') }}{% endif %}
+                {% if vt.staffOnly %}{{ d.badge('Staff only', 'text-bg-dark') }}{% endif %}
+              </div>
+            </td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_vt_members', {id: vt.id}) }}">Members</a>
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_volunteer_type_edit', {id: vt.id}) }}">Edit</a>
+              <form method="post" action="{{ path('app_manage_volunteer_type_delete', {id: vt.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete volunteer type &quot;{{ vt.name|e('js') }}&quot;?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ vt.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

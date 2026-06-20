@@ -1,0 +1,97 @@
+<?php
+
+namespace App\Controller\Manage;
+
+use App\Entity\News;
+use App\Entity\User;
+use App\Form\NewsType;
+use App\Repository\NewsRepository;
+use App\Service\Notifier;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
+
+#[Route('/manage/news')]
+#[IsGranted('admin_news')]
+final class NewsController extends AbstractController
+{
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly NewsRepository $news,
+        private readonly Notifier $notifier,
+    ) {
+    }
+
+    #[Route('', name: 'app_manage_news_index', methods: ['GET'])]
+    public function index(): Response
+    {
+        return $this->render('manage/news/index.html.twig', [
+            'news' => $this->news->findFeed(true),
+        ]);
+    }
+
+    #[Route('/new', name: 'app_manage_news_new', methods: ['GET', 'POST'])]
+    public function new(Request $request): Response
+    {
+        $news = new News();
+        $form = $this->createForm(NewsType::class, $news);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            /** @var User $user */
+            $user = $this->getUser();
+            $news->setAuthor($user);
+            $this->em->persist($news);
+            $this->em->flush();
+
+            if ($request->request->getBoolean('notify')) {
+                $sent = $this->notifier->newsPublished($news);
+                $this->addFlash('info', \sprintf('Notified %d subscriber(s).', $sent));
+            }
+            $this->addFlash('success', \sprintf('News "%s" published.', $news->getTitle()));
+
+            return $this->redirectToRoute('app_manage_news_index');
+        }
+
+        return $this->render('manage/news/form.html.twig', [
+            'form' => $form,
+            'heading' => 'New news post',
+            'showNotify' => true,
+        ]);
+    }
+
+    #[Route('/{id}/edit', name: 'app_manage_news_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    public function edit(Request $request, News $news): Response
+    {
+        $form = $this->createForm(NewsType::class, $news);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->em->flush();
+            $this->addFlash('success', \sprintf('News "%s" updated.', $news->getTitle()));
+
+            return $this->redirectToRoute('app_manage_news_index');
+        }
+
+        return $this->render('manage/news/form.html.twig', [
+            'form' => $form,
+            'heading' => 'Edit news post',
+            'showNotify' => false,
+        ]);
+    }
+
+    #[Route('/{id}/delete', name: 'app_manage_news_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function delete(Request $request, News $news): Response
+    {
+        if ($this->isCsrfTokenValid('delete'.$news->getId(), (string) $request->request->get('_token'))) {
+            $this->em->remove($news);
+            $this->em->flush();
+            $this->addFlash('success', 'News post deleted.');
+        }
+
+        return $this->redirectToRoute('app_manage_news_index');
+    }
+}

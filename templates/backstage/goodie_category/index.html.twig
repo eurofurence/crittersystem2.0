@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Goodie Categories{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Goodie Categories', {
+    subtitle: 'Groups of goodie items.',
+    actions: [
+      {label: '← Backstage', href: path('app_backstage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New category', href: path('app_backstage_goodie_category_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if categories is empty %}
+    {{ d.empty_state('No categories yet', {
+      message: 'Create a category before adding goodie items.',
+      actionLabel: '+ New category',
+      actionHref: path('app_backstage_goodie_category_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead><tr><th>Name</th><th>Order</th><th>Items</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        {% for c in categories %}
+          <tr class="{{ c.active ? '' : 'opacity-75' }}">
+            <td>
+              <div class="fw-semibold">{{ c.name }}</div>
+              {% if c.description %}<div class="text-muted small">{{ c.description }}</div>{% endif %}
+            </td>
+            <td>{{ c.displayOrder }}</td>
+            <td>{{ c.items|length }}</td>
+            <td>{% if c.active %}{{ d.badge('Active', 'text-bg-success') }}{% else %}{{ d.badge('Inactive', 'text-bg-secondary') }}{% endif %}</td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_backstage_goodie_category_edit', {id: c.id}) }}">Edit</a>
+              <form method="post" action="{{ path('app_backstage_goodie_category_delete', {id: c.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete &quot;{{ c.name|e('js') }}&quot; and its items?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ c.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

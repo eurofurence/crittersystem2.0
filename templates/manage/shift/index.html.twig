@@ -1,0 +1,59 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Shifts{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Shifts', {
+    subtitle: 'Scheduled work that volunteers sign up for.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New shift', href: path('app_manage_shift_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if shifts is empty %}
+    {{ d.empty_state('No shifts yet', {
+      message: 'Create the first shift for volunteers to sign up.',
+      actionLabel: '+ New shift',
+      actionHref: path('app_manage_shift_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>When</th>
+          <th>Type / Location</th>
+          <th>Signed up</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for shift in shifts %}
+          <tr class="{{ shift.past ? 'opacity-75' : '' }}">
+            <td class="fw-semibold">{{ shift.title }}</td>
+            <td class="small">
+              {{ shift.startsAt|date('D, d M H:i') }} – {{ shift.endsAt|date('H:i') }}
+              <div class="text-muted">{{ shift.durationHours }}h{% if shift.past %} · past{% endif %}</div>
+            </td>
+            <td class="small">
+              {{ shift.shiftType ? shift.shiftType.name : '—' }}
+              <div class="text-muted">{{ shift.location ? shift.location.name : 'No location' }}</div>
+            </td>
+            <td>{{ shift.entries|length }}</td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_shift_needs', {id: shift.id}) }}">Staffing</a>
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_shift_edit', {id: shift.id}) }}">Edit</a>
+              <form method="post" action="{{ path('app_manage_shift_delete', {id: shift.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete shift &quot;{{ shift.title|e('js') }}&quot;?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ shift.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

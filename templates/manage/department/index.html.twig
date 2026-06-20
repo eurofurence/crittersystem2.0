@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Departments{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Departments', {
+    subtitle: 'Teams that organise shifts and volunteers.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New department', href: path('app_manage_department_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if departments is empty %}
+    {{ d.empty_state('No departments yet', {
+      message: 'Create the first department to start organising teams.',
+      actionLabel: '+ New department',
+      actionHref: path('app_manage_department_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Locations</th>
+          <th>Volunteer types</th>
+          <th>Visibility</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dept in departments %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ dept.name }}</div>
+              <div class="text-muted small"><code>{{ dept.slug }}</code></div>
+            </td>
+            <td class="small">{{ dept.locations|length }}</td>
+            <td class="small">{{ dept.volunteerTypes|length }}</td>
+            <td>
+              {% if dept.staffOnly %}{{ d.badge('Staff only', 'text-bg-warning') }}
+              {% else %}{{ d.badge('Public', 'text-bg-success') }}{% endif %}
+            </td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_department_edit', {id: dept.id}) }}">Edit</a>
+              <form method="post" action="{{ path('app_manage_department_delete', {id: dept.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete department &quot;{{ dept.name|e('js') }}&quot;?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ dept.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

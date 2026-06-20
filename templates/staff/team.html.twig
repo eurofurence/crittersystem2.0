@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Team Status{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Team Status', {
+    subtitle: 'Roster overview for staff coordinators.',
+    actions: [
+      {label: '← Staff overview', href: path('app_staff_overview'), class: 'btn btn-outline-secondary'},
+      {label: 'Export CSV', href: path('app_staff_team_export'), class: 'btn btn-outline-primary'}
+    ]
+  }) }}
+
+  {{ d.table_start() }}
+    <thead>
+      <tr><th>Name</th><th>On duty</th><th>Duty h</th><th>Shift h</th><th>Goodies</th><th class="text-end">Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+        <tr>
+          <td class="fw-semibold">{{ row.user.name }}</td>
+          <td>
+            {% if row.currentDuty %}{{ d.badge((row.currentDuty.department ? row.currentDuty.department.name : 'on duty'), 'text-bg-success') }}
+            {% else %}<span class="text-muted">off</span>{% endif %}
+          </td>
+          <td>{{ row.dutyHours|round(1) }}</td>
+          <td>{{ row.shiftHours|round(1) }}</td>
+          <td>{{ row.goodies }}</td>
+          <td class="text-end text-nowrap">
+            {% if is_granted('admin') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_staff_stats', {user: row.user.id}) }}">Stats</a>{% endif %}
+            {% if is_granted('user_messages') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_messages_conversation', {id: row.user.id}) }}">Message</a>{% endif %}
+            <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_staff_notes') }}?">Note</a>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  {{ d.table_end() }}
+{% endblock %}

@@ -1,0 +1,28 @@
+/*
+ * Eurofurence — light theme with a teal/aqua brand accent.
+ *
+ * Demonstrates how to brand the UI without touching markup: overriding the
+ * Bootstrap primary/link palette plus a couple of surface tones is enough.
+ */
+
+:root,
+[data-bs-theme="light"] {
+  --bs-primary: #00867d;
+  --bs-primary-rgb: 0, 134, 125;
+  --bs-link-color: #006a63;
+  --bs-link-hover-color: #00554f;
+  --bs-tertiary-bg: #eef6f5;
+  --bs-secondary-bg: #dff0ed;
+  --bs-border-color: #c9e2dd;
+}
+
+.navbar.bg-body-tertiary {
+  background-color: var(--bs-tertiary-bg) !important;
+  border-bottom-color: var(--bs-primary) !important;
+  border-bottom-width: 2px !important;
+}
+
+/* Pinned news / highlighted state picks up the brand accent. */
+.card.border-warning {
+  border-color: var(--bs-primary) !important;
+}

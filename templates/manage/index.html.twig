@@ -1,0 +1,51 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Management{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Management', {subtitle: 'Configure the core event data.'}) }}
+
+  {#
+    Each card is gated by the privilege that guards its controller. Add a card
+    here when a new management resource is introduced.
+  #}
+  {% set cards = [
+    {priv: 'admin_rooms',           route: 'app_manage_location_index',        icon: '📍', title: 'Locations',       text: 'Physical areas where shifts take place.'},
+    {priv: 'admin_volunteer_types', route: 'app_manage_volunteer_type_index',  icon: '🧩', title: 'Volunteer Types', text: 'Role categories volunteers can join.'},
+    {priv: 'admin_volunteer_types', route: 'app_manage_applications',          icon: '📨', title: 'Applications',    text: 'Confirm pending membership requests.'},
+    {priv: 'admin_shifts',          route: 'app_manage_shift_index',           icon: '🕒', title: 'Shifts',          text: 'Scheduled work and staffing needs.'},
+    {priv: 'admin_shifts',          route: 'app_manage_shift_type_index',      icon: '🗂️', title: 'Shift Types',     text: 'Categories and templates for shifts.'},
+    {priv: 'admin_shifts',          route: 'app_manage_department_index',      icon: '🏢', title: 'Departments',     text: 'Teams that organise shifts and volunteers.'},
+    {priv: 'admin',                 route: 'app_manage_certification_index',   icon: '🎖️', title: 'Certifications',  text: 'Skills and qualifications volunteers can hold.'},
+    {priv: 'admin_user_worklog',    route: 'app_manage_worklog_index',         icon: '⏱️', title: 'Worklogs',        text: 'Manual hour entries for volunteers.'},
+    {priv: 'admin_news',            route: 'app_manage_news_index',            icon: '📰', title: 'News',            text: 'Publish and edit announcements.'},
+    {priv: 'question.edit',         route: 'app_manage_questions_index',       icon: '❓', title: 'Questions',       text: 'Answer volunteer questions.'},
+    {priv: 'faq.edit',              route: 'app_manage_faq_index',             icon: '📚', title: 'FAQ',             text: 'Curate frequently asked questions.'},
+    {priv: 'admin_event_config',    route: 'app_manage_event_config',          icon: '⚙️', title: 'Event Configuration', text: 'Global event settings and timeline.'}
+  ] %}
+
+  {% set canManageAny = is_granted('admin_rooms') or is_granted('admin_volunteer_types') or is_granted('admin_shifts') or is_granted('admin') or is_granted('admin_event_config') or is_granted('admin_user_worklog') or is_granted('admin_news') or is_granted('question.edit') or is_granted('faq.edit') %}
+
+  {% if not canManageAny %}
+    {{ d.empty_state('No management access', {message: 'You do not have permission to manage any resources.'}) }}
+  {% else %}
+    <div class="row g-3">
+      {% for c in cards %}
+        {% if is_granted(c.priv) %}
+          <div class="col-12 col-md-6 col-lg-4">
+            <a href="{{ path(c.route) }}" class="text-decoration-none text-reset">
+              <div class="card h-100 shadow-sm">
+                <div class="card-body">
+                  <div class="fs-3 mb-1" aria-hidden="true">{{ c.icon }}</div>
+                  <div class="fw-bold">{{ c.title }}</div>
+                  <div class="text-muted small">{{ c.text }}</div>
+                </div>
+              </div>
+            </a>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

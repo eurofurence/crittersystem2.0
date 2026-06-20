@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Members · {{ type.name }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Members — ' ~ type.name, {
+    subtitle: 'Confirm pending requests, promote supporters, or remove members.',
+    actions: [{label: '← Volunteer types', href: path('app_manage_volunteer_type_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% if members is empty %}
+    {{ d.empty_state('No members yet', {message: 'Nobody has joined this volunteer type.'}) }}
+  {% else %}
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>Volunteer</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        {% for m in members %}
+          <tr>
+            <td>{{ m.user.name }}</td>
+            <td>
+              {% if m.supporter %}{{ d.badge('Supporter', 'text-bg-primary') }}
+              {% elseif m.confirmed %}{{ d.badge('Member', 'text-bg-success') }}
+              {% else %}{{ d.badge('Pending', 'text-bg-warning') }}{% endif %}
+            </td>
+            <td class="text-end text-nowrap">
+              {% if not m.confirmed %}
+                <form method="post" action="{{ path('app_manage_vt_member_confirm', {id: type.id, membershipId: m.id}) }}" class="d-inline">
+                  <input type="hidden" name="_token" value="{{ csrf_token('confirm' ~ m.id) }}">
+                  <button class="btn btn-sm btn-outline-success">Confirm</button>
+                </form>
+              {% endif %}
+              <form method="post" action="{{ path('app_manage_vt_member_supporter', {id: type.id, membershipId: m.id}) }}" class="d-inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('supporter' ~ m.id) }}">
+                <button class="btn btn-sm btn-outline-primary">{{ m.supporter ? 'Demote' : 'Make supporter' }}</button>
+              </form>
+              <form method="post" action="{{ path('app_manage_vt_member_remove', {id: type.id, membershipId: m.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Remove {{ m.user.name|e('js') }}?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('remove' ~ m.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Remove</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

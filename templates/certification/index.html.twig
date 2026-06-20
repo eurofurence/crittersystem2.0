@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Certifications{% endblock %}
+
+{% macro status_badge(record) %}
+  {% if record is null %}<span class="text-muted">Not applied</span>
+  {% elseif record.valid %}{{ _self.b('Certified', 'text-bg-success') }}
+  {% elseif record.status == 'pending' %}{{ _self.b('Pending — scan the QR at the event', 'text-bg-warning') }}
+  {% elseif record.status == 'self_confirmed' %}{{ _self.b('Self-confirmed', 'text-bg-info') }}
+  {% elseif record.status == 'revoked' %}{{ _self.b('Revoked', 'text-bg-danger') }}
+  {% elseif record.expired %}{{ _self.b('Expired', 'text-bg-secondary') }}
+  {% else %}{{ _self.b(record.status|capitalize, 'text-bg-secondary') }}{% endif %}
+{% endmacro %}
+
+{% macro b(text, cls) %}<span class="badge {{ cls }}">{{ text }}</span>{% endmacro %}
+
+{% block body %}
+  {{ d.page_header('Certifications', {
+    subtitle: 'Apply for the certifications you have. Approval happens in-person by scanning the operator\'s QR.',
+    actions: is_granted('admin') ? [{label: 'Manage certifications', href: path('app_manage_certification_index'), class: 'btn btn-outline-primary'}] : []
+  }) }}
+
+  {% if rows is empty %}
+    {{ d.empty_state('No certifications', {message: 'There are no active certifications to apply for.'}) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead><tr><th>Certification</th><th>Validity</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+      <tbody>
+        {% for row in rows %}
+          {% set c = row.cert %}{% set r = row.record %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ c.title }}</div>
+              {% if c.description %}<div class="text-muted small">{{ c.description }}</div>{% endif %}
+            </td>
+            <td class="small">
+              {% if c.perpetual %}Never expires
+              {% elseif c.validityPeriodDays %}{{ c.validityPeriodDays }} days
+              {% else %}—{% endif %}
+              {% if r and r.dateExpires %}<div class="text-muted">expires {{ r.dateExpires|date('d M Y') }}</div>{% endif %}
+            </td>
+            <td>{{ _self.status_badge(r) }}</td>
+            <td class="text-end text-nowrap">
+              {% if r is null %}
+                <form method="post" action="{{ path('app_certifications_apply', {id: c.id}) }}" class="d-inline">
+                  <input type="hidden" name="_token" value="{{ csrf_token('cert-apply' ~ c.id) }}">
+                  <button class="btn btn-sm btn-primary">Apply</button>
+                </form>
+              {% endif %}
+              {% if c.allowSelfConfirmation and (r is null or not r.valid) %}
+                <form method="post" action="{{ path('app_certifications_self_confirm', {id: c.id}) }}" class="d-inline">
+                  <input type="hidden" name="_token" value="{{ csrf_token('cert-self' ~ c.id) }}">
+                  <button class="btn btn-sm btn-outline-success">Self-confirm</button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

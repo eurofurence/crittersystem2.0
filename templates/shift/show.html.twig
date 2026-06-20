@@ -1,0 +1,83 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ shift.title }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(shift.title, {
+    subtitle: shift.startsAt|date('D, d M Y H:i') ~ ' – ' ~ shift.endsAt|date('H:i') ~ ' (' ~ shift.durationHours ~ 'h)',
+    actions: [{label: '← All shifts', href: path('app_shift_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-7">
+      <div class="card mb-3">
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-4">Type</dt><dd class="col-8">{{ shift.shiftType ? shift.shiftType.name : '—' }}</dd>
+            <dt class="col-4">Location</dt><dd class="col-8">{{ shift.location ? shift.location.name : '—' }}</dd>
+            {% if shift.url %}<dt class="col-4">Link</dt><dd class="col-8"><a href="{{ shift.url }}">{{ shift.url }}</a></dd>{% endif %}
+          </dl>
+          {% if shift.description %}<hr><p class="mb-0">{{ shift.description|nl2br }}</p>{% endif %}
+        </div>
+      </div>
+
+      <h2 class="h5">Staffing</h2>
+      {% if availability is empty %}
+        <p class="text-muted">No roles are requested for this shift yet.</p>
+      {% else %}
+        {{ d.table_start({hover: false}) }}
+          <thead><tr><th>Role</th><th>Filled</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for row in availability %}
+              <tr>
+                <td>{{ row.type.name }}</td>
+                <td>{{ row.assigned }} / {{ row.needed }}</td>
+                <td>{% if row.assigned >= row.needed %}{{ d.badge('Full', 'text-bg-success') }}{% else %}{{ d.badge((row.needed - row.assigned) ~ ' open', 'text-bg-warning') }}{% endif %}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        {{ d.table_end() }}
+      {% endif %}
+    </div>
+
+    <div class="col-12 col-lg-5">
+      <div class="card">
+        <div class="card-header fw-semibold">Your sign-up</div>
+        <div class="card-body">
+          {% if myEntry %}
+            <p>You are signed up as <strong>{{ myEntry.volunteerType.name }}</strong>.</p>
+            <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.id}) }}"
+                  onsubmit="return confirm('Cancel your sign-up?');">
+              <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ myEntry.id) }}">
+              <button class="btn btn-outline-danger">Cancel sign-up</button>
+            </form>
+          {% elseif shift.past %}
+            <p class="text-muted mb-0">This shift has already ended.</p>
+          {% elseif signupOptions is empty %}
+            <p class="text-muted mb-0">
+              You can't sign up for this shift. You must be a confirmed member of a
+              requested role with open capacity. Manage your roles under
+              <a href="{{ path('app_membership_index') }}">Volunteer Types</a>.
+            </p>
+          {% else %}
+            <form method="post" action="{{ path('app_shift_signup', {id: shift.id}) }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('signup' ~ shift.id) }}">
+              <div class="mb-3">
+                <label class="form-label" for="volunteer_type">Sign up as</label>
+                <select id="volunteer_type" name="volunteer_type" class="form-select" required>
+                  {% for id, type in signupOptions %}<option value="{{ id }}">{{ type.name }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="comment">Comment (optional)</label>
+                <textarea id="comment" name="comment" class="form-control" rows="2"></textarea>
+              </div>
+              <button class="btn btn-primary w-100">Sign up</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

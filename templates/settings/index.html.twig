@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Settings{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Settings', {subtitle: 'Personal account settings.'}) }}
+
+  {% set tiles = [
+    {icon: '🎨', title: 'Theme',       text: 'Pick the look of the site.',          route: 'app_settings_theme'},
+    {icon: '🪪', title: 'Digital ID',  text: 'Your scannable identity QR.',         route: 'app_digital_id'},
+    {icon: '🔑', title: 'API key',     text: 'Use the JSON API and feeds.',         route: 'app_api_key'}
+  ] %}
+
+  <div class="row g-3">
+    {% for t in tiles %}
+      <div class="col-12 col-md-6 col-lg-4">
+        <a href="{{ path(t.route) }}" class="text-decoration-none text-reset">
+          <div class="card h-100 shadow-sm">
+            <div class="card-body">
+              <div class="fs-3 mb-1" aria-hidden="true">{{ t.icon }}</div>
+              <div class="fw-bold">{{ t.title }}</div>
+              <div class="text-muted small">{{ t.text }}</div>
+            </div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+{% endblock %}

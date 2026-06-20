@@ -1,0 +1,20 @@
+/*
+ * Default light theme.
+ *
+ * This is the baseline — it intentionally tweaks very little, relying on
+ * Bootstrap's stock light palette so other themes have a clear neutral to
+ * compare against. Overriding any `--bs-*` variable here is enough to retheme
+ * the whole UI; full Bootstrap variable list:
+ * https://getbootstrap.com/docs/5.3/customize/css-variables/
+ */
+
+:root,
+[data-bs-theme="light"] {
+  /* Slight tonal lift for cards/inputs so chrome is readable on white pages. */
+  --bs-tertiary-bg: #f6f7f9;
+}
+
+/* Cards get a soft shadow rather than a hard border to feel modern. */
+.card {
+  border-color: var(--bs-border-color-translucent);
+}

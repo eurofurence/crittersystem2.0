@@ -1,0 +1,129 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Shifts{% endblock %}
+
+{% macro status_badge(status) %}
+  {% set map = {
+    'signed_up': ['Signed up', 'text-bg-success'],
+    'available': ['Open', 'text-bg-primary'],
+    'full': ['Full', 'text-bg-secondary'],
+    'overlap': ['Overlaps', 'text-bg-warning'],
+    'ineligible': ['Not eligible', 'text-bg-light'],
+    'past': ['Past', 'text-bg-light']
+  } %}
+  {% set m = map[status] %}
+  <span class="badge {{ m[1] }}">{{ m[0] }}</span>
+{% endmacro %}
+
+{% block body %}
+  {{ d.page_header('Shifts', {
+    subtitle: 'Browse and sign up for shifts.',
+    actions: [{label: 'My shifts', href: path('app_my_shifts'), class: 'btn btn-outline-primary'}]
+  }) }}
+
+  {# ---- Date selector (links preserve the other filters) ---- #}
+  <div class="d-flex flex-wrap gap-1 mb-2" role="group" aria-label="Date">
+    {% for day in days %}
+      {% set isSel = day == selectedDate|date('Y-m-d') %}
+      <a class="btn btn-sm {{ isSel ? 'btn-primary' : 'btn-outline-secondary' }}"
+         href="{{ path('app_shift_index', {date: day, location: filters.location, type: filters.type, available: filters.available ? 1 : null, mine: filters.mine ? 1 : null}) }}">
+        {{ day|date('D d M') }}
+      </a>
+    {% endfor %}
+    {% if days is empty %}<span class="text-muted small">No upcoming shifts.</span>{% endif %}
+  </div>
+
+  {# ---- Filter form (controls auto-submit; carries the selected date) ---- #}
+  <form method="get" action="{{ path('app_shift_index') }}" class="card mb-3">
+    <div class="card-body">
+      <input type="hidden" name="date" value="{{ selectedDate|date('Y-m-d') }}">
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-0" for="f-loc">Location</label>
+          <select id="f-loc" name="location" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">All</option>
+            {% for l in locations %}<option value="{{ l.id }}" {{ filters.location == l.id ? 'selected' }}>{{ l.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-0" for="f-type">Shift type</label>
+          <select id="f-type" name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">All</option>
+            {% for t in shiftTypes %}<option value="{{ t.id }}" {{ filters.type == t.id ? 'selected' }}>{{ t.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-12 col-md-6 d-flex gap-3 pb-1">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="available" value="1" id="f-avail" {{ filters.available ? 'checked' }} onchange="this.form.submit()">
+            <label class="form-check-label small" for="f-avail">Only ones I can join</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="mine" value="1" id="f-mine" {{ filters.mine ? 'checked' }} onchange="this.form.submit()">
+            <label class="form-check-label small" for="f-mine">Only my roles</label>
+          </div>
+          <noscript><button class="btn btn-sm btn-primary">Apply</button></noscript>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  {# ---- Shifts grouped by hour ---- #}
+  {% if byHour is empty %}
+    {{ d.empty_state('No shifts', {message: 'No shifts match your filters for ' ~ selectedDate|date('D, d M Y') ~ '.'}) }}
+  {% else %}
+    {% for hour, cards in byHour %}
+      <h2 class="h6 text-muted mt-3">{{ hour }}</h2>
+      {% for card in cards %}
+        {% set shift = card.shift %}
+        <div class="card mb-2 {{ shift.past ? 'opacity-75' : '' }}">
+          <div class="card-body py-2">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+              <div>
+                <a href="{{ path('app_shift_show', {id: shift.id}) }}" class="fw-semibold text-decoration-none">{{ shift.title }}</a>
+                <div class="text-muted small">
+                  {{ shift.startsAt|date('H:i') }}–{{ shift.endsAt|date('H:i') }}
+                  {% if shift.location %} · {{ shift.location.name }}{% endif %}
+                  {% if shift.shiftType %} · {{ shift.shiftType.name }}{% endif %}
+                </div>
+              </div>
+              {{ _self.status_badge(card.status) }}
+            </div>
+
+            {% if card.availability is not empty %}
+              <div class="d-flex flex-wrap gap-1 mt-2">
+                {% for row in card.availability %}
+                  <span class="badge {{ row.assigned >= row.needed ? 'text-bg-success' : 'text-bg-secondary' }}">
+                    {{ row.type.name }} {{ row.assigned }}/{{ row.needed }}
+                  </span>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <div class="d-flex flex-wrap gap-2 mt-2">
+              {% if card.myEntry %}
+                <form method="post" action="{{ path('app_shift_cancel', {id: card.myEntry.id}) }}"
+                      onsubmit="return confirm('Cancel your sign-up?');">
+                  <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ card.myEntry.id) }}">
+                  <button class="btn btn-sm btn-outline-danger">Cancel sign-up</button>
+                </form>
+              {% elseif card.options is not empty %}
+                <form method="post" action="{{ path('app_shift_signup', {id: shift.id}) }}" class="d-flex gap-2">
+                  <input type="hidden" name="_token" value="{{ csrf_token('signup' ~ shift.id) }}">
+                  <select name="volunteer_type" class="form-select form-select-sm" style="width:auto">
+                    {% for id, type in card.options %}<option value="{{ id }}">{{ type.name }}</option>{% endfor %}
+                  </select>
+                  <button class="btn btn-sm btn-primary">Sign up</button>
+                </form>
+              {% endif %}
+
+              {% if is_granted('admin_shifts') %}
+                <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_shift_needs', {id: shift.id}) }}">Manage</a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    {% endfor %}
+  {% endif %}
+{% endblock %}

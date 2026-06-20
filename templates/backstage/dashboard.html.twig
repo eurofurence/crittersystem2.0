@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Backstage{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Backstage', {subtitle: 'Goodies distribution and rewards.'}) }}
+
+  {# KPIs #}
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3">
+      <div class="card text-center"><div class="card-body">
+        <div class="fs-3">{{ distributedToday }}</div><div class="text-muted small">Distributed today</div>
+      </div></div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card text-center"><div class="card-body">
+        <div class="fs-3">{{ distributedThisWeek }}</div><div class="text-muted small">This week</div>
+      </div></div>
+    </div>
+  </div>
+
+  {# Action cards (per privilege). Add a card here when a backstage resource is introduced. #}
+  {% set cards = [
+    {priv: 'backstage.goodies.agent', route: 'app_backstage_distribute',            icon: '🎁', title: 'Distribute Goodies', text: 'Find a volunteer and hand out goodies.'},
+    {priv: 'backstage.goodies.admin', route: 'app_backstage_goodie_category_index', icon: '🗂️', title: 'Goodie Categories', text: 'Manage categories.'},
+    {priv: 'backstage.goodies.admin', route: 'app_backstage_goodie_item_index',     icon: '🎽', title: 'Goodie Items',      text: 'Manage items and thresholds.'}
+  ] %}
+  <div class="row g-3 mb-4">
+    {% for c in cards %}
+      {% if is_granted(c.priv) %}
+        <div class="col-12 col-md-6 col-lg-4">
+          <a href="{{ path(c.route) }}" class="text-decoration-none text-reset">
+            <div class="card h-100 shadow-sm"><div class="card-body">
+              <div class="fs-3 mb-1" aria-hidden="true">{{ c.icon }}</div>
+              <div class="fw-bold">{{ c.title }}</div>
+              <div class="text-muted small">{{ c.text }}</div>
+            </div></div>
+          </a>
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  {# Recent activity #}
+  <h2 class="h5">Recent distributions</h2>
+  {% if recent is empty %}
+    <p class="text-muted">No distributions yet.</p>
+  {% else %}
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>When</th><th>Volunteer</th><th>Item</th><th>Qty</th><th>By</th></tr></thead>
+      <tbody>
+        {% for dist in recent %}
+          <tr>
+            <td class="small">{{ dist.distributedAt|date('D, d M H:i') }}</td>
+            <td>{{ dist.user.name }}</td>
+            <td>{{ dist.itemName }}</td>
+            <td>{{ dist.quantity }}</td>
+            <td class="small text-muted">{{ dist.distributedBy ? dist.distributedBy.name : '—' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

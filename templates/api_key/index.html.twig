@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}API Key{% endblock %}
+
+{% block body %}
+  {{ d.page_header('API Key', {subtitle: 'Use this key to access the JSON API and feeds.'}) }}
+
+  <div class="card mb-3">
+    <div class="card-body">
+      <label class="form-label">Your API key</label>
+      <div class="input-group mb-2">
+        <input type="text" class="form-control font-monospace" value="{{ app.user.apiKey }}" readonly>
+      </div>
+      <form method="post" action="{{ path('app_api_key_regenerate') }}"
+            onsubmit="return confirm('Regenerate your API key? Existing clients will stop working.');">
+        <input type="hidden" name="_token" value="{{ csrf_token('api-key-regenerate') }}">
+        <button class="btn btn-outline-danger btn-sm">Regenerate key</button>
+      </form>
+    </div>
+  </div>
+
+  <h2 class="h5">How to use it</h2>
+  <p class="text-muted small">Send the key in any of these ways:</p>
+  <pre class="bg-body-tertiary border rounded p-3 small">curl -H "Authorization: Bearer {{ app.user.apiKey }}" {{ app.request.schemeAndHttpHost }}/api/v0-beta/info
+curl -H "X-API-Key: {{ app.user.apiKey }}" {{ app.request.schemeAndHttpHost }}/api/v0-beta/users/self
+{{ app.request.schemeAndHttpHost }}/api/ical?key={{ app.user.apiKey }}</pre>
+
+  <h2 class="h5 mt-3">Available endpoints</h2>
+  <ul class="small">
+    <li><code>GET /api/v0-beta</code> — endpoint index</li>
+    <li><code>GET /api/v0-beta/info</code> — event info</li>
+    <li><code>GET /api/v0-beta/{volunteertypes,locations,shifttypes,news,shifts}</code></li>
+    <li><code>GET /api/v0-beta/users/self</code> — your profile (needs key)</li>
+    <li><code>GET /api/atom</code>, <code>/api/rss</code> — news feeds</li>
+    <li><code>GET /api/ical</code> — your shifts as iCalendar</li>
+    <li><code>GET /api/shifts-json-export</code> — shifts as JSON</li>
+  </ul>
+{% endblock %}

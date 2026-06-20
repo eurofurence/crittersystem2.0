@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}QR — {{ certification.title }}{% endblock %}
+
+{# Rotate before the token expires so the displayed QR stays valid. #}
+{% block stylesheets %}{{ parent() }}<meta http-equiv="refresh" content="{{ ttlSeconds - 30 }}">{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Check-in QR — ' ~ certification.title, {
+    subtitle: 'Show this to a volunteer to approve their pending application.',
+    actions: [{label: '← Back to certifications', href: path('app_manage_certification_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <div class="row g-3 justify-content-center">
+    <div class="col-12 col-md-7 col-lg-5">
+      <div class="card text-center">
+        <div class="card-body">
+          <img src="{{ qrDataUri }}" alt="Certification QR" class="img-fluid mb-2" style="max-width: 360px;">
+          <div class="text-muted small">Valid until {{ token.expiresAt|date('H:i:s') }}</div>
+          <form method="post" action="{{ path('app_manage_certification_qr_refresh', {id: certification.id}) }}" class="mt-3">
+            <input type="hidden" name="_token" value="{{ csrf_token('cert-qr-refresh' ~ certification.id) }}">
+            <button class="btn btn-sm btn-outline-primary">↻ Refresh now</button>
+          </form>
+        </div>
+      </div>
+      <div class="text-muted small text-center mt-2">
+        Scan URL: <code>{{ verifyUrl }}</code>
+      </div>
+      <p class="text-muted small mt-3 text-center">
+        Scanning users must already have applied for this certification (and be logged in).
+        Volunteers can apply at <a href="{{ path('app_certifications_index') }}">{{ path('app_certifications_index') }}</a>.
+      </p>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Locations{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Locations', {
+    subtitle: 'Physical areas where shifts take place.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New location', href: path('app_manage_location_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if locations is empty %}
+    {{ d.empty_state('No locations yet', {
+      message: 'Create the first location to start assigning shifts.',
+      actionLabel: '+ New location',
+      actionHref: path('app_manage_location_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>DECT</th>
+          <th>Visibility</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for location in locations %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ location.name }}</div>
+              {% if location.description %}<div class="text-muted small">{{ location.description }}</div>{% endif %}
+            </td>
+            <td>{{ location.dect ?: '—' }}</td>
+            <td>
+              {% if location.staffOnly %}{{ d.badge('Staff only', 'text-bg-warning') }}
+              {% else %}{{ d.badge('Public', 'text-bg-success') }}{% endif %}
+            </td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_location_edit', {id: location.id}) }}">Edit</a>
+              <form method="post" action="{{ path('app_manage_location_delete', {id: location.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete location &quot;{{ location.name|e('js') }}&quot;?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ location.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Internal Notes{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Internal Notes', {
+    subtitle: 'Staff-only operational notes.',
+    actions: [{label: '← Staff overview', href: path('app_staff_overview'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {# New note #}
+  <form method="post" action="{{ path('app_staff_notes_new') }}" class="card mb-4">
+    <div class="card-body">
+      <input type="hidden" name="_token" value="{{ csrf_token('note-new') }}">
+      <div class="mb-2">
+        <label class="form-label" for="note-content">Note</label>
+        <textarea id="note-content" name="content" class="form-control" rows="2" required></textarea>
+      </div>
+      <div class="row g-2 align-items-end">
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-0" for="note-cat">Category</label>
+          <select id="note-cat" name="category" class="form-select form-select-sm">
+            {% for c in categories %}<option value="{{ c }}">{{ c|capitalize }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-0" for="note-dep">Area</label>
+          <select id="note-dep" name="department" class="form-select form-select-sm">
+            <option value="">—</option>
+            {% for dep in departments %}<option value="{{ dep.id }}">{{ dep.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3">
+          <label class="form-label small mb-0" for="note-subj">About</label>
+          <select id="note-subj" name="subject" class="form-select form-select-sm">
+            <option value="">—</option>
+            {% for u in users %}<option value="{{ u.id }}">{{ u.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-6 col-md-3"><button class="btn btn-primary w-100">Add note</button></div>
+      </div>
+    </div>
+  </form>
+
+  {# Filter #}
+  <form method="get" action="{{ path('app_staff_notes') }}" class="d-flex gap-2 mb-3">
+    <select name="category" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
+      <option value="">All categories</option>
+      {% for c in categories %}<option value="{{ c }}" {{ filterCategory == c ? 'selected' }}>{{ c|capitalize }}</option>{% endfor %}
+    </select>
+    <noscript><button class="btn btn-sm btn-outline-primary">Filter</button></noscript>
+  </form>
+
+  {% if notes is empty %}
+    {{ d.empty_state('No notes', {message: 'No internal notes match the filter.'}) }}
+  {% else %}
+    {% for note in notes %}
+      <div class="card mb-2"><div class="card-body py-2">
+        <div class="d-flex justify-content-between">
+          <div>
+            {{ d.badge(note.category|capitalize, 'text-bg-info') }}
+            {% if note.department %}{{ d.badge(note.department.name, 'text-bg-secondary') }}{% endif %}
+            {% if note.subjectUser %}<span class="small text-muted">about {{ note.subjectUser.name }}</span>{% endif %}
+          </div>
+          <div class="small text-muted">
+            {{ note.author ? note.author.name : 'Unknown' }} · {{ note.createdAt|date('D, d M H:i') }}
+          </div>
+        </div>
+        <div class="mt-1">{{ note.content|nl2br }}</div>
+        <form method="post" action="{{ path('app_staff_notes_delete', {id: note.id}) }}" class="mt-1"
+              onsubmit="return confirm('Delete this note?');">
+          <input type="hidden" name="_token" value="{{ csrf_token('note-del' ~ note.id) }}">
+          <button class="btn btn-sm btn-link text-danger p-0">Delete</button>
+        </form>
+      </div></div>
+    {% endfor %}
+  {% endif %}
+{% endblock %}

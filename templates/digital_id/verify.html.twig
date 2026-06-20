@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Digital ID — {{ user.name }}{% endblock %}
+
+{% block body %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-7 col-lg-5">
+      <div class="card text-center shadow-sm">
+        <div class="card-body">
+          <div class="display-6 mb-2">✅</div>
+          <h1 class="h3 mb-1">{{ user.name }}</h1>
+          <div class="text-muted small mb-3">User ID #{{ user.id }}</div>
+
+          {% if user.groups is not empty %}
+            <div class="d-flex flex-wrap gap-1 justify-content-center">
+              {% for group in user.groups %}{{ d.badge(group.name, 'text-bg-primary') }}{% endfor %}
+            </div>
+          {% endif %}
+
+          <hr>
+          <div class="small text-muted">Verified at {{ "now"|date('D, d M Y H:i:s') }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

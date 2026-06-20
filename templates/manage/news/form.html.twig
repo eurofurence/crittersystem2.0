@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(heading, {
+    actions: [{label: '← Back to news', href: path('app_manage_news_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ form_start(form) }}
+    <div class="row">
+      {{ f.field(form.title, {col: 'col-12'}) }}
+      {{ f.field(form.text, {col: 'col-12'}) }}
+    </div>
+    <div class="row">
+      {{ f.check(form.isPinned) }}
+      {{ f.check(form.isHighlighted) }}
+      {{ f.check(form.isMeeting) }}
+      {{ f.check(form.staffOnly) }}
+    </div>
+    {% if showNotify %}
+      <div class="form-check mt-2">
+        <input class="form-check-input" type="checkbox" name="notify" value="1" id="notify">
+        <label class="form-check-label" for="notify">Email subscribers about this post</label>
+      </div>
+    {% endif %}
+    <button class="btn btn-primary mt-3">Save</button>
+  {{ form_end(form) }}
+{% endblock %}

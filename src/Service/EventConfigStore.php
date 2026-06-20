@@ -1,0 +1,88 @@
+<?php
+
+namespace App\Service;
+
+use App\Entity\EventConfig;
+use App\Repository\EventConfigRepository;
+use Doctrine\ORM\EntityManagerInterface;
+
+/**
+ * Read/write access to the event_config key-value store
+ *
+ * Values are persisted as JSON; callers deal in plain PHP scalars/arrays.
+ * Well-known keys are exposed as constants so other services can share them.
+ */
+class EventConfigStore
+{
+    public const KEY_NAME = 'event.name';
+    public const KEY_WELCOME_MESSAGE = 'event.welcome_message';
+    public const KEY_ACCESS_MODE = 'event.access_mode';
+    public const KEY_BUILDUP_START = 'event.buildup_start';
+    public const KEY_EVENT_START = 'event.event_start';
+    public const KEY_EVENT_END = 'event.event_end';
+    public const KEY_TEARDOWN_END = 'event.teardown_end';
+    public const KEY_DEFAULT_THEME = 'theme.default';
+
+    public const ACCESS_MODES = ['public', 'staff', 'admin'];
+
+    public function __construct(
+        private readonly EventConfigRepository $repository,
+        private readonly EntityManagerInterface $em,
+    ) {
+    }
+
+    public function get(string $key, mixed $default = null): mixed
+    {
+        $config = $this->repository->findOneByKey($key);
+
+        return $config?->getValue() ?? $default;
+    }
+
+    /**
+     * Read a value stored as an ISO-8601 string back as a date, or null when the
+     * key is unset/blank or the stored value cannot be parsed.
+     */
+    public function getDate(string $key): ?\DateTimeImmutable
+    {
+        $value = $this->get($key);
+        if (!\is_string($value) || $value === '') {
+            return null;
+        }
+
+        try {
+            return new \DateTimeImmutable($value);
+        } catch (\Exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Queue a value for the given key. Call {@see flush()} to persist.
+     */
+    public function set(string $key, mixed $value): void
+    {
+        $config = $this->repository->findOneByKey($key);
+        if ($config === null) {
+            $this->em->persist(new EventConfig($key, $value));
+
+            return;
+        }
+
+        $config->setValue($value);
+    }
+
+    public function flush(): void
+    {
+        $this->em->flush();
+    }
+
+    /**
+     * All settings as a flat key => value map.
+     *
+     * @return array<string, mixed>
+     */
+    public function all(): array
+    {
+        return $this->repository->findAllAsMap();
+    }
+}

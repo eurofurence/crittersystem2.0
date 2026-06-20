@@ -1,0 +1,84 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Staff Overview{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Staff Overview', {
+    subtitle: app.user.name,
+    actions: [
+      {label: 'Live status', href: path('app_staff_live'), class: 'btn btn-outline-secondary'},
+      {label: 'My stats', href: path('app_staff_stats'), class: 'btn btn-outline-primary'}
+    ]
+  }) }}
+
+  <div class="row g-3">
+    {# Duty status #}
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">Duty status</div>
+        <div class="card-body">
+          {% if currentDuty %}
+            <p class="mb-1">
+              {{ d.badge('On duty', 'text-bg-success') }}
+              {% if currentDuty.department %}in <strong>{{ currentDuty.department.name }}</strong>{% endif %}
+            </p>
+            <p class="text-muted small">Since {{ currentDuty.startedAt|date('D, d M H:i') }}
+              ({{ currentDuty.durationHours|round(1) }}h)</p>
+            <form method="post" action="{{ path('app_staff_duty_end') }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('duty-end') }}">
+              <button class="btn btn-outline-danger">End duty</button>
+            </form>
+          {% else %}
+            <p class="text-muted">You are off duty.</p>
+            <form method="post" action="{{ path('app_staff_duty_start') }}" class="row g-2 align-items-end">
+              <input type="hidden" name="_token" value="{{ csrf_token('duty-start') }}">
+              <div class="col-8">
+                <label class="form-label small mb-0" for="duty-dep">Duty area</label>
+                <select id="duty-dep" name="department" class="form-select form-select-sm">
+                  <option value="">— No specific area —</option>
+                  {% for dep in departments %}<option value="{{ dep.id }}">{{ dep.name }}</option>{% endfor %}
+                </select>
+              </div>
+              <div class="col-4"><button class="btn btn-success w-100">Start duty</button></div>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    {# Shift + hours summary #}
+    <div class="col-12 col-lg-6">
+      <div class="card h-100">
+        <div class="card-header fw-semibold">At a glance</div>
+        <div class="card-body">
+          <dl class="row mb-0">
+            <dt class="col-7">Next shift</dt>
+            <dd class="col-5 text-end">
+              {% if nextShift %}<a href="{{ path('app_shift_show', {id: nextShift.shift.id}) }}">{{ nextShift.shift.startsAt|date('d M H:i') }}</a>
+              {% else %}—{% endif %}
+            </dd>
+            <dt class="col-7">Shift hours</dt><dd class="col-5 text-end">{{ stats.shiftHours|round(2) }}</dd>
+            <dt class="col-7">Duty hours</dt><dd class="col-5 text-end">{{ stats.dutyHours|round(2) }}</dd>
+            <dt class="col-7">Goodies received</dt><dd class="col-5 text-end">{{ stats.goodies }}</dd>
+          </dl>
+          <a class="small" href="{{ path('app_my_shifts') }}">View my shifts →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="h5 mt-4">Received goodies</h2>
+  {% if goodies is empty %}
+    <p class="text-muted">No goodies received yet.</p>
+  {% else %}
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>Item</th><th>Qty</th><th>When</th></tr></thead>
+      <tbody>
+        {% for g in goodies %}
+          <tr><td>{{ g.itemName }}</td><td>{{ g.quantity }}</td><td class="small text-muted">{{ g.distributedAt|date('D, d M H:i') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

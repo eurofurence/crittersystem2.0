@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Manage FAQ{% endblock %}
+
+{% block body %}
+  {{ d.page_header('FAQ', {
+    subtitle: 'Curated answers to common questions.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New entry', href: path('app_manage_faq_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if faqs is empty %}
+    {{ d.empty_state('No FAQ entries', {actionLabel: '+ New entry', actionHref: path('app_manage_faq_new')}) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead><tr><th>Category</th><th>Question</th><th>Order</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        {% for faq in faqs %}
+          <tr>
+            <td>{{ faq.category }}</td>
+            <td>{{ faq.question }}</td>
+            <td>{{ faq.displayOrder }}</td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_faq_edit', {id: faq.id}) }}">Edit</a>
+              <form method="post" action="{{ path('app_manage_faq_delete', {id: faq.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete this FAQ entry?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ faq.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

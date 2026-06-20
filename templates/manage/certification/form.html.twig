@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(heading, {
+    actions: [{label: '← Back to certifications', href: path('app_manage_certification_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ form_start(form) }}
+    <div class="row">
+      {{ f.field(form.title, {col: 'col-12 col-md-6'}) }}
+      {{ f.field(form.location, {col: 'col-12 col-md-6'}) }}
+      {{ f.field(form.description, {col: 'col-12'}) }}
+    </div>
+
+    <h2 class="h6 mt-2">Contact</h2>
+    <div class="row">
+      {{ f.field(form.contactPerson, {col: 'col-12 col-md-6'}) }}
+      {{ f.field(form.contactEmail, {col: 'col-12 col-md-6'}) }}
+    </div>
+
+    <h2 class="h6 mt-2">Validity &amp; options</h2>
+    <div class="row">
+      {{ f.field(form.validityPeriodDays, {col: 'col-12 col-md-4', help: 'Leave blank for perpetual certifications'}) }}
+    </div>
+    <div class="row">
+      {{ f.check(form.isPerpetual) }}
+      {{ f.check(form.allowSelfConfirmation) }}
+      {{ f.check(form.staffOnly) }}
+      {{ f.check(form.isActive) }}
+    </div>
+
+    <button class="btn btn-primary mt-3">Save</button>
+  {{ form_end(form) }}
+{% endblock %}

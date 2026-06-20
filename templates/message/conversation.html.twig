@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Chat with {{ other.name }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(other.name, {
+    subtitle: 'Private conversation',
+    actions: [{label: '← Inbox', href: path('app_messages_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <div class="mb-3">
+    {% for m in messages %}
+      {% set mine = m.sender.id == app.user.id %}
+      <div class="d-flex mb-2 {{ mine ? 'justify-content-end' : 'justify-content-start' }}">
+        <div class="card {{ mine ? 'text-bg-primary' : '' }}" style="max-width: 75%">
+          <div class="card-body py-2 px-3">
+            <div>{{ m.text|nl2br }}</div>
+            <div class="small {{ mine ? 'text-white-50' : 'text-muted' }} text-end">{{ m.createdAt|date('d M H:i') }}</div>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <p class="text-muted">No messages yet. Say hello!</p>
+    {% endfor %}
+  </div>
+
+  <form method="post" action="{{ path('app_messages_send', {id: other.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('message' ~ other.id) }}">
+    <div class="input-group">
+      <input type="text" name="text" class="form-control" placeholder="Type a message…" required autofocus>
+      <button class="btn btn-primary">Send</button>
+    </div>
+  </form>
+{% endblock %}

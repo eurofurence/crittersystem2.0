@@ -1,0 +1,24 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Answer Question{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Answer Question', {
+    actions: [{label: '← Back to questions', href: path('app_manage_questions_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <div class="card mb-3"><div class="card-body">
+    <div class="small text-muted">{{ question.user ? question.user.name : 'Unknown' }} · {{ question.createdAt|date('D, d M Y H:i') }}</div>
+    <div class="fw-semibold">{{ question.text|nl2br }}</div>
+  </div></div>
+
+  <form method="post" action="{{ path('app_manage_questions_answer', {id: question.id}) }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('answer' ~ question.id) }}">
+    <div class="mb-2">
+      <label class="form-label" for="answer">Answer</label>
+      <textarea id="answer" name="answer" class="form-control" rows="5" required>{{ question.answer }}</textarea>
+    </div>
+    <button class="btn btn-primary">Save answer</button>
+  </form>
+{% endblock %}

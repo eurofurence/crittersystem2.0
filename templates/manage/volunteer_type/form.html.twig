@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(heading, {
+    actions: [{label: '← Back to volunteer types', href: path('app_manage_volunteer_type_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ form_start(form) }}
+    <div class="row">
+      {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
+      {{ f.field(form.description, {col: 'col-12'}) }}
+    </div>
+
+    <h2 class="h6 mt-2">Contact</h2>
+    <div class="row">
+      {{ f.field(form.contactName, {col: 'col-12 col-md-5'}) }}
+      {{ f.field(form.contactDect, {col: 'col-12 col-md-3'}) }}
+      {{ f.field(form.contactEmail, {col: 'col-12 col-md-4'}) }}
+    </div>
+
+    <h2 class="h6 mt-2">Configuration flags</h2>
+    <div class="row">
+      {{ f.check(form.restricted) }}
+      {{ f.check(form.shiftSelfSignup) }}
+      {{ f.check(form.showOnDashboard) }}
+      {{ f.check(form.hideRegister) }}
+      {{ f.check(form.hideOnShiftView) }}
+      {{ f.check(form.staffOnly) }}
+    </div>
+
+    <button class="btn btn-primary mt-3">Save</button>
+  {{ form_end(form) }}
+{% endblock %}

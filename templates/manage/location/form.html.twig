@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(heading, {
+    actions: [{label: '← Back to locations', href: path('app_manage_location_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ form_start(form) }}
+    <div class="row">
+      {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
+      {{ f.field(form.dect, {col: 'col-12 col-md-3', help: 'Internal phone extension'}) }}
+      {{ f.field(form.mapUrl, {col: 'col-12', help: 'Optional link to an embedded map'}) }}
+      {{ f.field(form.description, {col: 'col-12'}) }}
+      <div class="col-12 mb-3">
+        <div class="form-check">
+          {{ form_widget(form.staffOnly, {attr: {class: 'form-check-input'}}) }}
+          {{ form_label(form.staffOnly, null, {label_attr: {class: 'form-check-label'}}) }}
+        </div>
+        {{ form_errors(form.staffOnly) }}
+      </div>
+    </div>
+    <button class="btn btn-primary">Save</button>
+  {{ form_end(form) }}
+{% endblock %}

@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Certifications{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Certifications', {
+    subtitle: 'Skills and qualifications volunteers can hold.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New certification', href: path('app_manage_certification_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if certifications is empty %}
+    {{ d.empty_state('No certifications yet', {
+      message: 'Create the first certification volunteers can apply for.',
+      actionLabel: '+ New certification',
+      actionHref: path('app_manage_certification_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Validity</th>
+          <th>Flags</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cert in certifications %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ cert.title }}</div>
+              {% if cert.description %}<div class="text-muted small">{{ cert.description }}</div>{% endif %}
+            </td>
+            <td class="small">
+              {% if cert.perpetual %}Never expires
+              {% elseif cert.validityPeriodDays %}{{ cert.validityPeriodDays }} days
+              {% else %}—{% endif %}
+            </td>
+            <td>
+              <div class="d-flex flex-wrap gap-1">
+                {% if cert.allowSelfConfirmation %}{{ d.badge('Self-confirm', 'text-bg-info') }}{% endif %}
+                {% if cert.staffOnly %}{{ d.badge('Staff only', 'text-bg-warning') }}{% endif %}
+              </div>
+            </td>
+            <td>
+              {% if cert.active %}{{ d.badge('Active', 'text-bg-success') }}
+              {% else %}{{ d.badge('Inactive', 'text-bg-secondary') }}{% endif %}
+            </td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_certification_qr', {id: cert.id}) }}">QR</a>
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_certification_edit', {id: cert.id}) }}">Edit</a>
+              <form method="post" action="{{ path('app_manage_certification_delete', {id: cert.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete certification &quot;{{ cert.title|e('js') }}&quot;?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ cert.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Statistics{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Statistics' ~ (isOther ? ' — ' ~ target.name : ''), {
+    subtitle: isOther ? 'Viewing another volunteer (admin).' : 'Your hours and history.',
+    actions: [{label: '← Staff overview', href: path('app_staff_overview'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% if canSwitch %}
+    <form method="get" action="{{ path('app_staff_stats') }}" class="row g-2 mb-3">
+      <div class="col-12 col-md-6">
+        <select name="user" class="form-select" onchange="this.form.submit()">
+          {% for u in allUsers %}<option value="{{ u.id }}" {{ u.id == target.id ? 'selected' }}>{{ u.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-auto"><noscript><button class="btn btn-primary">View</button></noscript></div>
+    </form>
+  {% endif %}
+
+  <div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="card text-center"><div class="card-body"><div class="fs-4">{{ stats.shiftHours|round(2) }}</div><div class="text-muted small">Shift hours</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card text-center"><div class="card-body"><div class="fs-4">{{ stats.dutyHours|round(2) }}</div><div class="text-muted small">Duty hours</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card text-center"><div class="card-body"><div class="fs-4">{{ stats.shiftEntries }}</div><div class="text-muted small">Shift sign-ups</div></div></div></div>
+    <div class="col-6 col-md-3"><div class="card text-center"><div class="card-body"><div class="fs-4">{{ stats.goodies }}</div><div class="text-muted small">Goodies</div></div></div></div>
+  </div>
+
+  <h2 class="h5">Duty history</h2>
+  {% if dutyHistory is empty %}
+    <p class="text-muted">No duty sessions yet.</p>
+  {% else %}
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>Area</th><th>Started</th><th>Ended</th><th>Hours</th></tr></thead>
+      <tbody>
+        {% for r in dutyHistory %}
+          <tr>
+            <td>{{ r.department ? r.department.name : '—' }}</td>
+            <td class="small">{{ r.startedAt|date('D, d M H:i') }}</td>
+            <td class="small">{{ r.endedAt ? r.endedAt|date('D, d M H:i') : d.badge('Active', 'text-bg-success') }}</td>
+            <td>{{ r.durationHours|round(2) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+
+  <h2 class="h5 mt-3">Shift history</h2>
+  {% if shiftEntries is empty %}
+    <p class="text-muted">No shift sign-ups.</p>
+  {% else %}
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>Shift</th><th>When</th><th>Role</th><th>No-show</th></tr></thead>
+      <tbody>
+        {% for e in shiftEntries %}
+          <tr>
+            <td>{{ e.shift.title }}</td>
+            <td class="small">{{ e.shift.startsAt|date('D, d M H:i') }}</td>
+            <td>{{ e.volunteerType.name }}</td>
+            <td>{% if e.noshow %}{{ d.badge('No-show', 'text-bg-danger') }}{% else %}—{% endif %}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

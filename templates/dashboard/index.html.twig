@@ -1,20 +1,75 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello DashboardController!{% endblock %}
+{% block title %}Dashboard · Critter{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+    {% set user = app.user %}
 
-<div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h1 class="h3 mb-0">Welcome, {{ user.userIdentifier }} 👋</h1>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_digital_id') }}">🪪 Digital ID</a>
+            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_settings') }}">⚙️ Settings</a>
+        </div>
+    </div>
 
-    This friendly message is coming from:
-    <ul>
-        <li>Your controller at <code>/home/fred/dev/my_project/src/Controller/DashboardController.php</code></li>
-        <li>Your template at <code>/home/fred/dev/my_project/templates/dashboard/index.html.twig</code></li>
-    </ul>
-</div>
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">Account</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Username</dt>
+                <dd class="col-sm-9">{{ user.name }}</dd>
+
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">{{ user.email }}</dd>
+
+                <dt class="col-sm-3">Last login</dt>
+                <dd class="col-sm-9">{{ user.lastLoginAt ? user.lastLoginAt|date('Y-m-d H:i') : '—' }}</dd>
+
+                <dt class="col-sm-3">Roles</dt>
+                <dd class="col-sm-9">
+                    {% for role in user.roles %}
+                        <span class="badge text-bg-primary">{{ role }}</span>
+                    {% endfor %}
+                </dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">Groups</div>
+        <div class="card-body">
+            {% for group in user.groups %}
+                <span class="badge text-bg-secondary">{{ group.name }}</span>
+            {% else %}
+                <span class="text-muted">No groups assigned.</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header fw-semibold">Effective privileges ({{ user.privilegeNames|length }})</div>
+        <div class="card-body">
+            {% for privilege in user.privilegeNames|sort %}
+                <code class="d-inline-block me-2 mb-1">{{ privilege }}</code>
+            {% else %}
+                <span class="text-muted">No privileges.</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header fw-semibold">Privilege voter check (live)</div>
+        <div class="card-body">
+            <p class="text-muted small">Demonstrates the fine-grained privilege voter via <code>is_granted()</code>.</p>
+            <ul class="list-unstyled mb-0">
+                {% for privilege in ['admin_user', 'admin_news', 'backstage.goodies.admin', 'user_shifts'] %}
+                    <li>
+                        {% if is_granted(privilege) %}✅{% else %}⛔{% endif %}
+                        <code>{{ privilege }}</code>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
 {% endblock %}

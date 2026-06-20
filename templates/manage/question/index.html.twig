@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Answer Questions{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Questions', {
+    subtitle: 'Answer questions submitted by volunteers.',
+    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% if questions is empty %}
+    {{ d.empty_state('No questions', {message: 'Nobody has asked anything yet.'}) }}
+  {% else %}
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>Question</th><th>From</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+      <tbody>
+        {% for q in questions %}
+          <tr>
+            <td>{{ q.text }}</td>
+            <td class="small">{{ q.user ? q.user.name : 'Unknown' }}</td>
+            <td>
+              {% if q.answered %}{{ d.badge('Answered', 'text-bg-success') }}
+              {% elseif q.lockedBy %}{{ d.badge('In progress', 'text-bg-warning') }}
+              {% else %}{{ d.badge('Open', 'text-bg-secondary') }}{% endif %}
+            </td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_questions_answer', {id: q.id}) }}">
+                {{ q.answered ? 'Edit answer' : 'Answer' }}
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

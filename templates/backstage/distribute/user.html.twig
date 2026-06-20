@@ -1,0 +1,114 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Distribute · {{ user.name }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Goodies — ' ~ user.name, {
+    subtitle: user.email,
+    actions: [{label: '← Search', href: path('app_backstage_distribute'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {# Hours breakdown #}
+  <div class="card mb-3">
+    <div class="card-body">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div><span class="fw-semibold">Credited hours:</span> <span class="fs-4">{{ cache.totalHours|round(2) }}</span></div>
+        <form method="post" action="{{ path('app_backstage_distribute_refresh', {id: user.id}) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('refresh' ~ user.id) }}">
+          <button class="btn btn-sm btn-outline-secondary">↻ Recalculate</button>
+        </form>
+      </div>
+      <div class="row text-center small text-muted">
+        <div class="col"><div class="fw-bold text-dark">{{ cache.dayShiftsHours|round(2) }}</div>Day</div>
+        <div class="col"><div class="fw-bold text-dark">{{ cache.nightShiftsHours|round(2) }}</div>Night (×2)</div>
+        <div class="col"><div class="fw-bold text-dark">{{ cache.noshowPenaltyHours|round(2) }}</div>No-show</div>
+        <div class="col"><div class="fw-bold text-dark">{{ cache.worklogHours|round(2) }}</div>Worklog</div>
+        <div class="col"><div class="fw-bold text-dark">{{ cache.completedShiftsCount }}</div>Shifts</div>
+      </div>
+      <div class="text-muted small mt-2">Last calculated {{ cache.lastCalculatedAt|date('D, d M H:i') }}</div>
+    </div>
+  </div>
+
+  {% set eligible = eligibility.rows|filter(r => r.tier == 'eligible') %}
+  {% set pending = eligibility.rows|filter(r => r.tier == 'pending') %}
+  {% set claimed = eligibility.rows|filter(r => r.tier == 'claimed') %}
+
+  {# Can claim now #}
+  <h2 class="h5">Can claim now</h2>
+  {% if eligible is empty %}
+    <p class="text-muted">No items available to claim.</p>
+  {% else %}
+    <div class="row g-2 mb-3">
+      {% for r in eligible %}
+        <div class="col-12 col-md-6">
+          <div class="card h-100"><div class="card-body">
+            <div class="d-flex justify-content-between">
+              <div class="fw-semibold">{{ r.item.name }}</div>
+              <span class="text-muted small">{{ r.item.requiredHours|round(2) }}h{% if r.remaining is not null %} · {{ r.remaining }} left{% endif %}</span>
+            </div>
+            {% if r.item.description %}<div class="text-muted small mb-2">{{ r.item.description }}</div>{% endif %}
+            <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.id}) }}" class="row g-2 align-items-end">
+              <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
+              <input type="hidden" name="item" value="{{ r.item.id }}">
+              <div class="col-4">
+                <label class="form-label small mb-0">Qty</label>
+                <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm">
+              </div>
+              <div class="col-8">
+                <button class="btn btn-sm btn-primary w-100">Give</button>
+              </div>
+            </form>
+          </div></div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {# Will be eligible #}
+  <h2 class="h5">Will be eligible</h2>
+  {% if pending is empty %}
+    <p class="text-muted">Nothing pending.</p>
+  {% else %}
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>Item</th><th>Required</th><th>Hours short</th></tr></thead>
+      <tbody>
+        {% for r in pending %}
+          <tr><td>{{ r.item.name }}</td><td>{{ r.item.requiredHours|round(2) }}h</td><td>{{ d.badge(r.gap|round(2) ~ 'h', 'text-bg-warning') }}</td></tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+
+  {# Already claimed (at max) #}
+  {% if claimed is not empty %}
+    <h2 class="h5">Already claimed (at limit)</h2>
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>Item</th><th>Claimed</th></tr></thead>
+      <tbody>
+        {% for r in claimed %}<tr><td>{{ r.item.name }}</td><td>{{ r.claimed }}</td></tr>{% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+
+  {# History #}
+  <h2 class="h5 mt-3">Distribution history</h2>
+  {% if history is empty %}
+    <p class="text-muted">No goodies distributed yet.</p>
+  {% else %}
+    {{ d.table_start({hover: false}) }}
+      <thead><tr><th>When</th><th>Item</th><th>Qty</th><th>Hours then</th><th>By</th></tr></thead>
+      <tbody>
+        {% for dist in history %}
+          <tr>
+            <td class="small">{{ dist.distributedAt|date('D, d M H:i') }}</td>
+            <td>{{ dist.itemName }}</td>
+            <td>{{ dist.quantity }}</td>
+            <td>{{ dist.hoursAtDistribution|round(2) }}</td>
+            <td class="small text-muted">{{ dist.distributedBy ? dist.distributedBy.name : '—' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Certified — {{ certification.title }}{% endblock %}
+
+{% block body %}
+  <div class="row justify-content-center">
+    <div class="col-12 col-md-7 col-lg-5">
+      <div class="card text-center shadow-sm">
+        <div class="card-body">
+          <div class="display-6 mb-2">🎉</div>
+          <h1 class="h4 mb-2">{{ certification.title }}</h1>
+          <p class="text-muted mb-3">{{ app.user.name }}, your certification has been approved.</p>
+
+          <dl class="row mb-0 small text-start">
+            <dt class="col-5">Certified on</dt>
+            <dd class="col-7">{{ record.dateCertified|date('D, d M Y H:i') }}</dd>
+            {% if record.dateExpires %}
+              <dt class="col-5">Valid until</dt>
+              <dd class="col-7">{{ record.dateExpires|date('D, d M Y') }}</dd>
+            {% else %}
+              <dt class="col-5">Validity</dt><dd class="col-7">Never expires</dd>
+            {% endif %}
+          </dl>
+
+          <a class="btn btn-primary mt-3" href="{{ path('app_certifications_index') }}">My certifications</a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

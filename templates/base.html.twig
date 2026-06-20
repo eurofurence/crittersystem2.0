@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="{{ active_theme.type }}">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>{% block title %}VMS{% endblock %}</title>
-        
+
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
         {% block stylesheets %}
         {% endblock %}
@@ -12,6 +12,9 @@
         {% block javascripts %}
             {% block importmap %}{{ importmap('app') }}{% endblock %}
         {% endblock %}
+
+        {# Theme stylesheet — loaded LAST so its `--bs-*` overrides win the cascade. #}
+        <link rel="stylesheet" href="{{ asset(active_theme.assetPath) }}">
     </head>
     <body>
         {# COMPONENTS #}
@@ -24,10 +27,36 @@
             {% set left %}
             {{ nav.nav_item('Home', 'app_home', {icon:'🏠'}) }}
             {{ nav.nav_item('Dashboard', 'app_dashboard', {icon:'📊'}) }}
+            {% if app.user %}
+            {% if is_granted('news') %}{{ nav.nav_item('News', 'app_news_index', {icon:'📰', exact: false}) }}{% endif %}
+            {{ nav.nav_item('Shifts', 'app_shift_index', {icon:'🕒', exact: false}) }}
+            {{ nav.nav_item('My Shifts', 'app_my_shifts', {icon:'📋'}) }}
+            {{ nav.nav_item('Volunteer Types', 'app_membership_index', {icon:'🧩'}) }}
+            {% if is_granted('user_messages') %}{{ nav.nav_item('Messages', 'app_messages_index', {icon:'✉️', exact: false}) }}{% endif %}
+            {% if is_granted('faq.view') %}{{ nav.nav_item('FAQ', 'app_faq_index', {icon:'❓'}) }}{% endif %}
+            {{ nav.nav_item('Certifications', 'app_certifications_index', {icon:'🎖️'}) }}
+            {% if is_granted('user.type.staff') %}{{ nav.nav_item('Staff', 'app_staff_overview', {icon:'🦺', exact: false}) }}{% endif %}
+            {% if is_granted('backstage.view') %}
+            {{ nav.nav_item('Backstage', 'app_backstage', {icon:'🎁', exact: false}) }}
+            {% endif %}
+            {% endif %}
+            {% if app.user and (is_granted('admin_rooms') or is_granted('admin_volunteer_types') or is_granted('admin_shifts') or is_granted('admin') or is_granted('admin_event_config')) %}
+            {{ nav.nav_item('Manage', 'app_manage', {icon:'🛠️', exact: false}) }}
+            {% endif %}
             {{ nav.nav_item('Navigation Kit', 'app_navigation_kit', {icon:'🧭'}) }}
+            {{ nav.nav_item('Theme Kit', 'app_theme_kit', {icon:'🎨'}) }}
             {% endset %}
 
-            {{ nav.navbar('VMS', { left: left }) }}
+            {% set right %}
+            {% if app.user %}
+                <span class="navbar-text me-2">👤 {{ app.user.userIdentifier }}</span>
+                <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_logout') }}">Logout</a>
+            {% else %}
+                <a class="btn btn-primary btn-sm" href="{{ path('app_login') }}">Login</a>
+            {% endif %}
+            {% endset %}
+
+            {{ nav.navbar('VMS', { left: left, right: right }) }}
         {% endblock %}
 
         {# FLASH MESSAGES #}

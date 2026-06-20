@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Worklogs{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Worklogs', {
+    subtitle: 'Manual hour entries for work outside formal shifts.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New worklog', href: path('app_manage_worklog_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if worklogs is empty %}
+    {{ d.empty_state('No worklogs yet', {
+      message: 'Record hours for work not tracked through shifts.',
+      actionLabel: '+ New worklog',
+      actionHref: path('app_manage_worklog_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr><th>Volunteer</th><th>Hours</th><th>Worked at</th><th>Comment</th><th>By</th><th class="text-end"></th></tr>
+      </thead>
+      <tbody>
+        {% for w in worklogs %}
+          <tr>
+            <td class="fw-semibold">{{ w.user.name }}</td>
+            <td>{{ w.hours|round(2) }}</td>
+            <td class="small">{{ w.workedAt|date('D, d M Y H:i') }}</td>
+            <td class="small">{{ w.comment ?: '—' }}</td>
+            <td class="small text-muted">{{ w.creator ? w.creator.name : '—' }}</td>
+            <td class="text-end">
+              <form method="post" action="{{ path('app_manage_worklog_delete', {id: w.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete this worklog?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ w.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

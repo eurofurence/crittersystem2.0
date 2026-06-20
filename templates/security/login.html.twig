@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+
+{% import 'components/notification/_macros.twig' as n %}
+
+{% block title %}{{ eventName ? eventName ~ ' · Sign in' : 'Sign in · Critter' }}{% endblock %}
+
+{% block body %}
+    {# ---- Event header ---- #}
+    <div class="text-center mb-4">
+        <h1 class="display-6 mb-2">{{ eventName ?: 'Volunteer & Staff Management' }}</h1>
+        {% if welcomeMessage %}
+            <p class="lead text-muted mb-0">{{ welcomeMessage }}</p>
+        {% endif %}
+    </div>
+
+    {# ---- Event timeline (only dates that are set) ---- #}
+    {% set shownDates = timeline|filter(date => date is not null) %}
+    {% if shownDates is not empty %}
+        <div class="row g-3 justify-content-center mb-4">
+            {% for label, date in shownDates %}
+                {% set upcoming = date > date() %}
+                <div class="col-6 col-md-3">
+                    <div class="card h-100 text-center {{ upcoming ? '' : 'opacity-75' }}">
+                        <div class="card-body py-3">
+                            <div class="text-muted small text-uppercase">{{ label }}</div>
+                            <div class="fw-semibold">{{ date|date('D, d M Y') }}</div>
+                            <div class="small">{{ date|date('H:i') }}</div>
+                            <span class="badge {{ upcoming ? 'text-bg-primary' : 'text-bg-secondary' }} mt-2">
+                                {% if upcoming %}in {{ date.diff(date()).days }} day(s){% else %}passed{% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {# ---- Sign-in card ---- #}
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-9 col-lg-6">
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold">Sign in</div>
+                <div class="card-body">
+                    {% if error %}
+                        {{ n.alert('danger', error.messageKey|trans(error.messageData, 'security'), { icon: '⚠️' }) }}
+                    {% endif %}
+
+                    <form method="post" action="{{ path('app_login') }}">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username or email</label>
+                            <input type="text" id="username" name="_username"
+                                   value="{{ last_username }}" class="form-control"
+                                   autocomplete="username" required autofocus>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" id="password" name="_password"
+                                   class="form-control" autocomplete="current-password" required>
+                        </div>
+
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                        <button class="btn btn-primary w-100" type="submit">Sign in</button>
+                    </form>
+
+                    {# ---- SSO (placeholder — Keycloak/OAuth arrives in a later phase) ---- #}
+                    <div class="d-flex align-items-center my-3 text-muted">
+                        <hr class="flex-grow-1"><span class="px-2 small">or</span><hr class="flex-grow-1">
+                    </div>
+                    <button type="button" class="btn btn-outline-secondary w-100" disabled
+                            title="Single sign-on will be available in a later phase">
+                        🔐 Sign in with SSO
+                    </button>
+                    <div class="form-text text-center mt-2">
+                        Single sign-on (Keycloak) arrives in a later phase.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
