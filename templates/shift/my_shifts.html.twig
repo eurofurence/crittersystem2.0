@@ -32,7 +32,7 @@
           {% set shift = entry.shift %}
           <tr class="{{ entry.noshow ? 'table-danger' : (shift.past ? 'opacity-75' : '') }}">
             <td><a href="{{ path('app_shift_show', {id: shift.id}) }}">{{ shift.title }}</a></td>
-            <td class="small">{{ shift.startsAt|date('D, d M H:i') }} – {{ shift.endsAt|date('H:i') }}</td>
+            <td class="small">{{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}</td>
             <td>{{ entry.volunteerType.name }}{% if entry.noshow %} {{ d.badge('No-show', 'text-bg-danger') }}{% endif %}</td>
             <td>{{ perEntryHours[entry.id]|round(2) }}</td>
             <td class="text-end">

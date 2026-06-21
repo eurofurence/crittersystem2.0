@@ -24,7 +24,7 @@
   {% else %}
     {% for q in questions %}
       <div class="card mb-2"><div class="card-body">
-        <div class="small text-muted">{{ q.createdAt|date('D, d M Y H:i') }}</div>
+        <div class="small text-muted">{{ q.createdAt|app_datetime }}</div>
         <div class="fw-semibold">{{ q.text|nl2br }}</div>
         {% if q.answered %}
           <hr class="my-2">

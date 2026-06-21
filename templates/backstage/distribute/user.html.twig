@@ -26,7 +26,7 @@
         <div class="col"><div class="fw-bold text-dark">{{ cache.worklogHours|round(2) }}</div>Worklog</div>
         <div class="col"><div class="fw-bold text-dark">{{ cache.completedShiftsCount }}</div>Shifts</div>
       </div>
-      <div class="text-muted small mt-2">Last calculated {{ cache.lastCalculatedAt|date('D, d M H:i') }}</div>
+      <div class="text-muted small mt-2">Last calculated {{ cache.lastCalculatedAt|app_datetime }}</div>
     </div>
   </div>
 
@@ -101,7 +101,7 @@
       <tbody>
         {% for dist in history %}
           <tr>
-            <td class="small">{{ dist.distributedAt|date('D, d M H:i') }}</td>
+            <td class="small">{{ dist.distributedAt|app_datetime }}</td>
             <td>{{ dist.itemName }}</td>
             <td>{{ dist.quantity }}</td>
             <td>{{ dist.hoursAtDistribution|round(2) }}</td>

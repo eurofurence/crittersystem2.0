@@ -1,35 +1,75 @@
 /*
- * Dark theme — uses Bootstrap 5.3's built-in `data-bs-theme="dark"` colour
- * tokens, then nudges the surfaces a touch darker for OLED-friendly contrast
- * and softens the borders so the UI doesn't feel boxed in.
+ * Eurofurence — official brand theme (dark).
  *
- * The theme is applied when the layout sets `data-bs-theme="dark"` on <html>;
- * Bootstrap takes care of inverting every component for us.
+ * The official EF website has no dark mode, so this is an EF-flavoured dark
+ * theme: Tabler's native dark base (`data-bs-theme="dark"`) tinted toward the
+ * brand teal (#005953 / #69a3a2 from the ef30 site) with the same Georgia
+ * serif headings as the light EF theme.
  */
 
 [data-bs-theme="dark"] {
-  --bs-body-bg: #15171a;
-  --bs-tertiary-bg: #1c1f24;
-  --bs-secondary-bg: #23262c;
-  --bs-border-color: #2c3038;
-  --bs-border-color-translucent: rgba(255, 255, 255, .08);
-  --bs-link-color: #6ea8fe;
-  --bs-link-hover-color: #9ec5fe;
-  --bs-primary: #4f86d6;
-  --bs-primary-rgb: 79, 134, 214;
+  /* EF teal lightened for legibility on dark surfaces; buttons get dark text. */
+  --tblr-primary: #4fb3aa;
+  --tblr-primary-rgb: 79, 179, 170;
+  --tblr-primary-fg: #06231f;
+
+  --tblr-link-color: #6fc5bd;
+  --tblr-link-color-rgb: 111, 197, 189;
+  --tblr-link-hover-color: #9bd8d2;
+
+  /* Teal-tinted dark surfaces so the brand carries into dark mode. */
+  --tblr-body-bg: #0d1716;
+  --tblr-bg-surface: #14211f;
+  --tblr-bg-surface-secondary: #1b2b29;
+  --tblr-border-color: #25403d;
 }
 
-[data-bs-theme="dark"] .card,
-[data-bs-theme="dark"] .accordion-item {
-  background-color: var(--bs-tertiary-bg);
-  border-color: var(--bs-border-color);
+/* Deep-teal navbar — the brand green works as a dark surface. */
+[data-bs-theme="dark"] .navbar {
+  --tblr-navbar-bg: #00413c;
+  --tblr-navbar-color: rgba(255, 255, 255, .78);
+  --tblr-navbar-hover-color: #ffffff;
+  --tblr-navbar-active-color: #ffffff;
+  --tblr-navbar-active-border-color: #4fb3aa;
+  --tblr-navbar-brand-color: #ffffff;
+  --tblr-navbar-brand-hover-color: #ffffff;
+}
+[data-bs-theme="dark"] .navbar .avatar {
+  color: #00413c;
+  background: #cfeae7;
 }
 
-[data-bs-theme="dark"] .table {
-  --bs-table-bg: transparent;
+/* Same editorial serif headings as the light EF theme. */
+[data-bs-theme="dark"] h1,
+[data-bs-theme="dark"] h2,
+[data-bs-theme="dark"] h3,
+[data-bs-theme="dark"] h4,
+[data-bs-theme="dark"] h5,
+[data-bs-theme="dark"] h6,
+[data-bs-theme="dark"] .h1,
+[data-bs-theme="dark"] .h2,
+[data-bs-theme="dark"] .h3,
+[data-bs-theme="dark"] .h4,
+[data-bs-theme="dark"] .h5,
+[data-bs-theme="dark"] .h6,
+[data-bs-theme="dark"] .card-title,
+[data-bs-theme="dark"] .page-title,
+[data-bs-theme="dark"] .navbar-brand {
+  font-family: Georgia, "Times New Roman", Times, serif;
 }
 
-/* The dated landing's timeline cards look better with a subtle outline in dark mode. */
-[data-bs-theme="dark"] .card.text-center.h-100 {
-  background-color: var(--bs-secondary-bg);
+/* Same EF background image as the light theme, darkened with a strong scrim so
+   the dark UI stays readable. Only this theme's CSS is loaded at a time, so the
+   plain `html::before` is safe. */
+html::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(8, 18, 17, .82), rgba(8, 18, 17, .82)),
+    url("img/ef-bg.jpg") center / cover no-repeat;
+}
+[data-bs-theme="dark"] body {
+  background-color: transparent;
 }

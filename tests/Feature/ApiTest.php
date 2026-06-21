@@ -4,7 +4,10 @@ namespace App\Tests\Feature;
 
 use App\Entity\Group;
 use App\Entity\Privilege;
+use App\Entity\Shift;
+use App\Entity\ShiftEntry;
 use App\Entity\User;
+use App\Entity\VolunteerType;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -97,5 +100,35 @@ final class ApiTest extends WebTestCase
         $this->get('/api/shifts-json-export', 'export-key');
         self::assertResponseIsSuccessful();
         self::assertArrayHasKey('data', json_decode((string) $this->client->getResponse()->getContent(), true));
+    }
+
+    public function testIcalEmitsAbsoluteUtcInstants(): void
+    {
+        $user = $this->makeUser('ical-key', ['ical']);
+
+        $type = new VolunteerType('Heaven');
+        $this->em->persist($type);
+
+        $shift = (new Shift())
+            ->setTitle('Night Watch')
+            ->setStartsAt(new \DateTimeImmutable('2026-08-15 20:00:00', new \DateTimeZone('UTC')))
+            ->setEndsAt(new \DateTimeImmutable('2026-08-16 04:00:00', new \DateTimeZone('UTC')));
+        $this->em->persist($shift);
+        $this->em->persist(new ShiftEntry($shift, $type, $user));
+        $this->em->flush();
+
+        $this->get('/api/ical');
+        self::assertResponseStatusCodeSame(401);
+
+        $this->get('/api/ical', 'ical-key');
+        self::assertResponseIsSuccessful();
+        $body = (string) $this->client->getResponse()->getContent();
+
+        // Absolute UTC instants (trailing Z) so every device fires the reminder
+        // at the correct moment — never floating local times (the critter 1.0 bug).
+        self::assertStringContainsString('DTSTART:20260815T200000Z', $body);
+        self::assertStringContainsString('DTEND:20260816T040000Z', $body);
+        self::assertStringContainsString('DTSTAMP:', $body);
+        self::assertDoesNotMatchRegularExpression('/DTSTART:\d{8}T\d{6}(?!Z)/', $body);
     }
 }

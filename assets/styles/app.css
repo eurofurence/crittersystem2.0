@@ -1,3 +1,14 @@
-body {
-    background-color: skyblue;
+/*
+ * App-level CSS tweaks layered on top of Tabler.
+ *
+ * Keep this file minimal — brand/theme colours live in `assets/themes/*.css`
+ * (loaded last so they win the cascade). This file is for structural fixes
+ * that apply across every theme, independent of the active brand colours.
+ */
+
+/* Emoji still used inside page bodies/buttons keep their own colour
+   (Tabler icons inherit `currentColor`; emoji must not be tinted). */
+.icon-emoji {
+    font-style: normal;
+    line-height: 1;
 }

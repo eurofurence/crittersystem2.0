@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\Location;
 use App\Entity\Shift;
 use App\Entity\ShiftType;
+use App\Service\DisplaySettings;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
@@ -16,8 +17,17 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class ShiftFormType extends AbstractType
 {
+    public function __construct(private readonly DisplaySettings $display)
+    {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
+        // The admin enters wall-clock times in the configured event timezone;
+        // they are stored in UTC (model_timezone) so every datetime in the
+        // system is an absolute instant. See {@see DisplaySettings}.
+        $tz = $this->display->timezone()->getName();
+
         $builder
             ->add('title', TextType::class, ['label' => 'Title'])
             ->add('description', TextareaType::class, [
@@ -34,11 +44,15 @@ final class ShiftFormType extends AbstractType
                 'label' => 'Starts at',
                 'widget' => 'single_text',
                 'input' => 'datetime_immutable',
+                'view_timezone' => $tz,
+                'model_timezone' => 'UTC',
             ])
             ->add('endsAt', DateTimeType::class, [
                 'label' => 'Ends at',
                 'widget' => 'single_text',
                 'input' => 'datetime_immutable',
+                'view_timezone' => $tz,
+                'model_timezone' => 'UTC',
             ])
             ->add('shiftType', EntityType::class, [
                 'label' => 'Shift type',

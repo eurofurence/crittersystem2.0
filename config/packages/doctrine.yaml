@@ -7,6 +7,12 @@ doctrine:
         #server_version: '16'
 
         profiling_collect_backtrace: '%kernel.debug%'
+
+        # Store every timestamp as "TIMESTAMP WITH TIME ZONE" (PostgreSQL
+        # timestamptz), always normalised to UTC. Overrides the built-in
+        # datetime_immutable type so all entity datetime columns are covered.
+        types:
+            datetime_immutable: App\Doctrine\UtcDateTimeImmutableType
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware

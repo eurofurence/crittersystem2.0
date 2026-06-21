@@ -5,7 +5,7 @@
 
 {% block body %}
   {{ d.page_header('Staffing — ' ~ shift.title, {
-    subtitle: shift.startsAt|date('D, d M H:i') ~ ' – ' ~ shift.endsAt|date('H:i') ~ (shift.location ? ' · ' ~ shift.location.name : ''),
+    subtitle: shift.startsAt|app_datetime ~ ' – ' ~ shift.endsAt|app_time ~ (shift.location ? ' · ' ~ shift.location.name : ''),
     actions: [{label: '← Back to shifts', href: path('app_manage_shift_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 

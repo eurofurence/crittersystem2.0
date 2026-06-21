@@ -9,7 +9,7 @@
   }) }}
 
   <div class="card mb-3"><div class="card-body">
-    <div class="small text-muted">{{ question.user ? question.user.name : 'Unknown' }} · {{ question.createdAt|date('D, d M Y H:i') }}</div>
+    <div class="small text-muted">{{ question.user ? question.user.name : 'Unknown' }} · {{ question.createdAt|app_datetime }}</div>
     <div class="fw-semibold">{{ question.text|nl2br }}</div>
   </div></div>
 

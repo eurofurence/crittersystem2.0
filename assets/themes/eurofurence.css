@@ -1,28 +1,77 @@
 /*
- * Eurofurence — light theme with a teal/aqua brand accent.
+ * Eurofurence — official brand theme (light).
  *
- * Demonstrates how to brand the UI without touching markup: overriding the
- * Bootstrap primary/link palette plus a couple of surface tones is enough.
+ * Palette + type taken from the official ef30 website
+ * (./ef30_website/www → css/main.css, css/theme.css):
+ *   --ef-green:       #005953   (primary brand teal)
+ *   --ef-green-light: #69a3a2   (lighter accent)
+ *   headings:         Georgia serif    body: system sans-serif
+ *   border-radius:    6px (already the Tabler default — no override needed)
+ *
+ * !! CRITICAL !!
+ * Tabler is a Bootstrap 5 theme, so overriding its `--tblr-*` tokens rebrands
+ * the whole UI without touching markup. Loaded LAST in <head> so it wins :P
  */
 
 :root,
 [data-bs-theme="light"] {
-  --bs-primary: #00867d;
-  --bs-primary-rgb: 0, 134, 125;
-  --bs-link-color: #006a63;
-  --bs-link-hover-color: #00554f;
-  --bs-tertiary-bg: #eef6f5;
-  --bs-secondary-bg: #dff0ed;
-  --bs-border-color: #c9e2dd;
+  --tblr-primary: #005953;
+  --tblr-primary-rgb: 0, 89, 83;
+  --tblr-primary-fg: #ffffff;
+
+  --tblr-link-color: #005953;
+  --tblr-link-color-rgb: 0, 89, 83;
+  --tblr-link-hover-color: #00413c;
 }
 
-.navbar.bg-body-tertiary {
-  background-color: var(--bs-tertiary-bg) !important;
-  border-bottom-color: var(--bs-primary) !important;
-  border-bottom-width: 2px !important;
+/* Deep-teal top navbar with light text — echoes the official EF site nav.
+   Both the brand bar and the horizontal menu are `.navbar`, so they unify. */
+.navbar {
+  --tblr-navbar-bg: #005953;
+  --tblr-navbar-color: rgba(255, 255, 255, .78);
+  --tblr-navbar-hover-color: #ffffff;
+  --tblr-navbar-active-color: #ffffff;
+  --tblr-navbar-active-border-color: #ffffff;
+  --tblr-navbar-brand-color: #ffffff;
+  --tblr-navbar-brand-hover-color: #ffffff;
+  --tblr-navbar-toggler-border-color: rgba(255, 255, 255, .2);
+  /* White hamburger icon so it stays legible on teal. */
+  --tblr-navbar-toggler-icon-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.78%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
-/* Pinned news / highlighted state picks up the brand accent. */
-.card.border-warning {
-  border-color: var(--bs-primary) !important;
+/* Avatar + the guest Login button must stay legible on the teal bar. */
+.navbar .avatar {
+  color: #005953;
+  background: #ffffff;
+}
+.navbar .btn-primary {
+  --tblr-btn-bg: #ffffff;
+  --tblr-btn-color: #005953;
+  --tblr-btn-border-color: #ffffff;
+  --tblr-btn-hover-bg: #e9f2f1;
+  --tblr-btn-hover-color: #00413c;
+  --tblr-btn-active-bg: #e9f2f1;
+}
+
+/* Editorial serif headings, matching the EF site's Georgia headings.
+   Body copy stays in Tabler's system sans-serif, exactly like the EF site. */
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6,
+.card-title, .page-title, .navbar-brand {
+  font-family: Georgia, "Times New Roman", Times, serif;
+}
+
+/* Full-page fixed background image from the official EF site (img/bg.jpg)
+*/
+html::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(rgba(255, 255, 255, .55), rgba(255, 255, 255, .55)),
+    url("img/ef-bg.jpg") center / cover no-repeat;
+}
+body {
+  background-color: transparent;
 }

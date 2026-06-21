@@ -75,13 +75,24 @@ final class FeedController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        $lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Critter//Shifts//EN'];
+        // Emit absolute UTC instants (the trailing "Z"), never floating local
+        // times. A floating time is interpreted in each device's own timezone,
+        // so a volunteer whose phone is set to a different timezone than the
+        // venue would be reminded at the wrong moment. UTC instants are
+        // converted by every calendar client to the device's local time and
+        // always fire at the correct absolute moment — which is what we want
+        // for international attendees travelling to the event.
+        $utc = new \DateTimeZone('UTC');
+        $stamp = (new \DateTimeImmutable('now', $utc))->format('Ymd\THis\Z');
+
+        $lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Critter//Shifts//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:My Shifts'];
         foreach ($entries->findByUserOrdered($user) as $entry) {
             $shift = $entry->getShift();
             $lines[] = 'BEGIN:VEVENT';
             $lines[] = 'UID:shift-entry-'.$entry->getId().'@critter';
-            $lines[] = 'DTSTART:'.$shift->getStartsAt()->format('Ymd\THis');
-            $lines[] = 'DTEND:'.$shift->getEndsAt()->format('Ymd\THis');
+            $lines[] = 'DTSTAMP:'.$stamp;
+            $lines[] = 'DTSTART:'.$shift->getStartsAt()->setTimezone($utc)->format('Ymd\THis\Z');
+            $lines[] = 'DTEND:'.$shift->getEndsAt()->setTimezone($utc)->format('Ymd\THis\Z');
             $lines[] = 'SUMMARY:'.self::escapeIcal($shift->getTitle().' ('.$entry->getVolunteerType()->getName().')');
             if ($shift->getLocation() !== null) {
                 $lines[] = 'LOCATION:'.self::escapeIcal($shift->getLocation()->getName());

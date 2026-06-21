@@ -33,7 +33,7 @@
                 {% if n.staffOnly %}{{ d.badge('Staff only', 'text-bg-secondary') }}{% endif %}
               </div>
             </td>
-            <td class="small text-muted">{{ n.createdAt|date('D, d M H:i') }}</td>
+            <td class="small text-muted">{{ n.createdAt|app_datetime }}</td>
             <td class="text-end text-nowrap">
               <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_news_edit', {id: n.id}) }}">Edit</a>
               <form method="post" action="{{ path('app_manage_news_delete', {id: n.id}) }}" class="d-inline"

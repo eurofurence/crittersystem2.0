@@ -38,7 +38,7 @@
               {% if c.perpetual %}Never expires
               {% elseif c.validityPeriodDays %}{{ c.validityPeriodDays }} days
               {% else %}—{% endif %}
-              {% if r and r.dateExpires %}<div class="text-muted">expires {{ r.dateExpires|date('d M Y') }}</div>{% endif %}
+              {% if r and r.dateExpires %}<div class="text-muted">expires {{ r.dateExpires|app_date }}</div>{% endif %}
             </td>
             <td>{{ _self.status_badge(r) }}</td>
             <td class="text-end text-nowrap">

@@ -28,7 +28,7 @@
           <tr>
             <td class="fw-semibold">{{ w.user.name }}</td>
             <td>{{ w.hours|round(2) }}</td>
-            <td class="small">{{ w.workedAt|date('D, d M Y H:i') }}</td>
+            <td class="small">{{ w.workedAt|app_datetime }}</td>
             <td class="small">{{ w.comment ?: '—' }}</td>
             <td class="small text-muted">{{ w.creator ? w.creator.name : '—' }}</td>
             <td class="text-end">

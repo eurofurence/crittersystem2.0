@@ -1,20 +1,21 @@
 {% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 
 {% block title %}Dashboard · Critter{% endblock %}
 
 {% block body %}
     {% set user = app.user %}
 
-    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-        <h1 class="h3 mb-0">Welcome, {{ user.userIdentifier }} 👋</h1>
-        <div class="d-flex gap-2">
-            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_digital_id') }}">🪪 Digital ID</a>
-            <a class="btn btn-outline-secondary btn-sm" href="{{ path('app_settings') }}">⚙️ Settings</a>
-        </div>
-    </div>
+    {{ d.page_header('Welcome, ' ~ user.userIdentifier, {
+        subtitle: 'Your account at a glance.',
+        actions: [
+            {label: 'Digital ID', href: path('app_digital_id'), class: 'btn btn-outline-secondary'},
+            {label: 'Settings', href: path('app_settings'), class: 'btn btn-outline-secondary'}
+        ]
+    }) }}
 
     <div class="card mb-3">
-        <div class="card-header fw-semibold">Account</div>
+        <div class="card-header"><h3 class="card-title">Account</h3></div>
         <div class="card-body">
             <dl class="row mb-0">
                 <dt class="col-sm-3">Username</dt>
@@ -24,12 +25,12 @@
                 <dd class="col-sm-9">{{ user.email }}</dd>
 
                 <dt class="col-sm-3">Last login</dt>
-                <dd class="col-sm-9">{{ user.lastLoginAt ? user.lastLoginAt|date('Y-m-d H:i') : '—' }}</dd>
+                <dd class="col-sm-9">{{ user.lastLoginAt ? user.lastLoginAt|app_datetime : '—' }}</dd>
 
                 <dt class="col-sm-3">Roles</dt>
                 <dd class="col-sm-9">
                     {% for role in user.roles %}
-                        <span class="badge text-bg-primary">{{ role }}</span>
+                        <span class="badge bg-primary-lt">{{ role }}</span>
                     {% endfor %}
                 </dd>
             </dl>
@@ -37,10 +38,10 @@
     </div>
 
     <div class="card mb-3">
-        <div class="card-header fw-semibold">Groups</div>
+        <div class="card-header"><h3 class="card-title">Groups</h3></div>
         <div class="card-body">
             {% for group in user.groups %}
-                <span class="badge text-bg-secondary">{{ group.name }}</span>
+                <span class="badge bg-blue-lt">{{ group.name }}</span>
             {% else %}
                 <span class="text-muted">No groups assigned.</span>
             {% endfor %}
@@ -48,7 +49,7 @@
     </div>
 
     <div class="card mb-3">
-        <div class="card-header fw-semibold">Effective privileges ({{ user.privilegeNames|length }})</div>
+        <div class="card-header"><h3 class="card-title">Effective privileges ({{ user.privilegeNames|length }})</h3></div>
         <div class="card-body">
             {% for privilege in user.privilegeNames|sort %}
                 <code class="d-inline-block me-2 mb-1">{{ privilege }}</code>
@@ -59,7 +60,7 @@
     </div>
 
     <div class="card">
-        <div class="card-header fw-semibold">Privilege voter check (live)</div>
+        <div class="card-header"><h3 class="card-title">Privilege voter check (live)</h3></div>
         <div class="card-body">
             <p class="text-muted small">Demonstrates the fine-grained privilege voter via <code>is_granted()</code>.</p>
             <ul class="list-unstyled mb-0">

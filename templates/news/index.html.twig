@@ -26,7 +26,7 @@
             </div>
           </div>
           <div class="text-muted small mb-2">
-            {{ n.createdAt|date('D, d M Y H:i') }}{% if n.author %} · {{ n.author.name }}{% endif %}
+            {{ n.createdAt|app_datetime }}{% if n.author %} · {{ n.author.name }}{% endif %}
           </div>
           <p class="mb-1">{{ n.preview|nl2br }}</p>
           {% if n.hasMore %}<a href="{{ path('app_news_show', {id: n.id}) }}">Read more →</a>{% endif %}

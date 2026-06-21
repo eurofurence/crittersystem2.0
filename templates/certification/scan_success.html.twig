@@ -14,10 +14,10 @@
 
           <dl class="row mb-0 small text-start">
             <dt class="col-5">Certified on</dt>
-            <dd class="col-7">{{ record.dateCertified|date('D, d M Y H:i') }}</dd>
+            <dd class="col-7">{{ record.dateCertified|app_datetime }}</dd>
             {% if record.dateExpires %}
               <dt class="col-5">Valid until</dt>
-              <dd class="col-7">{{ record.dateExpires|date('D, d M Y') }}</dd>
+              <dd class="col-7">{{ record.dateExpires|app_date }}</dd>
             {% else %}
               <dt class="col-5">Validity</dt><dd class="col-7">Never expires</dd>
             {% endif %}

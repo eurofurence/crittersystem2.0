@@ -37,7 +37,7 @@
             <span class="fw-semibold">{{ c.user.name }}
               {% if c.unread > 0 %}{{ d.badge(c.unread ~ ' new', 'text-bg-danger') }}{% endif %}
             </span>
-            <span class="text-muted small">{{ c.last.createdAt|date('D, d M H:i') }}</span>
+            <span class="text-muted small">{{ c.last.createdAt|app_datetime }}</span>
           </div>
           <div class="text-muted small text-truncate">
             {{ c.last.sender.id == app.user.id ? 'You: ' }}{{ c.last.text }}

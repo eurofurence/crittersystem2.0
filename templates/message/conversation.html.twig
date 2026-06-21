@@ -16,7 +16,7 @@
         <div class="card {{ mine ? 'text-bg-primary' : '' }}" style="max-width: 75%">
           <div class="card-body py-2 px-3">
             <div>{{ m.text|nl2br }}</div>
-            <div class="small {{ mine ? 'text-white-50' : 'text-muted' }} text-end">{{ m.createdAt|date('d M H:i') }}</div>
+            <div class="small {{ mine ? 'text-white-50' : 'text-muted' }} text-end">{{ m.createdAt|app_datetime }}</div>
           </div>
         </div>
       </div>

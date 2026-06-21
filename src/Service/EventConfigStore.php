@@ -23,6 +23,19 @@ class EventConfigStore
     public const KEY_TEARDOWN_END = 'event.teardown_end';
     public const KEY_DEFAULT_THEME = 'theme.default';
 
+    // Display / regional settings (§ Configuration). These control how dates and
+    // times are rendered for everyone, server-side, regardless of the viewer's
+    // browser locale or timezone. See {@see \App\Service\DisplaySettings}.
+    public const KEY_TIMEZONE = 'display.timezone';
+    public const KEY_DATE_FORMAT = 'display.date_format';
+    public const KEY_TIME_FORMAT = 'display.time_format';
+    public const KEY_DATETIME_FORMAT = 'display.datetime_format';
+
+    public const DEFAULT_TIMEZONE = 'UTC';
+    public const DEFAULT_DATE_FORMAT = 'D, d M Y';
+    public const DEFAULT_TIME_FORMAT = 'H:i';
+    public const DEFAULT_DATETIME_FORMAT = 'D, d M Y H:i';
+
     public const ACCESS_MODES = ['public', 'staff', 'admin'];
 
     public function __construct(

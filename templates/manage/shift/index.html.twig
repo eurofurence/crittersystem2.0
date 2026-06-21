@@ -34,7 +34,7 @@
           <tr class="{{ shift.past ? 'opacity-75' : '' }}">
             <td class="fw-semibold">{{ shift.title }}</td>
             <td class="small">
-              {{ shift.startsAt|date('D, d M H:i') }} – {{ shift.endsAt|date('H:i') }}
+              {{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}
               <div class="text-muted">{{ shift.durationHours }}h{% if shift.past %} · past{% endif %}</div>
             </td>
             <td class="small">

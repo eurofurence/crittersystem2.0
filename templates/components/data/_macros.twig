@@ -61,18 +61,18 @@
 {# ------------------------------------------------------------------------------------------------------------------ #}
 
 {% macro status_badge(status) %}
-  {# normalize common statuses; extend as needed #}
+  {# normalize common statuses; extend as needed. Uses Tabler soft "-lt" badges. #}
   {% set s = status|lower %}
   {% if s in ['active','enabled','open','ok','approved'] %}
-    {{ _self.badge(status, 'text-bg-success') }}
+    {{ _self.badge(status, 'bg-green-lt') }}
   {% elseif s in ['pending','waiting','draft'] %}
-    {{ _self.badge(status, 'text-bg-warning') }}
+    {{ _self.badge(status, 'bg-yellow-lt') }}
   {% elseif s in ['disabled','closed','inactive'] %}
-    {{ _self.badge(status, 'text-bg-secondary') }}
+    {{ _self.badge(status, 'bg-secondary-lt') }}
   {% elseif s in ['error','blocked','rejected','failed'] %}
-    {{ _self.badge(status, 'text-bg-danger') }}
+    {{ _self.badge(status, 'bg-red-lt') }}
   {% else %}
-    {{ _self.badge(status, 'text-bg-info') }}
+    {{ _self.badge(status, 'bg-blue-lt') }}
   {% endif %}
 {% endmacro %}
 
@@ -83,16 +83,18 @@
      - message: string
      - actionLabel/actionHref/actionClass
   #}
-  <div class="border rounded p-4 text-center text-muted">
-    <div class="fw-bold text-dark mb-1">{{ title }}</div>
+  <div class="empty">
+    <p class="empty-title">{{ title }}</p>
     {% if options.message is defined and options.message %}
-      <div class="mb-3">{{ options.message }}</div>
+      <p class="empty-subtitle text-secondary">{{ options.message }}</p>
     {% endif %}
 
     {% if options.actionLabel is defined and options.actionHref is defined %}
-      <a href="{{ options.actionHref }}" class="{{ options.actionClass|default('btn btn-primary') }}">
-        {{ options.actionLabel }}
-      </a>
+      <div class="empty-action">
+        <a href="{{ options.actionHref }}" class="{{ options.actionClass|default('btn btn-primary') }}">
+          {{ options.actionLabel }}
+        </a>
+      </div>
     {% endif %}
   </div>
 {% endmacro %}

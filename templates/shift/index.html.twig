@@ -70,7 +70,7 @@
 
   {# ---- Shifts grouped by hour ---- #}
   {% if byHour is empty %}
-    {{ d.empty_state('No shifts', {message: 'No shifts match your filters for ' ~ selectedDate|date('D, d M Y') ~ '.'}) }}
+    {{ d.empty_state('No shifts', {message: 'No shifts match your filters for ' ~ selectedDate|app_date ~ '.'}) }}
   {% else %}
     {% for hour, cards in byHour %}
       <h2 class="h6 text-muted mt-3">{{ hour }}</h2>
@@ -82,7 +82,7 @@
               <div>
                 <a href="{{ path('app_shift_show', {id: shift.id}) }}" class="fw-semibold text-decoration-none">{{ shift.title }}</a>
                 <div class="text-muted small">
-                  {{ shift.startsAt|date('H:i') }}–{{ shift.endsAt|date('H:i') }}
+                  {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}
                   {% if shift.location %} · {{ shift.location.name }}{% endif %}
                   {% if shift.shiftType %} · {{ shift.shiftType.name }}{% endif %}
                 </div>

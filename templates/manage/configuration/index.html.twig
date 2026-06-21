@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Configuration{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Configuration', {
+    subtitle: 'How dates and times are displayed for everyone.',
+    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ form_start(form) }}
+    <h2 class="h6">Regional</h2>
+    <div class="row">
+      {{ f.choice(form.timezone, {col: 'col-12 col-md-6'}) }}
+    </div>
+
+    <h2 class="h6 mt-2">Date &amp; time formats</h2>
+    <div class="row">
+      {{ f.field(form.dateTimeFormat, {col: 'col-12 col-md-4'}) }}
+      {{ f.field(form.dateFormat, {col: 'col-12 col-md-4'}) }}
+      {{ f.field(form.timeFormat, {col: 'col-12 col-md-4'}) }}
+    </div>
+
+    <div class="card mb-3">
+      <div class="card-body">
+        <div class="text-muted small mb-1">Live preview (current saved settings, in the configured timezone)</div>
+        <div class="d-flex flex-wrap gap-4">
+          <div><span class="text-muted small d-block">Date &amp; time</span><strong>{{ now|app_datetime }}</strong></div>
+          <div><span class="text-muted small d-block">Date</span><strong>{{ now|app_date }}</strong></div>
+          <div><span class="text-muted small d-block">Time</span><strong>{{ now|app_time }}</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn btn-primary">Save</button>
+  {{ form_end(form) }}
+{% endblock %}

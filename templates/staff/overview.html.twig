@@ -23,7 +23,7 @@
               {{ d.badge('On duty', 'text-bg-success') }}
               {% if currentDuty.department %}in <strong>{{ currentDuty.department.name }}</strong>{% endif %}
             </p>
-            <p class="text-muted small">Since {{ currentDuty.startedAt|date('D, d M H:i') }}
+            <p class="text-muted small">Since {{ currentDuty.startedAt|app_datetime }}
               ({{ currentDuty.durationHours|round(1) }}h)</p>
             <form method="post" action="{{ path('app_staff_duty_end') }}">
               <input type="hidden" name="_token" value="{{ csrf_token('duty-end') }}">
@@ -55,7 +55,7 @@
           <dl class="row mb-0">
             <dt class="col-7">Next shift</dt>
             <dd class="col-5 text-end">
-              {% if nextShift %}<a href="{{ path('app_shift_show', {id: nextShift.shift.id}) }}">{{ nextShift.shift.startsAt|date('d M H:i') }}</a>
+              {% if nextShift %}<a href="{{ path('app_shift_show', {id: nextShift.shift.id}) }}">{{ nextShift.shift.startsAt|app_datetime }}</a>
               {% else %}—{% endif %}
             </dd>
             <dt class="col-7">Shift hours</dt><dd class="col-5 text-end">{{ stats.shiftHours|round(2) }}</dd>
@@ -76,7 +76,7 @@
       <thead><tr><th>Item</th><th>Qty</th><th>When</th></tr></thead>
       <tbody>
         {% for g in goodies %}
-          <tr><td>{{ g.itemName }}</td><td>{{ g.quantity }}</td><td class="small text-muted">{{ g.distributedAt|date('D, d M H:i') }}</td></tr>
+          <tr><td>{{ g.itemName }}</td><td>{{ g.quantity }}</td><td class="small text-muted">{{ g.distributedAt|app_datetime }}</td></tr>
         {% endfor %}
       </tbody>
     {{ d.table_end() }}

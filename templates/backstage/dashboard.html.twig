@@ -52,7 +52,7 @@
       <tbody>
         {% for dist in recent %}
           <tr>
-            <td class="small">{{ dist.distributedAt|date('D, d M H:i') }}</td>
+            <td class="small">{{ dist.distributedAt|app_datetime }}</td>
             <td>{{ dist.user.name }}</td>
             <td>{{ dist.itemName }}</td>
             <td>{{ dist.quantity }}</td>

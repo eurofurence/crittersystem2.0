@@ -4,36 +4,39 @@
 
 {% block title %}{{ pageTitle }}{% endblock %}
 
-{% block sidebar %}
-  {% set items %}
-    {{ nav.sidebar_item('Home', 'app_home', {icon: '🏠'}) }}
-    {{ nav.sidebar_item('Dashboard', 'app_dashboard', {icon: '📊'}) }}
-    {{ nav.sidebar_item('Form Kit', 'app_form_kit', {icon: '🧩'}) }}
-    {{ nav.sidebar_item('Data Kit', 'app_data_kit', {icon: '📋'}) }}
-    {{ nav.sidebar_item('Modal Kit', 'app_modal_kit', {icon: '🪟'}) }}
-    {{ nav.sidebar_item('Notification Kit', 'app_notification_kit', {icon: '🔔'}) }}
-    {{ nav.sidebar_item('Navigation Kit', 'app_navigation_kit', {icon: '🧭'}) }}
-  {% endset %}
-
-  {{ nav.sidebar('Dev Kits', items) }}
-{% endblock %}
-
 {% block body %}
   {{ d.page_header(pageTitle, {
-    subtitle: 'Navbar + sidebar with consistent active state and layout slots.',
+    subtitle: 'Tabler horizontal navbar + list-group sidebar component with consistent active state.',
     actions: [
       {label: 'Go to Data Kit', href: path('app_data_kit'), class: 'btn btn-outline-primary'}
     ]
   }) }}
 
-  <div class="card">
-    <div class="card-body">
-      <p class="mb-0">
-        This page exists to verify:
-        <span class="fw-semibold">navbar renders</span>,
-        <span class="fw-semibold">sidebar renders</span>,
-        and <span class="fw-semibold">active state</span> works based on route name.
-      </p>
+  <div class="row g-3">
+    <aside class="col-12 col-lg-3">
+      {% set items %}
+        {{ nav.sidebar_item('Home', 'app_home', {icon: 'home'}) }}
+        {{ nav.sidebar_item('Dashboard', 'app_dashboard', {icon: 'dashboard'}) }}
+        {{ nav.sidebar_item('Form Kit', 'app_form_kit', {icon: 'puzzle'}) }}
+        {{ nav.sidebar_item('Data Kit', 'app_data_kit', {icon: 'checklist'}) }}
+        {{ nav.sidebar_item('Modal Kit', 'app_modal_kit', {icon: 'help'}) }}
+        {{ nav.sidebar_item('Notification Kit', 'app_notification_kit', {icon: 'news'}) }}
+        {{ nav.sidebar_item('Navigation Kit', 'app_navigation_kit', {icon: 'compass'}) }}
+      {% endset %}
+      {{ nav.sidebar('Dev Kits', items) }}
+    </aside>
+
+    <div class="col-12 col-lg-9">
+      <div class="card">
+        <div class="card-body">
+          <p class="mb-0">
+            This page exists to verify the Tabler shell:
+            <span class="fw-semibold">top navbar renders</span>,
+            <span class="fw-semibold">sidebar list-group renders</span>,
+            and <span class="fw-semibold">active state</span> works based on route name.
+          </p>
+        </div>
+      </div>
     </div>
   </div>
 {% endblock %}

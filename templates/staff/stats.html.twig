@@ -37,8 +37,8 @@
         {% for r in dutyHistory %}
           <tr>
             <td>{{ r.department ? r.department.name : '—' }}</td>
-            <td class="small">{{ r.startedAt|date('D, d M H:i') }}</td>
-            <td class="small">{{ r.endedAt ? r.endedAt|date('D, d M H:i') : d.badge('Active', 'text-bg-success') }}</td>
+            <td class="small">{{ r.startedAt|app_datetime }}</td>
+            <td class="small">{{ r.endedAt ? r.endedAt|app_datetime : d.badge('Active', 'text-bg-success') }}</td>
             <td>{{ r.durationHours|round(2) }}</td>
           </tr>
         {% endfor %}
@@ -56,7 +56,7 @@
         {% for e in shiftEntries %}
           <tr>
             <td>{{ e.shift.title }}</td>
-            <td class="small">{{ e.shift.startsAt|date('D, d M H:i') }}</td>
+            <td class="small">{{ e.shift.startsAt|app_datetime }}</td>
             <td>{{ e.volunteerType.name }}</td>
             <td>{% if e.noshow %}{{ d.badge('No-show', 'text-bg-danger') }}{% else %}—{% endif %}</td>
           </tr>

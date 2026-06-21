@@ -22,7 +22,8 @@
     {priv: 'admin_news',            route: 'app_manage_news_index',            icon: '📰', title: 'News',            text: 'Publish and edit announcements.'},
     {priv: 'question.edit',         route: 'app_manage_questions_index',       icon: '❓', title: 'Questions',       text: 'Answer volunteer questions.'},
     {priv: 'faq.edit',              route: 'app_manage_faq_index',             icon: '📚', title: 'FAQ',             text: 'Curate frequently asked questions.'},
-    {priv: 'admin_event_config',    route: 'app_manage_event_config',          icon: '⚙️', title: 'Event Configuration', text: 'Global event settings and timeline.'}
+    {priv: 'admin_event_config',    route: 'app_manage_event_config',          icon: '⚙️', title: 'Event Configuration', text: 'Global event settings and timeline.'},
+    {priv: 'admin_event_config',    route: 'app_manage_configuration',         icon: '🕰️', title: 'Configuration',   text: 'Timezone and date/time display formats.'}
   ] %}
 
   {% set canManageAny = is_granted('admin_rooms') or is_granted('admin_volunteer_types') or is_granted('admin_shifts') or is_granted('admin') or is_granted('admin_event_config') or is_granted('admin_user_worklog') or is_granted('admin_news') or is_granted('question.edit') or is_granted('faq.edit') %}

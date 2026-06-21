@@ -64,7 +64,7 @@
             {% if note.subjectUser %}<span class="small text-muted">about {{ note.subjectUser.name }}</span>{% endif %}
           </div>
           <div class="small text-muted">
-            {{ note.author ? note.author.name : 'Unknown' }} · {{ note.createdAt|date('D, d M H:i') }}
+            {{ note.author ? note.author.name : 'Unknown' }} · {{ note.createdAt|app_datetime }}
           </div>
         </div>
         <div class="mt-1">{{ note.content|nl2br }}</div>

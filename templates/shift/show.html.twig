@@ -5,7 +5,7 @@
 
 {% block body %}
   {{ d.page_header(shift.title, {
-    subtitle: shift.startsAt|date('D, d M Y H:i') ~ ' – ' ~ shift.endsAt|date('H:i') ~ ' (' ~ shift.durationHours ~ 'h)',
+    subtitle: shift.startsAt|app_datetime ~ ' – ' ~ shift.endsAt|app_time ~ ' (' ~ shift.durationHours ~ 'h)',
     actions: [{label: '← All shifts', href: path('app_shift_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 

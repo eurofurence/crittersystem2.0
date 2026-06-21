@@ -25,14 +25,26 @@ return [
     '@hotwired/turbo' => [
         'version' => '8.0.20',
     ],
+
+    /**
+     * !! CRITICAL !!
+     * Bootstrap 5 JS only — drives every `data-bs-*` component (modals,
+     * dropdowns, toasts, navbar collapse) and is exposed as `window.bootstrap`.
+     * The visual layer comes from Tabler's CSS below;
+     * We intentionally do NOT import Tabler's JS bundle because it
+     * re-bundles Bootstrap and would double-initialise
+     * the same `data-bs-*` components.
+     * 
+     */
     'bootstrap' => [
         'version' => '5.3.8',
     ],
     '@popperjs/core' => [
         'version' => '2.11.8',
     ],
-    'bootstrap/dist/css/bootstrap.min.css' => [
-        'version' => '5.3.8',
+    // Tabler 1.4 design system (a Bootstrap 5 theme). Replaces stock Bootstrap CSS.
+    '@tabler/core/dist/css/tabler.min.css' => [
+        'version' => '1.4.0',
         'type' => 'css',
     ],
 ];

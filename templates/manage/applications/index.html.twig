@@ -19,7 +19,7 @@
           <tr>
             <td class="fw-semibold">{{ m.user.name }}</td>
             <td>{{ m.volunteerType.name }}</td>
-            <td class="small text-muted">{{ m.createdAt|date('D, d M H:i') }}</td>
+            <td class="small text-muted">{{ m.createdAt|app_datetime }}</td>
             <td class="text-end text-nowrap">
               <form method="post" action="{{ path('app_manage_vt_member_confirm', {id: m.volunteerType.id, membershipId: m.id}) }}" class="d-inline">
                 <input type="hidden" name="_token" value="{{ csrf_token('confirm' ~ m.id) }}">

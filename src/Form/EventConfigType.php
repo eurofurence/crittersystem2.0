@@ -3,6 +3,7 @@
 namespace App\Form;
 
 use App\Form\Model\EventConfigData;
+use App\Service\DisplaySettings;
 use App\Theme\ThemeCatalog;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
@@ -14,8 +15,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class EventConfigType extends AbstractType
 {
-    public function __construct(private readonly ThemeCatalog $themes)
-    {
+    public function __construct(
+        private readonly ThemeCatalog $themes,
+        private readonly DisplaySettings $display,
+    ) {
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -24,6 +27,8 @@ final class EventConfigType extends AbstractType
             'widget' => 'single_text',
             'required' => false,
             'input' => 'datetime_immutable',
+            'view_timezone' => $this->display->timezone()->getName(),
+            'model_timezone' => 'UTC',
         ];
 
         $builder
