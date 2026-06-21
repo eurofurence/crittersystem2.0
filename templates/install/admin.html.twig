@@ -1,0 +1,64 @@
+{% extends 'install/_layout.html.twig' %}
+
+{% block title %}Administrator · Setup · VMS{% endblock %}
+
+{% block content %}
+    {% include 'install/_brand.html.twig' %}
+
+    {% if alreadyExists %}
+        <div class="card card-md">
+            <div class="card-body">
+                <h2 class="mb-1">Administrator account</h2>
+                <div class="alert alert-info mt-2" role="alert">
+                    An account already exists, so no administrator needs to be created. You can manage users from
+                    inside the application after signing in.
+                </div>
+            </div>
+        </div>
+
+        {% embed 'install/_progress.html.twig' %}
+            {% block buttons %}
+                <a href="{{ path('app_install_config') }}" class="btn btn-primary">Continue</a>
+            {% endblock %}
+        {% endembed %}
+    {% else %}
+        <form class="card card-md" method="post" action="{{ path('app_install_admin') }}" data-turbo="false">
+            <div class="card-body">
+                <h2 class="mb-1">Create the first administrator</h2>
+                <p class="text-secondary">This account has full access. You can change the password later from the app.</p>
+
+                {% for error in errors|default([]) %}
+                    <div class="alert alert-danger" role="alert">{{ error }}</div>
+                {% endfor %}
+
+                <input type="hidden" name="_token" value="{{ csrf_token('install_admin') }}">
+                <div class="mb-3">
+                    <label class="form-label required">Username</label>
+                    <input type="text" name="username" class="form-control" value="{{ username|default('admin') }}" required autofocus>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label required">Email</label>
+                    <input type="email" name="email" class="form-control" value="{{ email|default('') }}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label required">Password</label>
+                    <input type="password" name="password" class="form-control" autocomplete="new-password" required>
+                    <small class="form-hint">At least 8 characters.</small>
+                </div>
+                <div class="mb-1">
+                    <label class="form-label required">Confirm password</label>
+                    <input type="password" name="password_confirm" class="form-control" autocomplete="new-password" required>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="btn-list justify-content-end">
+                    <button type="submit" class="btn btn-primary">Create administrator</button>
+                </div>
+            </div>
+        </form>
+
+        {% embed 'install/_progress.html.twig' %}
+            {% block buttons %}{% endblock %}
+        {% endembed %}
+    {% endif %}
+{% endblock %}

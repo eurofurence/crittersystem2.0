@@ -1,0 +1,33 @@
+{% extends 'install/_layout.html.twig' %}
+
+{% block title %}Installer disabled · VMS{% endblock %}
+
+{% block content %}
+    {% include 'install/_brand.html.twig' %}
+    <div class="card card-md">
+        <div class="card-body text-center py-4 p-sm-5">
+            <div class="mb-3">
+                <span class="avatar avatar-xl bg-warning-lt">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <path d="M0 0h24v24H0z" stroke="none"/>
+                        <path d="M12 9v4"/><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z"/><path d="M12 16h.01"/>
+                    </svg>
+                </span>
+            </div>
+            <h1 class="mt-3">The web installer is disabled</h1>
+            <p class="text-secondary">
+                This deployment has no <code>INSTALL_PASSWORD</code> set, so the browser-based wizard is turned off.
+                A migration or first-time setup is still required.
+            </p>
+            <p class="text-secondary">
+                Complete the setup from the console instead:
+            </p>
+            <pre class="text-start"><code>php bin/console app:migrate          # apply pending migrations
+php bin/console app:install          # seed roles and the first admin</code></pre>
+            <p class="text-secondary">
+                Or set <code>INSTALL_PASSWORD</code> in the environment and reload this page to use the wizard.
+            </p>
+        </div>
+    </div>
+{% endblock %}

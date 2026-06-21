@@ -1,0 +1,24 @@
+{#
+  Standalone, database-independent shell for the install wizard and the
+  maintenance page. It deliberately does NOT extend base.html.twig: that layout
+  renders the navbar and resolves the active theme from the database, which may
+  be unreachable exactly when these pages are shown. Here we load only Tabler's
+  CSS (via the app importmap entrypoint) and a fixed light theme.
+#}
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <title>{% block title %}Setup · VMS{% endblock %}</title>
+        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        {{ importmap('app') }}
+    </head>
+    <body class="border-top-wide border-primary d-print-none">
+        <div class="page page-center">
+            <div class="container container-tight py-4">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </body>
+</html>

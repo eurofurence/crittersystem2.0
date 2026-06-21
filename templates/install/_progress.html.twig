@@ -1,0 +1,21 @@
+{#
+  Wizard progress bar + step counter. Expects `progress`, `step`, `steps_total`.
+  Buttons are provided by the caller via the `buttons` argument of the embed.
+#}
+<div class="row align-items-center mt-3">
+    <div class="col-4">
+        <div class="progress progress-sm">
+            <div class="progress-bar" style="width: {{ progress }}%" role="progressbar"
+                 aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"
+                 aria-label="{{ progress }}% complete">
+                <span class="visually-hidden">{{ progress }}% complete</span>
+            </div>
+        </div>
+        <div class="small text-secondary mt-1">Step {{ step }} of {{ steps_total }}</div>
+    </div>
+    <div class="col">
+        <div class="btn-list justify-content-end">
+            {% block buttons %}{% endblock %}
+        </div>
+    </div>
+</div>

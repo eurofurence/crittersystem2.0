@@ -1,0 +1,66 @@
+# Containerised DEV stack: edit code on the host, run it (and the full test /
+# lint toolchain) in containers. Source is bind-mounted, so changes are live.
+#
+#   docker compose -f compose.dev.yaml up -d --build
+#   docker compose -f compose.dev.yaml exec app composer install
+#   docker compose -f compose.dev.yaml exec app php bin/phpunit
+#   docker compose -f compose.dev.yaml exec app php bin/console lint:twig templates
+#   open http://localhost:8000   (Mailpit UI on http://localhost:8025)
+services:
+  database:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    ports:
+      - "5432:5432"
+    volumes:
+      - database_data_dev:/var/lib/postgresql/data:rw
+
+  app:
+    build:
+      context: .
+      target: dev
+    environment:
+      APP_ENV: dev
+      APP_DEBUG: "1"
+      # Auto-migrate the dev database on start for a turnkey environment.
+      RUN_MIGRATIONS_ON_START: "1"
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-app}?serverVersion=16&charset=utf8"
+      MAILER_DSN: "smtp://mailer:1025"
+      # Set to enable the web installer; unset to manage setup from the console.
+      INSTALL_PASSWORD: "${INSTALL_PASSWORD:-}"
+    volumes:
+      # Live source mount. The named volume keeps container-built vendor/ from
+      # being shadowed when the host has none (delete it to use host vendor).
+      - .:/app
+    depends_on:
+      database:
+        condition: service_healthy
+
+  web:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - .:/app:ro
+    ports:
+      - "${HTTP_PORT:-8000}:80"
+    depends_on:
+      - app
+
+  mailer:
+    image: axllent/mailpit
+    ports:
+      - "8025:8025"
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+  database_data_dev:

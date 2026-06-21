@@ -1,0 +1,33 @@
+# ArgoCD Application that deploys Critter from the k8s manifests in this repo.
+# Apply once into the argocd namespace; ArgoCD then keeps the cluster in sync
+# with Git. The self-healing migration runs as a pod initContainer on every
+# rollout, so a new image with new migrations is applied automatically and
+# safely as ArgoCD rolls the Deployment.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: critter
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/YOUR_ORG/critter.git   # <-- replace
+    targetRevision: main
+    path: deploy/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: critter
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: critter
+  namespace: critter
+  annotations:
+    # Adjust for your ingress controller / cert-manager setup.
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - critter.example.org   # <-- replace with your host
+      secretName: critter-tls
+  rules:
+    - host: critter.example.org # <-- replace with your host
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: critter
+                port:
+                  number: 80

@@ -1,0 +1,121 @@
+{% extends 'install/_layout.html.twig' %}
+
+{% block title %}Database · Setup · VMS{% endblock %}
+
+{% block content %}
+    {% include 'install/_brand.html.twig' %}
+
+    {% set running = status.state == 'running' or app.request.query.get('running') %}
+
+    <div class="card card-md">
+        <div class="card-body">
+            <h2 class="mb-1">Database check</h2>
+            {% include 'install/_flashes.html.twig' %}
+
+            {% if not reachable %}
+                {# ---- connection error ---- #}
+                <div class="alert alert-danger" role="alert">
+                    <div class="d-flex">
+                        <div>
+                            <h4 class="alert-title">Cannot connect to the database</h4>
+                            <div class="text-secondary">The application could not open a connection using the configured
+                                <code>DATABASE_URL</code>.</div>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-secondary">Common causes and fixes:</p>
+                <ul class="text-secondary">
+                    <li>The database server is not running yet — start it and retry.</li>
+                    <li><code>DATABASE_URL</code> is wrong (host, port, user, password or database name).</li>
+                    <li>The database/user has not been created on the server.</li>
+                    <li>Network/firewall rules block the connection between this app and the database.</li>
+                </ul>
+            {% elseif pending == 0 and not running %}
+                {# ---- nothing to do ---- #}
+                <div class="alert alert-success" role="alert">
+                    <h4 class="alert-title">The database schema is up to date</h4>
+                    <div class="text-secondary">No migrations are pending.</div>
+                </div>
+            {% else %}
+                {# ---- migration available / running ---- #}
+                <p class="text-secondary">
+                    {% if pending %}<strong>{{ pending }}</strong> migration(s) need to be applied{% endif %}
+                    {% if latest %} up to version <code>{{ latest }}</code>{% endif %}.
+                    Migrations run inside a single transaction (all-or-nothing) and are guarded by a database lock, so
+                    they are safe to run and self-heal if interrupted.
+                </p>
+
+                <div id="migration-panel" data-running="{{ running ? '1' : '0' }}"
+                     data-status-url="{{ path('app_install_migrate_status') }}"
+                     data-next-url="{{ path('app_install_admin') }}">
+
+                    {% if not running %}
+                        <form method="post" action="{{ path('app_install_migrate') }}" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token('install_migrate') }}">
+                            <button type="submit" class="btn btn-primary">Start migration</button>
+                        </form>
+                    {% endif %}
+
+                    <div id="migration-progress" class="{{ running ? '' : 'd-none' }}">
+                        <div class="d-flex align-items-center mb-2 mt-2">
+                            <div class="spinner-border spinner-border-sm me-2" id="migration-spinner" role="status"></div>
+                            <span id="migration-state-text">Running migrations…</span>
+                        </div>
+                        <pre id="migration-log" class="bg-dark text-white p-3 rounded"
+                             style="max-height: 320px; overflow:auto; white-space: pre-wrap;">{{ status.error ? status.error : '' }}</pre>
+                        <div id="migration-actions" class="d-none mt-2"></div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% embed 'install/_progress.html.twig' %}
+        {% block buttons %}
+            {% if not reachable %}
+                <a href="{{ path('app_install_database') }}" class="btn btn-primary">Retry</a>
+            {% elseif pending == 0 and not running %}
+                <a href="{{ path('app_install_admin') }}" class="btn btn-primary">Continue</a>
+            {% endif %}
+        {% endblock %}
+    {% endembed %}
+
+    <script>
+        (function () {
+            var panel = document.getElementById('migration-panel');
+            if (!panel || panel.dataset.running !== '1') return;
+
+            var logEl = document.getElementById('migration-log');
+            var stateText = document.getElementById('migration-state-text');
+            var spinner = document.getElementById('migration-spinner');
+            var actions = document.getElementById('migration-actions');
+            var progress = document.getElementById('migration-progress');
+            progress.classList.remove('d-none');
+
+            function finish(ok, message) {
+                spinner.classList.add('d-none');
+                stateText.textContent = message;
+                actions.classList.remove('d-none');
+                if (ok) {
+                    actions.innerHTML = '<a class="btn btn-primary" href="' + panel.dataset.nextUrl + '">Continue</a>';
+                } else {
+                    actions.innerHTML = '<a class="btn btn-danger" href="' + window.location.pathname + '">Retry</a>';
+                }
+            }
+
+            function poll() {
+                fetch(panel.dataset.statusUrl, { headers: { 'Accept': 'application/json' } })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data.log) { logEl.textContent = data.log; logEl.scrollTop = logEl.scrollHeight; }
+                        if (data.state === 'ok') { finish(true, 'Migrations applied successfully.'); return; }
+                        if (data.state === 'failed') { finish(false, 'Migration failed — see the log above.'); return; }
+                        setTimeout(poll, 1200);
+                    })
+                    .catch(function () { setTimeout(poll, 2000); });
+            }
+
+            poll();
+        })();
+    </script>
+{% endblock %}

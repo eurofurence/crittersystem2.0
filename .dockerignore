@@ -1,0 +1,22 @@
+# Keep the build context small and reproducible.
+.git
+.gitignore
+.github
+
+# Rebuilt inside the image — never copy host-specific copies.
+vendor
+var
+public/assets
+
+# Local secrets / env overrides must come from the runtime, not the image.
+.env.local
+.env.*.local
+
+# Editor / OS noise and backups
+*.bak
+.idea
+.vscode
+.DS_Store
+
+# Docker artifacts themselves
+compose.override.yaml

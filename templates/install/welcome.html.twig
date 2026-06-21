@@ -1,0 +1,41 @@
+{% extends 'install/_layout.html.twig' %}
+
+{% block title %}Welcome · Setup · VMS{% endblock %}
+
+{% block content %}
+    {% include 'install/_brand.html.twig' %}
+
+    <form class="card card-md" method="post" action="{{ path('app_install_authenticate') }}" data-turbo="false">
+        <div class="card-body text-center py-4 p-sm-5">
+            <div class="mb-3">
+                <span class="avatar avatar-xl bg-primary-lt">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon">
+                        <path d="M0 0h24v24H0z" stroke="none"/>
+                        <path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"/><path d="M9 12l2 2l4 -4"/>
+                    </svg>
+                </span>
+            </div>
+            <h1 class="mt-3">Welcome to the VMS setup</h1>
+            <p class="text-secondary">
+                This guided wizard checks your environment, brings the database up to date and helps you create
+                the first administrator. To continue, enter the installation password
+                (the <code>INSTALL_PASSWORD</code> environment variable set for this deployment).
+            </p>
+        </div>
+
+        <div class="hr-text hr-text-center hr-text-spaceless">unlock setup</div>
+
+        <div class="card-body">
+            {% include 'install/_flashes.html.twig' %}
+            <input type="hidden" name="_token" value="{{ csrf_token('install_authenticate') }}">
+            <div class="mb-3">
+                <label class="form-label">Installation password</label>
+                <input type="password" name="password" class="form-control" autocomplete="off" autofocus required>
+            </div>
+            <div class="form-footer">
+                <button type="submit" class="btn btn-primary w-100">Unlock &amp; continue</button>
+            </div>
+        </div>
+    </form>
+{% endblock %}

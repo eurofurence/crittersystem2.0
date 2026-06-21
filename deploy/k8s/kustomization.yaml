@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: critter
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - postgres.yaml        # remove when using an external/managed database
+  - app.yaml
+  - ingress.yaml
+  # secret.example.yaml is intentionally NOT listed — provide the real Secret
+  # out-of-band (kubectl create secret / Sealed Secrets / External Secrets).
+
+# Pin the image in one place; override per environment with `kustomize edit set
+# image` or an overlay.
+images:
+  - name: ghcr.io/YOUR_ORG/critter
+    newTag: latest

@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: critter
+  namespace: critter
+  labels:
+    app: critter
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: critter
+  template:
+    metadata:
+      labels:
+        app: critter
+    spec:
+      # ----------------------------------------------------------------------
+      # Self-healing migration: runs to completion before the app serves.
+      # `app:migrate` advisory-locks, so with replicas>1 exactly one pod's init
+      # container migrates and the rest no-op. If the DB is not ready yet the
+      # command exits non-zero, the init container fails, and Kubernetes retries
+      # it with back-off until it succeeds — no half-migrated state, no manual
+      # intervention after an interrupted rollout.
+      # ----------------------------------------------------------------------
+      initContainers:
+        - name: migrate
+          image: ghcr.io/YOUR_ORG/critter:latest   # <-- replace with your image
+          command: ["php", "bin/console", "app:migrate", "--no-interaction"]
+          envFrom:
+            - secretRef:
+                name: critter-secrets
+          env:
+            - name: APP_ENV
+              value: prod
+      containers:
+        - name: app
+          image: ghcr.io/YOUR_ORG/critter:latest   # <-- replace with your image
+          envFrom:
+            - secretRef:
+                name: critter-secrets
+          env:
+            - name: APP_ENV
+              value: prod
+            - name: RUN_MIGRATIONS_ON_START   # migration handled by the initContainer
+              value: "0"
+            - name: PUBLIC_SYNC_DIR
+              value: /var/www/public
+          ports:
+            - containerPort: 9000
+          volumeMounts:
+            - name: public
+              mountPath: /var/www/public
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "512Mi" }
+        - name: web
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/conf.d
+            - name: public
+              mountPath: /app/public
+              readOnly: true
+          readinessProbe:
+            httpGet: { path: /health, port: 80 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 80 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits: { cpu: "500m", memory: "128Mi" }
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: critter-nginx
+        - name: public
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: critter
+  namespace: critter
+spec:
+  selector:
+    app: critter
+  ports:
+    - port: 80
+      targetPort: 80

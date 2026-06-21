@@ -4,3 +4,8 @@ doctrine_migrations:
         # as migrations classes should NOT be autoloaded
         'DoctrineMigrations': '%kernel.project_dir%/migrations'
     enable_profiler: false
+    # Run the whole batch in a single transaction so an interrupted deploy rolls
+    # back cleanly instead of leaving a half-migrated schema. Combined with the
+    # advisory lock in app:migrate, this is what makes auto-migration safe.
+    # (PostgreSQL supports transactional DDL, so this is reliable here.)
+    all_or_nothing: true

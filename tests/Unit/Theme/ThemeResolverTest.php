@@ -76,4 +76,25 @@ final class ThemeResolverTest extends TestCase
         $user = $this->userWithTheme('was-removed');
         self::assertSame('dark', $this->resolver(user: $user, adminDefault: 'dark')->resolve()->slug);
     }
+
+    /**
+     * The theme global runs on every render, including the maintenance / install
+     * pages shown when the database is down. A failing config lookup must degrade
+     * to the fallback theme instead of throwing (which would 500 every page).
+     */
+    public function testDatabaseFailureDegradesToFallbackTheme(): void
+    {
+        $stack = new RequestStack();
+        $stack->push(Request::create('/'));
+
+        $security = $this->createStub(Security::class);
+        $security->method('getUser')->willReturn(null);
+
+        $config = $this->createStub(EventConfigStore::class);
+        $config->method('get')->willThrowException(new \RuntimeException('database is down'));
+
+        $resolver = new ThemeResolver(new ThemeCatalog(), $config, $security, $stack);
+
+        self::assertSame('default', $resolver->resolve()->slug);
+    }
 }

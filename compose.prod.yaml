@@ -1,0 +1,50 @@
+# Production-shaped stack: PostgreSQL + PHP-FPM app + nginx.
+#
+#   cp docker/.env.prod.example docker/.env.prod   # then edit the secrets
+#   docker compose -f compose.prod.yaml up -d --build
+#
+# The app container migrates the database on startup (advisory-locked, retried),
+# so the stack is safe to bring up in one command and to restart freely.
+services:
+  database:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+    env_file: [docker/.env.prod]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    volumes:
+      - database_data:/var/lib/postgresql/data:rw
+    restart: unless-stopped
+
+  app:
+    build:
+      context: .
+      target: prod
+    env_file: [docker/.env.prod]
+    environment:
+      APP_ENV: prod
+      RUN_MIGRATIONS_ON_START: "1"
+      PUBLIC_SYNC_DIR: /var/www/public
+    volumes:
+      - public_data:/var/www/public
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - public_data:/app/public:ro
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    depends_on:
+      - app
+    restart: unless-stopped
+
+volumes:
+  database_data:
+  public_data:

@@ -1,0 +1,46 @@
+{% extends 'install/_layout.html.twig' %}
+
+{% block title %}System overview · Setup · VMS{% endblock %}
+
+{% block content %}
+    {% include 'install/_brand.html.twig' %}
+
+    <div class="card card-md">
+        <div class="card-body">
+            <h2 class="mb-1">System overview</h2>
+            <p class="text-secondary">
+                Detected deployment: <strong>{{ deployment }}</strong>. The checks below must all pass before you
+                continue. Required dependency: a reachable <strong>PostgreSQL</strong> database.
+            </p>
+
+            <div class="list-group list-group-flush">
+                {% for check in checks %}
+                    <div class="list-group-item">
+                        <div class="row align-items-center">
+                            <div class="col-auto">
+                                {% if check.ok %}
+                                    <span class="badge bg-success text-white">OK</span>
+                                {% else %}
+                                    <span class="badge bg-danger text-white">Fix</span>
+                                {% endif %}
+                            </div>
+                            <div class="col text-truncate">
+                                <div class="text-body d-block">{{ check.label }}</div>
+                                {% if not check.ok %}
+                                    <div class="text-secondary text-truncate mt-n1">{{ check.hint }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-auto text-secondary">{{ check.value }}</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    {% embed 'install/_progress.html.twig' %}
+        {% block buttons %}
+            <a href="{{ path('app_install_database') }}" class="btn btn-primary">Continue</a>
+        {% endblock %}
+    {% endembed %}
+{% endblock %}

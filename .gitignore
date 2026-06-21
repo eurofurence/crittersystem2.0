@@ -9,6 +9,11 @@
 /vendor/
 ###< symfony/framework-bundle ###
 
+###> app/deploy ###
+# Real production secrets for compose.prod.yaml — never commit.
+/docker/.env.prod
+###< app/deploy ###
+
 ###> phpunit/phpunit ###
 /phpunit.xml
 /.phpunit.cache/

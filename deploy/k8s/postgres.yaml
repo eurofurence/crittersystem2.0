@@ -1,0 +1,63 @@
+# Minimal in-cluster PostgreSQL for evaluation. For production prefer a managed
+# database or an operator (CloudNativePG, Zalando) and delete this file.
+apiVersion: v1
+kind: Service
+metadata:
+  name: critter-db
+  namespace: critter
+spec:
+  selector:
+    app: critter-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: critter-db
+  namespace: critter
+spec:
+  serviceName: critter-db
+  replicas: 1
+  selector:
+    matchLabels:
+      app: critter-db
+  template:
+    metadata:
+      labels:
+        app: critter-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - name: POSTGRES_DB
+              value: app
+            - name: POSTGRES_USER
+              value: app
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: critter-secrets
+                  key: POSTGRES_PASSWORD
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "app", "-d", "app"]
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi

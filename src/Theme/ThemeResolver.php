@@ -36,17 +36,26 @@ final class ThemeResolver
             }
         }
 
-        $user = $this->security->getUser();
-        if ($user instanceof User
-            && ($slug = $user->getSettings()?->getTheme()) !== null
-            && ($theme = $this->catalog->find($slug)) !== null
-        ) {
-            return $theme;
-        }
+        // The remaining lookups touch the database (current user, event config).
+        // This global runs on *every* template render, including the maintenance
+        // and install pages that are shown precisely when the database may be
+        // unreachable or unmigrated — so a failure here must degrade to the
+        // fallback theme rather than turning every page into a 500.
+        try {
+            $user = $this->security->getUser();
+            if ($user instanceof User
+                && ($slug = $user->getSettings()?->getTheme()) !== null
+                && ($theme = $this->catalog->find($slug)) !== null
+            ) {
+                return $theme;
+            }
 
-        $defaultSlug = (string) $this->config->get(EventConfigStore::KEY_DEFAULT_THEME, '');
-        if ($defaultSlug !== '' && ($theme = $this->catalog->find($defaultSlug)) !== null) {
-            return $theme;
+            $defaultSlug = (string) $this->config->get(EventConfigStore::KEY_DEFAULT_THEME, '');
+            if ($defaultSlug !== '' && ($theme = $this->catalog->find($defaultSlug)) !== null) {
+                return $theme;
+            }
+        } catch (\Throwable) {
+            // Database not available/migrated yet — fall through to the fallback.
         }
 
         return $this->catalog->fallback();

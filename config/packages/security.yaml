@@ -32,6 +32,10 @@ security:
 
     # Note: Only the *first* matching rule is applied
     access_control:
+        # Install wizard + health probe must be reachable before any user exists,
+        # so they bypass the firewall. The wizard is protected by INSTALL_PASSWORD.
+        - { path: ^/admin/install, roles: PUBLIC_ACCESS }
+        - { path: ^/health$, roles: PUBLIC_ACCESS }
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/$, roles: PUBLIC_ACCESS }     # site root redirects (guest -> login, user -> dashboard)
         - { path: ^/api, roles: PUBLIC_ACCESS }   # per-endpoint authorization handled in the API phase
