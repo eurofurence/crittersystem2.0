@@ -1,0 +1,36 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Users{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Users', {
+    subtitle: 'Manage volunteer and staff accounts.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      is_granted('user:create') ? {label: '+ Invite user', href: path('app_manage_user_invite'), class: 'btn btn-primary'} : null
+    ]|filter(a => a is not null)
+  }) }}
+
+  <form method="get" class="mb-3"><input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search name, email or id"></form>
+
+  {{ d.table_start() }}
+    <thead><tr><th>User</th><th>Email</th><th>Position</th><th>Onboarded</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+      {% for u in users %}
+        <tr>
+          <td>
+            <span class="fw-semibold">{{ u.name }}</span> <span class="text-muted small">#{{ u.id }}</span>
+            {% for b in u.badges %}<span class="badge text-bg-{{ b.color }} ms-1">{{ b.name }}</span>{% endfor %}
+          </td>
+          <td class="small">{{ u.email|pii_email }}</td>
+          <td class="small">{{ u.positionBadge ? u.positionBadge.name : '—' }}</td>
+          <td>{% if u.onboardingCompleted %}{{ d.badge('Yes', 'text-bg-success') }}{% else %}{{ d.badge('Pending', 'text-bg-warning') }}{% endif %}</td>
+          <td class="text-end text-nowrap">
+            {% if is_granted('user:edit') %}<a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_user_edit', {id: u.id}) }}">Edit</a>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  {{ d.table_end() }}
+{% endblock %}

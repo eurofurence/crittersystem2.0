@@ -18,7 +18,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Staff-only internal notes: a filterable log of operational notes.
  */
 #[Route('/staff/notes')]
-#[IsGranted('user.type.staff')]
+#[IsGranted('ROLE_STAFF')]
 final class InternalNoteController extends AbstractController
 {
     public function __construct(

@@ -58,6 +58,41 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getSingleScalarResult();
     }
 
+    /**
+     * Users belonging to any active group that grants the given role.
+     *
+     * @return User[]
+     */
+    public function findByGroupRole(string $role): array
+    {
+        return $this->createQueryBuilder('u')
+            ->join('u.groupAssignments', 'ga')
+            ->join('ga.group', 'g')
+            ->andWhere('g.role = :role')
+            ->setParameter('role', $role)
+            ->distinct()
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Manual accounts that never finished onboarding within the given cutoff.
+     *
+     * @return User[]
+     */
+    public function findStaleIncompleteOnboarding(\DateTimeImmutable $cutoff): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.onboardingCompleted = false')
+            ->andWhere('u.accountSource = :manual')
+            ->andWhere('u.lastLoginAt IS NULL')
+            ->andWhere('u.createdAt < :cutoff')
+            ->setParameter('manual', User::SOURCE_MANUAL)
+            ->setParameter('cutoff', $cutoff)
+            ->getQuery()
+            ->getResult();
+    }
+
     /** @return User[] users who opted in to news emails (settings.emailNews) */
     public function findSubscribedToNews(): array
     {

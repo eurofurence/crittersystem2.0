@@ -1,0 +1,22 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% block title %}Two-factor authentication{% endblock %}
+{% block body %}
+  {{ d.page_header('Two-factor authentication', {subtitle: 'Protect your account with an authenticator app.'}) }}
+  <div class="card"><div class="card-body">
+    {% if user.twoFactorEnabled %}
+      <p>{{ d.badge('Enabled', 'text-bg-success') }} Two-factor authentication is active on your account.</p>
+      {% if not user.mustUseTwoFactor %}
+        <form method="post" action="{{ path('app_2fa_disable') }}" class="row g-2 align-items-end" style="max-width:24rem">
+          <div class="col-auto"><label class="form-label">Enter a current code to disable</label><input name="code" class="form-control" autocomplete="one-time-code" required></div>
+          <div class="col-auto"><button class="btn btn-outline-danger">Disable</button></div>
+        </form>
+      {% else %}
+        <p class="text-muted small">Two-factor authentication is mandatory for your account and cannot be disabled.</p>
+      {% endif %}
+    {% else %}
+      <p>{{ d.badge('Not set up', 'text-bg-secondary') }} Add an extra layer of security.</p>
+      <a class="btn btn-primary" href="{{ path('app_2fa_setup') }}">Set up two-factor authentication</a>
+    {% endif %}
+  </div></div>
+{% endblock %}

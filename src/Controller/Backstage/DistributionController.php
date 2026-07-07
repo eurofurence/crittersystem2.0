@@ -21,7 +21,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * eligible items in three tiers, then hand items over with an audit snapshot
  */
 #[Route('/backstage/distribute')]
-#[IsGranted('backstage.goodies.agent')]
+#[IsGranted('goodie:distribute')]
 final class DistributionController extends AbstractController
 {
     public function __construct(

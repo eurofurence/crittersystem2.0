@@ -19,6 +19,20 @@ services:
             string $environment: '%kernel.environment%'
             # Password that gates the /admin/install wizard. Empty = installer disabled.
             string $installPassword: '%env(INSTALL_PASSWORD)%'
+            # Symmetric key for encrypting secrets at rest (SSO secret, Telegram key, certificate).
+            string $encryptionKey: '%env(APP_ENCRYPTION_KEY)%'
+            # Pepper for hashing banned identities (one-way, never reversible).
+            string $banPepper: '%env(APP_SECRET)%'
+            # SSO / OIDC connection — configured via environment (Infisical).
+            bool $ssoEnabled: '%env(bool:SSO_ENABLED)%'
+            string $ssoDiscoveryUrl: '%env(SSO_DISCOVERY_URL)%'
+            string $ssoClientId: '%env(SSO_CLIENT_ID)%'
+            string $ssoClientSecret: '%env(SSO_CLIENT_SECRET)%'
+            string $ssoAuthorizationUrl: '%env(SSO_AUTHORIZATION_URL)%'
+            string $ssoTokenUrl: '%env(SSO_TOKEN_URL)%'
+            string $ssoUserinfoUrl: '%env(SSO_USERINFO_URL)%'
+            string $ssoScopes: '%env(SSO_SCOPES)%'
+            string $ssoProviderLabel: '%env(SSO_PROVIDER_LABEL)%'
 
     # makes classes in src/ available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
@@ -27,6 +41,11 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    # Primed onto the encrypted DBAL type in Kernel::boot(), so it must be
+    # fetchable from the container.
+    App\Service\SecretCipher:
+        public: true
 
     # The Doctrine Migrations bundle registers the DependencyFactory privately
     # under "doctrine.migrations.dependency_factory"; alias it so our install

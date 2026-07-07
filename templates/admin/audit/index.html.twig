@@ -1,0 +1,114 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Audit log{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Audit log', {subtitle: 'Forensic record of security-relevant actions. Admin only.'}) }}
+
+  <div class="card mb-4">
+    <div class="card-header"><strong>Legal export</strong></div>
+    <div class="card-body">
+      <p class="text-muted small mb-3">
+        Generates a signed package (machine-readable JSON + presentation PDF + manifest with SHA-256
+        and signing certificate). System and internal actions are always included, even when a focus
+        user is set. The file is available for download for {{ constant('App\\Entity\\AuditExport::RETENTION_DAYS') }} days.
+      </p>
+      {% if is_granted('audit:export') %}
+        <form method="post" action="{{ path('app_admin_audit_export') }}" class="row g-2 align-items-end">
+          <input type="hidden" name="_token" value="{{ csrf_token('audit_export') }}">
+          <div class="col-auto">
+            <label class="form-label">From</label>
+            <input type="date" name="from" class="form-control" required>
+          </div>
+          <div class="col-auto">
+            <label class="form-label">To</label>
+            <input type="date" name="to" class="form-control" required>
+          </div>
+          <div class="col-auto">
+            <label class="form-label">Focus user ID <span class="text-muted">(optional)</span></label>
+            <input type="number" name="focus_user" class="form-control" min="1">
+          </div>
+          <div class="col-auto">
+            <label class="form-label">Legal hold ref <span class="text-muted">(optional)</span></label>
+            <input type="text" name="legal_hold" class="form-control">
+          </div>
+          <div class="col-auto">
+            <button class="btn btn-primary">Generate export</button>
+          </div>
+        </form>
+      {% else %}
+        <p class="text-muted mb-0">You do not have permission to generate exports.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if exports is not empty %}
+    <div class="card mb-4">
+      <div class="card-header"><strong>Recent exports</strong></div>
+      {{ d.table_start() }}
+        <thead><tr><th>Created</th><th>Scope</th><th>Events</th><th>Expires</th><th>Status</th><th class="text-end">File</th></tr></thead>
+        <tbody>
+          {% for ex in exports %}
+            <tr>
+              <td class="small">{{ ex.createdAt|app_datetime }}</td>
+              <td class="small">{{ ex.scopeStart|app_date }} → {{ ex.scopeEnd|app_date }}{% if ex.focusUserId %} <span class="text-muted">(user {{ ex.focusUserId }})</span>{% endif %}</td>
+              <td class="small">{{ ex.eventCount }}</td>
+              <td class="small">{{ ex.expiresAt|app_date }}</td>
+              <td>
+                {% if ex.isExpired %}{{ d.badge('Expired', 'text-bg-secondary') }}
+                {% elseif ex.downloadedAt %}{{ d.badge('Downloaded', 'text-bg-success') }}
+                {% else %}{{ d.badge('Ready', 'text-bg-azure') }}{% endif %}
+              </td>
+              <td class="text-end">
+                {% if not ex.isExpired and ex.fileExists and is_granted('audit:export') %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ path('app_admin_audit_download', {uuid: ex.uuid}) }}">Download</a>
+                {% else %}<span class="text-muted small">—</span>{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      {{ d.table_end() }}
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <strong>Recent events</strong>
+      <form method="get" class="d-flex gap-2">
+        <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">All types</option>
+          {% for value, label in eventTypes %}
+            <option value="{{ value }}" {{ value == selectedType ? 'selected' }}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+    {% if events is empty %}
+      {{ d.empty_state('No audit events', {message: 'Nothing has been recorded yet for this filter.'}) }}
+    {% else %}
+      {{ d.table_start() }}
+        <thead><tr><th>When (UTC)</th><th>Type / action</th><th>Actor</th><th>Resource</th><th>Outcome</th></tr></thead>
+        <tbody>
+          {% for e in events %}
+            <tr>
+              <td class="small text-nowrap">{{ e.occurredAt|app_datetime }}</td>
+              <td class="small"><code>{{ e.eventType }}</code> / {{ e.action }}</td>
+              <td class="small">
+                {% if e.actorType == 'system' %}<span class="text-muted">system</span>
+                {% else %}{{ e.actorUsername ?? '—' }}{% if e.actorUserId %} <span class="text-muted">#{{ e.actorUserId }}</span>{% endif %}
+                  {% if e.actorIp %}<div class="text-muted">{{ e.actorIp }}</div>{% endif %}
+                {% endif %}
+              </td>
+              <td class="small">{% if e.resourceType %}{{ e.resourceType }} {{ e.resourceId }}{% else %}—{% endif %}</td>
+              <td>
+                {% if e.outcome == 'SUCCESS' %}{{ d.badge('Success', 'text-bg-success') }}
+                {% else %}{{ d.badge('Failure', 'text-bg-danger') }}{% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      {{ d.table_end() }}
+    {% endif %}
+  </div>
+{% endblock %}

@@ -28,8 +28,8 @@
           <td>{{ row.shiftHours|round(1) }}</td>
           <td>{{ row.goodies }}</td>
           <td class="text-end text-nowrap">
-            {% if is_granted('admin') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_staff_stats', {user: row.user.id}) }}">Stats</a>{% endif %}
-            {% if is_granted('user_messages') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_messages_conversation', {id: row.user.id}) }}">Message</a>{% endif %}
+            {% if is_granted('global:admin') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_staff_stats', {user: row.user.id}) }}">Stats</a>{% endif %}
+            {% if is_granted('message:use') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_messages_conversation', {id: row.user.id}) }}">Message</a>{% endif %}
             <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_staff_notes') }}?">Note</a>
           </td>
         </tr>

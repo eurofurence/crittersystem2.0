@@ -6,7 +6,7 @@
 {% block body %}
   {{ d.page_header('News', {
     subtitle: 'Latest announcements.',
-    actions: is_granted('admin_news') ? [{label: 'Manage news', href: path('app_manage_news_index'), class: 'btn btn-outline-primary'}] : []
+    actions: is_granted('news:manage') ? [{label: 'Manage news', href: path('app_manage_news_index'), class: 'btn btn-outline-primary'}] : []
   }) }}
 
   {% if items is empty %}

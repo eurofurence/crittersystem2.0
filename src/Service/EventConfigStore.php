@@ -63,7 +63,12 @@ class EventConfigStore
         }
 
         try {
-            return new \DateTimeImmutable($value);
+            // Normalise to the *named* UTC zone. Stored values are ISO-8601 with
+            // a "+00:00" offset, which would otherwise yield a DateTimeImmutable
+            // whose timezone name is "+00:00" — that mismatches the UTC
+            // model_timezone of the event-config form fields and makes Symfony
+            // Form throw. setTimezone() keeps the instant and fixes the name.
+            return (new \DateTimeImmutable($value))->setTimezone(new \DateTimeZone('UTC'));
         } catch (\Exception) {
             return null;
         }

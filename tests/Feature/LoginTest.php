@@ -34,8 +34,8 @@ final class LoginTest extends WebTestCase
         $schemaTool->dropDatabase();
         $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
 
-        $group = new Group(20, 'Volunteer', 'volunteer');
-        $privilege = new Privilege('news');
+        $group = new Group('Volunteer', 'volunteer');
+        $privilege = new Privilege('news:view');
         $this->em->persist($privilege);
         $group->addPrivilege($privilege);
         $this->em->persist($group);
@@ -47,6 +47,7 @@ final class LoginTest extends WebTestCase
             ->setApiKey(bin2hex(random_bytes(16)));
         $user->setPassword($hasher->hashPassword($user, 'secret123'));
         $user->addGroup($group);
+        $user->completeOnboarding();
         $this->em->persist($user);
         $this->em->flush();
     }

@@ -3,162 +3,271 @@
 namespace App\Security;
 
 /**
- * Canonical catalogue of core groups and privileges.
+ * Canonical catalogue of permissions and seeded permission groups.
  *
  * Single source of truth shared by:
- *  - the app:install seeder (creates these groups/privileges and links them), and
- *  - the PrivilegeVoter (decides which attributes are privilege checks).
+ *  - the seeder (creates these permissions/groups and links them),
+ *  - the PrivilegeVoter (decides which attributes are permission checks and how
+ *    they are scoped), and
+ *  - the group administration UI (categories, role level, step-up indicator).
  *
- * Privilege names follow the redesign specification. Group IDs are the
- * fixed well-known IDs
+ * Permission names follow the `<domain>:<action>` standard. Groups are keyed by
+ * a stable slug; their numeric IDs are database-assigned, never hard-coded.
+ *
+ * Each permission carries:
+ *  - level: LEVEL_ADMIN  -> only assignable/visible to global admins,
+ *           LEVEL_SUBADMIN -> also available to sub admins,
+ *  - twoFactor: true when exercising it requires step-up authentication.
  */
 final class PrivilegeCatalog
 {
+    public const LEVEL_ADMIN = 'admin';
+    public const LEVEL_SUBADMIN = 'subadmin';
+
+    /** The super-permission: holding it satisfies every check. */
+    public const SUPER = 'global:admin';
+
     /**
-     * privilege name => human description.
+     * Permissions that are scoped to a department when checked against a
+     * resource subject. Without a subject they behave like ordinary checks.
      *
-     * @var array<string, string>
+     * @var string[]
      */
-    public const PRIVILEGES = [
-        // Navigation
-        'start' => 'Access the landing page',
-        'login' => 'Log in',
-        'logout' => 'Log out',
-        'register' => 'Register a new account',
-        'news' => 'View news',
-        // User management
-        'admin_user' => 'Administer users',
-        'user_settings' => 'Manage own settings',
-        'user_messages' => 'Use private messaging',
-        // Shift system
-        'user_shifts' => 'Browse and sign up for shifts',
-        'user_myshifts' => 'View own shifts',
-        'admin_shifts' => 'Administer shifts',
-        'user_shifts_admin' => 'Manage shift assignments',
-        'admin_arrive' => 'Mark users as arrived',
-        // Admin functions
-        'admin_active' => 'Manage active state',
-        'admin_free' => 'View free/available volunteers',
-        'admin_rooms' => 'Administer locations',
-        'admin_volunteer_types' => 'Administer volunteer types',
-        'admin_groups' => 'Administer groups and privileges',
-        'admin_news' => 'Administer news',
-        // Type flags
-        'user.type.staff' => 'Marked as staff',
-        'user.type.internal_staff' => 'Marked as internal staff',
-        'user.type.admin' => 'Marked as administrator',
-        'admin' => 'Full administrative access',
-        // Features
-        'admin_user_worklog' => 'Manage user worklogs',
-        'faq.view' => 'View the FAQ',
-        'faq.edit' => 'Edit the FAQ',
-        'question.add' => 'Ask questions',
-        'question.edit' => 'Answer questions',
-        // Resource edit
-        'user.goodie.edit' => 'Edit user goodie state',
-        'user.info.edit' => 'Edit user info notes',
-        'user.fa.edit' => 'Edit first-aid info',
-        'user.drive.edit' => 'Edit driving licenses',
-        'user.ifsg.edit' => 'Edit food-hygiene certificates',
-        'admin.arrive.list' => 'View the arrival list',
-        // Events / config
-        'schedule.import' => 'Import schedules',
-        'user_meetings' => 'View meetings',
-        'admin_language' => 'Manage languages',
-        'admin_log' => 'View logs',
-        'admin_event_config' => 'Manage event configuration',
-        'admin_user_volunteertypes' => 'Manage user volunteer types',
-        // Exports
-        'ical' => 'Export iCal feed',
-        'atom' => 'Export Atom feed',
-        'shifts_json_export' => 'Export shifts as JSON',
-        // Backstage
-        'backstage.view' => 'View the backstage dashboard',
-        'backstage.admin' => 'Full backstage access',
-        'backstage.goodies.view' => 'View goodies distribution',
-        'backstage.goodies.agent' => 'Distribute goodies',
-        'backstage.goodies.admin' => 'Administer goodies items/categories',
+    public const SCOPED = [
+        'department:manage',
+        'shift:manage',
+        'shift:assign',
+        'volunteertype:assign',
     ];
 
     /**
-     * Core groups keyed by fixed ID: [id => [name, slug, privileges[]]].
+     * name => [description, category, level, twoFactor].
      *
-     * @var array<int, array{name: string, slug: string, privileges: string[]}>
+     * @var array<string, array{0: string, 1: string, 2: string, 3: bool}>
+     */
+    public const PERMISSIONS = [
+        // Core / global
+        'global:admin' => ['Full, unrestricted administrative access', 'Core', self::LEVEL_ADMIN, false],
+        'global:dashboard' => ['Access the management dashboard', 'Core', self::LEVEL_SUBADMIN, false],
+
+        // Audit & forensics
+        'audit:view' => ['View the audit log', 'Audit', self::LEVEL_ADMIN, true],
+        'audit:export' => ['Generate a legal audit export', 'Audit', self::LEVEL_ADMIN, true],
+
+        // Configuration
+        'config:event' => ['Manage event configuration', 'Configuration', self::LEVEL_ADMIN, false],
+        'config:display' => ['Manage timezone and date/time formats', 'Configuration', self::LEVEL_ADMIN, false],
+        'config:theme' => ['Manage the default theme', 'Configuration', self::LEVEL_ADMIN, false],
+        'config:privacy' => ['Manage the privacy notice', 'Configuration', self::LEVEL_ADMIN, false],
+        'config:consent' => ['Manage consent texts', 'Configuration', self::LEVEL_ADMIN, false],
+        'config:sso' => ['Manage SSO and view the connection status', 'Configuration', self::LEVEL_ADMIN, true],
+        'config:telegram' => ['Manage the Telegram bot configuration', 'Configuration', self::LEVEL_ADMIN, false],
+
+        // Roles & access control
+        'rbac:group:view' => ['View groups and permissions', 'Access control', self::LEVEL_SUBADMIN, false],
+        'rbac:group:manage' => ['Create/edit groups and assign permissions', 'Access control', self::LEVEL_ADMIN, true],
+        'rbac:ssomap:manage' => ['Manage SSO group mappings', 'Access control', self::LEVEL_ADMIN, false],
+
+        // User management
+        'user:view' => ['View users', 'Users', self::LEVEL_SUBADMIN, false],
+        'user:create' => ['Create users and send invites', 'Users', self::LEVEL_SUBADMIN, false],
+        'user:edit' => ['Edit user profiles', 'Users', self::LEVEL_SUBADMIN, false],
+        'user:delete' => ['Delete or deactivate users', 'Users', self::LEVEL_ADMIN, false],
+        'user:promote' => ['Assign groups and roles to users', 'Users', self::LEVEL_SUBADMIN, true],
+        'user:pii:view' => ['View unmasked personal data', 'Users', self::LEVEL_ADMIN, true],
+        'user:arrive' => ['Check users in / mark as arrived', 'Users', self::LEVEL_SUBADMIN, false],
+        'user:worklog:edit' => ['Edit user worklog hours', 'Users', self::LEVEL_SUBADMIN, false],
+        'user:onboarding:manage' => ['Trigger or reset user onboarding', 'Users', self::LEVEL_ADMIN, false],
+        'user:telegram:admin' => ["Unlink another user's Telegram account", 'Users', self::LEVEL_SUBADMIN, false],
+
+        // Badges
+        'badge:manage' => ['Create and edit badges', 'Badges', self::LEVEL_SUBADMIN, false],
+        'badge:assign' => ['Assign or remove badges', 'Badges', self::LEVEL_SUBADMIN, false],
+
+        // Shifts
+        'shift:view' => ['Browse shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'shift:apply' => ['Sign up for shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'shift:self' => ['View own shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'shift:manage' => ['Create and edit shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'shift:assign' => ['Assign or remove users on shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'shift:import' => ['Import schedules', 'Shifts', self::LEVEL_SUBADMIN, false],
+
+        // Organisation
+        'department:view' => ['View departments', 'Organisation', self::LEVEL_SUBADMIN, false],
+        'department:manage' => ['Create and edit departments', 'Organisation', self::LEVEL_SUBADMIN, false],
+        'location:view' => ['View locations', 'Organisation', self::LEVEL_SUBADMIN, false],
+        'location:manage' => ['Create and edit locations', 'Organisation', self::LEVEL_SUBADMIN, false],
+        'volunteertype:view' => ['View volunteer types', 'Organisation', self::LEVEL_SUBADMIN, false],
+        'volunteertype:manage' => ['Create and edit volunteer types', 'Organisation', self::LEVEL_SUBADMIN, false],
+        'volunteertype:assign' => ['Assign volunteer types to users', 'Organisation', self::LEVEL_SUBADMIN, false],
+
+        // Certifications
+        'certification:view' => ['View certifications', 'Certifications', self::LEVEL_SUBADMIN, false],
+        'certification:apply' => ['Apply for or self-confirm certifications', 'Certifications', self::LEVEL_SUBADMIN, false],
+        'certification:manage' => ['Create and edit certifications', 'Certifications', self::LEVEL_SUBADMIN, false],
+        'certification:approve' => ['Approve or revoke user certifications', 'Certifications', self::LEVEL_SUBADMIN, false],
+
+        // Goodies
+        'goodie:view' => ['View goodies and eligibility', 'Goodies', self::LEVEL_SUBADMIN, false],
+        'goodie:distribute' => ['Hand out goodies', 'Goodies', self::LEVEL_SUBADMIN, false],
+        'goodie:manage' => ['Manage goodie categories and items', 'Goodies', self::LEVEL_SUBADMIN, false],
+
+        // Content & communication
+        'news:view' => ['View news', 'Content', self::LEVEL_SUBADMIN, false],
+        'news:manage' => ['Create and edit news', 'Content', self::LEVEL_SUBADMIN, false],
+        'faq:view' => ['View the FAQ', 'Content', self::LEVEL_SUBADMIN, false],
+        'faq:manage' => ['Edit the FAQ', 'Content', self::LEVEL_SUBADMIN, false],
+        'question:ask' => ['Ask questions', 'Content', self::LEVEL_SUBADMIN, false],
+        'question:answer' => ['Answer questions', 'Content', self::LEVEL_SUBADMIN, false],
+        'message:use' => ['Use private messaging', 'Content', self::LEVEL_SUBADMIN, false],
+        'meeting:view' => ['View meetings', 'Content', self::LEVEL_SUBADMIN, false],
+
+        // Backstage & exports
+        'backstage:view' => ['View the backstage dashboard', 'Backstage', self::LEVEL_SUBADMIN, false],
+        'backstage:admin' => ['Full backstage access', 'Backstage', self::LEVEL_SUBADMIN, false],
+        'export:ical' => ['Export the iCal feed', 'Exports', self::LEVEL_SUBADMIN, false],
+        'export:atom' => ['Export the Atom feed', 'Exports', self::LEVEL_SUBADMIN, false],
+        'export:shifts' => ['Export shifts as JSON', 'Exports', self::LEVEL_SUBADMIN, false],
+
+        // Telegram (self-service link)
+        'telegram:link' => ['Link or unlink own Telegram account', 'Telegram', self::LEVEL_SUBADMIN, false],
+    ];
+
+    /**
+     * Permissions every signed-in user holds via the Volunteer group.
+     *
+     * @var string[]
+     */
+    private const VOLUNTEER = [
+        'shift:view', 'shift:apply', 'shift:self', 'news:view', 'faq:view',
+        'question:ask', 'message:use', 'meeting:view', 'certification:view',
+        'certification:apply', 'export:ical', 'export:atom', 'telegram:link',
+    ];
+
+    /**
+     * slug => [name, role, permissions[]]. A `permissions` value of '*subadmin*'
+     * is expanded by the seeder to every sub-admin-level permission.
+     *
+     * @var array<string, array{name: string, role: ?string, permissions: string[]|string}>
      */
     public const GROUPS = [
-        10 => [
-            'name' => 'Guest',
-            'slug' => 'guest',
-            'privileges' => ['start', 'login', 'register'],
+        'global-admin' => [
+            'name' => 'Global admin',
+            'role' => 'ROLE_ADMIN',
+            'permissions' => ['global:admin'],
         ],
-        20 => [
+        'sub-admin' => [
+            'name' => 'Sub admin',
+            'role' => 'ROLE_SUBADMIN',
+            'permissions' => '*subadmin*',
+        ],
+        'volunteer' => [
             'name' => 'Volunteer',
-            'slug' => 'volunteer',
-            'privileges' => [
-                'start', 'logout', 'news', 'user_settings', 'user_messages',
-                'user_shifts', 'user_myshifts', 'user_meetings', 'ical', 'atom',
-                'faq.view', 'question.add',
+            'role' => null,
+            'permissions' => self::VOLUNTEER,
+        ],
+        'shift-manager' => [
+            'name' => 'Shift manager',
+            'role' => 'ROLE_STAFF',
+            'permissions' => [
+                'shift:manage', 'shift:assign', 'shift:import', 'shift:view', 'shift:self',
+                'location:view', 'volunteertype:view', 'user:view', 'user:arrive',
             ],
         ],
-        30 => [
-            'name' => 'Welcome Volunteer',
-            'slug' => 'welcome-volunteer',
-            'privileges' => ['start', 'logout', 'news', 'user_settings'],
+        'shift-manager-delegated' => [
+            'name' => 'Shift manager (delegated)',
+            'role' => 'ROLE_STAFF',
+            'permissions' => [
+                'shift:manage', 'shift:assign', 'shift:import', 'shift:view', 'shift:self',
+                'location:view', 'volunteertype:view', 'user:view', 'user:arrive',
+            ],
         ],
-        35 => [
-            'name' => 'Voucher Volunteer',
-            'slug' => 'voucher-volunteer',
-            'privileges' => [],
+        'department-manager' => [
+            'name' => 'Department manager',
+            'role' => 'ROLE_STAFF',
+            'permissions' => [
+                'department:view', 'department:manage', 'shift:manage', 'shift:assign',
+                'volunteertype:view', 'volunteertype:assign', 'user:view', 'user:arrive',
+            ],
         ],
-        50 => [
+        'info-desk' => [
+            'name' => 'Info Desk',
+            'role' => 'ROLE_STAFF',
+            'permissions' => [
+                'user:view', 'user:arrive', 'message:use', 'shift:view', 'shift:assign',
+                'goodie:view', 'goodie:distribute', 'certification:view', 'news:view', 'faq:view',
+            ],
+        ],
+        'communications-manager' => [
+            'name' => 'Communications Manager',
+            'role' => 'ROLE_STAFF',
+            'permissions' => ['news:manage', 'news:view', 'faq:manage', 'faq:view', 'question:answer'],
+        ],
+        'certification-manager' => [
+            'name' => 'Certification Manager',
+            'role' => 'ROLE_STAFF',
+            'permissions' => ['certification:manage', 'certification:approve', 'certification:view', 'certification:apply'],
+        ],
+        'goodies-manager' => [
             'name' => 'Goodies Manager',
-            'slug' => 'goodies-manager',
-            'privileges' => [
-                'backstage.view', 'backstage.goodies.view', 'backstage.goodies.agent',
-                'backstage.goodies.admin', 'user.goodie.edit',
-            ],
+            'role' => 'ROLE_STAFF',
+            'permissions' => ['goodie:manage', 'goodie:distribute', 'goodie:view', 'backstage:view'],
         ],
-        60 => [
-            'name' => 'Shift Coordinator',
-            'slug' => 'shift-coordinator',
-            'privileges' => [
-                'admin_shifts', 'user_shifts_admin', 'admin_arrive', 'admin_rooms',
-                'admin_free', 'schedule.import', 'user.type.staff',
-            ],
-        ],
-        65 => [
-            'name' => 'Team Coordinator',
-            'slug' => 'team-coordinator',
-            'privileges' => [
-                'admin_volunteer_types', 'admin_user_volunteertypes', 'user.type.staff',
-            ],
-        ],
-        80 => [
-            'name' => 'Bureaucrat',
-            'slug' => 'bureaucrat',
-            'privileges' => [
-                'admin_user', 'admin_active', 'admin_user_worklog', 'user.info.edit',
-                'user.drive.edit', 'user.ifsg.edit', 'user.fa.edit', 'admin.arrive.list',
-                'admin_log', 'user.type.staff', 'user.type.internal_staff',
-            ],
-        ],
-        85 => [
-            'name' => 'News Admin',
-            'slug' => 'news-admin',
-            'privileges' => ['admin_news', 'news', 'question.edit', 'faq.edit'],
-        ],
-        90 => [
-            'name' => 'Developer',
-            'slug' => 'developer',
-            'privileges' => [
-                'admin', 'user.type.admin', 'user.type.staff', 'user.type.internal_staff',
-                'admin_groups', 'admin_language', 'admin_event_config', 'admin_log',
-            ],
+        'goodies-staff' => [
+            'name' => 'Goodies Staff',
+            'role' => 'ROLE_STAFF',
+            'permissions' => ['goodie:distribute', 'goodie:view', 'backstage:view'],
         ],
     ];
 
     public static function isPrivilege(string $name): bool
     {
-        return \array_key_exists($name, self::PRIVILEGES);
+        return \array_key_exists($name, self::PERMISSIONS);
+    }
+
+    public static function isScoped(string $name): bool
+    {
+        return \in_array($name, self::SCOPED, true);
+    }
+
+    public static function description(string $name): string
+    {
+        return self::PERMISSIONS[$name][0] ?? $name;
+    }
+
+    public static function category(string $name): string
+    {
+        return self::PERMISSIONS[$name][1] ?? 'Other';
+    }
+
+    public static function level(string $name): string
+    {
+        return self::PERMISSIONS[$name][2] ?? self::LEVEL_ADMIN;
+    }
+
+    public static function requiresTwoFactor(string $name): bool
+    {
+        return self::PERMISSIONS[$name][3] ?? false;
+    }
+
+    /** @return string[] every sub-admin-assignable permission name */
+    public static function subadminPermissions(): array
+    {
+        return array_keys(array_filter(
+            self::PERMISSIONS,
+            static fn (array $meta): bool => $meta[2] === self::LEVEL_SUBADMIN,
+        ));
+    }
+
+    /**
+     * Resolve a group's permission list, expanding the '*subadmin*' sentinel.
+     *
+     * @param string[]|string $permissions
+     *
+     * @return string[]
+     */
+    public static function expandPermissions(array|string $permissions): array
+    {
+        return $permissions === '*subadmin*' ? self::subadminPermissions() : $permissions;
     }
 }

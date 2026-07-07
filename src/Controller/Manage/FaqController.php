@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/faq')]
-#[IsGranted('faq.edit')]
+#[IsGranted('faq:manage')]
 final class FaqController extends AbstractController
 {
     public function __construct(

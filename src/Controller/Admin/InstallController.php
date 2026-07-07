@@ -6,6 +6,7 @@ use App\Service\EventConfigStore;
 use App\Service\Install\Installer;
 use App\Service\Install\InstallStateStore;
 use App\Service\Install\MigrationInspector;
+use App\Service\SecretCipher;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -43,6 +44,7 @@ final class InstallController extends AbstractController
         private readonly InstallStateStore $state,
         private readonly Installer $installer,
         private readonly EventConfigStore $config,
+        private readonly SecretCipher $cipher,
         private readonly string $installPassword,
         private readonly string $projectDir,
     ) {
@@ -105,6 +107,7 @@ final class InstallController extends AbstractController
             ['label' => 'intl extension', 'value' => \extension_loaded('intl') ? 'loaded' : 'missing', 'ok' => \extension_loaded('intl'), 'hint' => 'Install the intl extension.'],
             ['label' => 'mbstring extension', 'value' => \extension_loaded('mbstring') ? 'loaded' : 'missing', 'ok' => \extension_loaded('mbstring'), 'hint' => 'Install the mbstring extension.'],
             ['label' => 'var/ writable', 'value' => is_writable($this->projectDir . '/var') ? 'writable' : 'not writable', 'ok' => is_writable($this->projectDir . '/var'), 'hint' => 'The web user must be able to write to var/.'],
+            ['label' => 'Encryption key', 'value' => $this->cipher->isConfigured() ? 'configured' : 'missing or invalid', 'ok' => $this->cipher->isConfigured(), 'hint' => 'Set APP_ENCRYPTION_KEY (php bin/console app:encryption:generate-key). Required to store SSO, Telegram and certificate secrets.'],
             ['label' => 'Database connection', 'value' => $this->inspector->isDatabaseReachable() ? 'connected' : 'unreachable', 'ok' => $this->inspector->isDatabaseReachable(), 'hint' => 'Check DATABASE_URL and that the database server is running.'],
         ];
 
@@ -121,6 +124,14 @@ final class InstallController extends AbstractController
     {
         if ($redirect = $this->guard($request)) {
             return $redirect;
+        }
+
+        // The encryption key must exist before any secret can be stored; setup
+        // cannot proceed without it.
+        if (!$this->cipher->isConfigured()) {
+            $this->addFlash('install_error', 'Set APP_ENCRYPTION_KEY before continuing (php bin/console app:encryption:generate-key).');
+
+            return $this->redirectToRoute('app_install_overview');
         }
 
         $reachable = $this->inspector->isDatabaseReachable();

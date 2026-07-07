@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Consent texts{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Consent texts', {
+    subtitle: 'The onboarding consent disclaimer, per language.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New language', href: path('app_manage_consent_text_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if texts is empty %}
+    {{ d.empty_state('No consent texts yet', {message: 'Add the consent disclaimer for at least one language.', actionLabel: '+ New language', actionHref: path('app_manage_consent_text_new')}) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead><tr><th>Locale</th><th>Header title</th><th>Updated</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        {% for t in texts %}
+          <tr>
+            <td><code>{{ t.locale }}</code></td>
+            <td>{{ t.headerTitle }}</td>
+            <td class="small text-muted">{{ t.updatedAt|app_datetime }}</td>
+            <td class="text-end text-nowrap">
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_consent_text_edit', {id: t.id}) }}">Edit</a>
+              <form method="post" action="{{ path('app_manage_consent_text_delete', {id: t.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Delete consent text for {{ t.locale }}?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ t.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

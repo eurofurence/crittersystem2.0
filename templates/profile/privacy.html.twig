@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Privacy & my data{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Privacy & my data', {subtitle: 'Export your data or delete your account.'}) }}
+
+  <div class="card mb-4">
+    <div class="card-header"><strong>Export my data</strong></div>
+    <div class="card-body">
+      <p class="text-muted small">We prepare a downloadable archive of your data. You will get an email with a link valid for 24 hours.</p>
+      <form method="post" action="{{ path('app_profile_data_export') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('data_export') }}">
+        <button class="btn btn-primary">Request data export</button>
+      </form>
+      {% if exports %}
+        <ul class="list-unstyled mt-3 mb-0">
+          {% for ex in exports %}
+            <li class="small">
+              {{ ex.createdAt|app_datetime }} — {{ ex.status }}
+              {% if ex.downloadable %}· <a href="{{ path('app_profile_data_download', {uuid: ex.uuid}) }}">download</a>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card border-danger">
+    <div class="card-header text-danger"><strong>Delete my account</strong></div>
+    <div class="card-body">
+      <p>This permanently deletes your account and data. <strong>This cannot be undone.</strong></p>
+      <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#confirm1">Delete my account…</button>
+
+      <div class="modal fade" id="confirm1" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Are you sure?</h5></div>
+        <div class="modal-body">Deleting your account is permanent. Do you want to continue?</div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-outline-danger" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#confirm2">Continue</button>
+        </div>
+      </div></div></div>
+
+      <div class="modal fade" id="confirm2" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Final confirmation</h5></div>
+        <div class="modal-body">We will email you a confirmation link (valid 6 hours). Using it will permanently delete your account.</div>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <form method="post" action="{{ path('app_profile_erase_request') }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('erase_request') }}">
+            <button class="btn btn-danger">Send deletion email</button>
+          </form>
+        </div>
+      </div></div></div>
+    </div>
+  </div>
+{% endblock %}

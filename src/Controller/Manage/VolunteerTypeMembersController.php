@@ -101,7 +101,7 @@ final class VolunteerTypeMembersController extends AbstractController
 
     private function assertCanManage(VolunteerType $type): void
     {
-        if ($this->isGranted('admin_volunteer_types')) {
+        if ($this->isGranted('volunteertype:manage')) {
             return;
         }
 

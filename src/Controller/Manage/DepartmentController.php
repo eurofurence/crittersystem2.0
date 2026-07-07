@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/departments')]
-#[IsGranted('admin_shifts')]
+#[IsGranted('shift:manage')]
 final class DepartmentController extends AbstractController
 {
     public function __construct(

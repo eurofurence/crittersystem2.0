@@ -12,7 +12,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Public FAQ, grouped by category
  */
 #[Route('/faq')]
-#[IsGranted('faq.view')]
+#[IsGranted('faq:view')]
 final class FaqController extends AbstractController
 {
     #[Route('', name: 'app_faq_index', methods: ['GET'])]

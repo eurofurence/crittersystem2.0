@@ -40,6 +40,11 @@ security:
         - { path: ^/$, roles: PUBLIC_ACCESS }     # site root redirects (guest -> login, user -> dashboard)
         - { path: ^/api, roles: PUBLIC_ACCESS }   # per-endpoint authorization handled in the API phase
         - { path: ^/digital-id/verify, roles: PUBLIC_ACCESS } # scannable digital ID — no login required
+        - { path: ^/unsubscribe/, roles: PUBLIC_ACCESS } # one-click email unsubscribe — no login required
+        - { path: ^/invite/, roles: PUBLIC_ACCESS } # account invitation acceptance — signs the user in
+        - { path: ^/erase/, roles: PUBLIC_ACCESS } # erasure confirmation from emailed link
+        - { path: ^/appeal, roles: PUBLIC_ACCESS } # ban appeal ("The Ledger-Keeper")
+        - { path: ^/telegram/dummy, roles: PUBLIC_ACCESS } # dev/test dummy bot callback (404 in prod)
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/, roles: ROLE_USER }
 

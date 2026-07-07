@@ -48,14 +48,13 @@ final class LandingTest extends WebTestCase
         self::assertSelectorExists('input[name="_password"]');
     }
 
-    public function testSsoButtonIsPresentButDisabled(): void
+    public function testSsoButtonHiddenWhenSsoDisabled(): void
     {
+        // SSO_ENABLED defaults to 0 in the test environment, so no SSO link is shown.
         $crawler = $this->client->request('GET', '/login');
 
         self::assertResponseIsSuccessful();
-        $sso = $crawler->filter('button[disabled]');
-        self::assertGreaterThan(0, $sso->count());
-        self::assertStringContainsString('SSO', $sso->text());
+        self::assertSame(0, $crawler->filter('a:contains("Sign in with")')->count());
     }
 
     public function testLandingShowsEventNameAndTimeline(): void

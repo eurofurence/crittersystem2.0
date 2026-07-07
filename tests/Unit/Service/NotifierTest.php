@@ -16,12 +16,12 @@ use Symfony\Component\Mailer\MailerInterface;
 final class NotifierTest extends TestCase
 {
     /** @param string[] $privileges */
-    private function user(string $name, array $privileges = []): User
+    private function user(string $name, array $privileges = [], ?string $role = null): User
     {
         $user = new User();
         $user->setName($name)->setEmail($name.'@example.com');
-        if ($privileges !== []) {
-            $group = new Group(20, 'G'.$name, 'g'.$name);
+        if ($privileges !== [] || $role !== null) {
+            $group = new Group('G'.$name, 'g'.$name, $role);
             foreach ($privileges as $p) {
                 $group->addPrivilege(new Privilege($p));
             }
@@ -33,7 +33,7 @@ final class NotifierTest extends TestCase
 
     public function testStaffOnlyNewsEmailsOnlyStaffSubscribers(): void
     {
-        $staff = $this->user('staff', ['user.type.staff']);
+        $staff = $this->user('staff', [], 'ROLE_STAFF');
         $plain = $this->user('plain');
 
         $users = $this->createStub(UserRepository::class);

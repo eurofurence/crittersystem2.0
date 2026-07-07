@@ -1,0 +1,21 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% block title %}Set up 2FA{% endblock %}
+{% block body %}
+  {{ d.page_header('Set up two-factor authentication') }}
+  <div class="row g-4">
+    <div class="col-md-6">
+      <p>1. Scan this QR code with your authenticator app (or enter the secret manually).</p>
+      <img src="{{ qr }}" alt="2FA QR code" class="border rounded mb-2">
+      <p class="small">Secret: <code>{{ secret }}</code></p>
+    </div>
+    <div class="col-md-6">
+      <p>2. Enter the 6-digit code from your app to confirm.</p>
+      <form method="post">
+        <div class="mb-3"><input name="code" class="form-control" autocomplete="one-time-code" inputmode="numeric" placeholder="123456" required></div>
+        <button class="btn btn-primary">Enable</button>
+        <a class="btn btn-link" href="{{ path('app_2fa') }}">Cancel</a>
+      </form>
+    </div>
+  </div>
+{% endblock %}

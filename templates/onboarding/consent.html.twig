@@ -1,0 +1,17 @@
+{% extends 'onboarding/_layout.html.twig' %}
+{% block title %}Welcome{% endblock %}
+{% block step_title %}{{ text ? text.headerTitle : 'Data Protection & Privacy' }}{% endblock %}
+{% block step_body %}
+  {% if text %}<p class="lead">{{ text.headerBody|nl2br }}</p>{% endif %}
+  {% if privacyHtml %}
+    <details class="mb-3"><summary>Read the full privacy notice</summary><div class="mt-2">{{ privacyHtml|raw }}</div></details>
+  {% endif %}
+  <form method="post">
+    <label class="form-check">
+      <input type="checkbox" class="form-check-input" name="consent" value="1" required>
+      <span class="form-check-label">{{ text ? text.checkboxLabel : 'I consent to the processing of my volunteer profile data.' }}</span>
+    </label>
+    {% if text and text.footer %}<p class="text-muted small mt-2">{{ text.footer|nl2br }}</p>{% endif %}
+    <div class="mt-3"><button class="btn btn-primary">Agree & continue</button></div>
+  </form>
+{% endblock %}

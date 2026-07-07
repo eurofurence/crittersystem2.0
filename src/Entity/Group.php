@@ -11,13 +11,9 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'groups')]
 class Group
 {
-    /**
-     * Core groups use fixed, well-known IDs (10, 20, ... 90), so IDs are assigned
-     * explicitly rather than generated. See the app:install seeder.
-     */
     #[ORM\Id]
+    #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[ORM\GeneratedValue(strategy: 'NONE')]
     private ?int $id = null;
 
     #[ORM\Column(length: 64, unique: true)]
@@ -26,22 +22,30 @@ class Group
     #[ORM\Column(length: 64, unique: true)]
     private string $slug;
 
+    /**
+     * Coarse security role this group grants (ROLE_ADMIN, ROLE_SUBADMIN,
+     * ROLE_STAFF), or null for a plain user group. Drives firewall access while
+     * fine-grained checks use the group's permissions.
+     */
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $role = null;
+
     /** @var Collection<int, Privilege> */
     #[ORM\ManyToMany(targetEntity: Privilege::class, inversedBy: 'groups')]
     #[ORM\JoinTable(name: 'group_privileges')]
     private Collection $privileges;
 
-    /** @var Collection<int, User> */
-    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'groups')]
-    private Collection $users;
+    /** @var Collection<int, UserGroupAssignment> */
+    #[ORM\OneToMany(mappedBy: 'group', targetEntity: UserGroupAssignment::class)]
+    private Collection $assignments;
 
-    public function __construct(int $id, string $name, string $slug)
+    public function __construct(string $name, string $slug, ?string $role = null)
     {
-        $this->id = $id;
         $this->name = $name;
         $this->slug = $slug;
+        $this->role = $role;
         $this->privileges = new ArrayCollection();
-        $this->users = new ArrayCollection();
+        $this->assignments = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -73,6 +77,18 @@ class Group
         return $this;
     }
 
+    public function getRole(): ?string
+    {
+        return $this->role;
+    }
+
+    public function setRole(?string $role): static
+    {
+        $this->role = $role;
+
+        return $this;
+    }
+
     /** @return Collection<int, Privilege> */
     public function getPrivileges(): Collection
     {
@@ -95,9 +111,9 @@ class Group
         return $this;
     }
 
-    /** @return Collection<int, User> */
-    public function getUsers(): Collection
+    /** @return Collection<int, UserGroupAssignment> */
+    public function getAssignments(): Collection
     {
-        return $this->users;
+        return $this->assignments;
     }
 }

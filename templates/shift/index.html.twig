@@ -117,7 +117,7 @@
                 </form>
               {% endif %}
 
-              {% if is_granted('admin_shifts') %}
+              {% if is_granted('shift:manage') %}
                 <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_shift_needs', {id: shift.id}) }}">Manage</a>
               {% endif %}
             </div>

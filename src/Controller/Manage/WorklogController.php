@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/worklogs')]
-#[IsGranted('admin_user_worklog')]
+#[IsGranted('user:worklog:edit')]
 final class WorklogController extends AbstractController
 {
     public function __construct(

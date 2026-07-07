@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% block title %}Telegram{% endblock %}
+{% block body %}
+  {{ d.page_header('Telegram', {subtitle: 'Link your Telegram account to receive notifications via the bot.'}) }}
+  <div class="card"><div class="card-body">
+    {% if user.telegramLinked %}
+      <p>{{ d.badge('Linked', 'text-bg-success') }} Connected as <strong>{{ user.telegramHandle ?? 'your account' }}</strong>.</p>
+      <form method="post" action="{{ path('app_profile_telegram_unlink') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('telegram_unlink') }}">
+        <button class="btn btn-outline-danger">Unlink Telegram</button>
+      </form>
+    {% elseif not enabled %}
+      <p class="text-muted">Telegram linking is not currently enabled by the administrators.</p>
+    {% elseif pending %}
+      <p>Send this code to the bot to finish linking (valid {{ pending.expiresAt|app_time }}):</p>
+      <p class="display-6"><code>{{ pending.code }}</code></p>
+      <p class="text-muted small" id="tg-wait">Waiting for confirmation…</p>
+      <form method="post" action="{{ path('app_profile_telegram_start') }}"><button class="btn btn-link">Generate a new code</button></form>
+      <script>
+        (function poll(){
+          fetch('{{ path('app_profile_telegram_status') }}').then(r=>r.json()).then(d=>{
+            if (d.linked) { window.location.reload(); } else { setTimeout(poll, 3000); }
+          }).catch(()=>setTimeout(poll, 5000));
+        })();
+      </script>
+    {% else %}
+      <form method="post" action="{{ path('app_profile_telegram_start') }}">
+        <button class="btn btn-primary">Link Telegram</button>
+      </form>
+    {% endif %}
+  </div></div>
+{% endblock %}

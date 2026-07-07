@@ -1,0 +1,59 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Groups &amp; permissions{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Groups & permissions', {
+    subtitle: 'Permission groups and the access each one grants.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      is_granted('rbac:group:manage')
+        ? {label: '+ New group', href: path('app_manage_group_new'), class: 'btn btn-primary'} : null
+    ]|filter(a => a is not null)
+  }) }}
+
+  {{ d.table_start() }}
+    <thead>
+      <tr>
+        <th>Group</th>
+        <th>Role</th>
+        <th>Permissions</th>
+        <th>Members</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for group in groups %}
+        <tr>
+          <td>
+            <div class="fw-semibold">
+              {{ group.name }}
+              {% if group.slug in core_group_slugs %}{{ d.badge('Core', 'text-bg-secondary') }}{% endif %}
+            </div>
+            <div class="text-muted small"><code>{{ group.slug }}</code></div>
+          </td>
+          <td>
+            {% if group.role %}{{ d.badge(group.role, 'text-bg-azure') }}{% else %}<span class="text-muted small">—</span>{% endif %}
+          </td>
+          <td class="small">{{ group.privileges|length }}</td>
+          <td class="small">{{ group.assignments|length }}</td>
+          <td class="text-end text-nowrap">
+            {% if is_granted('rbac:group:manage') %}
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_group_edit', {id: group.id}) }}">Edit</a>
+              {% if group.slug not in core_group_slugs %}
+                <form method="post" action="{{ path('app_manage_group_delete', {id: group.id}) }}" class="d-inline"
+                      onsubmit="return confirm('Delete group &quot;{{ group.name|e('js') }}&quot;?');">
+                  <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ group.id) }}">
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              {% endif %}
+            {% else %}
+              <span class="text-muted small">View only</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  {{ d.table_end() }}
+{% endblock %}

@@ -64,15 +64,12 @@
                         <button class="btn btn-primary w-100" type="submit">Sign in</button>
                     </form>
 
-                    {# ---- SSO (placeholder — Keycloak/OAuth arrives in a later phase) ---- #}
-                    <div class="hr-text">or</div>
-                    <button type="button" class="btn btn-outline-secondary w-100" disabled
-                            title="Single sign-on will be available in a later phase">
-                        🔐 Sign in with SSO
-                    </button>
-                    <div class="form-text text-center mt-2">
-                        Single sign-on (Keycloak) arrives in a later phase.
-                    </div>
+                    {% if sso_enabled() %}
+                        <div class="hr-text">or</div>
+                        <a href="{{ path('app_sso_start') }}" class="btn btn-outline-secondary w-100">
+                            🔐 Sign in with {{ sso_provider_label() }}
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

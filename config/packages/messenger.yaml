@@ -25,5 +25,18 @@ framework:
             Symfony\Component\Notifier\Message\ChatMessage: async
             Symfony\Component\Notifier\Message\SmsMessage: async
 
-            # Route your messages to the transports
-            # 'App\Message\YourMessage': async
+            # Audit events are written off the request path by the async worker.
+            App\Audit\AuditRecord: async
+            # GDPR data-portability exports are built in the background.
+            App\Gdpr\GenerateDataExport: async
+
+when@test:
+    framework:
+        messenger:
+            transports:
+                sync: 'sync://'
+            routing:
+                # Handle these inline under test so results are immediately
+                # observable without running a worker.
+                App\Audit\AuditRecord: sync
+                App\Gdpr\GenerateDataExport: sync

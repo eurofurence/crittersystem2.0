@@ -13,6 +13,7 @@ doctrine:
         # datetime_immutable type so all entity datetime columns are covered.
         types:
             datetime_immutable: App\Doctrine\UtcDateTimeImmutableType
+            encrypted_string: App\Doctrine\EncryptedStringType
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore_number_aware

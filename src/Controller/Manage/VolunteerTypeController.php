@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/volunteer-types')]
-#[IsGranted('admin_volunteer_types')]
+#[IsGranted('volunteertype:manage')]
 final class VolunteerTypeController extends AbstractController
 {
     public function __construct(

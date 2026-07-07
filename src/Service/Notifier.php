@@ -4,6 +4,7 @@ namespace App\Service;
 
 use App\Entity\Message;
 use App\Entity\News;
+use App\Entity\User;
 use App\Repository\UserRepository;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Email;
@@ -21,6 +22,7 @@ final class Notifier
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly UserRepository $users,
+        private readonly ?UnsubscribeLinker $unsubscribe = null,
     ) {
     }
 
@@ -29,11 +31,11 @@ final class Notifier
     {
         $sent = 0;
         foreach ($this->users->findSubscribedToNews() as $user) {
-            if ($news->isStaffOnly()
-                && !$user->hasAnyPrivilege(['user.type.staff', 'user.type.internal_staff', 'user.type.admin'])) {
+            if ($news->isStaffOnly() && !$user->isStaff()) {
                 continue;
             }
-            $this->send($user->getEmail(), 'News: '.$news->getTitle(), $news->getPreview());
+            // Non-critical email: always include an unsubscribe link.
+            $this->send($user->getEmail(), 'News: '.$news->getTitle(), $news->getPreview(), $user, 'news');
             ++$sent;
         }
 
@@ -57,8 +59,12 @@ final class Notifier
         return true;
     }
 
-    private function send(string $to, string $subject, string $body): void
+    private function send(string $to, string $subject, string $body, ?User $user = null, ?string $unsubscribeType = null): void
     {
+        if ($user !== null && $unsubscribeType !== null && $this->unsubscribe !== null) {
+            $body .= "\n\n—\nUnsubscribe from these emails: ".$this->unsubscribe->url($user, $unsubscribeType);
+        }
+
         $this->mailer->send(
             (new Email())->from(self::FROM)->to($to)->subject($subject)->text($body),
         );

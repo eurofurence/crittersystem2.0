@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/questions')]
-#[IsGranted('question.edit')]
+#[IsGranted('question:answer')]
 final class QuestionController extends AbstractController
 {
     public function __construct(

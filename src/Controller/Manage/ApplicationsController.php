@@ -28,7 +28,7 @@ final class ApplicationsController extends AbstractController
         $user = $this->getUser();
 
         // Admins see every pending request; supporters see only their types.
-        if ($this->isGranted('admin_volunteer_types')) {
+        if ($this->isGranted('volunteertype:manage')) {
             $pending = $this->memberships->findPending();
         } else {
             $supported = $this->memberships->findSupportedTypes($user);

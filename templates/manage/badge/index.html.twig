@@ -1,0 +1,37 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Badges{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Badges', {
+    subtitle: 'Identification badges for the Digital ID and user management.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      is_granted('badge:assign') ? {label: 'Batch assign', href: path('app_manage_badge_assign'), class: 'btn btn-outline-primary'} : null,
+      {label: '+ New badge', href: path('app_manage_badge_new'), class: 'btn btn-primary'}
+    ]|filter(a => a is not null)
+  }) }}
+
+  {{ d.table_start() }}
+    <thead><tr><th>Badge</th><th>Type</th><th>Priority</th><th>Members</th><th class="text-end">Actions</th></tr></thead>
+    <tbody>
+      {% for b in badges %}
+        <tr>
+          <td><span class="badge text-bg-{{ b.color }}">{{ b.name }}</span> <code class="ms-1">{{ b.slug }}</code></td>
+          <td class="small">{{ b.position ? 'Position' : 'Standard' }}</td>
+          <td class="small">{{ b.position ? b.priority : '—' }}</td>
+          <td class="small">{{ b.users|length }}</td>
+          <td class="text-end text-nowrap">
+            <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_badge_edit', {id: b.id}) }}">Edit</a>
+            <form method="post" action="{{ path('app_manage_badge_delete', {id: b.id}) }}" class="d-inline"
+                  onsubmit="return confirm('Delete badge &quot;{{ b.name|e('js') }}&quot;?');">
+              <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ b.id) }}">
+              <button class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  {{ d.table_end() }}
+{% endblock %}

@@ -64,6 +64,7 @@ GET /health  → 200 {"status":"ok","database":"up","migrationsPending":0}
 | `APP_ENV`                 | yes      | `prod` for production, `dev` for development.                                      |
 | `APP_SECRET`              | yes      | Symfony secret. Generate: `php -r 'echo bin2hex(random_bytes(16));'`.              |
 | `DATABASE_URL`            | yes      | `postgresql://user:pass@host:5432/db?serverVersion=16&charset=utf8`.               |
+| `APP_ENCRYPTION_KEY`      | yes      | Encrypts secrets at rest. Generate: `php bin/console app:encryption:generate-key`. Losing it makes encrypted data unrecoverable. |
 | `INSTALL_PASSWORD`        | no       | Unlocks `/admin/install`. Empty = wizard disabled.                                 |
 | `RUN_MIGRATIONS_ON_START` | no       | `1` (container default) auto-migrates on start; `0` to manage migrations yourself. |
 | `MAILER_DSN`              | no       | e.g. `smtp://…`; defaults to discarding mail.                                      |

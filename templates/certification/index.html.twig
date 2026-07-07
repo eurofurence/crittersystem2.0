@@ -18,7 +18,7 @@
 {% block body %}
   {{ d.page_header('Certifications', {
     subtitle: 'Apply for the certifications you have. Approval happens in-person by scanning the operator\'s QR.',
-    actions: is_granted('admin') ? [{label: 'Manage certifications', href: path('app_manage_certification_index'), class: 'btn btn-outline-primary'}] : []
+    actions: is_granted('global:admin') ? [{label: 'Manage certifications', href: path('app_manage_certification_index'), class: 'btn btn-outline-primary'}] : []
   }) }}
 
   {% if rows is empty %}

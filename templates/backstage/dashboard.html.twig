@@ -22,9 +22,9 @@
 
   {# Action cards (per privilege). Add a card here when a backstage resource is introduced. #}
   {% set cards = [
-    {priv: 'backstage.goodies.agent', route: 'app_backstage_distribute',            icon: '🎁', title: 'Distribute Goodies', text: 'Find a volunteer and hand out goodies.'},
-    {priv: 'backstage.goodies.admin', route: 'app_backstage_goodie_category_index', icon: '🗂️', title: 'Goodie Categories', text: 'Manage categories.'},
-    {priv: 'backstage.goodies.admin', route: 'app_backstage_goodie_item_index',     icon: '🎽', title: 'Goodie Items',      text: 'Manage items and thresholds.'}
+    {priv: 'goodie:distribute', route: 'app_backstage_distribute',            icon: '🎁', title: 'Distribute Goodies', text: 'Find a volunteer and hand out goodies.'},
+    {priv: 'goodie:manage', route: 'app_backstage_goodie_category_index', icon: '🗂️', title: 'Goodie Categories', text: 'Manage categories.'},
+    {priv: 'goodie:manage', route: 'app_backstage_goodie_item_index',     icon: '🎽', title: 'Goodie Items',      text: 'Manage items and thresholds.'}
   ] %}
   <div class="row g-3 mb-4">
     {% for c in cards %}

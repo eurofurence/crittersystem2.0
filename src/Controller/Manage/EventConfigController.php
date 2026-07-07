@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/event-config')]
-#[IsGranted('admin_event_config')]
+#[IsGranted('config:event')]
 final class EventConfigController extends AbstractController
 {
     public function __construct(private readonly EventConfigStore $store)

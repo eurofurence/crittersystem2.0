@@ -21,7 +21,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * stats. Gated to staff
  */
 #[Route('/staff')]
-#[IsGranted('user.type.staff')]
+#[IsGranted('ROLE_STAFF')]
 final class StaffController extends AbstractController
 {
     public function __construct(
@@ -122,7 +122,7 @@ final class StaffController extends AbstractController
 
         // Admins may view another user's stats via ?user=ID.
         $target = $me;
-        if ($this->isGranted('admin') && ($id = $request->query->getInt('user'))) {
+        if ($this->isGranted('global:admin') && ($id = $request->query->getInt('user'))) {
             $target = $users->find($id) ?? $me;
         }
 
@@ -132,8 +132,8 @@ final class StaffController extends AbstractController
             'stats' => $this->stats->userStats($target),
             'dutyHistory' => $this->duty->getHistory($target),
             'shiftEntries' => $this->entries->findByUserOrdered($target),
-            'canSwitch' => $this->isGranted('admin'),
-            'allUsers' => $this->isGranted('admin') ? $users->findBy([], ['name' => 'ASC']) : [],
+            'canSwitch' => $this->isGranted('global:admin'),
+            'allUsers' => $this->isGranted('global:admin') ? $users->findBy([], ['name' => 'ASC']) : [],
         ]);
     }
 }

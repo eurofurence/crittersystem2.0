@@ -1,0 +1,47 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}SSO group mappings{% endblock %}
+
+{% block body %}
+  {{ d.page_header('SSO group mappings', {
+    subtitle: 'Map SSO groups to departments, permission groups, volunteer types and badges.',
+    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <div class="card mb-4">
+    <div class="card-header"><strong>Bulk import (JSON)</strong></div>
+    <div class="card-body">
+      <form method="post" action="{{ path('app_manage_sso_mapping_import') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('sso_import') }}">
+        <textarea name="json" class="form-control font-monospace" rows="8" placeholder='[{"id":"0RV39Y2PM21J4N6L","name":"Art Show","slug":"art-show","staffonly":1,"badges":["security"],"volunteertype":["Volunteer"],"permissiongroup":["info-desk"]}]'></textarea>
+        <button class="btn btn-primary mt-2">Import</button>
+      </form>
+    </div>
+  </div>
+
+  {% if mappings is empty %}
+    {{ d.empty_state('No mappings yet', {message: 'Import SSO group mappings to provision users automatically.'}) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead><tr><th>SSO group</th><th>Department</th><th>Groups</th><th>Volunteer types</th><th>Badges</th><th class="text-end">Actions</th></tr></thead>
+      <tbody>
+        {% for m in mappings %}
+          <tr>
+            <td><div class="fw-semibold">{{ m.name }}</div><code class="small">{{ m.ssoGroupId }}</code>{% if m.staffOnly %} {{ d.badge('staff', 'text-bg-azure') }}{% endif %}</td>
+            <td class="small">{{ m.department ? m.department.name : '—' }}</td>
+            <td class="small">{{ m.permissionGroups|map(g => g.slug)|join(', ') ?: '—' }}</td>
+            <td class="small">{{ m.volunteerTypes|map(v => v.name)|join(', ') ?: '—' }}</td>
+            <td class="small">{{ m.badges|map(b => b.slug)|join(', ') ?: '—' }}</td>
+            <td class="text-end">
+              <form method="post" action="{{ path('app_manage_sso_mapping_delete', {id: m.id}) }}" class="d-inline" onsubmit="return confirm('Delete mapping?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ m.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Delete</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

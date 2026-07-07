@@ -39,7 +39,7 @@ final class ManageLocationTest extends WebTestCase
     /** @param string[] $privileges */
     private function makeUser(string $name, array $privileges): User
     {
-        $group = new Group(20, 'Group '.$name, 'group-'.$name);
+        $group = new Group('Group '.$name, 'group-'.$name);
         foreach ($privileges as $privilegeName) {
             $privilege = new Privilege($privilegeName);
             $this->em->persist($privilege);
@@ -54,6 +54,7 @@ final class ManageLocationTest extends WebTestCase
             ->setApiKey(bin2hex(random_bytes(16)));
         $user->setPassword($hasher->hashPassword($user, 'secret123'));
         $user->addGroup($group);
+        $user->completeOnboarding();
         $this->em->persist($user);
         $this->em->flush();
 
@@ -70,7 +71,7 @@ final class ManageLocationTest extends WebTestCase
 
     public function testUserWithoutPrivilegeIsForbidden(): void
     {
-        $this->client->loginUser($this->makeUser('plain', ['news']));
+        $this->client->loginUser($this->makeUser('plain', ['news:view']));
         $this->client->request('GET', '/manage/locations');
 
         self::assertResponseStatusCodeSame(403);
@@ -78,7 +79,7 @@ final class ManageLocationTest extends WebTestCase
 
     public function testPrivilegedUserCanCreateLocation(): void
     {
-        $this->client->loginUser($this->makeUser('rooms', ['admin_rooms']));
+        $this->client->loginUser($this->makeUser('rooms', ['location:manage']));
 
         $crawler = $this->client->request('GET', '/manage/locations/new');
         self::assertResponseIsSuccessful();

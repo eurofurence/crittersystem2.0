@@ -49,4 +49,23 @@ final class EventConfigStoreTest extends DatabaseTestCase
 
         self::assertSame(['a' => true, 'b' => 2], $store->get('event.flags'));
     }
+
+    /**
+     * Regression: dates round-tripped through the store (saved as DATE_ATOM with
+     * a "+00:00" offset) must come back in the *named* "UTC" zone, otherwise the
+     * event-config form (model_timezone: 'UTC') throws on render.
+     */
+    public function testGetDateReturnsNamedUtcZone(): void
+    {
+        $store = $this->store();
+
+        $store->set(EventConfigStore::KEY_EVENT_START, '2026-09-01T00:00:00+00:00');
+        $store->flush();
+
+        $date = $store->getDate(EventConfigStore::KEY_EVENT_START);
+
+        self::assertInstanceOf(\DateTimeImmutable::class, $date);
+        self::assertSame('UTC', $date->getTimezone()->getName());
+        self::assertSame('2026-09-01T00:00:00+00:00', $date->format(\DATE_ATOM));
+    }
 }

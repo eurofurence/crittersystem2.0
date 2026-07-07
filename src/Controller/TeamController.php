@@ -13,7 +13,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * area, hours and goodies, plus a CSV export.
  */
 #[Route('/staff/team')]
-#[IsGranted('user.type.internal_staff')]
+#[IsGranted('ROLE_STAFF')]
 final class TeamController extends AbstractController
 {
     public function __construct(private readonly StaffStatsService $stats)

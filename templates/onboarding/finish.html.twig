@@ -1,0 +1,17 @@
+{% extends 'onboarding/_layout.html.twig' %}
+{% block title %}Finish{% endblock %}
+{% block step_title %}Almost done{% endblock %}
+{% block step_body %}
+  <form method="post">
+    {% if not user.ssoManaged %}
+      <p>Set a password for your account.</p>
+      <div class="row g-3">
+        <div class="col-md-6"><label class="form-label">Password</label><input type="password" class="form-control" name="password" required minlength="8"></div>
+        <div class="col-md-6"><label class="form-label">Confirm password</label><input type="password" class="form-control" name="password_confirm" required minlength="8"></div>
+      </div>
+    {% else %}
+      <p>Your sign-in is managed by your organisation. No password needed.</p>
+    {% endif %}
+    <div class="mt-3"><button class="btn btn-success">Complete onboarding</button></div>
+  </form>
+{% endblock %}

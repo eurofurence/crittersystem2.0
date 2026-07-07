@@ -1,0 +1,17 @@
+{% extends 'base.html.twig' %}
+{% block title %}Appeal{% endblock %}
+{% block body %}
+  <div class="row justify-content-center"><div class="col-md-6"><div class="card"><div class="card-body">
+    <h2 class="card-title">The Ledger-Keeper</h2>
+    <p>{{ message }}</p>
+    {% if done %}
+      <p class="text-success">If an account matches, your appeal has been forwarded for review.</p>
+    {% else %}
+      <p>If you believe this is a mistake, leave your email and we'll ask The Ledger-Keeper to take a look when he's back.</p>
+      <form method="post">
+        <div class="mb-3"><input type="email" name="email" class="form-control" placeholder="your email" required></div>
+        <button class="btn btn-primary">Submit appeal</button>
+      </form>
+    {% endif %}
+  </div></div></div></div>
+{% endblock %}

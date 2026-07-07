@@ -33,7 +33,7 @@ final class ShiftBrowseController extends AbstractController
     ) {
     }
 
-    #[IsGranted('user_shifts')]
+    #[IsGranted('shift:view')]
     #[Route('/shifts', name: 'app_shift_index', methods: ['GET'])]
     public function index(Request $request, LocationRepository $locationRepo, ShiftTypeRepository $shiftTypeRepo): Response
     {
@@ -86,7 +86,7 @@ final class ShiftBrowseController extends AbstractController
         ]);
     }
 
-    #[IsGranted('user_shifts')]
+    #[IsGranted('shift:view')]
     #[Route('/shifts/{id}', name: 'app_shift_show', methods: ['GET'], requirements: ['id' => '\d+'])]
     public function show(Shift $shift): Response
     {
@@ -101,7 +101,7 @@ final class ShiftBrowseController extends AbstractController
         ]);
     }
 
-    #[IsGranted('user_shifts')]
+    #[IsGranted('shift:view')]
     #[Route('/shifts/{id}/signup', name: 'app_shift_signup', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function signUp(Request $request, Shift $shift): Response
     {
@@ -128,7 +128,7 @@ final class ShiftBrowseController extends AbstractController
         return $this->redirectToRefererOrShift($request, $shift);
     }
 
-    #[IsGranted('user_myshifts')]
+    #[IsGranted('shift:self')]
     #[Route('/my-shifts', name: 'app_my_shifts', methods: ['GET'])]
     public function myShifts(): Response
     {
@@ -148,7 +148,7 @@ final class ShiftBrowseController extends AbstractController
         ]);
     }
 
-    #[IsGranted('user_myshifts')]
+    #[IsGranted('shift:self')]
     #[Route('/shifts/entries/{id}/cancel', name: 'app_shift_cancel', methods: ['POST'], requirements: ['id' => '\d+'])]
     public function cancel(Request $request, ShiftEntry $entry): Response
     {

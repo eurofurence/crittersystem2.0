@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}SSO status{% endblock %}
+
+{% block body %}
+  {{ d.page_header('SSO connection status', {subtitle: 'OpenID Connect configuration and connectivity.'}) }}
+
+  <div class="card">
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-sm-4">Enabled</dt>
+        <dd class="col-sm-8">{% if enabled %}{{ d.badge('Yes', 'text-bg-success') }}{% else %}{{ d.badge('No', 'text-bg-secondary') }}{% endif %}</dd>
+        <dt class="col-sm-4">Provider</dt><dd class="col-sm-8">{{ provider }}</dd>
+        <dt class="col-sm-4">Client ID</dt><dd class="col-sm-8"><code>{{ clientId }}</code></dd>
+        <dt class="col-sm-4">Configuration</dt>
+        <dd class="col-sm-8">{{ usesDiscovery ? 'Automatic (.well-known)' : 'Manual endpoints' }}{% if usesDiscovery %}<div class="text-muted small">{{ discoveryUrl }}</div>{% endif %}</dd>
+        <dt class="col-sm-4">Discovery</dt>
+        <dd class="col-sm-8">
+          {% if discovery.ok %}{{ d.badge('Reachable', 'text-bg-success') }}
+          {% else %}{{ d.badge('Unavailable', 'text-bg-danger') }} <span class="text-muted small">{{ discovery.error }}</span>{% endif %}
+        </dd>
+        {% if discovery.endpoints %}
+          <dt class="col-sm-4">Authorization</dt><dd class="col-sm-8"><code class="small">{{ discovery.endpoints.authorization }}</code></dd>
+          <dt class="col-sm-4">Token</dt><dd class="col-sm-8"><code class="small">{{ discovery.endpoints.token }}</code></dd>
+          <dt class="col-sm-4">Userinfo</dt><dd class="col-sm-8"><code class="small">{{ discovery.endpoints.userinfo }}</code></dd>
+        {% endif %}
+        <dt class="col-sm-4">Redirect URI</dt>
+        <dd class="col-sm-8"><code class="small">{{ redirectUri }}</code><div class="text-muted small">Configure this as a valid redirect URI in the SSO provider.</div></dd>
+      </dl>
+    </div>
+  </div>
+{% endblock %}

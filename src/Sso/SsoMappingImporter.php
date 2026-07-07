@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Sso;
+
+use App\Entity\SsoGroupMapping;
+use App\Entity\VolunteerType;
+use App\Repository\BadgeRepository;
+use App\Repository\DepartmentRepository;
+use App\Repository\GroupRepository;
+use App\Repository\SsoGroupMappingRepository;
+use App\Repository\VolunteerTypeRepository;
+use Doctrine\ORM\EntityManagerInterface;
+
+/**
+ * Upserts SSO group mappings from the JSON bulk-upload format. Each row is keyed
+ * by the structured SSO group id; slugs are resolved to local entities and any
+ * that cannot be resolved are reported as warnings (the row is still saved).
+ */
+final class SsoMappingImporter
+{
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly SsoGroupMappingRepository $mappings,
+        private readonly GroupRepository $groups,
+        private readonly VolunteerTypeRepository $volunteerTypes,
+        private readonly BadgeRepository $badges,
+        private readonly DepartmentRepository $departments,
+    ) {
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $rows
+     *
+     * @return array{imported: int, warnings: string[]}
+     */
+    public function import(array $rows): array
+    {
+        $imported = 0;
+        $warnings = [];
+        $vtIndex = $this->volunteerTypeIndex();
+
+        foreach ($rows as $i => $row) {
+            $id = (string) ($row['id'] ?? '');
+            if ($id === '') {
+                $warnings[] = "Row $i: missing 'id'.";
+                continue;
+            }
+
+            $mapping = $this->mappings->findOneBySsoGroupId($id) ?? new SsoGroupMapping($id);
+            $mapping->setName((string) ($row['name'] ?? $id))
+                ->setSlug((string) ($row['slug'] ?? ''))
+                ->setStaffOnly((bool) ($row['staffonly'] ?? false));
+
+            if (isset($row['department'])) {
+                $dept = $this->departments->findOneBySlug((string) $row['department']);
+                $mapping->setDepartment($dept);
+                if ($dept === null) {
+                    $warnings[] = "Row $i: unknown department '{$row['department']}'.";
+                }
+            }
+
+            $mapping->clearPermissionGroups();
+            foreach ((array) ($row['permissiongroup'] ?? []) as $slug) {
+                $group = $this->groups->findOneBySlug((string) $slug);
+                $group !== null ? $mapping->addPermissionGroup($group) : $warnings[] = "Row $i: unknown permission group '$slug'.";
+            }
+
+            $mapping->clearVolunteerTypes();
+            foreach ((array) ($row['volunteertype'] ?? []) as $slug) {
+                $vt = $vtIndex[strtolower((string) $slug)] ?? null;
+                $vt !== null ? $mapping->addVolunteerType($vt) : $warnings[] = "Row $i: unknown volunteer type '$slug'.";
+            }
+
+            $mapping->clearBadges();
+            foreach ((array) ($row['badges'] ?? []) as $slug) {
+                $badge = $this->badges->findOneBySlug((string) $slug);
+                $badge !== null ? $mapping->addBadge($badge) : $warnings[] = "Row $i: unknown badge '$slug'.";
+            }
+
+            $this->em->persist($mapping);
+            ++$imported;
+        }
+
+        $this->em->flush();
+
+        return ['imported' => $imported, 'warnings' => $warnings];
+    }
+
+    /** @return array<string, VolunteerType> indexed by name and slugified name */
+    private function volunteerTypeIndex(): array
+    {
+        $index = [];
+        foreach ($this->volunteerTypes->findAll() as $vt) {
+            /** @var VolunteerType $vt */
+            $index[strtolower($vt->getName())] = $vt;
+            $index[$this->slugify($vt->getName())] = $vt;
+        }
+
+        return $index;
+    }
+
+    private function slugify(string $value): string
+    {
+        return trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($value)) ?? '', '-');
+    }
+}

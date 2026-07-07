@@ -18,20 +18,20 @@ final class InstallCommandTest extends DatabaseTestCase
         $tester->assertCommandIsSuccessful();
     }
 
-    public function testSeedsTenGroupsWithFixedIdsAndDefaultAdmin(): void
+    public function testSeedsCoreGroupsAndDefaultAdmin(): void
     {
         $this->runInstall();
         $this->em->clear();
 
         $groupRepository = $this->em->getRepository(Group::class);
-        self::assertCount(10, $groupRepository->findAll());
-        self::assertNotNull($groupRepository->find(10));
-        self::assertNotNull($groupRepository->find(90));
+        self::assertCount(11, $groupRepository->findAll());
+        self::assertNotNull($groupRepository->findOneBy(['slug' => 'global-admin']));
+        self::assertNotNull($groupRepository->findOneBy(['slug' => 'sub-admin']));
 
         $users = $this->em->getRepository(User::class)->findAll();
         self::assertCount(1, $users);
         self::assertSame('admin', $users[0]->getUserIdentifier());
-        self::assertTrue($users[0]->hasPrivilege('admin'));
+        self::assertTrue($users[0]->hasPrivilege('global:admin'));
         self::assertContains('ROLE_ADMIN', $users[0]->getRoles());
     }
 
@@ -41,7 +41,7 @@ final class InstallCommandTest extends DatabaseTestCase
         $this->runInstall();
         $this->em->clear();
 
-        self::assertCount(10, $this->em->getRepository(Group::class)->findAll());
+        self::assertCount(11, $this->em->getRepository(Group::class)->findAll());
         self::assertCount(1, $this->em->getRepository(User::class)->findAll());
     }
 }

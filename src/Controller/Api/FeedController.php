@@ -20,7 +20,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[Route('/api')]
 final class FeedController extends AbstractController
 {
-    #[IsGranted('atom')]
+    #[IsGranted('export:atom')]
     #[Route('/atom', name: 'app_feed_atom', methods: ['GET'])]
     public function atom(NewsRepository $news): Response
     {
@@ -45,7 +45,7 @@ final class FeedController extends AbstractController
         return new Response($body, Response::HTTP_OK, ['Content-Type' => 'application/atom+xml; charset=UTF-8']);
     }
 
-    #[IsGranted('atom')]
+    #[IsGranted('export:atom')]
     #[Route('/rss', name: 'app_feed_rss', methods: ['GET'])]
     public function rss(NewsRepository $news): Response
     {
@@ -68,7 +68,7 @@ final class FeedController extends AbstractController
         return new Response($body, Response::HTTP_OK, ['Content-Type' => 'application/rss+xml; charset=UTF-8']);
     }
 
-    #[IsGranted('ical')]
+    #[IsGranted('export:ical')]
     #[Route('/ical', name: 'app_feed_ical', methods: ['GET'])]
     public function ical(ShiftEntryRepository $entries): Response
     {
@@ -107,7 +107,7 @@ final class FeedController extends AbstractController
         ]);
     }
 
-    #[IsGranted('shifts_json_export')]
+    #[IsGranted('export:shifts')]
     #[Route('/shifts-json-export', name: 'app_feed_shifts_json', methods: ['GET'])]
     public function shiftsJson(ShiftRepository $shifts): JsonResponse
     {

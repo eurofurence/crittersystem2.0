@@ -17,7 +17,7 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/certifications')]
-#[IsGranted('admin')]
+#[IsGranted('global:admin')]
 final class CertificationController extends AbstractController
 {
     public function __construct(

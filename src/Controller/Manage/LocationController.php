@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/locations')]
-#[IsGranted('admin_rooms')]
+#[IsGranted('location:manage')]
 final class LocationController extends AbstractController
 {
     public function __construct(

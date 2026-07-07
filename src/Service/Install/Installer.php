@@ -11,6 +11,10 @@ use App\Entity\State;
 use App\Entity\User;
 use App\Repository\GroupRepository;
 use App\Repository\PrivilegeRepository;
+use App\Audit\CertificateAuthority;
+use App\Badge\BadgeCatalog;
+use App\Entity\Badge;
+use App\Repository\BadgeRepository;
 use App\Repository\UserRepository;
 use App\Security\PrivilegeCatalog;
 use Doctrine\ORM\EntityManagerInterface;
@@ -24,8 +28,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  */
 final class Installer
 {
-    /** Default groups for the first administrator: Developer (90) + Bureaucrat (80). */
-    private const ADMIN_GROUP_IDS = [90, 80];
+    /** The first administrator is a global admin. */
+    private const ADMIN_GROUP_SLUG = 'global-admin';
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -33,6 +37,8 @@ final class Installer
         private readonly GroupRepository $groups,
         private readonly PrivilegeRepository $privileges,
         private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly CertificateAuthority $certificateAuthority,
+        private readonly BadgeRepository $badges,
     ) {
     }
 
@@ -44,32 +50,54 @@ final class Installer
     {
         /** @var array<string, Privilege> $privilegeByName */
         $privilegeByName = [];
-        foreach (PrivilegeCatalog::PRIVILEGES as $name => $description) {
+        foreach (PrivilegeCatalog::PERMISSIONS as $name => $meta) {
             $privilege = $this->privileges->findOneByName($name);
             if ($privilege === null) {
-                $privilege = new Privilege($name, $description);
+                $privilege = new Privilege($name, $meta[0]);
                 $this->entityManager->persist($privilege);
             } else {
-                $privilege->setDescription($description);
+                $privilege->setDescription($meta[0]);
             }
             $privilegeByName[$name] = $privilege;
         }
 
-        foreach (PrivilegeCatalog::GROUPS as $id => $definition) {
-            $group = $this->groups->find($id);
+        foreach (PrivilegeCatalog::GROUPS as $slug => $definition) {
+            $group = $this->groups->findOneBySlug($slug);
             if ($group === null) {
-                $group = new Group($id, $definition['name'], $definition['slug']);
+                $group = new Group($definition['name'], $slug, $definition['role']);
                 $this->entityManager->persist($group);
             } else {
-                $group->setName($definition['name'])->setSlug($definition['slug']);
+                $group->setName($definition['name'])->setRole($definition['role']);
             }
 
-            foreach ($definition['privileges'] as $privilegeName) {
-                $group->addPrivilege($privilegeByName[$privilegeName]);
+            // Converge the group's permissions on the catalog definition.
+            $desired = PrivilegeCatalog::expandPermissions($definition['permissions']);
+            $desiredSet = array_fill_keys($desired, true);
+            foreach ($group->getPrivileges()->toArray() as $existing) {
+                if (!isset($desiredSet[$existing->getName()])) {
+                    $group->removePrivilege($existing);
+                }
+            }
+            foreach ($desired as $permissionName) {
+                $group->addPrivilege($privilegeByName[$permissionName]);
             }
         }
 
+        foreach (BadgeCatalog::BADGES as $slug => $definition) {
+            $badge = $this->badges->findOneBySlug($slug);
+            if ($badge === null) {
+                $badge = new Badge($definition['name'], $slug, $definition['type']);
+                $this->entityManager->persist($badge);
+            } else {
+                $badge->setName($definition['name'])->setType($definition['type']);
+            }
+            $badge->setPriority($definition['priority'])->setColor($definition['color']);
+        }
+
         $this->entityManager->flush();
+
+        // The audit-signing certificate must exist before any legal export.
+        $this->certificateAuthority->ensureCertificate();
     }
 
     public function userCount(): int
@@ -95,11 +123,9 @@ final class Installer
             ->setSettings(new Settings($admin))
             ->setState(new State($admin));
 
-        foreach (self::ADMIN_GROUP_IDS as $groupId) {
-            $group = $this->groups->find($groupId);
-            if ($group !== null) {
-                $admin->addGroup($group);
-            }
+        $group = $this->groups->findOneBySlug(self::ADMIN_GROUP_SLUG);
+        if ($group !== null) {
+            $admin->addGroup($group);
         }
 
         $this->entityManager->persist($admin);

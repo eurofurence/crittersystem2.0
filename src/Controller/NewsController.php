@@ -17,7 +17,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Public news feed, article view and commenting.
  */
 #[Route('/news')]
-#[IsGranted('news')]
+#[IsGranted('news:view')]
 final class NewsController extends AbstractController
 {
     public function __construct(
@@ -65,8 +65,8 @@ final class NewsController extends AbstractController
 
     private function canSeeStaffOnly(): bool
     {
-        return $this->isGranted('user.type.staff')
-            || $this->isGranted('user.type.internal_staff')
-            || $this->isGranted('admin');
+        return $this->isGranted('ROLE_STAFF')
+            || $this->isGranted('ROLE_STAFF')
+            || $this->isGranted('global:admin');
     }
 }

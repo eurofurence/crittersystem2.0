@@ -64,7 +64,7 @@
         <div class="card-body">
             <p class="text-muted small">Demonstrates the fine-grained privilege voter via <code>is_granted()</code>.</p>
             <ul class="list-unstyled mb-0">
-                {% for privilege in ['admin_user', 'admin_news', 'backstage.goodies.admin', 'user_shifts'] %}
+                {% for privilege in ['user:view', 'news:manage', 'goodie:manage', 'shift:view'] %}
                     <li>
                         {% if is_granted(privilege) %}✅{% else %}⛔{% endif %}
                         <code>{{ privilege }}</code>

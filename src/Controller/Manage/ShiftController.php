@@ -14,7 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/shifts')]
-#[IsGranted('admin_shifts')]
+#[IsGranted('shift:manage')]
 final class ShiftController extends AbstractController
 {
     public function __construct(

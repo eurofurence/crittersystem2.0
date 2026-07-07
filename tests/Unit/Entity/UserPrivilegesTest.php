@@ -10,9 +10,9 @@ use PHPUnit\Framework\TestCase;
 final class UserPrivilegesTest extends TestCase
 {
     /** @param string[] $privilegeNames */
-    private function group(int $id, string $name, array $privilegeNames): Group
+    private function group(string $name, array $privilegeNames, ?string $role = null): Group
     {
-        $group = new Group($id, $name, strtolower(str_replace(' ', '-', $name)));
+        $group = new Group($name, strtolower(str_replace(' ', '-', $name)), $role);
         foreach ($privilegeNames as $privilegeName) {
             $group->addPrivilege(new Privilege($privilegeName));
         }
@@ -26,44 +26,66 @@ final class UserPrivilegesTest extends TestCase
 
         self::assertSame(['ROLE_USER'], $user->getRoles());
         self::assertSame([], $user->getPrivilegeNames());
-        self::assertFalse($user->hasPrivilege('admin'));
+        self::assertFalse($user->hasPrivilege('global:admin'));
     }
 
     public function testPrivilegesAreTheUnionAcrossGroupsAndDeduplicated(): void
     {
         $user = new User();
-        $user->addGroup($this->group(20, 'Volunteer', ['news', 'user_shifts']));
-        $user->addGroup($this->group(85, 'News Admin', ['news', 'admin_news']));
+        $user->addGroup($this->group('Volunteer', ['news:view', 'shift:view']));
+        $user->addGroup($this->group('News Admin', ['news:view', 'news:manage']));
 
-        self::assertTrue($user->hasPrivilege('news'));
-        self::assertTrue($user->hasPrivilege('admin_news'));
-        self::assertTrue($user->hasAnyPrivilege(['missing', 'user_shifts']));
+        self::assertTrue($user->hasPrivilege('news:view'));
+        self::assertTrue($user->hasPrivilege('news:manage'));
+        self::assertTrue($user->hasAnyPrivilege(['missing', 'shift:view']));
         self::assertFalse($user->hasAnyPrivilege(['missing', 'none']));
 
         $names = $user->getPrivilegeNames();
         sort($names);
-        self::assertSame(['admin_news', 'news', 'user_shifts'], $names);
+        self::assertSame(['news:manage', 'news:view', 'shift:view'], $names);
     }
 
-    public function testAdminPrivilegeMapsToAdminAndStaffRoles(): void
+    public function testGlobalAdminGroupYieldsAdminRole(): void
     {
         $user = new User();
-        $user->addGroup($this->group(90, 'Developer', ['admin', 'user.type.admin']));
+        $user->addGroup($this->group('Global admin', ['global:admin'], 'ROLE_ADMIN'));
 
         $roles = $user->getRoles();
         self::assertContains('ROLE_USER', $roles);
         self::assertContains('ROLE_ADMIN', $roles);
-        self::assertContains('ROLE_STAFF', $roles);
+        self::assertTrue($user->isStaff());
     }
 
-    public function testStaffFlagMapsToStaffRoleOnly(): void
+    public function testStaffGroupYieldsStaffRoleOnly(): void
     {
         $user = new User();
-        $user->addGroup($this->group(60, 'Shift Coordinator', ['user.type.staff']));
+        $user->addGroup($this->group('Shift manager', ['shift:manage'], 'ROLE_STAFF'));
 
         $roles = $user->getRoles();
         self::assertContains('ROLE_STAFF', $roles);
         self::assertNotContains('ROLE_ADMIN', $roles);
+    }
+
+    public function testPlainGroupGrantsNoRoleBeyondUser(): void
+    {
+        $user = new User();
+        $user->addGroup($this->group('Volunteer', ['shift:view']));
+
+        self::assertSame(['ROLE_USER'], $user->getRoles());
+        self::assertFalse($user->isStaff());
+    }
+
+    public function testExpiredAssignmentGrantsNothing(): void
+    {
+        $user = new User();
+        $user->assignGroup(
+            $this->group('Delegated', ['shift:manage'], 'ROLE_STAFF'),
+            null,
+            new \DateTimeImmutable('-1 hour'),
+        );
+
+        self::assertFalse($user->hasPrivilege('shift:manage'));
+        self::assertSame(['ROLE_USER'], $user->getRoles());
     }
 
     public function testUserIdentifierIsTheUsername(): void
@@ -77,7 +99,7 @@ final class UserPrivilegesTest extends TestCase
     public function testAddingTheSameGroupTwiceKeepsOneEntry(): void
     {
         $user = new User();
-        $group = $this->group(20, 'Volunteer', ['news']);
+        $group = $this->group('Volunteer', ['news:view']);
         $user->addGroup($group);
         $user->addGroup($group);
 

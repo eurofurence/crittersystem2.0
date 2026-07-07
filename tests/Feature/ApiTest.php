@@ -38,7 +38,7 @@ final class ApiTest extends WebTestCase
     /** @param string[] $privileges */
     private function makeUser(string $apiKey, array $privileges = []): User
     {
-        $group = new Group(20, 'API group', 'api-group');
+        $group = new Group('API group', 'api-group');
         foreach ($privileges as $name) {
             $privilege = new Privilege($name);
             $this->em->persist($privilege);
@@ -49,6 +49,7 @@ final class ApiTest extends WebTestCase
         $user = new User();
         $user->setName('apiuser')->setEmail('api@example.com')->setPassword('x')->setApiKey($apiKey);
         $user->addGroup($group);
+        $user->completeOnboarding();
         $this->em->persist($user);
         $this->em->flush();
 
@@ -92,7 +93,7 @@ final class ApiTest extends WebTestCase
 
     public function testShiftsJsonExportRequiresPrivilege(): void
     {
-        $this->makeUser('export-key', ['shifts_json_export']);
+        $this->makeUser('export-key', ['export:shifts']);
 
         $this->get('/api/shifts-json-export');
         self::assertResponseStatusCodeSame(401);
@@ -104,7 +105,7 @@ final class ApiTest extends WebTestCase
 
     public function testIcalEmitsAbsoluteUtcInstants(): void
     {
-        $user = $this->makeUser('ical-key', ['ical']);
+        $user = $this->makeUser('ical-key', ['export:ical']);
 
         $type = new VolunteerType('Heaven');
         $this->em->persist($type);

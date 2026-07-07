@@ -33,7 +33,7 @@ final class CertificationController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        $canSeeStaffOnly = $this->isGranted('user.type.staff') || $this->isGranted('admin');
+        $canSeeStaffOnly = $this->isGranted('ROLE_STAFF') || $this->isGranted('global:admin');
 
         $rows = [];
         foreach ($this->certifications->findAllOrdered() as $cert) {

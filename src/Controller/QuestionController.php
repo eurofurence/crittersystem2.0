@@ -16,7 +16,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Volunteer-facing questions: ask and see your own questions/answers
  */
 #[Route('/questions')]
-#[IsGranted('question.add')]
+#[IsGranted('question:ask')]
 final class QuestionController extends AbstractController
 {
     public function __construct(

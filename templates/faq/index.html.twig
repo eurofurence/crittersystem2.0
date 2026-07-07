@@ -6,8 +6,8 @@
 {% block body %}
   {{ d.page_header('Frequently Asked Questions', {
     subtitle: 'Answers to common questions.',
-    actions: (is_granted('question.add') ? [{label: 'Ask a question', href: path('app_questions_index'), class: 'btn btn-outline-primary'}] : [])
-      |merge(is_granted('faq.edit') ? [{label: 'Manage FAQ', href: path('app_manage_faq_index'), class: 'btn btn-outline-secondary'}] : [])
+    actions: (is_granted('question:ask') ? [{label: 'Ask a question', href: path('app_questions_index'), class: 'btn btn-outline-primary'}] : [])
+      |merge(is_granted('faq:manage') ? [{label: 'Manage FAQ', href: path('app_manage_faq_index'), class: 'btn btn-outline-secondary'}] : [])
   }) }}
 
   {% if byCategory is empty %}

@@ -16,7 +16,8 @@
         {# Theme stylesheet — loaded LAST so its `--tblr-*` / `--bs-*` overrides win the cascade. #}
         <link rel="stylesheet" href="{{ asset(active_theme.assetPath) }}">
     </head>
-    <body>
+
+    <body class="layout-fluid">
         {# COMPONENTS #}
         {% import 'components/navigation/_macros.twig' as nav %}
         {% import 'components/notification/_macros.twig' as n %}
@@ -56,6 +57,15 @@
                                     <a href="{{ path('app_digital_id') }}" class="dropdown-item">
                                         {{ i.icon('id', {class: 'icon-1 me-2 text-muted'}) }}Digital ID
                                     </a>
+                                    <a href="{{ path('app_2fa') }}" class="dropdown-item">
+                                        {{ i.icon('lock', {class: 'icon-1 me-2 text-muted'}) }}Two-factor auth
+                                    </a>
+                                    <a href="{{ path('app_profile_telegram') }}" class="dropdown-item">
+                                        {{ i.icon('send', {class: 'icon-1 me-2 text-muted'}) }}Telegram
+                                    </a>
+                                    <a href="{{ path('app_profile_privacy') }}" class="dropdown-item">
+                                        {{ i.icon('shield', {class: 'icon-1 me-2 text-muted'}) }}Privacy &amp; my data
+                                    </a>
                                     <div class="dropdown-divider"></div>
                                     <a href="{{ path('app_logout') }}" class="dropdown-item">
                                         {{ i.icon('logout', {class: 'icon-1 me-2 text-muted'}) }}Logout
@@ -74,6 +84,7 @@
             </header>
 
             {# ===================== HORIZONTAL MENU ===================== #}
+            {% if app.user %}
             <header class="navbar-expand-md d-print-none">
                 <div class="collapse navbar-collapse" id="navbar-menu">
                     <div class="navbar">
@@ -81,27 +92,28 @@
                             <ul class="navbar-nav">
                                 {{ nav.nav_item('Home', 'app_home', {icon: 'home'}) }}
                                 {{ nav.nav_item('Dashboard', 'app_dashboard', {icon: 'dashboard'}) }}
-                                {% if app.user %}
-                                    {% if is_granted('news') %}{{ nav.nav_item('News', 'app_news_index', {icon: 'news', exact: false}) }}{% endif %}
-                                    {{ nav.nav_item('Shifts', 'app_shift_index', {icon: 'clock', exact: false}) }}
-                                    {{ nav.nav_item('My Shifts', 'app_my_shifts', {icon: 'checklist'}) }}
-                                    {{ nav.nav_item('Volunteer Types', 'app_membership_index', {icon: 'puzzle'}) }}
-                                    {% if is_granted('user_messages') %}{{ nav.nav_item('Messages', 'app_messages_index', {icon: 'mail', exact: false}) }}{% endif %}
-                                    {% if is_granted('faq.view') %}{{ nav.nav_item('FAQ', 'app_faq_index', {icon: 'help'}) }}{% endif %}
-                                    {{ nav.nav_item('Certifications', 'app_certifications_index', {icon: 'award'}) }}
-                                    {% if is_granted('user.type.staff') %}{{ nav.nav_item('Staff', 'app_staff_overview', {icon: 'shield', exact: false}) }}{% endif %}
-                                    {% if is_granted('backstage.view') %}{{ nav.nav_item('Backstage', 'app_backstage', {icon: 'gift', exact: false}) }}{% endif %}
-                                {% endif %}
-                                {% if app.user and (is_granted('admin_rooms') or is_granted('admin_volunteer_types') or is_granted('admin_shifts') or is_granted('admin') or is_granted('admin_event_config')) %}
-                                    {{ nav.nav_item('Manage', 'app_manage', {icon: 'tools', exact: false}) }}
-                                {% endif %}
+                                {% if is_granted('news:view') %}{{ nav.nav_item('News', 'app_news_index', {icon: 'news', exact: false}) }}{% endif %}
+                                {{ nav.nav_item('Shifts', 'app_shift_index', {icon: 'clock', exact: false}) }}
+                                {{ nav.nav_item('My Shifts', 'app_my_shifts', {icon: 'checklist'}) }}
+                                {{ nav.nav_item('Volunteer Types', 'app_membership_index', {icon: 'puzzle'}) }}
+                                {% if is_granted('message:use') %}{{ nav.nav_item('Messages', 'app_messages_index', {icon: 'mail', exact: false}) }}{% endif %}
+                                {{ nav.nav_item('Certifications', 'app_certifications_index', {icon: 'award'}) }}
+                                {% if is_granted('ROLE_STAFF') %}{{ nav.nav_item('Staff', 'app_staff_overview', {icon: 'shield', exact: false}) }}{% endif %}
+                                {% if is_granted('backstage:view') %}{{ nav.nav_item('Backstage', 'app_backstage', {icon: 'gift', exact: false}) }}{% endif %}
                                 {{ nav.nav_item('Navigation Kit', 'app_navigation_kit', {icon: 'compass'}) }}
                                 {{ nav.nav_item('Theme Kit', 'app_theme_kit', {icon: 'palette'}) }}
+                                {% if is_granted('faq:view') %}{{ nav.nav_item('FAQ', 'app_faq_index', {icon: 'help'}) }}{% endif %}
+                                {% if app.user and (is_granted('location:manage') or is_granted('volunteertype:manage') or is_granted('shift:manage') or is_granted('global:admin') or is_granted('config:event')) %}
+                                    {{ nav.nav_item('Manage', 'app_manage', {icon: 'tools', exact: false}) }}
+                                {% endif %}
+                                {% if is_granted('audit:view') %}{{ nav.nav_item('Audit', 'app_admin_audit', {icon: 'shield', exact: false}) }}{% endif %}
                             </ul>
                         </div>
                     </div>
                 </div>
             </header>
+            {% endif %}
+
 
             {# ===================== PAGE CONTENT ===================== #}
             <div class="page-wrapper">

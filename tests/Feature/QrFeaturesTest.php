@@ -38,14 +38,15 @@ final class QrFeaturesTest extends WebTestCase
 
     private function user(string $name): User
     {
-        $group = new Group(20, 'g'.$name, 'g-'.$name);
-        $group->addPrivilege($privilege = new Privilege('news'));
+        $group = new Group('g'.$name, 'g-'.$name);
+        $group->addPrivilege($privilege = new Privilege('news:view'));
         $this->em->persist($privilege);
         $this->em->persist($group);
 
         $user = new User();
         $user->setName($name)->setEmail($name.'@example.com')->setApiKey(bin2hex(random_bytes(16)))->setPassword('x');
         $user->addGroup($group);
+        $user->completeOnboarding();
         $this->em->persist($user);
 
         return $user;

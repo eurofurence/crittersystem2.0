@@ -1,0 +1,35 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Ban appeals{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Ban appeals', {
+    subtitle: 'Pending appeals. Bans can only be lifted after an appeal is submitted.',
+    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% if appeals is empty %}
+    {{ d.empty_state('No pending appeals', {message: 'There are no ban appeals to review.'}) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead><tr><th>Type</th><th>Banned at</th><th>Appeal at</th><th class="text-end">Action</th></tr></thead>
+      <tbody>
+        {% for b in appeals %}
+          <tr>
+            <td>{{ b.hashType }}</td>
+            <td class="small">{{ b.bannedAt|app_datetime }}</td>
+            <td class="small">{{ b.appealRequestedAt|app_datetime }}</td>
+            <td class="text-end">
+              <form method="post" action="{{ path('app_manage_ban_lift', {id: b.id}) }}" class="d-inline"
+                    onsubmit="return confirm('Lift this ban?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('lift' ~ b.id) }}">
+                <button class="btn btn-sm btn-outline-success">Lift ban</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

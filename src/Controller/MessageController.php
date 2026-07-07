@@ -19,7 +19,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * per-correspondent thread with read tracking.
  */
 #[Route('/messages')]
-#[IsGranted('user_messages')]
+#[IsGranted('message:use')]
 final class MessageController extends AbstractController
 {
     public function __construct(
