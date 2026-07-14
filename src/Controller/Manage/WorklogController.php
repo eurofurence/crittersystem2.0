@@ -10,7 +10,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/worklogs')]
@@ -55,8 +57,8 @@ final class WorklogController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'app_manage_worklog_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(Request $request, Worklog $worklog): Response
+    #[Route('/{id}/delete', name: 'app_manage_worklog_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function delete(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Worklog $worklog): Response
     {
         if ($this->isCsrfTokenValid('delete'.$worklog->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($worklog);

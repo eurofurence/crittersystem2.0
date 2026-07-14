@@ -29,6 +29,59 @@ services:
       PUBLIC_SYNC_DIR: /var/www/public
     volumes:
       - public_data:/var/www/public
+      # Export archives. The worker builds them and this container serves the download, so the two
+      # MUST see the same storage — with a `local://` EXPORT_STORAGE_DSN that means this shared
+      # volume. Point the DSN at S3 instead and the volume becomes unnecessary.
+      - export_data:/app/var/exports
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Messenger worker. WITHOUT THIS CONTAINER the audit trail, GDPR data exports and all
+  # outbound email are queued in `messenger_messages` and never processed — the application
+  # keeps working and silently records nothing. It is not optional.
+  #
+  # --time-limit/--memory-limit recycle the long-lived PHP process; `restart: unless-stopped`
+  # brings it straight back. The queue is durable (PostgreSQL), so a restart resumes exactly
+  # where it left off and nothing is lost.
+  worker:
+    build:
+      context: .
+      target: prod
+    env_file: [docker/.env.prod]
+    environment:
+      APP_ENV: prod
+      RUN_MIGRATIONS_ON_START: "0"   # the app container owns migrations
+    command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=192M", "-v"]
+    volumes:
+      - export_data:/app/var/exports   # see the app service: the download is served from another container
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Retention. Export archives are short-lived bundles of personal data: the GDPR archive is a full
+  # copy of one user's data and its download window is 24 hours, the audit package is a signed legal
+  # artifact kept for 30 days. Without this container both simply accumulate in storage forever.
+  purge:
+    build:
+      context: .
+      target: prod
+    env_file: [docker/.env.prod]
+    environment:
+      APP_ENV: prod
+      RUN_MIGRATIONS_ON_START: "0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          php bin/console app:gdpr:purge-exports
+          php bin/console app:audit:purge-exports
+          sleep 3600
+        done
+    volumes:
+      - export_data:/app/var/exports
     depends_on:
       database:
         condition: service_healthy
@@ -48,3 +101,4 @@ services:
 volumes:
   database_data:
   public_data:
+  export_data:

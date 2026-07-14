@@ -1455,6 +1455,138 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     generate_final_classes?: bool|Param, // Default: true
  *     generate_final_entities?: bool|Param, // Default: false
  * }
+ * @psalm-type FlysystemConfig = array{
+ *     storages?: array<string, array{ // Default: []
+ *         adapter?: scalar|null|Param, // DEPRECATED: Use the new config format instead (e.g. "local:" instead of "adapter: local")
+ *         options?: list<mixed>,
+ *         asyncaws?: array{
+ *             client: scalar|null|Param, // The AsyncAws S3 client service name
+ *             bucket: scalar|null|Param, // The name of the AWS S3 bucket
+ *             prefix?: scalar|null|Param, // Optional path prefix to prepend to all object keys // Default: ""
+ *         },
+ *         aws?: array{
+ *             client: scalar|null|Param, // The AWS S3 client service name
+ *             bucket: scalar|null|Param, // The name of the AWS S3 bucket
+ *             prefix?: scalar|null|Param, // Optional path prefix to prepend to all object keys // Default: ""
+ *             options?: list<mixed>,
+ *             streamReads?: bool|Param, // Whether to use streaming for file reads // Default: true
+ *         },
+ *         azure?: array{
+ *             client: scalar|null|Param, // The Azure Blob Storage client service name
+ *             container: scalar|null|Param, // The name of the Azure Blob Storage container
+ *             prefix?: scalar|null|Param, // Optional path prefix to prepend to all blob names // Default: ""
+ *         },
+ *         ftp?: array{
+ *             host: scalar|null|Param, // FTP host
+ *             username: scalar|null|Param, // FTP username
+ *             password: scalar|null|Param, // FTP password
+ *             port?: int|Param, // FTP port number // Default: 21
+ *             root?: scalar|null|Param, // FTP root directory // Default: ""
+ *             passive?: bool|Param, // Use passive mode // Default: true
+ *             ssl?: bool|Param, // Use SSL/TLS encryption // Default: false
+ *             timeout?: int|Param, // Connection timeout in seconds // Default: 90
+ *             ignore_passive_address?: scalar|null|Param, // Ignore passive address // Default: null
+ *             utf8?: bool|Param, // Enable UTF8 mode // Default: false
+ *             transfer_mode?: scalar|null|Param, // Transfer mode (FTP_ASCII or FTP_BINARY constante on ftp extension) // Default: null
+ *             system_type?: null|"windows"|"unix"|Param, // FTP system type // Default: null
+ *             timestamps_on_unix_listings_enabled?: bool|Param, // Enable timestamps on Unix listings // Default: false
+ *             recurse_manually?: bool|Param, // Recurse directories manually // Default: true
+ *             use_raw_list_options?: bool|null|Param, // Use raw list options // Default: null
+ *             connectivityChecker?: scalar|null|Param, // Connectivity checker service name // Default: null
+ *             permissions?: array{ // Unix permissions configuration for files and directories
+ *                 file?: array{ // File permissions
+ *                     public?: int|Param, // Public file permissions // Default: 420
+ *                     private?: int|Param, // Private file permissions // Default: 384
+ *                 },
+ *                 dir?: array{ // Directory permissions
+ *                     public?: int|Param, // Public directory permissions // Default: 493
+ *                     private?: int|Param, // Private directory permissions // Default: 448
+ *                 },
+ *             },
+ *         },
+ *         gcloud?: array{
+ *             client: scalar|null|Param, // The Google Cloud Storage client service name
+ *             bucket: scalar|null|Param, // The name of the Google Cloud Storage bucket
+ *             prefix?: scalar|null|Param, // Optional path prefix to prepend to all object keys // Default: ""
+ *             visibility_handler?: scalar|null|Param, // Optional visibility handler service name // Default: null
+ *             streamReads?: bool|Param, // Whether to use streaming for file reads // Default: false
+ *         },
+ *         gridfs?: array{
+ *             bucket?: scalar|null|Param, // GridFS bucket service name (if using an existing bucket service) // Default: null
+ *             prefix?: scalar|null|Param, // Optional path prefix to prepend to all file names // Default: ""
+ *             database?: scalar|null|Param, // MongoDB database name // Default: null
+ *             doctrine_connection?: scalar|null|Param, // Doctrine MongoDB connection name (mutually exclusive with mongodb_uri)
+ *             mongodb_uri?: scalar|null|Param, // MongoDB connection URI (mutually exclusive with doctrine_connection)
+ *             mongodb_uri_options?: list<mixed>,
+ *             mongodb_driver_options?: list<mixed>,
+ *         },
+ *         lazy?: array{ // Lazy adapter for runtime storage selection
+ *             source: scalar|null|Param, // The service name of the storage to use at runtime
+ *         },
+ *         local?: array{
+ *             directory: scalar|null|Param, // Directory path for local storage
+ *             lock?: int|Param, // Lock flags for file operations // Default: 0
+ *             skip_links?: bool|Param, // Whether to skip symbolic links // Default: false
+ *             lazy_root_creation?: bool|Param, // Whether to create the root directory lazily // Default: false
+ *             permissions?: array{ // Unix permissions configuration for files and directories
+ *                 file?: array{ // File permissions
+ *                     public?: int|Param, // Public file permissions // Default: 420
+ *                     private?: int|Param, // Private file permissions // Default: 384
+ *                 },
+ *                 dir?: array{ // Directory permissions
+ *                     public?: int|Param, // Public directory permissions // Default: 493
+ *                     private?: int|Param, // Private directory permissions // Default: 448
+ *                 },
+ *             },
+ *         },
+ *         memory?: array<mixed>,
+ *         sftp?: array{
+ *             host: scalar|null|Param, // SFTP host
+ *             username: scalar|null|Param, // SFTP username
+ *             password?: scalar|null|Param, // SFTP password (optional if using private key) // Default: null
+ *             privateKey?: scalar|null|Param, // Path to private key file or private key content // Default: null
+ *             passphrase?: scalar|null|Param, // Private key passphrase // Default: null
+ *             port?: int|Param, // SFTP port number // Default: 22
+ *             timeout?: int|Param, // Connection timeout in seconds // Default: 90
+ *             hostFingerprint?: scalar|null|Param, // Host fingerprint for verification // Default: null
+ *             connectivityChecker?: scalar|null|Param, // Connectivity checker service name // Default: null
+ *             preferredAlgorithms?: list<mixed>,
+ *             root?: scalar|null|Param, // SFTP root directory // Default: ""
+ *             permissions?: array{ // Unix permissions configuration for files and directories
+ *                 file?: array{ // File permissions
+ *                     public?: int|Param, // Public file permissions // Default: 420
+ *                     private?: int|Param, // Private file permissions // Default: 384
+ *                 },
+ *                 dir?: array{ // Directory permissions
+ *                     public?: int|Param, // Public directory permissions // Default: 493
+ *                     private?: int|Param, // Private directory permissions // Default: 448
+ *                 },
+ *             },
+ *         },
+ *         webdav?: array{
+ *             client: scalar|null|Param, // The WebDAV client service name
+ *             prefix?: scalar|null|Param, // Optional path prefix to prepend to all paths // Default: ""
+ *             visibility_handling?: "throw"|"ignore"|Param, // How to handle visibility operations // Default: "throw"
+ *             manual_copy?: bool|Param, // Whether to handle copy operations manually // Default: false
+ *             manual_move?: bool|Param, // Whether to handle move operations manually // Default: false
+ *         },
+ *         bunnycdn?: array{
+ *             client: scalar|null|Param, // The BunnyCDN client service name
+ *             pull_zone?: scalar|null|Param, // The BunnyCDN pull zone name // Default: ""
+ *         },
+ *         service?: scalar|null|Param, // Reference to a custom adapter service (alternative to registered adapter types)
+ *         visibility?: scalar|null|Param, // Default visibility for files // Default: null
+ *         directory_visibility?: scalar|null|Param, // Default visibility for directories // Default: null
+ *         retain_visibility?: scalar|null|Param, // Keeps the original file visibility (public/private) when copying or moving. // Default: null
+ *         case_sensitive?: bool|Param, // Deprecated: The "case_sensitive" option is deprecated and will be removed in 4.0. // Default: true
+ *         disable_asserts?: bool|Param, // Deprecated: The "disable_asserts" option is deprecated and will be removed in 4.0. // Default: false
+ *         public_url?: list<scalar|null|Param>,
+ *         path_normalizer?: scalar|null|Param, // Path normalizer service name (should implement League\Flysystem\PathNormalizer) // Default: null
+ *         public_url_generator?: scalar|null|Param, // For adapter that do not provide public URLs or override adapter capabilities and public_url option, a public URL generator service name can be configured in the main Filesystem configuration (should implement League\Flysystem\PublicUrlGenerator) // Default: null
+ *         temporary_url_generator?: scalar|null|Param, // For adapter that do not provide public URLs or override adapter capabilities, a temporary URL generator service name can be configured in the main Filesystem configuration (should implement League\Flysystem\TemporaryUrlGenerator) // Default: null
+ *         read_only?: bool|Param, // Converts a file system to read-only // Default: false
+ *     }>,
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
@@ -1468,6 +1600,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *     twig_extra?: TwigExtraConfig,
  *     security?: SecurityConfig,
  *     monolog?: MonologConfig,
+ *     flysystem?: FlysystemConfig,
  *     "when@dev"?: array{
  *         imports?: ImportsConfig,
  *         parameters?: ParametersConfig,
@@ -1484,6 +1617,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         security?: SecurityConfig,
  *         monolog?: MonologConfig,
  *         maker?: MakerConfig,
+ *         flysystem?: FlysystemConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -1498,6 +1632,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         twig_extra?: TwigExtraConfig,
  *         security?: SecurityConfig,
  *         monolog?: MonologConfig,
+ *         flysystem?: FlysystemConfig,
  *     },
  *     "when@test"?: array{
  *         imports?: ImportsConfig,
@@ -1513,6 +1648,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         twig_extra?: TwigExtraConfig,
  *         security?: SecurityConfig,
  *         monolog?: MonologConfig,
+ *         flysystem?: FlysystemConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

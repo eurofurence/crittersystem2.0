@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserVolunteerTypeRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -16,6 +18,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\HasLifecycleCallbacks]
 class UserVolunteerType
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -43,6 +47,7 @@ class UserVolunteerType
 
     public function __construct(User $user, VolunteerType $volunteerType)
     {
+        $this->uuid = Uuid::v4();
         $this->user = $user;
         $this->volunteerType = $volunteerType;
     }

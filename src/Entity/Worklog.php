@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\WorklogRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -16,6 +18,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\HasLifecycleCallbacks]
 class Worklog
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -46,6 +50,7 @@ class Worklog
 
     public function __construct(User $user)
     {
+        $this->uuid = Uuid::v4();
         $this->user = $user;
         $this->workedAt = new \DateTimeImmutable();
     }

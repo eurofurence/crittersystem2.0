@@ -14,16 +14,14 @@
 
   <div class="row g-3 justify-content-center">
     <div class="col-12 col-md-7 col-lg-5">
-      <div class="card text-center">
-        <div class="card-body">
+      {{ d.card_start(null, {class: 'text-center'}) }}
           <img src="{{ qrDataUri }}" alt="Certification QR" class="img-fluid mb-2" style="max-width: 360px;">
           <div class="text-muted small">Valid until {{ token.expiresAt|app_time }}</div>
-          <form method="post" action="{{ path('app_manage_certification_qr_refresh', {id: certification.id}) }}" class="mt-3">
+          <form method="post" action="{{ path('app_manage_certification_qr_refresh', {id: certification.uuid}) }}" class="mt-3">
             <input type="hidden" name="_token" value="{{ csrf_token('cert-qr-refresh' ~ certification.id) }}">
             <button class="btn btn-sm btn-outline-primary">↻ Refresh now</button>
           </form>
-        </div>
-      </div>
+      {{ d.card_end() }}
       <div class="text-muted small text-center mt-2">
         Scan URL: <code>{{ verifyUrl }}</code>
       </div>

@@ -1,0 +1,150 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/icon/_macros.twig' as i %}
+
+{% block title %}{{ department.name }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(department.name, {
+    subtitle: department.description,
+    actions: [{label: '← Departments', href: path('app_departments'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% set canManage = is_granted('department:member:manage') %}
+  {% set canApprove = is_granted('delegated:approve') %}
+  {% set canRequest = is_granted('shift:manage') %}
+
+  {% if canApprove and pending is not empty %}
+    {{ d.card_start('Pending delegated shift-manager approvals', {class: 'mb-3 border-warning', bodyClass: ''}) }}
+      {{ d.table_start() }}
+        <thead><tr><th>User</th><th>Requested</th><th class="text-end">Decision</th></tr></thead>
+        <tbody>
+          {% for r in pending %}
+            <tr>
+              <td>{{ r.subject|display_name }}</td>
+              <td class="small">{{ r.createdAt|app_datetime }}</td>
+              <td class="text-end">
+                {% for decision in ['approve', 'reject'] %}
+                  <form method="post" action="{{ path('app_department_delegated_decide', {id: department.uuid, reqId: r.uuid, decision: decision}) }}" class="d-inline">
+                    <input type="hidden" name="_token" value="{{ csrf_token('delegated' ~ r.id) }}">
+                    <button class="btn btn-sm {{ decision == 'approve' ? 'btn-success' : 'btn-outline-danger' }}">{{ decision|capitalize }}</button>
+                  </form>
+                {% endfor %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      {{ d.table_end() }}
+    {{ d.card_end({bodyClass: ''}) }}
+  {% endif %}
+
+  {{ d.card_start('Staffing') }}
+      <span class="me-3">Shifts owned: <strong>{{ staffing.shiftCount }}</strong></span>
+      <span class="text-secondary small">Recommended max event hours: {{ staffing.recommendedMaxHours }}h</span>
+  {{ d.card_end() }}
+
+  {% if canManage %}
+    {{ d.card_start('Add a member') }}
+        <form method="post" action="{{ path('app_department_add_member', {id: department.uuid}) }}" class="row g-2 align-items-end">
+          <input type="hidden" name="_token" value="{{ csrf_token('addmember' ~ department.id) }}">
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="add-member-user">User</label>
+            <select class="form-select" id="add-member-user" name="user" required>
+              <option value="">Choose a user…</option>
+              {% for u in assignable %}
+                <option value="{{ u.uuid }}">{{ u|display_name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label" for="add-member-position">Position</label>
+            <select class="form-select" id="add-member-position" name="position" required>
+              {% for p in positions %}
+                <option value="{{ p.value }}" {{ p.value == 'staff' ? 'selected' : '' }}>{{ p.label }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-2">
+            <button class="btn btn-primary w-100" {{ assignable is empty ? 'disabled' : '' }}>Add</button>
+          </div>
+        </form>
+        {% if assignable is empty %}
+          <p class="text-secondary small mb-0 mt-2">Every user is already a member, or is provisioned through SSO.</p>
+        {% endif %}
+    {{ d.card_end() }}
+  {% endif %}
+
+  {% for section in [
+    {title: 'Department & Shift Managers', users: members.managers|merge(members.shiftManagers)},
+    {title: 'Staff members', users: members.staff},
+    {title: 'Non-staff members', users: members.nonStaff}
+  ] %}
+    <div class="card mb-3">
+      <div class="card-header"><h3 class="card-title">{{ section.title }} <span class="text-secondary">({{ section.users|length }})</span></h3></div>
+      {% if section.users is empty %}
+        {{ d.empty_inline('None.', {tag: 'div', class: 'card-body text-secondary'}) }}
+      {% else %}
+        {{ d.table_start() }}
+          <thead><tr><th>User</th><th>Position</th><th class="text-end">Planned hours</th><th class="text-end">Actions</th></tr></thead>
+          <tbody>
+            {% for u in section.users %}
+              <tr>
+                <td>
+                  <a href="{{ path('app_profile_show', {id: u.uuid}) }}">{{ u|display_name }}</a>
+                  {% if u.ssoManaged %}<span class="badge bg-blue-lt ms-1" title="Provisioned through SSO">SSO</span>{% endif %}
+                </td>
+                <td class="text-secondary small">
+                  {{ members.positions[u.id] is defined ? members.positions[u.id].label : 'Member' }}
+                </td>
+                <td class="text-end">
+                  {{ stats[u.id].hours|round(1) }}h
+                  {% if stats[u.id].over %}<span class="text-danger ms-1" title="Over recommended event hours">{{ i.icon('activity', {class: 'icon-1'}) }}</span>{% endif %}
+                </td>
+                <td class="text-end">
+                  <div class="dropdown">
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
+                    <div class="dropdown-menu dropdown-menu-end">
+                      {% for m in contactMethods[u.id] %}
+                        {% if m.href %}
+                          <a class="dropdown-item" href="{{ m.href }}">{{ i.icon('mail', {class: 'icon-1 me-1'}) }}{{ m.label }}</a>
+                        {% else %}
+                          <a class="dropdown-item" href="{{ path('app_messages_index') }}">{{ m.label }}</a>
+                        {% endif %}
+                      {% endfor %}
+                      {% if canManage or canRequest %}<div class="dropdown-divider"></div>{% endif %}
+                      {# SSO owns the position of an SSO-managed user; the next login would undo any change made here. #}
+                      {% if canManage and not u.ssoManaged %}
+                        {% for p in positions %}
+                          {% if members.positions[u.id] is not defined or members.positions[u.id] != p %}
+                            <form method="post" action="{{ path('app_department_set_position', {id: department.uuid, userId: u.uuid}) }}">
+                              <input type="hidden" name="_token" value="{{ csrf_token('position' ~ department.id ~ '-' ~ u.id) }}">
+                              <input type="hidden" name="position" value="{{ p.value }}">
+                              <button class="dropdown-item" type="submit">Make {{ p.label|lower }}</button>
+                            </form>
+                          {% endif %}
+                        {% endfor %}
+                      {% endif %}
+                      {% if canRequest %}
+                        <form method="post" action="{{ path('app_department_request_delegated', {id: department.uuid, userId: u.uuid}) }}">
+                          <input type="hidden" name="_token" value="{{ csrf_token('reqdel' ~ department.id ~ '-' ~ u.id) }}">
+                          <button class="dropdown-item" type="submit">Request delegated promotion</button>
+                        </form>
+                      {% endif %}
+                      {% if canManage and not u.ssoManaged %}
+                        <form method="post" action="{{ path('app_department_remove_member', {id: department.uuid, userId: u.uuid}) }}"
+                              data-controller="confirm" data-confirm-message-value="Remove this member from the department?">
+                          <input type="hidden" name="_token" value="{{ csrf_token('remove' ~ department.id ~ '-' ~ u.id) }}">
+                          <button class="dropdown-item text-danger" type="submit">Remove from department</button>
+                        </form>
+                      {% endif %}
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        {{ d.table_end() }}
+      {% endif %}
+    </div>
+  {% endfor %}
+{% endblock %}

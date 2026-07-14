@@ -37,6 +37,7 @@ final class PrivilegeCatalog
         'department:manage',
         'shift:manage',
         'shift:assign',
+        'assignment:manage',
         'volunteertype:assign',
     ];
 
@@ -66,7 +67,8 @@ final class PrivilegeCatalog
         // Roles & access control
         'rbac:group:view' => ['View groups and permissions', 'Access control', self::LEVEL_SUBADMIN, false],
         'rbac:group:manage' => ['Create/edit groups and assign permissions', 'Access control', self::LEVEL_ADMIN, true],
-        'rbac:ssomap:manage' => ['Manage SSO group mappings', 'Access control', self::LEVEL_ADMIN, false],
+        // Step-up guarded because the mapping screens display raw identity-provider group IDs.
+        'rbac:ssomap:manage' => ['Manage SSO group mappings', 'Access control', self::LEVEL_ADMIN, true],
 
         // User management
         'user:view' => ['View users', 'Users', self::LEVEL_SUBADMIN, false],
@@ -77,6 +79,11 @@ final class PrivilegeCatalog
         'user:pii:view' => ['View unmasked personal data', 'Users', self::LEVEL_ADMIN, true],
         'user:arrive' => ['Check users in / mark as arrived', 'Users', self::LEVEL_SUBADMIN, false],
         'user:worklog:edit' => ['Edit user worklog hours', 'Users', self::LEVEL_SUBADMIN, false],
+        'profile:view' => ['View any user profile', 'Users', self::LEVEL_SUBADMIN, false],
+        'profile:history:view' => ["View another user's shift history", 'Users', self::LEVEL_SUBADMIN, false],
+        'worklog:self' => ['Record own worklog hours', 'Users', self::LEVEL_SUBADMIN, false],
+        'department:member:manage' => ['Promote or remove department members', 'Organisation', self::LEVEL_SUBADMIN, false],
+        'delegated:approve' => ['Approve delegated shift-manager requests', 'Organisation', self::LEVEL_SUBADMIN, false],
         'user:onboarding:manage' => ['Trigger or reset user onboarding', 'Users', self::LEVEL_ADMIN, false],
         'user:telegram:admin' => ["Unlink another user's Telegram account", 'Users', self::LEVEL_SUBADMIN, false],
 
@@ -85,12 +92,17 @@ final class PrivilegeCatalog
         'badge:assign' => ['Assign or remove badges', 'Badges', self::LEVEL_SUBADMIN, false],
 
         // Shifts
+        'manageshifts:view' => ['Access the staff Shift Manager module', 'Shifts', self::LEVEL_SUBADMIN, false],
         'shift:view' => ['Browse shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
         'shift:apply' => ['Sign up for shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
         'shift:self' => ['View own shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
         'shift:manage' => ['Create and edit shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'shift:publish' => ['Publish draft shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
         'shift:assign' => ['Assign or remove users on shifts', 'Shifts', self::LEVEL_SUBADMIN, false],
         'shift:import' => ['Import schedules', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'invite:manage' => ['Create availability requests and shift invitation links', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'assignment:manage' => ['Assign and remove users on shifts and positions', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'assignment:override' => ['Override availability or hour warnings when assigning', 'Shifts', self::LEVEL_SUBADMIN, false],
 
         // Organisation
         'department:view' => ['View departments', 'Organisation', self::LEVEL_SUBADMIN, false],
@@ -120,6 +132,12 @@ final class PrivilegeCatalog
         'question:ask' => ['Ask questions', 'Content', self::LEVEL_SUBADMIN, false],
         'question:answer' => ['Answer questions', 'Content', self::LEVEL_SUBADMIN, false],
         'message:use' => ['Use private messaging', 'Content', self::LEVEL_SUBADMIN, false],
+        'chat:claim' => ['Claim and answer Info Desk support conversations', 'Content', self::LEVEL_SUBADMIN, false],
+        'chat:join' => ['Join a conversation claimed by another user', 'Content', self::LEVEL_ADMIN, false],
+        'chat:restricted' => ['Send links and images in chat', 'Content', self::LEVEL_SUBADMIN, false],
+        'call:trigger' => ['Trigger a global call for help', 'Content', self::LEVEL_SUBADMIN, false],
+        'call:cancel' => ['Cancel a global call for help', 'Content', self::LEVEL_SUBADMIN, false],
+        'call:respond' => ['Respond to a global call for help', 'Content', self::LEVEL_SUBADMIN, false],
         'meeting:view' => ['View meetings', 'Content', self::LEVEL_SUBADMIN, false],
 
         // Backstage & exports
@@ -136,12 +154,18 @@ final class PrivilegeCatalog
     /**
      * Permissions every signed-in user holds via the Volunteer group.
      *
+     * volunteertype:view and location:view are part of the baseline: both pages
+     * are open to any signed-in user, and the navigation gates its entries on
+     * these privileges — without them a volunteer has no way to reach the page
+     * where volunteer types are joined.
+     *
      * @var string[]
      */
-    private const VOLUNTEER = [
-        'shift:view', 'shift:apply', 'shift:self', 'news:view', 'faq:view',
+    public const VOLUNTEER = [
+        'shift:view', 'shift:apply', 'shift:self', 'call:respond', 'news:view', 'faq:view',
         'question:ask', 'message:use', 'meeting:view', 'certification:view',
         'certification:apply', 'export:ical', 'export:atom', 'telegram:link',
+        'volunteertype:view', 'location:view',
     ];
 
     /**
@@ -170,32 +194,50 @@ final class PrivilegeCatalog
             'name' => 'Shift manager',
             'role' => 'ROLE_STAFF',
             'permissions' => [
-                'shift:manage', 'shift:assign', 'shift:import', 'shift:view', 'shift:self',
+                'manageshifts:view', 'shift:manage', 'shift:publish', 'shift:assign', 'shift:import', 'shift:view', 'shift:self', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
                 'location:view', 'volunteertype:view', 'user:view', 'user:arrive',
+                'profile:view', 'profile:history:view', 'worklog:self',
             ],
         ],
         'shift-manager-delegated' => [
             'name' => 'Shift manager (delegated)',
             'role' => 'ROLE_STAFF',
             'permissions' => [
-                'shift:manage', 'shift:assign', 'shift:import', 'shift:view', 'shift:self',
+                'manageshifts:view', 'shift:manage', 'shift:publish', 'shift:assign', 'shift:import', 'shift:view', 'shift:self', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
                 'location:view', 'volunteertype:view', 'user:view', 'user:arrive',
+                'profile:view', 'profile:history:view', 'worklog:self',
             ],
         ],
         'department-manager' => [
             'name' => 'Department manager',
             'role' => 'ROLE_STAFF',
             'permissions' => [
-                'department:view', 'department:manage', 'shift:manage', 'shift:assign',
+                'manageshifts:view', 'department:view', 'department:manage', 'shift:manage', 'shift:publish', 'shift:assign', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
                 'volunteertype:view', 'volunteertype:assign', 'user:view', 'user:arrive',
+                'profile:view', 'profile:history:view', 'worklog:self',
+                'department:member:manage', 'delegated:approve',
+            ],
+        ],
+        /*
+         * Membership in a department is an active department-scoped assignment, so plain staff need a
+         * group to be assigned. This is that group: it confers no management rights, only the staff
+         * role and the read access a department member is expected to have.
+         */
+        'department-staff' => [
+            'name' => 'Department staff',
+            'role' => 'ROLE_STAFF',
+            'permissions' => [
+                'department:view', 'shift:view', 'shift:apply', 'shift:self',
+                'location:view', 'volunteertype:view', 'worklog:self',
             ],
         ],
         'info-desk' => [
             'name' => 'Info Desk',
             'role' => 'ROLE_STAFF',
             'permissions' => [
-                'user:view', 'user:arrive', 'message:use', 'shift:view', 'shift:assign',
+                'manageshifts:view', 'user:view', 'user:arrive', 'message:use', 'chat:claim', 'chat:restricted', 'call:trigger', 'call:cancel', 'shift:view', 'shift:assign',
                 'goodie:view', 'goodie:distribute', 'certification:view', 'news:view', 'faq:view',
+                'profile:view', 'profile:history:view', 'worklog:self',
             ],
         ],
         'communications-manager' => [

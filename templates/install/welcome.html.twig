@@ -1,11 +1,18 @@
 {% extends 'install/_layout.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 
 {% block title %}Welcome · Setup · VMS{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
 
-    <form class="card card-md" method="post" action="{{ path('app_install_authenticate') }}" data-turbo="false">
+    {# Two card bodies split by an hr-text, so the card opens with no body of its own. #}
+    {{ d.card_start(null, {
+        tag: 'form',
+        class: 'card-md',
+        bodyClass: '',
+        attrs: {method: 'post', action: path('app_install_authenticate'), 'data-turbo': 'false'}
+    }) }}
         <div class="card-body text-center py-4 p-sm-5">
             <div class="mb-3">
                 <span class="avatar avatar-xl bg-primary-lt">
@@ -37,5 +44,5 @@
                 <button type="submit" class="btn btn-primary w-100">Unlock &amp; continue</button>
             </div>
         </div>
-    </form>
+    {{ d.card_end({tag: 'form', bodyClass: ''}) }}
 {% endblock %}

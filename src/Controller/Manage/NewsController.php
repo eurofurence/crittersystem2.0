@@ -11,7 +11,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/news')]
@@ -63,8 +65,8 @@ final class NewsController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_manage_news_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
-    public function edit(Request $request, News $news): Response
+    #[Route('/{id}/edit', name: 'app_manage_news_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
+    public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] News $news): Response
     {
         $form = $this->createForm(NewsType::class, $news);
         $form->handleRequest($request);
@@ -83,8 +85,8 @@ final class NewsController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'app_manage_news_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(Request $request, News $news): Response
+    #[Route('/{id}/delete', name: 'app_manage_news_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function delete(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] News $news): Response
     {
         if ($this->isCsrfTokenValid('delete'.$news->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($news);

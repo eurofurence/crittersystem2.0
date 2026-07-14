@@ -1,12 +1,22 @@
 {% extends 'install/_layout.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 
 {% block title %}Configuration · Setup · VMS{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
 
-    <form class="card card-md" method="post" action="{{ path('app_install_config') }}" data-turbo="false">
-        <div class="card-body">
+    {% set configFooter %}
+        <div class="btn-list justify-content-end">
+            <button type="submit" name="action" value="skip" class="btn btn-link link-secondary">Skip for now</button>
+            <button type="submit" name="action" value="save" class="btn btn-primary">Save &amp; finish</button>
+        </div>
+    {% endset %}
+    {{ d.card_start(null, {
+        tag: 'form',
+        class: 'card-md',
+        attrs: {method: 'post', action: path('app_install_config'), 'data-turbo': 'false'}
+    }) }}
             <h2 class="mb-1">Optional configuration</h2>
             <p class="text-secondary">
                 You can set a few basics now, or skip and configure everything later from
@@ -41,14 +51,7 @@
                     <small class="form-hint">PHP date() format, e.g. <code>H:i</code>.</small>
                 </div>
             </div>
-        </div>
-        <div class="card-footer">
-            <div class="btn-list justify-content-end">
-                <button type="submit" name="action" value="skip" class="btn btn-link link-secondary">Skip for now</button>
-                <button type="submit" name="action" value="save" class="btn btn-primary">Save &amp; finish</button>
-            </div>
-        </div>
-    </form>
+    {{ d.card_end({tag: 'form', footer: configFooter}) }}
 
     {% embed 'install/_progress.html.twig' %}
         {% block buttons %}{% endblock %}

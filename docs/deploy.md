@@ -3,6 +3,7 @@
 This guide covers every supported way to deploy Critter 2.0 and explains the
 **safe, self-healing migration model** that backs all of them.
 
+- [⚠ The Messenger worker is mandatory](#-the-messenger-worker-is-mandatory)
 - [How migrations stay safe](#how-migrations-stay-safe)
 - [The install wizard & maintenance page](#the-install-wizard--maintenance-page)
 - [Environment variables](#environment-variables)
@@ -13,6 +14,62 @@ This guide covers every supported way to deploy Critter 2.0 and explains the
 - [Development with containers](#development-with-containers)
 - [Creating an admin from the console](#creating-an-admin-from-the-console)
 - [Troubleshooting](#troubleshooting)
+
+---
+
+## ⚠ The Messenger worker is mandatory
+
+**Every deployment must run a Messenger worker.** It is not an optimisation and not optional.
+
+```bash
+php bin/console messenger:consume async --time-limit=3600 --memory-limit=192M
+```
+
+Four subsystems dispatch their work to the `async` transport and are written **only** by this worker:
+
+| Routed to `async`             | What breaks without a worker                            |
+| ----------------------------- | ------------------------------------------------------- |
+| `App\Audit\AuditRecord`       | **The audit trail is never written.** Legally critical. |
+| `App\Gdpr\GenerateDataExport` | GDPR data-portability exports never complete.           |
+| `SendEmailMessage`            | No outbound email at all.                               |
+| `ChatMessage` / `SmsMessage`  | No notifications.                                       |
+
+**The failure is silent.** Without the worker the application serves normally, every action still
+dispatches its message, users see no error — and the messages simply accumulate in the
+`messenger_messages` table, unwritten. `audit_events` stays empty and nothing surfaces it.
+
+Nothing is _lost_ while the worker is down. The transport is `doctrine://default`, a durable
+PostgreSQL-backed buffer: messages persist across restarts, crashes and redeploys, and a worker that
+comes back resumes exactly where it stopped. A backlog is a delay, not a data loss — provided a
+worker eventually runs.
+
+The worker is defined for you in `compose.prod.yaml`, `compose.dev.yaml` and `deploy/k8s/app.yaml`
+(a separate `critter-worker` Deployment). If you deploy some other way — bare metal, systemd,
+supervisor — **you must run it yourself**, with a restart-on-exit supervisor. `--time-limit` /
+`--memory-limit` make the process exit periodically on purpose; the supervisor restarting it is how a
+long-lived PHP worker is recycled.
+
+### Monitoring (do not skip this)
+
+A stalled worker is invisible from the outside: the application keeps serving normally. Monitor the
+queue explicitly.
+
+```bash
+php bin/console app:audit:health     # exit 0 = healthy, 1 = the trail is not being written
+```
+
+It reports the backlog, the age of the oldest unconsumed message, anything in the failed transport,
+and the number of rows actually in `audit_events`. Run it on a schedule and **alert on a non-zero
+exit** — the k8s manifest ships a `critter-audit-health` CronJob that does exactly this. Thresholds
+are tunable with `--max-backlog` and `--max-age`.
+
+Recovering a backlog is just running the worker; it drains what is waiting. Messages that failed
+repeatedly land in the `failed` transport:
+
+```bash
+php bin/console messenger:failed:show
+php bin/console messenger:failed:retry
+```
 
 ---
 
@@ -59,16 +116,54 @@ GET /health  → 200 {"status":"ok","database":"up","migrationsPending":0}
 
 ## Environment variables
 
-| Variable                  | Required | Purpose                                                                            |
-| ------------------------- | -------- | ---------------------------------------------------------------------------------- |
-| `APP_ENV`                 | yes      | `prod` for production, `dev` for development.                                      |
-| `APP_SECRET`              | yes      | Symfony secret. Generate: `php -r 'echo bin2hex(random_bytes(16));'`.              |
-| `DATABASE_URL`            | yes      | `postgresql://user:pass@host:5432/db?serverVersion=16&charset=utf8`.               |
-| `APP_ENCRYPTION_KEY`      | yes      | Encrypts secrets at rest. Generate: `php bin/console app:encryption:generate-key`. Losing it makes encrypted data unrecoverable. |
-| `INSTALL_PASSWORD`        | no       | Unlocks `/admin/install`. Empty = wizard disabled.                                 |
-| `RUN_MIGRATIONS_ON_START` | no       | `1` (container default) auto-migrates on start; `0` to manage migrations yourself. |
-| `MAILER_DSN`              | no       | e.g. `smtp://…`; defaults to discarding mail.                                      |
-| `PUBLIC_SYNC_DIR`         | no       | Container-internal: where the entrypoint publishes `public/` for an nginx sidecar. |
+| Variable                  | Required | Purpose                                                                                                                             |
+| ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ENV`                 | yes      | `prod` for production, `dev` for development.                                                                                       |
+| `APP_SECRET`              | yes      | Symfony secret. Generate: `php -r 'echo bin2hex(random_bytes(16));'`.                                                               |
+| `DATABASE_URL`            | yes      | `postgresql://user:pass@host:5432/db?serverVersion=16&charset=utf8`.                                                                |
+| `APP_ENCRYPTION_KEY`      | yes      | Encrypts secrets at rest. Generate: `php bin/console app:encryption:generate-key`. Losing it makes encrypted data unrecoverable.    |
+| `INSTALL_PASSWORD`        | no       | Unlocks `/admin/install`. Empty = wizard disabled.                                                                                  |
+| `RUN_MIGRATIONS_ON_START` | no       | `1` (container default) auto-migrates on start; `0` to manage migrations yourself.                                                  |
+| `MAILER_DSN`              | no       | e.g. `smtp://…`; defaults to discarding mail.                                                                                       |
+| `PUBLIC_SYNC_DIR`         | no       | Container-internal: where the entrypoint publishes `public/` for an nginx sidecar.                                                  |
+| `UPLOAD_STORAGE_DSN`      | no       | Where user uploads live. `local://var/uploads` (default) or `s3://bucket?region=…`.                                                 |
+| `EXPORT_STORAGE_DSN`      | no       | Where export archives live. `local://var/exports` (default) or `s3://bucket?region=…`. **Read the section below before deploying.** |
+
+---
+
+## ⚠ Export storage must be shared by every process
+
+Two features write ZIP archives: the **audit legal export** (a signed package, kept 30 days) and the
+**GDPR data export** (a complete copy of one user's personal data, downloadable for 24 hours).
+
+They are not written and read by the same process. The GDPR archive is built by the **messenger
+worker**; the download is served by a **web** request. If `EXPORT_STORAGE_DSN` points at a directory
+that only one of them can see, the export is built successfully, the user is emailed a link, and the
+download then fails — because the file is on another container's disk.
+
+| Deployment                 | What to use                                                                                                            |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Single host, no containers | `local://var/exports` — one filesystem, nothing to do.                                                                 |
+| Docker Compose             | `local://var/exports` — `compose.prod.yaml` mounts the `export_data` volume into the app, worker and purge containers. |
+| **Kubernetes**             | **`s3://…` — required.** Pods share no filesystem; a `local://` DSN loses every archive at the next restart.           |
+| More than one app replica  | `s3://…` — required, for the same reason.                                                                              |
+
+Archives are private. They are only ever served through an authorization-checked controller, never
+from a public bucket URL — do not make the bucket public.
+
+## Retention: schedule the purge
+
+Export archives must not accumulate. `app:gdpr:purge-exports` deletes GDPR archives once their
+24-hour window closes (data minimisation — the record is kept, the personal data is not), and
+`app:audit:purge-exports` deletes audit packages past their retention window. Both are idempotent, so
+a missed run catches up on the next one.
+
+`compose.prod.yaml` ships a `purge` container that runs both hourly; `deploy/k8s/app.yaml` ships the
+equivalent `critter-purge-exports` CronJob. On a bare-metal install, add them to cron:
+
+```cron
+17 * * * *  cd /srv/critter && php bin/console app:gdpr:purge-exports && php bin/console app:audit:purge-exports
+```
 
 ---
 

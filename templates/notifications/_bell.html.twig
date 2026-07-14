@@ -1,0 +1,10 @@
+{# A Turbo Frame so "mark all read" swaps in place; live-refresh re-fetches the
+   fragment so the unread count stays current. Keep the frame id stable — the
+   server responses target it by id. #}
+<turbo-frame id="notifications-bell"
+             data-controller="live-refresh"
+             data-live-refresh-url-value="{{ path('app_notifications_bell') }}"
+             data-live-refresh-interval-value="60000"
+             class="nav-item dropdown d-none d-md-flex me-2">
+  {% include 'notifications/_bell_content.html.twig' with {vm: vm} only %}
+</turbo-frame>

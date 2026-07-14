@@ -3,8 +3,8 @@
  *
  * The official EF website has no dark mode, so this is an EF-flavoured dark
  * theme: Tabler's native dark base (`data-bs-theme="dark"`) tinted toward the
- * brand teal (#005953 / #69a3a2 from the ef30 site) with the same Georgia
- * serif headings as the light EF theme.
+ * brand teal (#005953 / #69a3a2) with the same Georgia serif headings as the
+ * light EF theme.
  */
 
 [data-bs-theme="dark"] {

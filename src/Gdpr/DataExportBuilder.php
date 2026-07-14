@@ -89,7 +89,7 @@ final class DataExportBuilder
                 'starts_at' => $shift->getStartsAt()->format(\DATE_ATOM),
                 'ends_at' => $shift->getEndsAt()->format(\DATE_ATOM),
                 'location' => $shift->getLocation()?->getName(),
-                'department' => $shift->getShiftType()?->getDepartment()?->getName(),
+                'department' => $shift->getShiftTask()?->getDepartment()?->getName(),
             ];
         }, $entries);
     }

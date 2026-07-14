@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Gdpr;
 
 use App\Entity\DataExport;
+use App\Storage\ExportStorage;
+use App\Storage\ZipBuilder;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Mime\Email;
@@ -20,12 +23,15 @@ final class GenerateDataExportHandler
 {
     private const FROM = 'noreply@critter.example';
 
+    public const KEY_PREFIX = 'gdpr/';
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly DataExportBuilder $builder,
         private readonly MailerInterface $mailer,
         private readonly UrlGeneratorInterface $urlGenerator,
-        private readonly string $projectDir,
+        private readonly ExportStorage $storage,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -37,21 +43,12 @@ final class GenerateDataExportHandler
         }
 
         try {
-            $dir = $this->projectDir.'/var/data-exports';
-            if (!is_dir($dir) && !@mkdir($dir, 0770, true) && !is_dir($dir)) {
-                throw new \RuntimeException('Cannot create export directory.');
-            }
-            $path = $dir.'/'.$export->getUuid().'.zip';
-
             $json = json_encode($this->builder->build($export->getUser()), \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE);
-            $zip = new \ZipArchive();
-            if ($zip->open($path, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-                throw new \RuntimeException('Cannot create archive.');
-            }
-            $zip->addFromString('data.json', (string) $json);
-            $zip->close();
 
-            $export->markReady($path);
+            $key = self::KEY_PREFIX.$export->getUuid().'.zip';
+            $this->storage->write($key, ZipBuilder::build(['data.json' => (string) $json]));
+
+            $export->markReady($key);
             $this->em->flush();
 
             $url = $this->urlGenerator->generate('app_profile_data_download', ['uuid' => $export->getUuid()], UrlGeneratorInterface::ABSOLUTE_URL);
@@ -60,7 +57,13 @@ final class GenerateDataExportHandler
                     ->subject('Your data export is ready')
                     ->text("Your data export is ready. Download it within 24 hours:\n".$url),
             );
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            // The user only ever sees "failed", so the reason has to reach the operator somehow.
+            $this->logger->error('Data export {uuid} failed: {reason}', [
+                'uuid' => $export->getUuid(),
+                'reason' => $e->getMessage(),
+                'exception' => $e,
+            ]);
             $export->markFailed();
             $this->em->flush();
         }

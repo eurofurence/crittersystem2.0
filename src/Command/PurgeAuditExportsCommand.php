@@ -7,6 +7,7 @@ namespace App\Command;
 use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
 use App\Repository\AuditExportRepository;
+use App\Storage\ExportStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -29,6 +30,7 @@ final class PurgeAuditExportsCommand extends Command
         private readonly AuditExportRepository $exports,
         private readonly AuditLogger $audit,
         private readonly EntityManagerInterface $em,
+        private readonly ExportStorage $storage,
     ) {
         parent::__construct();
     }
@@ -40,9 +42,9 @@ final class PurgeAuditExportsCommand extends Command
         $purged = 0;
 
         foreach ($this->exports->findExpired($now) as $export) {
-            $path = $export->getFilePath();
-            if (is_file($path)) {
-                @unlink($path);
+            $key = $export->getStorageKey();
+            if ($this->storage->exists($key)) {
+                $this->storage->delete($key);
                 ++$purged;
             }
 

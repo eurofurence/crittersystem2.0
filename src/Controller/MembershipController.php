@@ -5,13 +5,16 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Entity\UserVolunteerType;
 use App\Entity\VolunteerType;
+use App\Repository\UserGroupAssignmentRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Repository\VolunteerTypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -26,6 +29,7 @@ final class MembershipController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly VolunteerTypeRepository $volunteerTypes,
         private readonly UserVolunteerTypeRepository $memberships,
+        private readonly UserGroupAssignmentRepository $assignments,
     ) {
     }
 
@@ -35,16 +39,73 @@ final class MembershipController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        $rows = [];
+        $public = [];
+        $staff = [];
         foreach ($this->volunteerTypes->findAllOrdered() as $type) {
-            $rows[] = ['type' => $type, 'membership' => $this->memberships->findOneByUserAndType($user, $type)];
+            if (!$this->isVisible($type, $user)) {
+                continue;
+            }
+            $row = ['type' => $type, 'membership' => $this->memberships->findOneByUserAndType($user, $type)];
+            $type->isStaffOnly() ? $staff[] = $row : $public[] = $row;
         }
 
-        return $this->render('membership/index.html.twig', ['rows' => $rows]);
+        return $this->render('membership/index.html.twig', ['public' => $public, 'staff' => $staff]);
     }
 
-    #[Route('/{id}/join', name: 'app_membership_join', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function join(Request $request, VolunteerType $type): Response
+    #[Route('/table', name: 'app_membership_table', methods: ['GET'])]
+    public function table(): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $rows = [];
+        foreach ($this->volunteerTypes->findAllOrdered() as $type) {
+            if ($this->isVisible($type, $user)) {
+                $rows[] = ['type' => $type, 'membership' => $this->memberships->findOneByUserAndType($user, $type)];
+            }
+        }
+
+        return $this->render('membership/table.html.twig', ['rows' => $rows]);
+    }
+
+    #[Route('/{id}', name: 'app_membership_show', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function show(#[MapEntity(mapping: ['id' => 'uuid'])] VolunteerType $type): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        if (!$this->isVisible($type, $user)) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->render('membership/show.html.twig', [
+            'type' => $type,
+            'membership' => $this->memberships->findOneByUserAndType($user, $type),
+        ]);
+    }
+
+    /** Visibility per the volunteer-type flags. */
+    private function isVisible(VolunteerType $type, User $user): bool
+    {
+        if (!$type->isStaffOnly()) {
+            return true;
+        }
+        if (!$user->isStaff()) {
+            return false;
+        }
+        if (!$type->isDepartmentOnly()) {
+            return true;
+        }
+        foreach ($type->getDepartments() as $department) {
+            if ($this->assignments->userIsMember($user, $department)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    #[Route('/{id}/join', name: 'app_membership_join', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function join(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] VolunteerType $type): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -68,8 +129,8 @@ final class MembershipController extends AbstractController
         return $this->redirectToRoute('app_membership_index');
     }
 
-    #[Route('/{id}/leave', name: 'app_membership_leave', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function leave(Request $request, VolunteerType $type): Response
+    #[Route('/{id}/leave', name: 'app_membership_leave', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function leave(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] VolunteerType $type): Response
     {
         /** @var User $user */
         $user = $this->getUser();

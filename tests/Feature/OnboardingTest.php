@@ -5,34 +5,13 @@ namespace App\Tests\Feature;
 use App\Entity\Group;
 use App\Entity\Settings;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Entity\UserVolunteerType;
+use App\Entity\VolunteerType;
+use App\Tests\DatabaseWebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class OnboardingTest extends WebTestCase
+final class OnboardingTest extends DatabaseWebTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
-        }
-
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
-    }
-
     private function makeUser(string $name, ?string $role): User
     {
         $group = new Group('G'.$name, 'g-'.$name, $role);
@@ -69,6 +48,12 @@ final class OnboardingTest extends WebTestCase
 
     public function testWalkingTheWizardCompletesOnboarding(): void
     {
+        $volunteerType = new VolunteerType('Volunteer');
+        $volunteerGroup = new Group('Volunteer', 'volunteer', null);
+        $this->em->persist($volunteerType);
+        $this->em->persist($volunteerGroup);
+        $this->em->flush();
+
         $user = $this->makeUser('newbie', null);
         $this->client->loginUser($user);
 
@@ -93,5 +78,43 @@ final class OnboardingTest extends WebTestCase
         self::assertTrue($reloaded->getConsent()?->hasDataProcessing());
         self::assertTrue($reloaded->getConsent()?->isFullNameVisible());
         self::assertSame('they/them', $reloaded->getPersonalData()?->getPronoun());
+
+        $membership = $this->em->getRepository(UserVolunteerType::class)
+            ->findOneBy(['user' => $reloaded, 'volunteerType' => $volunteerType->getId()]);
+        self::assertNotNull($membership, 'the Volunteer type is assigned automatically');
+        self::assertTrue($membership->isConfirmed(), 'the automatic membership is confirmed, not pending');
+
+        $groupSlugs = array_map(static fn (Group $g): string => $g->getSlug(), $reloaded->getGroups()->toArray());
+        self::assertContains('volunteer', $groupSlugs, 'the Volunteer permission group is granted automatically');
+    }
+
+    public function testStaffGetTheStaffTypeButNotTheVolunteerGroup(): void
+    {
+        $staffType = new VolunteerType('Staff');
+        $volunteerGroup = new Group('Volunteer', 'volunteer', null);
+        $this->em->persist($staffType);
+        $this->em->persist($volunteerGroup);
+        $this->em->flush();
+
+        $user = $this->makeUser('chief', 'ROLE_STAFF');
+        $this->client->loginUser($user);
+
+        $this->client->request('POST', '/onboarding', ['consent' => '1']);
+        $this->client->request('POST', '/onboarding/profile');
+        $this->client->request('POST', '/onboarding/telegram');
+        $this->client->request('POST', '/onboarding/notifications');
+        $this->client->request('POST', '/onboarding/finish', ['password' => 'newpassword1', 'password_confirm' => 'newpassword1']);
+        self::assertResponseRedirects('/dashboard');
+
+        $this->em->clear();
+        $reloaded = $this->em->getRepository(User::class)->find($user->getId());
+
+        $membership = $this->em->getRepository(UserVolunteerType::class)
+            ->findOneBy(['user' => $reloaded, 'volunteerType' => $staffType->getId()]);
+        self::assertNotNull($membership);
+        self::assertTrue($membership->isConfirmed());
+
+        $groupSlugs = array_map(static fn (Group $g): string => $g->getSlug(), $reloaded->getGroups()->toArray());
+        self::assertNotContains('volunteer', $groupSlugs);
     }
 }

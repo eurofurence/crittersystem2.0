@@ -7,9 +7,6 @@ namespace DoctrineMigrations;
 use Doctrine\DBAL\Schema\Schema;
 use Doctrine\Migrations\AbstractMigration;
 
-/**
- * Auto-generated Migration: Please modify to your needs!
- */
 final class Version20260525201954 extends AbstractMigration
 {
     public function getDescription(): string
@@ -19,7 +16,6 @@ final class Version20260525201954 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        // this up() migration is auto-generated, please modify it to your needs
         $this->addSql('CREATE TABLE groups (id INT NOT NULL, name VARCHAR(64) NOT NULL, slug VARCHAR(64) NOT NULL, PRIMARY KEY (id))');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_F06D39705E237E06 ON groups (name)');
         $this->addSql('CREATE UNIQUE INDEX UNIQ_F06D3970989D9B62 ON groups (slug)');
@@ -61,7 +57,6 @@ final class Version20260525201954 extends AbstractMigration
 
     public function down(Schema $schema): void
     {
-        // this down() migration is auto-generated, please modify it to your needs
         $this->addSql('ALTER TABLE group_privileges DROP CONSTRAINT FK_BF9898A0FE54D947');
         $this->addSql('ALTER TABLE group_privileges DROP CONSTRAINT FK_BF9898A032FB8AEA');
         $this->addSql('ALTER TABLE password_resets DROP CONSTRAINT FK_9EDAFEA1A76ED395');

@@ -19,6 +19,12 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         parent::__construct($registry, User::class);
     }
 
+    /** Resolve a user by its public UUID (as exposed in URLs); null for a malformed uuid. */
+    public function findOneByUuid(string $uuid): ?User
+    {
+        return \Symfony\Component\Uid\Uuid::isValid($uuid) ? $this->findOneBy(['uuid' => $uuid]) : null;
+    }
+
     /**
      * Used to upgrade (rehash) the user's password automatically over time.
      */

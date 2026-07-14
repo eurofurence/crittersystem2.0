@@ -30,6 +30,7 @@ final class SsoUserProvisioner
         private readonly SsoGroupMappingRepository $mappings,
         private readonly UsernameGenerator $usernames,
         private readonly BanChecker $bans,
+        private readonly SsoDepartmentPositions $positions,
         private readonly string $providerLabel = 'oidc',
     ) {
     }
@@ -49,7 +50,8 @@ final class SsoUserProvisioner
             $this->applyName($user, $claims->name);
         }
 
-        $this->applyMappings($user, $claims->groups);
+        $departments = $this->applyMappings($user, $claims->groups);
+        $this->positions->apply($user, $claims->groups, $departments);
         $this->em->flush();
 
         return $user;
@@ -87,18 +89,30 @@ final class SsoUserProvisioner
         $user->setPersonalData($personal);
     }
 
-    /** @param string[] $groupIds */
-    private function applyMappings(User $user, array $groupIds): void
+    /**
+     * @param string[] $groupIds
+     *
+     * @return \App\Entity\Department[] the departments the mappings placed the user in, whose
+     *                                  positions {@see SsoDepartmentPositions} then resolves
+     */
+    private function applyMappings(User $user, array $groupIds): array
     {
+        $departments = [];
+
         foreach ($groupIds as $groupId) {
             $mapping = $this->mappings->findOneBySsoGroupId($groupId);
             if ($mapping === null) {
                 continue;
             }
 
+            $department = $mapping->getDepartment();
+            if ($department !== null) {
+                $departments[spl_object_id($department)] = $department;
+            }
+
             foreach ($mapping->getPermissionGroups() as $group) {
-                if ($mapping->getDepartment() !== null) {
-                    $this->ensureScopedAssignment($user, $group, $mapping->getDepartment());
+                if ($department !== null) {
+                    $this->ensureScopedAssignment($user, $group, $department);
                 } else {
                     $user->addGroup($group);
                 }
@@ -110,6 +124,8 @@ final class SsoUserProvisioner
                 $user->addBadge($badge);
             }
         }
+
+        return array_values($departments);
     }
 
     private function ensureScopedAssignment(User $user, \App\Entity\Group $group, \App\Entity\Department $department): void
@@ -122,11 +138,21 @@ final class SsoUserProvisioner
         $user->assignGroup($group, $department);
     }
 
+    /**
+     * The mapping is authoritative, so the membership is confirmed straight away
+     * rather than queued for a supporter — no manual step is needed for anything
+     * SSO already tells us. A membership the user requested themselves and that
+     * is still pending is confirmed too, once a mapping grants the same type.
+     */
     private function ensureVolunteerType(User $user, \App\Entity\VolunteerType $type): void
     {
-        $existing = $this->em->getRepository(UserVolunteerType::class)->findOneBy(['user' => $user, 'volunteerType' => $type]);
-        if ($existing === null) {
-            $this->em->persist(new UserVolunteerType($user, $type));
+        $membership = $this->em->getRepository(UserVolunteerType::class)->findOneBy(['user' => $user, 'volunteerType' => $type]);
+        if ($membership === null) {
+            $membership = new UserVolunteerType($user, $type);
+            $this->em->persist($membership);
+        }
+        if (!$membership->isConfirmed()) {
+            $membership->setConfirmedBy($user);
         }
     }
 }

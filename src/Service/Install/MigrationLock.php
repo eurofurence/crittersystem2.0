@@ -15,8 +15,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
  *    the migrating pod/container is killed mid-run, its connection drops and
  *    PostgreSQL releases the lock automatically — no stale lock file to clear,
  *    no manual `--force` to remember. The next pod simply acquires it and
- *    proceeds. This is precisely the interruption class that caused repeated
- *    failures before.
+ *    proceeds.
  *  - When many replicas boot at once, exactly one wins the lock and migrates;
  *    the others block until it finishes and then find nothing pending (Doctrine
  *    migrations are idempotent), so they exit cleanly. No double-runs.

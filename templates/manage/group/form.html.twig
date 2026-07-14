@@ -15,7 +15,6 @@
       {{ f.field(form.role, {col: 'col-12 col-md-6'}) }}
     </div>
 
-    {# Group the permission checkboxes by their domain category. #}
     {% set cats = {} %}
     {% for child in form.privileges %}
       {% set cat = permissionMeta[child.vars.value].category|default('Other') %}
@@ -27,9 +26,7 @@
       <div class="row g-3">
         {% for cat, children in cats %}
           <div class="col-12 col-lg-6">
-            <div class="card h-100">
-              <div class="card-header py-2"><strong>{{ cat }}</strong></div>
-              <div class="card-body py-2">
+            {{ d.card_start(cat, {class: 'h-100', titleTag: 'strong', headerClass: 'card-header py-2', bodyClass: 'card-body py-2'}) }}
                 {% for child in children %}
                   {% set name = child.vars.value %}
                   <label class="form-check">
@@ -37,14 +34,13 @@
                     <span class="form-check-label">
                       <code>{{ child.vars.label }}</code>
                       {% if permissionMeta[name].twoFactor %}
-                        <span class="badge text-bg-purple ms-1" title="Requires step-up authentication">2FA</span>
+                        {{ d.badge('2FA', 'text-bg-purple', {class: 'ms-1', attrs: {title: 'Requires step-up authentication'}}) }}
                       {% endif %}
                       <span class="d-block text-muted small">{{ permissionMeta[name].description }}</span>
                     </span>
                   </label>
                 {% endfor %}
-              </div>
-            </div>
+            {{ d.card_end({bodyClass: 'card-body py-2'}) }}
           </div>
         {% endfor %}
       </div>

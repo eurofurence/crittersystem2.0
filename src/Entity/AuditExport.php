@@ -44,8 +44,9 @@ class AuditExport
     #[ORM\Column(length: 64)]
     private string $sha256;
 
+    /* The archive's key in the export storage (see App\Storage\ExportStorage), not a local path. */
     #[ORM\Column(name: 'file_path', length: 1024)]
-    private string $filePath;
+    private string $storageKey;
 
     #[ORM\Column(name: 'event_count')]
     private int $eventCount;
@@ -67,7 +68,7 @@ class AuditExport
         \DateTimeImmutable $scopeEnd,
         ?int $focusUserId,
         string $sha256,
-        string $filePath,
+        string $storageKey,
         int $eventCount,
     ) {
         $this->uuid = $uuid;
@@ -77,7 +78,7 @@ class AuditExport
         $this->scopeEnd = $scopeEnd;
         $this->focusUserId = $focusUserId;
         $this->sha256 = $sha256;
-        $this->filePath = $filePath;
+        $this->storageKey = $storageKey;
         $this->eventCount = $eventCount;
     }
 
@@ -128,9 +129,9 @@ class AuditExport
         return $this->sha256;
     }
 
-    public function getFilePath(): string
+    public function getStorageKey(): string
     {
-        return $this->filePath;
+        return $this->storageKey;
     }
 
     public function getEventCount(): int
@@ -161,10 +162,5 @@ class AuditExport
     public function isExpired(?\DateTimeImmutable $now = null): bool
     {
         return $this->expiresAt <= ($now ?? new \DateTimeImmutable());
-    }
-
-    public function fileExists(): bool
-    {
-        return is_file($this->filePath);
     }
 }

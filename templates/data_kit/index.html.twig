@@ -1,54 +1,738 @@
 {% extends 'base.html.twig' %}
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/icon/_macros.twig' as i %}
+{% import _self as ui %}
+
+{#
+  The component gallery for templates/components/data/_macros.twig.
+
+  Every example below is rendered live AND shown as copy-pasteable Twig source. All demo
+  data is obviously fake (Demo Department …, Sample Volunteer, @demo.invalid) — never put
+  real volunteer, user or event data on this page.
+
+  Local helper macros (ui.*) exist only to lay out this gallery; they are NOT components.
+#}
+
+{% macro snippet(code) %}
+  {# `code` is captured Twig source. |trim casts the Markup to a plain string so |e really
+     escapes it — otherwise the snippet would be rendered as HTML instead of shown. #}
+  <pre class="mt-2 mb-0 p-2 bg-body-tertiary border rounded small" style="overflow-x: auto;"><code>{{ code|trim|e }}</code></pre>
+{% endmacro %}
+
+{% macro demo_start(title, whatFor, whenNot) %}
+  <div class="mb-4">
+    <div class="d-flex flex-wrap align-items-baseline gap-2">
+      <code class="fs-4">{{ title }}</code>
+    </div>
+    <p class="text-muted small mb-2">
+      <strong>Use it for:</strong> {{ whatFor }}<br>
+      <strong>Do not use it when:</strong> {{ whenNot }}
+    </p>
+    <div class="border rounded p-3">
+{% endmacro %}
+
+{% macro demo_end() %}
+    </div>
+  </div>
+{% endmacro %}
 
 {% block title %}{{ pageTitle }}{% endblock %}
 
 {% block body %}
-<div class="container py-4">
+<div class="container-xl py-4">
+
+  {# ============================================================ 1. Page structure #}
+
   {{ d.page_header(pageTitle, {
-    subtitle: 'Cards, badges, empty states, tables, and Turbo Frame refresh patterns.',
+    subtitle: 'Live gallery of every macro in components/data/_macros.twig. All data is fake.',
     actions: [
-      {label: 'Back to Form Kit', href: path('app_form_kit'), class: 'btn btn-outline-primary'}
+      {label: 'Form Kit', href: path('app_form_kit'), class: 'btn btn-outline-primary'},
+      {label: 'Dashboard', href: path('app_dashboard'), class: 'btn btn-primary'}
     ]
   }) }}
 
-  <h2 class="h5 mt-4">Badges</h2>
-  <div class="d-flex gap-2 flex-wrap mb-3">
-    {{ d.badge('Default') }}
-    {{ d.badge('Success', 'text-bg-success') }}
-    {{ d.badge('Warning', 'text-bg-warning') }}
-    {{ d.badge('Danger', 'text-bg-danger') }}
-    {{ d.status_badge('Active') }}
-    {{ d.status_badge('Pending') }}
-    {{ d.status_badge('Disabled') }}
-    {{ d.status_badge('Rejected') }}
+  <div class="alert alert-info" role="alert">
+    <strong>Developer page.</strong> Admin-only, dev-env-only. Copy the snippets; never paste real
+    people or real events into this template.
   </div>
 
-  <h2 class="h5">Card + Table</h2>
-  {{ d.card('Departments (static demo)', include('data_kit/_table.html.twig', {rows: rows})) }}
+  {{ d.section_header('1. Page structure', {size: 'h3', subtitle: 'page_header() opens a page; section_header() divides one.'}) }}
 
-  <h2 class="h5 mt-4">Empty State</h2>
-  {{ d.empty_state('Nothing here yet', {
-    message: 'Once you create your first department, it will show up in this list.',
-    actionLabel: 'Create department',
-    actionHref: '#',
-    actionClass: 'btn btn-primary'
+  {{ ui.demo_start('page_header(title, {subtitle, actions})',
+     'the single <h1> of a page, plus its top-right primary actions.',
+     'you need a second heading on the same page — that is section_header().') }}
+
+    {{ d.page_header('Demo Departments', {
+      subtitle: 'With subtitle and two actions.',
+      actions: [
+        {label: 'New department', href: path('app_data_kit'), class: 'btn btn-primary'},
+        {label: 'Export', href: path('app_data_kit'), class: 'btn btn-outline-secondary'}
+      ]
+    }) }}
+
+    <hr>
+    {{ d.page_header('Demo Departments', {subtitle: 'Subtitle only, no actions.'}) }}
+
+    <hr>
+    {{ d.page_header('Demo Departments') }}
+
+    <hr>
+    {{ d.page_header('Demo Departments', {
+      actions: [{label: 'Single action, no subtitle', href: path('app_data_kit')}]
+    }) }}
+
+    {% set code %}{% verbatim %}
+{% import 'components/data/_macros.twig' as d %}
+
+{{ d.page_header('Demo Departments', {
+  subtitle: 'With subtitle and two actions.',
+  actions: [
+    {label: 'New department', href: path('app_data_kit'), class: 'btn btn-primary'},
+    {label: 'Export', href: path('app_data_kit'), class: 'btn btn-outline-secondary'}
+  ]
+}) }}
+
+{# actions[].class defaults to 'btn btn-primary'; both options may be omitted #}
+{{ d.page_header('Demo Departments') }}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {{ ui.demo_start('section_header(title, {level, size, subtitle, class})',
+     'a heading inside a page — the section dividers on this very page.',
+     'it is the page title (page_header) or a card title (card_start).') }}
+
+    {{ d.section_header('Level 2, default size (h5)') }}
+    {{ d.section_header('Level 3, size h4, with subtitle', {level: 3, size: 'h4', subtitle: 'The subtitle is muted and small.'}) }}
+    {{ d.section_header('Level 4, size h6, custom wrapper class', {level: 4, size: 'h6', class: 'mt-4 mb-0'}) }}
+
+    {% set code %}{% verbatim %}
+{{ d.section_header('Members') }}
+{{ d.section_header('Members', {level: 3, size: 'h4', subtitle: 'Sample Volunteer and friends'}) }}
+{{ d.section_header('Members', {level: 4, size: 'h6', class: 'mt-4 mb-0'}) }}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {# ============================================================ 2. Cards #}
+
+  {{ d.section_header('2. Cards', {size: 'h3', subtitle: 'card_start()/card_end() always come in pairs, and the options must match.'}) }}
+
+  {{ ui.demo_start('card_start(title, options) / card_end(options)',
+     'any boxed block of content: a form, a table, a details panel.',
+     'the content is a single centred message (message_card_start) or a dashboard tile (action_card / stat_card).') }}
+
+    {{ d.card_start('Plain card') }}
+      <p class="mb-0">A title and a body. <code>card_end()</code> with no options closes it.</p>
+    {{ d.card_end() }}
+
+    {% set headerActions %}
+      <a href="{{ path('app_data_kit') }}" class="btn btn-sm btn-outline-primary">Edit</a>
+      {{ d.badge('3 open', 'text-bg-secondary') }}
+    {% endset %}
+    {{ d.card_start('Card with header actions', {subtitle: 'headerActions is captured markup — never user input.', headerActions: headerActions}) }}
+      <p class="mb-0">The header becomes a flex row: title/subtitle left, actions right.</p>
+    {{ d.card_end() }}
+
+    {% set footer %}
+      <div class="d-flex justify-content-end gap-2">
+        <a href="{{ path('app_data_kit') }}" class="btn btn-link">Cancel</a>
+        <button class="btn btn-primary" type="submit">Save demo</button>
+      </div>
+    {% endset %}
+    {{ d.card_start('Card as a <form>, with a footer', {tag: 'form', attrs: {method: 'get', action: path('app_data_kit')}}) }}
+      <label class="form-label" for="demo_card_form_input">Department name</label>
+      <input class="form-control" id="demo_card_form_input" name="demo" value="Demo Department Alpha">
+    {{ d.card_end({tag: 'form', footer: footer}) }}
+
+    {{ d.card_start("Card wrapping a table (bodyClass: '')", {bodyClass: ''}) }}
+      {{ d.table_start({responsive: false, class: 'card-table table-vcenter'}) }}
+        <thead><tr><th>Name</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Demo Department Alpha</td><td>{{ d.status_badge('Active') }}</td></tr>
+          <tr><td>Demo Department Bravo</td><td>{{ d.status_badge('Pending') }}</td></tr>
+        </tbody>
+      {{ d.table_end({responsive: false}) }}
+    {{ d.card_end({bodyClass: ''}) }}
+
+    {{ d.section_header('h-100 in a row + border/colour variants', {level: 3, size: 'h6'}) }}
+    <div class="row row-cards mb-3">
+      <div class="col-md-4">
+        {{ d.card_start('h-100, short', {class: 'h-100'}) }}
+          <p class="mb-0">One line.</p>
+        {{ d.card_end() }}
+      </div>
+      <div class="col-md-4">
+        {{ d.card_start('h-100, taller', {class: 'h-100'}) }}
+          <p>Several lines of body text, so the neighbouring cards have to stretch to match.</p>
+          <p class="mb-0">Without <code>h-100</code> these three cards would all be different heights.</p>
+        {{ d.card_end() }}
+      </div>
+      <div class="col-md-4">
+        {{ d.card_start('Danger border', {class: 'h-100 border-danger'}) }}
+          <p class="mb-0">Colour is just a class: <code>border-danger</code>, <code>border-primary</code>, Tabler's <code>card-status-top bg-red</code>, …</p>
+        {{ d.card_end() }}
+      </div>
+    </div>
+
+    {{ d.section_header('Overflow check: very long title, very long body', {level: 3, size: 'h6'}) }}
+    {{ d.card_start('Demo Department Delta with a deliberately very long card title that has to wrap inside the card header and must never push the header actions off the right-hand edge of the card', {headerActions: headerActions}) }}
+      <p>Supercalifragilisticexpialidocious_but_as_an_unbroken_token_to_check_that_a_single_very_long_word_does_not_blow_out_the_card_width_and_force_the_page_to_scroll_sideways.</p>
+      <p class="mb-0">Contact: <a href="#">a-very-long-demo-mailbox-name@demo.invalid</a>. All names on this page are fake.</p>
+    {{ d.card_end() }}
+
+    {% set code %}{% verbatim %}
+{# plain #}
+{{ d.card_start('Plain card') }}
+  <p class="mb-0">Body.</p>
+{{ d.card_end() }}
+
+{# header actions + footer: both take CAPTURED markup, never user input #}
+{% set headerActions %}<a href="{{ path('app_data_kit') }}" class="btn btn-sm btn-outline-primary">Edit</a>{% endset %}
+{% set footer %}<button class="btn btn-primary">Save</button>{% endset %}
+
+{{ d.card_start('Card as a form', {tag: 'form', attrs: {method: 'post', action: path('app_data_kit')}, headerActions: headerActions}) }}
+  {{ form_widget(form) }}
+{{ d.card_end({tag: 'form', footer: footer}) }}
+
+{# card wrapping a table: bodyClass '' on BOTH ends, responsive false + .card-table #}
+{{ d.card_start('Departments', {bodyClass: ''}) }}
+  {{ d.table_start({responsive: false, class: 'card-table table-vcenter'}) }}
+    ...
+  {{ d.table_end({responsive: false}) }}
+{{ d.card_end({bodyClass: ''}) }}
+
+{# equal-height cards in a grid, and colour variants #}
+{{ d.card_start('Tile', {class: 'h-100 border-danger'}) }}...{{ d.card_end() }}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {{ ui.demo_start('message_card_start(title, options) / message_card_end()',
+     'a centred single-message page: confirm, done, invalid, scanned.',
+     'the page has more than one thing on it — that is a normal card.') }}
+
+    {% set iconHtml %}<div class="display-6 mb-2">{{ i.icon('shield') }}</div>{% endset %}
+    {{ d.message_card_start('Demo pass scanned', {iconHtml: iconHtml, width: 'col-md-8 col-lg-6'}) }}
+      <p class="text-muted">Sample Volunteer (example@demo.invalid) would be checked in here.</p>
+      <a class="btn btn-primary" href="{{ path('app_data_kit') }}">Scan another</a>
+    {{ d.message_card_end() }}
+
+    {% set code %}{% verbatim %}
+{% set iconHtml %}<div class="display-6 mb-2">{{ i.icon('shield') }}</div>{% endset %}
+
+{{ d.message_card_start('Pass scanned', {iconHtml: iconHtml, width: 'col-md-8 col-lg-6'}) }}
+  <p class="text-muted">Sample Volunteer was checked in.</p>
+  <a class="btn btn-primary" href="{{ path('app_data_kit') }}">Scan another</a>
+{{ d.message_card_end() }}
+
+{# left-aligned body (e.g. a form): bodyClass: 'card-body' #}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {# ============================================================ 3. Stat + action cards #}
+
+  {{ d.section_header('3. Stat cards & action cards', {size: 'h3', subtitle: 'Both render their own grid column — always wrap a set of them in a row.'}) }}
+
+  {{ ui.demo_start('stat_card(value, label, {col, size, class})',
+     'a KPI strip at the top of a dashboard: one big number, one caption.',
+     'the number needs context (a chart, a trend, a link) — build a normal card.') }}
+
+    <div class="row mb-3">
+      {{ d.stat_card(42, 'Demo volunteers') }}
+      {{ d.stat_card(7, 'Open demo shifts') }}
+      {{ d.stat_card('96 h', 'Fake hours worked') }}
+      {{ d.stat_card(0, 'Never happened', {class: 'border-danger'}) }}
+    </div>
+    <div class="row">
+      {{ d.stat_card('1 234', 'Wide column, bigger value', {col: 'col-12 col-md-6', size: 'display-6'}) }}
+      {{ d.stat_card('A deliberately long stat label wraps under the value', 'Long-label check', {col: 'col-12 col-md-6', size: 'fs-4'}) }}
+    </div>
+
+    {% set code %}{% verbatim %}
+<div class="row">
+  {{ d.stat_card(42, 'Volunteers') }}
+  {{ d.stat_card(7, 'Open shifts') }}
+  {{ d.stat_card('96 h', 'Hours worked', {col: 'col-12 col-md-6', size: 'display-6', class: 'border-danger'}) }}
+</div>
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {{ ui.demo_start('action_card(title, {text, href, iconHtml, col, class})',
+     'a clickable tile in an index/dashboard grid (icon + title + description).',
+     'the tile has several links or a form inside — stretched-link would swallow them.') }}
+
+    <div class="row row-cards">
+      {% set usersIcon %}{{ i.icon('users') }}{% endset %}
+      {% set calIcon %}{{ i.icon('calendar') }}{% endset %}
+      {{ d.action_card('Demo Departments', {text: 'Fake list of fake departments.', href: path('app_data_kit'), iconHtml: usersIcon}) }}
+      {{ d.action_card('Demo Shifts', {text: 'Nothing behind this link either.', href: path('app_data_kit'), iconHtml: calIcon}) }}
+      {{ d.action_card('No link, no icon', {text: 'A tile can be inert; then it is not clickable.'}) }}
+      {{ d.action_card('Full-width tile with a very long description', {
+        text: 'This description is long on purpose so the tile has to grow — the sibling tiles keep the same height because action_card() is always h-100.',
+        href: path('app_data_kit'),
+        col: 'col-12'
+      }) }}
+    </div>
+
+    {% set code %}{% verbatim %}
+<div class="row row-cards">
+  {% set usersIcon %}{{ i.icon('users') }}{% endset %}
+  {{ d.action_card('Departments', {
+    text: 'Manage departments.',
+    href: path('app_data_kit'),
+    iconHtml: usersIcon,
+    col: 'col-sm-6 col-lg-4'
+  }) }}
+</div>
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {# ============================================================ 4. Tables #}
+
+  {{ d.section_header('4. Tables', {size: 'h3', subtitle: 'table_start()/table_end() must be passed the SAME `responsive` value.'}) }}
+
+  {{ ui.demo_start('table_start(options) / table_end(options)',
+     'any tabular list. Striped + hover + responsive by default.',
+     'the data is a set of key/value pairs about ONE thing — that is definition_list().') }}
+
+    {{ d.section_header('Default', {level: 3, size: 'h6'}) }}
+    {{ d.table_start() }}
+      <thead><tr><th>Name</th><th>Lead</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for r in rows|slice(0, 3) %}
+          <tr><td>{{ r.name }}</td><td>{{ r.lead }}</td><td>{{ d.status_badge(r.status) }}</td></tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+
+    {{ d.section_header('Compact, no stripes', {level: 3, size: 'h6'}) }}
+    {{ d.table_start({compact: true, striped: false}) }}
+      <thead><tr><th>Name</th><th>Members</th></tr></thead>
+      <tbody>
+        {% for r in rows|slice(0, 3) %}
+          <tr><td>{{ r.name }}</td><td>{{ r.members }}</td></tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+
+    {{ d.section_header('Empty tbody (empty_row)', {level: 3, size: 'h6'}) }}
+    {{ d.table_start() }}
+      <thead><tr><th>Name</th><th>Lead</th><th>Status</th></tr></thead>
+      <tbody>
+        {{ d.empty_row(3, 'No demo departments yet.') }}
+      </tbody>
+    {{ d.table_end() }}
+
+    {{ d.section_header('Many columns — horizontal scroll check', {level: 3, size: 'h6', subtitle: 'The .table-responsive wrapper from table_start() scrolls; the page must not.'}) }}
+    {{ d.table_start({compact: true, class: 'text-nowrap'}) }}
+      <thead>
+        <tr>{% for c in wideColumns %}<th>{{ c }}</th>{% endfor %}</tr>
+      </thead>
+      <tbody>
+        {% for r in wideRows %}
+          <tr>{% for cell in r %}<td>{{ cell }}</td>{% endfor %}</tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+
+    {% set code %}{% verbatim %}
+{{ d.table_start({compact: true, striped: false, class: 'table-vcenter'}) }}
+  <thead><tr><th>Name</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for r in rows %}
+      <tr><td>{{ r.name }}</td><td>{{ d.status_badge(r.status) }}</td></tr>
+    {% else %}
+      {{ d.empty_row(2, 'No departments yet.') }}
+    {% endfor %}
+  </tbody>
+{{ d.table_end() }}
+
+{# inside a card: switch the responsive wrapper off and use Tabler's .card-table #}
+{{ d.card_start('Departments', {bodyClass: ''}) }}
+  {{ d.table_start({responsive: false, class: 'card-table'}) }}…{{ d.table_end({responsive: false}) }}
+{{ d.card_end({bodyClass: ''}) }}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {{ ui.demo_start('row_actions(actions, {extraHtml, cell, class}) + delete_form(action, token, options)',
+     'the trailing action cell of a CRUD row. delete_form() is a POST form with a CSRF token and the `confirm` modal controller.',
+     'you are tempted to mint the CSRF token or to check permissions inside the macro — both belong to the caller.') }}
+
+    {{ d.card_start('Demo departments (row_actions + delete_form)', {bodyClass: ''}) }}
+      {% include 'data_kit/_table.html.twig' with {rows: rows} only %}
+    {{ d.card_end({bodyClass: ''}) }}
+
+    <p class="text-muted small mb-0">
+      The Delete button opens the Tabler confirm modal (never <code>window.confirm()</code>) and posts to a
+      demo route that validates the token and deletes nothing.
+    </p>
+
+    {% set code %}{% verbatim %}
+{% set deleteHtml %}
+  {{ d.delete_form(path('app_department_delete', {id: r.id}), csrf_token('delete' ~ r.id), {
+    message: 'Delete "' ~ r.name ~ '"?'
+  }) }}
+{% endset %}
+
+{{ d.row_actions(
+  [{label: 'View', href: path('app_department_show', {id: r.id}), class: 'btn btn-sm btn-outline-secondary me-1'}],
+  {extraHtml: deleteHtml}
+) }}
+
+{# permission checks live in the CALLER: build the actions array conditionally #}
+{% set actions = [] %}
+{% if is_granted('department:manage') %}
+  {% set actions = actions|merge([{label: 'Edit', href: path('app_department_edit', {id: r.id})}]) %}
+{% endif %}
+{{ d.row_actions(actions) }}
+
+{# outside a table row: cell: false renders just the buttons #}
+{{ d.row_actions(actions, {cell: false}) }}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {# ============================================================ 5. Badges #}
+
+  {{ d.section_header('5. Badges', {size: 'h3', subtitle: 'badge() is dumb (you pick the style); status_badge() maps a status word to a soft colour.'}) }}
+
+  {{ ui.demo_start('badge(text, style, {class, attrs})',
+     'a small inline label whose colour YOU choose.',
+     'the text is a status word from a known vocabulary — use status_badge() so the colours stay consistent.') }}
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {{ d.badge('Default (text-bg-secondary)') }}
+      {{ d.badge('Primary', 'text-bg-primary') }}
+      {{ d.badge('Secondary', 'text-bg-secondary') }}
+      {{ d.badge('Success', 'text-bg-success') }}
+      {{ d.badge('Danger', 'text-bg-danger') }}
+      {{ d.badge('Warning', 'text-bg-warning') }}
+      {{ d.badge('Info', 'text-bg-info') }}
+      {{ d.badge('Light', 'text-bg-light') }}
+      {{ d.badge('Dark', 'text-bg-dark') }}
+    </div>
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {{ d.badge('Soft green', 'bg-green-lt') }}
+      {{ d.badge('Soft yellow', 'bg-yellow-lt') }}
+      {{ d.badge('Soft red', 'bg-red-lt') }}
+      {{ d.badge('Soft blue', 'bg-blue-lt') }}
+      {{ d.badge('Soft purple', 'bg-purple-lt') }}
+      {{ d.badge('Outline', 'badge-outline text-primary') }}
+      {{ d.badge('Pill', 'text-bg-secondary badge-pill') }}
+    </div>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      {{ d.badge('With extra class + attrs', 'text-bg-dark', {class: 'me-1 text-uppercase', attrs: {title: 'A tooltip on a demo badge', 'data-demo': 'yes'}}) }}
+      {{ d.badge('Notice the title attribute on hover', 'text-bg-light') }}
+    </div>
+
+    {% set code %}{% verbatim %}
+{{ d.badge('Draft') }}                                {# default: text-bg-secondary #}
+{{ d.badge('Success', 'text-bg-success') }}
+{{ d.badge('Soft green', 'bg-green-lt') }}            {# Tabler's soft palette #}
+{{ d.badge('Beta', 'text-bg-dark', {
+  class: 'me-1 text-uppercase',
+  attrs: {title: 'Not final', 'data-demo': 'yes'}     {# attrs keys are written verbatim — dev-authored only #}
+}) }}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {{ ui.demo_start('status_badge(status, {map, label, class, attrs})',
+     'a status word (active / pending / disabled / error …). Unknown words fall back to bg-blue-lt.',
+     'the colour has nothing to do with a status — that is a plain badge().') }}
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {{ d.status_badge('Active') }}
+      {{ d.status_badge('Enabled') }}
+      {{ d.status_badge('Open') }}
+      {{ d.status_badge('Approved') }}
+      {{ d.status_badge('Pending') }}
+      {{ d.status_badge('Waiting') }}
+      {{ d.status_badge('Draft') }}
+      {{ d.status_badge('Disabled') }}
+      {{ d.status_badge('Closed') }}
+      {{ d.status_badge('Inactive') }}
+      {{ d.status_badge('Error') }}
+      {{ d.status_badge('Blocked') }}
+      {{ d.status_badge('Rejected') }}
+      {{ d.status_badge('Failed') }}
+      {{ d.status_badge('Archived') }}
+    </div>
+
+    <p class="text-muted small mb-2">
+      <code>Archived</code> above is unknown, so it fell back to blue. Extend the map instead of forking the macro:
+    </p>
+    <div class="d-flex flex-wrap gap-2">
+      {{ d.status_badge('Archived', {map: {'archived': 'bg-purple-lt'}}) }}
+      {{ d.status_badge('Arrived', {map: {'arrived': 'bg-green-lt', 'no_show': 'bg-red-lt'}}) }}
+      {{ d.status_badge('no_show', {map: {'arrived': 'bg-green-lt', 'no_show': 'bg-red-lt'}, label: 'No show'}) }}
+      {{ d.status_badge('Active', {class: 'text-uppercase', attrs: {title: 'Demo tooltip'}}) }}
+    </div>
+
+    {% set code %}{% verbatim %}
+{{ d.status_badge(department.status) }}          {# active/pending/disabled/error/… #}
+
+{# a caller with its own vocabulary EXTENDS the default map (it is merged over the defaults) #}
+{% set signupStates = {'arrived': 'bg-green-lt', 'no_show': 'bg-red-lt'} %}
+{{ d.status_badge(signup.state, {map: signupStates}) }}
+
+{# `label` when the display text differs from the key #}
+{{ d.status_badge('no_show', {map: signupStates, label: 'No show'}) }}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {# ============================================================ 6. Empty states #}
+
+  {{ d.section_header('6. Empty states', {size: 'h3', subtitle: 'Three sizes. Pick by how much space you own.'}) }}
+
+  {{ ui.demo_start('empty_state(title, {message, iconHtml, actionLabel, actionHref, actionClass})',
+     'a whole page or a whole section with no content at all.',
+     'you are inside a card or a small panel — it is far too heavy there (use empty_inline).') }}
+
+    {% set emptyIcon %}<span class="display-6">{{ i.icon('users') }}</span>{% endset %}
+    {{ d.empty_state('No demo departments yet', {
+      message: 'Once you create your first department, it will show up in this list.',
+      iconHtml: emptyIcon,
+      actionLabel: 'Create demo department',
+      actionHref: path('app_data_kit')
+    }) }}
+
+    <hr>
+    {{ d.empty_state('No results', {message: 'No icon, no action — just the message.'}) }}
+
+    <hr>
+    {{ d.empty_state('Title only') }}
+
+    {% set code %}{% verbatim %}
+{% set emptyIcon %}<span class="display-6">{{ i.icon('users') }}</span>{% endset %}
+
+{{ d.empty_state('No departments yet', {
+  message: 'Create your first department to get started.',
+  iconHtml: emptyIcon,
+  actionLabel: 'Create department',
+  actionHref: path('app_department_new'),
+  actionClass: 'btn btn-primary'   {# default #}
+}) }}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {{ ui.demo_start('empty_inline(message, {tag, class}) and empty_row(colspan, message, {class})',
+     'empty_inline: "this small list is empty" inside a card. empty_row: the same, inside a <tbody>.',
+     'the whole page is empty — then the big empty_state earns its space.') }}
+
+    <div class="row">
+      <div class="col-md-6">
+        {{ d.card_start('Upcoming demo shifts') }}
+          {{ d.empty_inline('No shifts assigned.') }}
+        {{ d.card_end() }}
+      </div>
+      <div class="col-md-6">
+        {{ d.card_start('Custom tag and class') }}
+          {{ d.empty_inline('Rendered as a <div> with different classes.', {tag: 'div', class: 'text-secondary fst-italic mb-0'}) }}
+        {{ d.card_end() }}
+      </div>
+    </div>
+
+    {{ d.table_start() }}
+      <thead><tr><th>Name</th><th>Lead</th><th class="text-end">Members</th></tr></thead>
+      <tbody>
+        {{ d.empty_row(3, 'empty_row(3, …) spans all three columns.') }}
+      </tbody>
+    {{ d.table_end() }}
+
+    {% set code %}{% verbatim %}
+{{ d.empty_inline('No shifts assigned.') }}
+{{ d.empty_inline('Nothing here.', {tag: 'div', class: 'text-secondary fst-italic mb-0'}) }}
+
+<tbody>
+  {% for r in rows %}…{% else %}
+    {{ d.empty_row(3, 'No departments yet.') }}
+  {% endfor %}
+</tbody>
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {# ============================================================ 7. Definition list #}
+
+  {{ d.section_header('7. Definition list', {size: 'h3'}) }}
+
+  {{ ui.demo_start('definition_list(items, {labelCol, valueCol, labelClass, valueClass, class})',
+     'the key/value facts about ONE record: a show page, a summary card.',
+     'you have many records — that is a table.') }}
+
+    {% set facts = [
+      {label: 'Name', value: 'Demo Department Alpha'},
+      {label: 'Lead', value: 'Sample Volunteer'},
+      {label: 'Email', value: 'alpha@demo.invalid'},
+      {label: 'Members', value: 42}
+    ] %}
+
+    <div class="row">
+      <div class="col-md-6">
+        {{ d.card_start('Default (col-5 / col-7, muted labels)') }}
+          {{ d.definition_list(facts) }}
+        {{ d.card_end() }}
+      </div>
+      <div class="col-md-6">
+        {{ d.card_start('Custom columns and classes') }}
+          {{ d.definition_list(facts|merge([
+            {label: 'A deliberately long label to check that a narrow label column wraps', value: 'And a long value: Demo Department Delta with a deliberately very long name'}
+          ]), {
+            labelCol: 'col-4',
+            valueCol: 'col-8',
+            labelClass: 'fw-bold',
+            valueClass: 'mb-2 text-muted',
+            class: 'mb-0 small'
+          }) }}
+        {{ d.card_end() }}
+      </div>
+    </div>
+
+    {% set code %}{% verbatim %}
+{% set facts = [
+  {label: 'Name', value: department.name},
+  {label: 'Lead', value: department.lead}
+] %}
+
+{{ d.definition_list(facts) }}
+
+{{ d.definition_list(facts, {
+  labelCol: 'col-4', valueCol: 'col-8',
+  labelClass: 'fw-bold',      {# pass '' for no utility classes at all #}
+  valueClass: 'mb-2 text-muted',
+  class: 'mb-0 small'
+}) }}
+{% endverbatim %}{% endset %}
+    {{ ui.snippet(code) }}
+  {{ ui.demo_end() }}
+
+  {# ============================================================ 8. Turbo Frame #}
+
+  {{ d.section_header('8. Turbo Frame: debounced search + table frame', {size: 'h3', subtitle: 'The frame id and the route must match: data_table_frame / app_data_kit_table_frame.'}) }}
+
+  {{ d.card_start('Live demo', {subtitle: 'Type "alpha", "demo" or "zzz" — only the frame reloads.'}) }}
+    {{ f.search_input('q', {
+      label: 'Search demo departments',
+      placeholder: 'Try "alpha", "bravo" or "zzz"…',
+      debounceMs: 250,
+      turboFrame: 'data_table_frame',
+      help: 'This reloads only the table frame (no full page refresh). An empty result renders empty_state().'
+    }) }}
+
+    <turbo-frame id="data_table_frame" src="{{ path('app_data_kit_table_frame') }}" loading="lazy"></turbo-frame>
+  {{ d.card_end() }}
+
+  {% set code %}{% verbatim %}
+{# page #}
+{# The frame's src does the fetching — search_input only debounces and targets the frame. #}
+{{ f.search_input('q', {
+  label: 'Search departments',
+  debounceMs: 250,
+  turboFrame: 'data_table_frame'
+}) }}
+<turbo-frame id="data_table_frame" src="{{ path('app_data_kit_table_frame') }}" loading="lazy"></turbo-frame>
+
+{# _table_frame.html.twig — the SAME id must wrap the response #}
+<turbo-frame id="data_table_frame">
+  {% if rows is empty %}
+    {{ d.empty_state('No matches', {message: 'Try a different search term.'}) }}
+  {% else %}
+    {{ include('data_kit/_table.html.twig', {rows: rows}) }}
+  {% endif %}
+</turbo-frame>
+{% endverbatim %}{% endset %}
+  {{ ui.snippet(code) }}
+
+  {# ============================================================ 9. CSS regression #}
+
+  {{ d.section_header('9. CSS regression board', {size: 'h3', subtitle: 'Everything at once. If a global CSS change breaks something, it should be visible here.'}) }}
+
+  <div class="row row-cards mb-3">
+    {{ d.stat_card(42, 'Demo volunteers', {col: 'col-6 col-md-3'}) }}
+    {{ d.stat_card(0, 'Empty dataset', {col: 'col-6 col-md-3'}) }}
+    {{ d.action_card('Clickable tile', {text: 'Next to stat cards, in the same grid.', href: path('app_data_kit'), col: 'col-md-6'}) }}
+  </div>
+
+  <div class="row row-cards mb-3">
+    <div class="col-lg-8">
+      {{ d.card_start('Table inside a card, with header actions and a footer', {
+        bodyClass: '',
+        subtitle: 'Many columns → the table scrolls, the page must not.',
+        headerActions: headerActions
+      }) }}
+        {{ d.table_start({compact: true, responsive: true, class: 'card-table text-nowrap'}) }}
+          <thead><tr>{% for c in wideColumns %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+          <tbody>
+            {% for r in wideRows %}
+              <tr>{% for cell in r %}<td>{{ cell }}</td>{% endfor %}</tr>
+            {% endfor %}
+          </tbody>
+        {{ d.table_end({responsive: true}) }}
+      {{ d.card_end({bodyClass: '', footer: footer}) }}
+    </div>
+
+    <div class="col-lg-4">
+      {{ d.card_start('Narrow container (col-4-ish)', {class: 'h-100'}) }}
+        <div class="d-flex flex-wrap gap-1 mb-3">
+          {% for s in ['Active', 'Pending', 'Disabled', 'Error', 'Draft', 'Closed', 'Rejected', 'Approved', 'Waiting', 'Failed', 'Blocked', 'Inactive'] %}
+            {{ d.status_badge(s) }}
+          {% endfor %}
+        </div>
+        {{ d.definition_list([
+          {label: 'A very long label in a very narrow column', value: 'A very long value in a very narrow column: alpha@demo.invalid'},
+          {label: 'Short', value: '42'}
+        ], {labelCol: 'col-6', valueCol: 'col-6'}) }}
+      {{ d.card_end() }}
+    </div>
+  </div>
+
+  <div class="row row-cards mb-3">
+    <div class="col-md-4">
+      <div style="max-width: 20rem;">
+        {{ d.card_start('Hard max-width: 20rem', {class: 'h-100'}) }}
+          {{ d.badge('A badge whose text is far too long for twenty rem', 'text-bg-warning', {class: 'text-wrap'}) }}
+          <div class="mt-2">
+            {{ d.empty_inline('Nothing to show.') }}
+          </div>
+        {{ d.card_end() }}
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      {{ d.card_start('With every optional bit', {
+        subtitle: 'Subtitle, header actions, footer.',
+        class: 'h-100 border-primary',
+        headerActions: headerActions
+      }) }}
+        {{ d.definition_list([{label: 'Lead', value: 'Sample Volunteer'}]) }}
+      {{ d.card_end({footer: footer}) }}
+    </div>
+
+    <div class="col-md-4">
+      {{ d.card_start(null, {class: 'h-100'}) }}
+        <p class="text-muted mb-0">Same card with <em>nothing</em> optional: no title, no subtitle, no header, no footer. Titleless cards must not render an empty header bar.</p>
+      {{ d.card_end() }}
+    </div>
+  </div>
+
+  {{ d.card_start('Empty dataset inside a card', {bodyClass: ''}) }}
+    {% include 'data_kit/_table.html.twig' with {rows: []} only %}
+  {{ d.card_end({bodyClass: ''}) }}
+
+  {{ d.empty_state('An empty dataset, at full page width', {
+    message: 'This is the heaviest empty state; it is the last thing on the page on purpose.',
+    actionLabel: 'Back to the top',
+    actionHref: path('app_data_kit')
   }) }}
 
-  <hr class="my-4">
-
-  <h2 class="h5">Turbo Frame: Debounced search + table refresh</h2>
-
-  {{ f.search_input('q', {
-    label: 'Search departments',
-    placeholder: 'Type e.g. "reg" or "it"...',
-    debounceMs: 250,
-    turboFrame: 'data_table_frame',
-    url: path('app_data_kit_table_frame'),
-    help: 'This reloads only the table frame (no full page refresh).'
-  }) }}
-
-  <turbo-frame id="data_table_frame" src="{{ path('app_data_kit_table_frame') }}" loading="lazy"></turbo-frame>
 </div>
 {% endblock %}

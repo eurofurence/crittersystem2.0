@@ -3,49 +3,60 @@
 
 {% block title %}Volunteer Types{% endblock %}
 
-{% block body %}
-  {{ d.page_header('Volunteer Types', {subtitle: 'Join the teams you want to help with. Restricted types need confirmation.'}) }}
-
-  {% if rows is empty %}
-    {{ d.empty_state('No volunteer types', {message: 'There are no volunteer types to join yet.'}) }}
-  {% else %}
-    {{ d.table_start() }}
-      <thead>
-        <tr><th>Type</th><th>Status</th><th class="text-end">Action</th></tr>
-      </thead>
-      <tbody>
-        {% for row in rows %}
-          <tr>
-            <td>
-              <div class="fw-semibold">{{ row.type.name }}
-                {% if row.type.restricted %}{{ d.badge('Restricted', 'text-bg-warning') }}{% endif %}
-                {% if row.type.staffOnly %}{{ d.badge('Staff', 'text-bg-secondary') }}{% endif %}
-              </div>
-              {% if row.type.description %}<div class="text-muted small">{{ row.type.description }}</div>{% endif %}
-            </td>
-            <td>
-              {% if row.membership is null %}<span class="text-muted">Not a member</span>
-              {% elseif row.membership.supporter %}{{ d.badge('Supporter', 'text-bg-primary') }}
-              {% elseif row.membership.confirmed %}{{ d.badge('Member', 'text-bg-success') }}
-              {% else %}{{ d.badge('Pending confirmation', 'text-bg-warning') }}{% endif %}
-            </td>
-            <td class="text-end">
-              {% if row.membership is null %}
-                <form method="post" action="{{ path('app_membership_join', {id: row.type.id}) }}" class="d-inline">
-                  <input type="hidden" name="_token" value="{{ csrf_token('join' ~ row.type.id) }}">
-                  <button class="btn btn-sm btn-primary">Join</button>
-                </form>
-              {% else %}
-                <form method="post" action="{{ path('app_membership_leave', {id: row.type.id}) }}" class="d-inline"
-                      onsubmit="return confirm('Leave &quot;{{ row.type.name|e('js') }}&quot;?');">
-                  <input type="hidden" name="_token" value="{{ csrf_token('leave' ~ row.type.id) }}">
-                  <button class="btn btn-sm btn-outline-danger">Leave</button>
-                </form>
-              {% endif %}
-            </td>
-          </tr>
+{% macro card(row) %}
+  {% import 'components/data/_macros.twig' as d %}
+  {% set type = row.type %}
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">
+        <h3 class="card-title mb-0"><a href="{{ path('app_membership_show', {id: type.uuid}) }}" class="text-reset">{{ type.name }}</a></h3>
+        <div class="mt-1">
+          {% if type.requiresIntroduction %}{{ d.badge('Requires introduction', 'text-bg-warning') }}{% endif %}
+          {% if type.staffOnly %}{{ d.badge('Staff', 'text-bg-secondary') }}{% endif %}
+        </div>
+      </div>
+      <div class="card-body">
+        {% if type.description %}<div class="text-muted small mb-2">{{ type.description|striptags|slice(0, 160) }}</div>{% endif %}
+        {% for c in type.contacts %}
+          <div class="small">
+            {% if c.name %}<strong>{{ c.name }}</strong> {% endif %}
+            {% if c.email %}· {{ c.email }}{% endif %}{% if c.phone %} · {{ c.phone }}{% endif %}{% if c.telegram %} · {{ c.telegram }}{% endif %}
+          </div>
         {% endfor %}
-      </tbody>
-    {{ d.table_end() }}
+      </div>
+      <div class="card-footer text-end">
+        {% if row.membership is null %}
+          <form method="post" action="{{ path('app_membership_join', {id: type.uuid}) }}" class="d-inline">
+            <input type="hidden" name="_token" value="{{ csrf_token('join' ~ type.id) }}">
+            <button class="btn btn-sm btn-primary">{{ type.requiresIntroduction ? 'Apply' : 'Join' }}</button>
+          </form>
+        {% elseif row.membership.confirmed %}
+          {{ d.badge('Member', 'text-bg-success') }}
+        {% else %}
+          {{ d.badge('Pending', 'text-bg-warning') }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{% block body %}
+  {{ d.page_header('Volunteer Types', {
+    subtitle: 'Join the teams you want to help with.',
+    actions: [{label: 'Table view', href: path('app_membership_table'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% if public is empty and staff is empty %}
+    {{ d.empty_state('No volunteer types', {message: 'There are no volunteer types to join yet.'}) }}
+  {% endif %}
+
+  {% if public is not empty %}
+    <h2 class="h5 mt-2">Open opportunities</h2>
+    <div class="row g-3">{% for row in public %}{{ _self.card(row) }}{% endfor %}</div>
+  {% endif %}
+
+  {% if staff is not empty %}
+    <h2 class="h5 mt-4">Staff opportunities</h2>
+    <div class="row g-3">{% for row in staff %}{{ _self.card(row) }}{% endfor %}</div>
   {% endif %}
 {% endblock %}

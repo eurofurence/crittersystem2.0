@@ -1,5 +1,3 @@
-// import Toast from "bootstrap/js/dist/toast";
-
 function initToasts(root = document) {
     // Event delegation so it works with Turbo
     root.addEventListener('click', (e) => {
@@ -12,7 +10,6 @@ function initToasts(root = document) {
         const el = document.querySelector(selector);
         if (!el) return;
 
-        // const toast = Toast.getOrCreateInstance(el); // TODO: REMOVE THIS LINE
         const toast = window.bootstrap.Toast.getOrCreateInstance(el);
         toast.show();
     },{

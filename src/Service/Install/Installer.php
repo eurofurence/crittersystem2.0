@@ -3,14 +3,19 @@
 namespace App\Service\Install;
 
 use App\Entity\Contact;
+use App\Entity\Department;
 use App\Entity\Group;
 use App\Entity\PersonalData;
 use App\Entity\Privilege;
 use App\Entity\Settings;
+use App\Entity\ShiftTask;
 use App\Entity\State;
 use App\Entity\User;
+use App\Entity\VolunteerType;
 use App\Repository\GroupRepository;
 use App\Repository\PrivilegeRepository;
+use App\Repository\ShiftTaskRepository;
+use App\Repository\VolunteerTypeRepository;
 use App\Audit\CertificateAuthority;
 use App\Badge\BadgeCatalog;
 use App\Entity\Badge;
@@ -39,8 +44,24 @@ final class Installer
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly CertificateAuthority $certificateAuthority,
         private readonly BadgeRepository $badges,
+        private readonly ShiftTaskRepository $shiftTasks,
+        private readonly VolunteerTypeRepository $volunteerTypes,
     ) {
     }
+
+    /** Global Shift Tasks available to every department. */
+    private const GLOBAL_SHIFT_TASKS = [
+        'Setup', 'Tear down', 'Helper', 'Runner', 'Certification', 'Assistant', 'Staff Shift',
+    ];
+
+    /**
+     * Volunteer Types seeded on first deployment. Flags obey the
+     * flag interdependencies: name => [staffOnly, showOnDashboard, hideOnShiftView, selfSignup].
+     */
+    private const SEED_VOLUNTEER_TYPES = [
+        'Volunteer' => [false, true, false, true],
+        'Staff' => [true, false, true, true],
+    ];
 
     /**
      * Create or update every core privilege and group from the catalog. Safe to
@@ -96,8 +117,45 @@ final class Installer
 
         $this->entityManager->flush();
 
+        $this->seedDomainDefaults();
+
         // The audit-signing certificate must exist before any legal export.
         $this->certificateAuthority->ensureCertificate();
+    }
+
+    /**
+     * Seed the global Shift Tasks and the Volunteer/Staff Volunteer Types every
+     * deployment needs. Idempotent: only missing rows are created.
+     */
+    public function seedDomainDefaults(): void
+    {
+        // A default department that owns shifts which have no other home.
+        $departments = $this->entityManager->getRepository(Department::class);
+        if ($departments->findOneBy(['slug' => 'general']) === null) {
+            $this->entityManager->persist(new Department('General', 'general'));
+        }
+
+        foreach (self::GLOBAL_SHIFT_TASKS as $name) {
+            // Look for a GLOBAL task specifically: names are unique per department, so a department
+            // may already own a task of the same name, and that must not suppress the global one.
+            if ($this->shiftTasks->findOneBy(['name' => $name, 'department' => null]) === null) {
+                $this->entityManager->persist(new ShiftTask($name));
+            }
+        }
+
+        foreach (self::SEED_VOLUNTEER_TYPES as $name => [$staffOnly, $showOnDashboard, $hideOnShiftView, $selfSignup]) {
+            if ($this->volunteerTypes->findOneByName($name) === null) {
+                $this->entityManager->persist(
+                    (new VolunteerType($name))
+                        ->setStaffOnly($staffOnly)
+                        ->setShowOnDashboard($showOnDashboard)
+                        ->setHideOnShiftView($hideOnShiftView)
+                        ->setShiftSelfSignup($selfSignup)
+                );
+            }
+        }
+
+        $this->entityManager->flush();
     }
 
     public function userCount(): int

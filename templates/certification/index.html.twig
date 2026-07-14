@@ -3,19 +3,24 @@
 
 {% block title %}Certifications{% endblock %}
 
-{% macro status_badge(record) %}
-  {% if record is null %}<span class="text-muted">Not applied</span>
-  {% elseif record.valid %}{{ _self.b('Certified', 'text-bg-success') }}
-  {% elseif record.status == 'pending' %}{{ _self.b('Pending — scan the QR at the event', 'text-bg-warning') }}
-  {% elseif record.status == 'self_confirmed' %}{{ _self.b('Self-confirmed', 'text-bg-info') }}
-  {% elseif record.status == 'revoked' %}{{ _self.b('Revoked', 'text-bg-danger') }}
-  {% elseif record.expired %}{{ _self.b('Expired', 'text-bg-secondary') }}
-  {% else %}{{ _self.b(record.status|capitalize, 'text-bg-secondary') }}{% endif %}
-{% endmacro %}
-
-{% macro b(text, cls) %}<span class="badge {{ cls }}">{{ text }}</span>{% endmacro %}
-
 {% block body %}
+  {# This page's own status vocabulary, passed into d.status_badge(). #}
+  {% set certStyles = {
+    'certified':      'text-bg-success',
+    'pending':        'text-bg-warning',
+    'self_confirmed': 'text-bg-info',
+    'revoked':        'text-bg-danger',
+    'expired':        'text-bg-secondary',
+    'other':          'text-bg-secondary'
+  } %}
+  {% set certLabels = {
+    'certified':      'Certified',
+    'pending':        'Pending — scan the QR at the event',
+    'self_confirmed': 'Self-confirmed',
+    'revoked':        'Revoked',
+    'expired':        'Expired'
+  } %}
+
   {{ d.page_header('Certifications', {
     subtitle: 'Apply for the certifications you have. Approval happens in-person by scanning the operator\'s QR.',
     actions: is_granted('global:admin') ? [{label: 'Manage certifications', href: path('app_manage_certification_index'), class: 'btn btn-outline-primary'}] : []
@@ -40,16 +45,30 @@
               {% else %}—{% endif %}
               {% if r and r.dateExpires %}<div class="text-muted">expires {{ r.dateExpires|app_date }}</div>{% endif %}
             </td>
-            <td>{{ _self.status_badge(r) }}</td>
+            <td>
+              {% if r is null %}
+                <span class="text-muted">Not applied</span>
+              {% else %}
+                {% set certStatus = r.valid ? 'certified'
+                  : (r.status == 'pending' ? 'pending'
+                  : (r.status == 'self_confirmed' ? 'self_confirmed'
+                  : (r.status == 'revoked' ? 'revoked'
+                  : (r.expired ? 'expired' : 'other')))) %}
+                {{ d.status_badge(certStatus, {
+                  map: certStyles,
+                  label: certLabels[certStatus]|default(r.status|capitalize)
+                }) }}
+              {% endif %}
+            </td>
             <td class="text-end text-nowrap">
               {% if r is null %}
-                <form method="post" action="{{ path('app_certifications_apply', {id: c.id}) }}" class="d-inline">
+                <form method="post" action="{{ path('app_certifications_apply', {id: c.uuid}) }}" class="d-inline">
                   <input type="hidden" name="_token" value="{{ csrf_token('cert-apply' ~ c.id) }}">
                   <button class="btn btn-sm btn-primary">Apply</button>
                 </form>
               {% endif %}
               {% if c.allowSelfConfirmation and (r is null or not r.valid) %}
-                <form method="post" action="{{ path('app_certifications_self_confirm', {id: c.id}) }}" class="d-inline">
+                <form method="post" action="{{ path('app_certifications_self_confirm', {id: c.uuid}) }}" class="d-inline">
                   <input type="hidden" name="_token" value="{{ csrf_token('cert-self' ~ c.id) }}">
                   <button class="btn btn-sm btn-outline-success">Self-confirm</button>
                 </form>

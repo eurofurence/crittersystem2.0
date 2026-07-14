@@ -5,18 +5,20 @@ namespace App\Controller\Api;
 use App\Entity\Location;
 use App\Entity\News;
 use App\Entity\Shift;
-use App\Entity\ShiftType;
+use App\Entity\ShiftTask;
 use App\Entity\User;
 use App\Entity\VolunteerType;
 use App\Repository\LocationRepository;
 use App\Repository\NewsRepository;
 use App\Repository\ShiftRepository;
-use App\Repository\ShiftTypeRepository;
+use App\Repository\ShiftTaskRepository;
 use App\Repository\VolunteerTypeRepository;
 use App\Service\EventConfigStore;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 
 /**
  * Public, read-only JSON API. Lives under the stateless ^/api
@@ -29,7 +31,7 @@ final class ApiV0Controller extends AbstractController
     public function __construct(
         private readonly VolunteerTypeRepository $volunteerTypes,
         private readonly LocationRepository $locations,
-        private readonly ShiftTypeRepository $shiftTypes,
+        private readonly ShiftTaskRepository $shiftTasks,
         private readonly ShiftRepository $shifts,
         private readonly NewsRepository $news,
         private readonly EventConfigStore $config,
@@ -85,24 +87,24 @@ final class ApiV0Controller extends AbstractController
         return $this->json(['data' => array_map($this->location(...), array_values($items))]);
     }
 
-    #[Route('/locations/{id}/shifts', name: 'app_api_v0_location_shifts', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function locationShifts(Location $location): JsonResponse
+    #[Route('/locations/{id}/shifts', name: 'app_api_v0_location_shifts', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function locationShifts(#[MapEntity(mapping: ['id' => 'uuid'])] Location $location): JsonResponse
     {
         return $this->json(['data' => array_map($this->shift(...), $this->shifts->findBy(['location' => $location], ['startsAt' => 'ASC']))]);
     }
 
     #[Route('/shifttypes', name: 'app_api_v0_shifttypes', methods: ['GET'])]
-    public function shiftTypeList(): JsonResponse
+    public function shiftTaskList(): JsonResponse
     {
-        $items = array_filter($this->shiftTypes->findAllOrdered(), fn (ShiftType $t) => !$t->isStaffOnly());
+        $items = array_filter($this->shiftTasks->findAllOrdered(), fn (ShiftTask $t) => !$t->isStaffOnly());
 
-        return $this->json(['data' => array_map($this->shiftType(...), array_values($items))]);
+        return $this->json(['data' => array_map($this->shiftTask(...), array_values($items))]);
     }
 
-    #[Route('/shifttypes/{id}/shifts', name: 'app_api_v0_shifttype_shifts', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function shiftTypeShifts(ShiftType $shiftType): JsonResponse
+    #[Route('/shifttypes/{id}/shifts', name: 'app_api_v0_shifttype_shifts', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function shiftTaskShifts(#[MapEntity(mapping: ['id' => 'uuid'])] ShiftTask $shiftTask): JsonResponse
     {
-        return $this->json(['data' => array_map($this->shift(...), $this->shifts->findBy(['shiftType' => $shiftType], ['startsAt' => 'ASC']))]);
+        return $this->json(['data' => array_map($this->shift(...), $this->shifts->findBy(['shiftTask' => $shiftTask], ['startsAt' => 'ASC']))]);
     }
 
     #[Route('/shifts', name: 'app_api_v0_shifts', methods: ['GET'])]
@@ -152,7 +154,7 @@ final class ApiV0Controller extends AbstractController
     }
 
     /** @return array<string, mixed> */
-    private function shiftType(ShiftType $t): array
+    private function shiftTask(ShiftTask $t): array
     {
         return ['id' => $t->getId(), 'name' => $t->getName(), 'description' => $t->getDescription()];
     }
@@ -166,7 +168,7 @@ final class ApiV0Controller extends AbstractController
             'start' => $s->getStartsAt()->format(\DATE_ATOM),
             'end' => $s->getEndsAt()->format(\DATE_ATOM),
             'durationHours' => $s->getDurationHours(),
-            'shiftType' => $s->getShiftType()?->getName(),
+            'shiftTask' => $s->getShiftTask()?->getName(),
             'location' => $s->getLocation()?->getName(),
         ];
     }

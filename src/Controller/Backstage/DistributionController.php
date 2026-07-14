@@ -13,7 +13,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -45,8 +47,8 @@ final class DistributionController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_backstage_distribute_user', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function user(User $user, Request $request): Response
+    #[Route('/{id}', name: 'app_backstage_distribute_user', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function user(#[MapEntity(mapping: ['id' => 'uuid'])] User $user, Request $request): Response
     {
         $cache = $this->hoursCache->get($user, $request->query->getBoolean('refresh'));
 
@@ -58,19 +60,19 @@ final class DistributionController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/refresh', name: 'app_backstage_distribute_refresh', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function refresh(Request $request, User $user): Response
+    #[Route('/{id}/refresh', name: 'app_backstage_distribute_refresh', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function refresh(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): Response
     {
         if ($this->isCsrfTokenValid('refresh'.$user->getId(), (string) $request->request->get('_token'))) {
             $this->hoursCache->recalculate($user);
             $this->addFlash('success', 'Hours recalculated.');
         }
 
-        return $this->redirectToRoute('app_backstage_distribute_user', ['id' => $user->getId()]);
+        return $this->redirectToRoute('app_backstage_distribute_user', ['id' => $user->getUuid()]);
     }
 
-    #[Route('/{id}/give', name: 'app_backstage_distribute_give', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function give(Request $request, User $user): Response
+    #[Route('/{id}/give', name: 'app_backstage_distribute_give', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function give(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): Response
     {
         if ($this->isCsrfTokenValid('give'.$user->getId(), (string) $request->request->get('_token'))) {
             $item = $this->items->find((int) $request->request->get('item'));
@@ -96,6 +98,6 @@ final class DistributionController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute('app_backstage_distribute_user', ['id' => $user->getId()]);
+        return $this->redirectToRoute('app_backstage_distribute_user', ['id' => $user->getUuid()]);
     }
 }

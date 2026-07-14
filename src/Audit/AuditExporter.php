@@ -8,6 +8,8 @@ use App\Entity\AuditEvent;
 use App\Entity\AuditExport;
 use App\Entity\User;
 use App\Repository\AuditEventRepository;
+use App\Storage\ExportStorage;
+use App\Storage\ZipBuilder;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -20,11 +22,13 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final class AuditExporter
 {
+    public const KEY_PREFIX = 'audit/';
+
     public function __construct(
         private readonly AuditEventRepository $events,
         private readonly CertificateAuthority $certificateAuthority,
         private readonly EntityManagerInterface $em,
-        private readonly string $projectDir,
+        private readonly ExportStorage $storage,
     ) {
     }
 
@@ -36,10 +40,6 @@ final class AuditExporter
         ?string $legalHoldReference = null,
     ): AuditExport {
         $uuid = $this->uuid4();
-        $dir = $this->projectDir.'/var/audit-exports';
-        if (!is_dir($dir) && !@mkdir($dir, 0770, true) && !is_dir($dir)) {
-            throw new \RuntimeException('Unable to create the audit export directory.');
-        }
 
         $eventsArray = [];
         foreach ($this->events->streamForExport($from, $to, $focusUser?->getId()) as $event) {
@@ -74,16 +74,13 @@ final class AuditExporter
         $pdf = $this->renderPdf($manifest, $eventsArray);
         $manifestTxt = $this->manifestText($manifest, $sha256, $signature, $certificatePem, \count($eventsArray));
 
-        $zipPath = $dir.'/'.$uuid.'.zip';
-        $zip = new \ZipArchive();
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            throw new \RuntimeException('Unable to create the export archive.');
-        }
-        $zip->addFromString('events.json', $json);
-        $zip->addFromString('events.pdf', $pdf);
-        $zip->addFromString('manifest.txt', $manifestTxt);
-        $zip->addFromString('certificate.pem', $certificatePem);
-        $zip->close();
+        $key = self::KEY_PREFIX.$uuid.'.zip';
+        $this->storage->write($key, ZipBuilder::build([
+            'events.json' => $json,
+            'events.pdf' => $pdf,
+            'manifest.txt' => $manifestTxt,
+            'certificate.pem' => $certificatePem,
+        ]));
 
         $export = new AuditExport(
             $uuid,
@@ -93,7 +90,7 @@ final class AuditExporter
             $to,
             $focusUser?->getId(),
             $sha256,
-            $zipPath,
+            $key,
             \count($eventsArray),
         );
         $this->em->persist($export);

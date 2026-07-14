@@ -13,6 +13,18 @@ use App\Tests\DatabaseTestCase;
 
 final class ShiftSignupServiceTest extends DatabaseTestCase
 {
+    private ?\App\Entity\Department $dept = null;
+
+    private function department(): \App\Entity\Department
+    {
+        if ($this->dept === null) {
+            $this->dept = new \App\Entity\Department('Dept '.bin2hex(random_bytes(3)), 'dept-'.bin2hex(random_bytes(3)));
+            $this->em->persist($this->dept);
+        }
+
+        return $this->dept;
+    }
+
     private function service(): ShiftSignupService
     {
         return static::getContainer()->get(ShiftSignupService::class);
@@ -47,7 +59,8 @@ final class ShiftSignupServiceTest extends DatabaseTestCase
         $shift = (new Shift())
             ->setTitle('Shift')
             ->setStartsAt(new \DateTimeImmutable($start))
-            ->setEndsAt(new \DateTimeImmutable($end));
+            ->setEndsAt(new \DateTimeImmutable($end))
+            ->setDepartment($this->department());
         $this->em->persist($shift);
 
         $need = new NeededVolunteerType($type, $needed);

@@ -48,19 +48,65 @@ final class BanChecker
         return $ssoId !== null && $ssoId !== '' && $this->bans->findOneByHash($this->hashSso($ssoId)) !== null;
     }
 
-    /** Add ban records for a user about to be erased. */
+    /** Add ban records for a user about to be erased (GDPR). */
     public function ban(User $user): void
     {
-        $this->add(BannedIdentity::TYPE_EMAIL, $this->hashEmail($user->getEmail()));
+        $this->add(BannedIdentity::TYPE_EMAIL, $this->hashEmail($user->getEmail()), $user, 'Account erased (GDPR).', false, null);
         if ($user->getSsoUserId() !== null) {
-            $this->add(BannedIdentity::TYPE_SSO, $this->hashSso($user->getSsoUserId()));
+            $this->add(BannedIdentity::TYPE_SSO, $this->hashSso($user->getSsoUserId()), $user, 'Account erased (GDPR).', false, null);
         }
     }
 
-    private function add(string $type, string $hash): void
+    /**
+     * Create a behavioural ban linked to a live user. The identity is
+     * still hashed so login/SSO/registration checks work unchanged; the user
+     * link and reason are stored for admin review.
+     */
+    public function banUser(User $user, string $reason, bool $isAutomatic, ?int $noShowCount = null): void
     {
-        if ($this->bans->findOneByHash($hash) === null) {
-            $this->em->persist(new BannedIdentity($type, $hash));
+        $this->add(BannedIdentity::TYPE_EMAIL, $this->hashEmail($user->getEmail()), $user, $reason, $isAutomatic, $noShowCount);
+        if ($user->getSsoUserId() !== null) {
+            $this->add(BannedIdentity::TYPE_SSO, $this->hashSso($user->getSsoUserId()), $user, $reason, $isAutomatic, $noShowCount);
         }
+    }
+
+    public function isUserBanned(User $user): bool
+    {
+        return $this->isBanned($user->getEmail(), $user->getSsoUserId());
+    }
+
+    /** Remove every ban record for the user (by hash or user link). Returns the number removed. */
+    public function liftUser(User $user): int
+    {
+        /** @var array<int, BannedIdentity> $rows */
+        $rows = [];
+        foreach ([$this->hashEmail($user->getEmail()), $user->getSsoUserId() !== null ? $this->hashSso($user->getSsoUserId()) : null] as $hash) {
+            if ($hash !== null && ($ban = $this->bans->findOneByHash($hash)) !== null) {
+                $rows[(int) $ban->getId()] = $ban;
+            }
+        }
+        foreach ($this->bans->findByUser($user) as $ban) {
+            $rows[(int) $ban->getId()] = $ban;
+        }
+
+        foreach ($rows as $ban) {
+            $this->em->remove($ban);
+        }
+
+        return \count($rows);
+    }
+
+    private function add(string $type, string $hash, ?User $user, ?string $reason, bool $isAutomatic, ?int $noShowCount): void
+    {
+        if ($this->bans->findOneByHash($hash) !== null) {
+            return;
+        }
+
+        $ban = (new BannedIdentity($type, $hash))
+            ->setUser($user)
+            ->setReason($reason)
+            ->setAutomatic($isAutomatic)
+            ->setNoShowCount($noShowCount);
+        $this->em->persist($ban);
     }
 }

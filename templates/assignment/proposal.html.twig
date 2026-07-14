@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Assignment proposal{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Assignment proposal — ' ~ proposal.department.name, {
+    subtitle: 'Review the automatic suggestions, then apply or discard. Nothing is published until you apply.',
+    actions: [{label: '← Planner', href: path('app_manage_shifts_planner', {department: proposal.department.uuid}), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% set proposalStatusBadge %}<span>{{ d.status_badge(proposal.status.value) }}</span>{% endset %}
+  {{ d.card_start(proposal.assignments|length ~ ' suggestion(s)', {class: '', bodyClass: '', headerActions: proposalStatusBadge}) }}
+    <div class="table-responsive">
+      <table class="table table-vcenter card-table">
+        <thead><tr><th>Shift</th><th>When</th><th>User</th><th>Role</th><th>Availability</th></tr></thead>
+        <tbody>
+          {% for a in proposal.assignments %}
+            <tr>
+              <td>{{ a.shift.title }}</td>
+              <td>{{ a.shift.startsAt|app_datetime }}</td>
+              <td>{{ a.user.name }}</td>
+              <td>{{ a.volunteerType.name }}</td>
+              <td>{{ a.availabilityValue ? d.badge(a.availabilityValue.label, 'bg-azure-lt') : '—' }}</td>
+            </tr>
+          {% else %}
+            {{ d.empty_row(5, 'No eligible suggestions could be made.') }}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% set cardEndOptions = {class: '', bodyClass: ''} %}
+    {% if proposal.status.value == 'draft' %}
+      {% set proposalFooter %}
+        <form method="post" action="{{ path('app_proposal_discard', {id: proposal.uuid}) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('proposal_discard' ~ proposal.id) }}">
+          <button class="btn btn-outline-danger">Discard</button>
+        </form>
+        <form method="post" action="{{ path('app_proposal_apply', {id: proposal.uuid}) }}"
+              data-controller="confirm" data-confirm-message-value="Apply these assignments? They will be published.">
+          <input type="hidden" name="_token" value="{{ csrf_token('proposal_apply' ~ proposal.id) }}">
+          <button class="btn btn-success">Apply &amp; publish</button>
+        </form>
+      {% endset %}
+      {% set cardEndOptions = cardEndOptions|merge({footer: proposalFooter, footerClass: 'card-footer d-flex justify-content-end gap-2'}) %}
+    {% endif %}
+  {{ d.card_end(cardEndOptions) }}
+{% endblock %}

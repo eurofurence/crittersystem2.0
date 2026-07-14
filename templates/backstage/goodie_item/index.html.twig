@@ -32,14 +32,14 @@
             <td>{{ i.requiredHours|round(2) }}</td>
             <td>{{ i.maxPerPerson ?? '∞' }}</td>
             <td>{% if i.active %}{{ d.badge('Active', 'text-bg-success') }}{% else %}{{ d.badge('Inactive', 'text-bg-secondary') }}{% endif %}</td>
-            <td class="text-end text-nowrap">
-              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_backstage_goodie_item_edit', {id: i.id}) }}">Edit</a>
-              <form method="post" action="{{ path('app_backstage_goodie_item_delete', {id: i.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Delete &quot;{{ i.name|e('js') }}&quot;?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ i.id) }}">
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
+            {% set del %}
+              {{ d.delete_form(path('app_backstage_goodie_item_delete', {id: i.uuid}), csrf_token('delete' ~ i.id), {
+                message: 'Delete "' ~ i.name ~ '"?'
+              }) }}
+            {% endset %}
+            {{ d.row_actions([
+              {label: 'Edit', href: path('app_backstage_goodie_item_edit', {id: i.uuid})}
+            ], {extraHtml: del}) }}
           </tr>
         {% endfor %}
       </tbody>

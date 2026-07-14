@@ -8,32 +8,22 @@ use App\Entity\Shift;
 use App\Entity\ShiftEntry;
 use App\Entity\User;
 use App\Entity\VolunteerType;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\DatabaseWebTestCase;
 
-final class ApiTest extends WebTestCase
+final class ApiTest extends DatabaseWebTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
+    private ?\App\Entity\Department $dept = null;
 
-    protected function setUp(): void
+    private function department(): \App\Entity\Department
     {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
+        if ($this->dept === null) {
+            $this->dept = new \App\Entity\Department('Dept '.bin2hex(random_bytes(3)), 'dept-'.bin2hex(random_bytes(3)));
+            $this->em->persist($this->dept);
         }
 
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
+        return $this->dept;
     }
+
 
     /** @param string[] $privileges */
     private function makeUser(string $apiKey, array $privileges = []): User
@@ -113,7 +103,8 @@ final class ApiTest extends WebTestCase
         $shift = (new Shift())
             ->setTitle('Night Watch')
             ->setStartsAt(new \DateTimeImmutable('2026-08-15 20:00:00', new \DateTimeZone('UTC')))
-            ->setEndsAt(new \DateTimeImmutable('2026-08-16 04:00:00', new \DateTimeZone('UTC')));
+            ->setEndsAt(new \DateTimeImmutable('2026-08-16 04:00:00', new \DateTimeZone('UTC')))
+            ->setDepartment($this->department());
         $this->em->persist($shift);
         $this->em->persist(new ShiftEntry($shift, $type, $user));
         $this->em->flush();
@@ -125,8 +116,9 @@ final class ApiTest extends WebTestCase
         self::assertResponseIsSuccessful();
         $body = (string) $this->client->getResponse()->getContent();
 
-        // Absolute UTC instants (trailing Z) so every device fires the reminder
-        // at the correct moment — never floating local times (the critter 1.0 bug).
+        // Absolute UTC instants (trailing Z) so every device fires the reminder at the
+        // correct moment. Floating local times would be reinterpreted in the device's
+        // own timezone and fire at the wrong one.
         self::assertStringContainsString('DTSTART:20260815T200000Z', $body);
         self::assertStringContainsString('DTEND:20260816T040000Z', $body);
         self::assertStringContainsString('DTSTAMP:', $body);

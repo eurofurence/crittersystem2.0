@@ -1,11 +1,11 @@
 {% extends 'install/_layout.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 
 {% block title %}Installer disabled · VMS{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
-    <div class="card card-md">
-        <div class="card-body text-center py-4 p-sm-5">
+    {{ d.card_start(null, {class: 'card-md', bodyClass: 'card-body text-center py-4 p-sm-5'}) }}
             <div class="mb-3">
                 <span class="avatar avatar-xl bg-warning-lt">
                     <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
@@ -28,6 +28,5 @@ php bin/console app:install          # seed roles and the first admin</code></pr
             <p class="text-secondary">
                 Or set <code>INSTALL_PASSWORD</code> in the environment and reload this page to use the wizard.
             </p>
-        </div>
-    </div>
+    {{ d.card_end({bodyClass: 'card-body text-center py-4 p-sm-5'}) }}
 {% endblock %}

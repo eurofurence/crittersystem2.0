@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\QuestionRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -16,6 +18,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\HasLifecycleCallbacks]
 class Question
 {
+    use HasPublicUuid;
+
     public const LOCK_TTL_MINUTES = 30;
 
     #[ORM\Id]
@@ -53,6 +57,7 @@ class Question
 
     public function __construct(?User $user, string $text)
     {
+        $this->uuid = Uuid::v4();
         $this->user = $user;
         $this->text = $text;
     }

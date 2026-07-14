@@ -101,6 +101,31 @@ final class TwoFactorController extends AbstractController
         return $this->redirectToRoute('app_2fa');
     }
 
+    #[Route('/recovery-codes/regenerate', name: 'app_2fa_recovery_regenerate', methods: ['POST'])]
+    public function regenerateRecoveryCodes(Request $request): Response
+    {
+        $user = $this->user();
+        if (!$user->isTwoFactorEnabled()) {
+            return $this->redirectToRoute('app_2fa');
+        }
+
+        // Require proof of possession (a current TOTP or an existing recovery
+        // code) before issuing a new set, so a hijacked session cannot silently
+        // rotate away the legitimate owner's codes.
+        if (!$this->twoFactor->verify($user, (string) $request->request->get('code'))) {
+            $this->addFlash('danger', 'Enter a valid authenticator or recovery code to regenerate your recovery codes.');
+
+            return $this->redirectToRoute('app_2fa');
+        }
+
+        $codes = $this->twoFactor->regenerateBackupCodes($user);
+        $this->stepUp->markVerified();
+        $this->notify($user, 'Recovery codes regenerated', 'A new set of two-factor recovery codes was generated for your account and your previous codes no longer work. If this was not you, contact an administrator immediately.');
+        $this->audit->log(AuditEvents::SECURITY, AuditEvents::UPDATE, ['details' => ['two_factor' => 'recovery_codes_regenerated']]);
+
+        return $this->render('two_factor/backup_codes.html.twig', ['codes' => $codes, 'regenerated' => true]);
+    }
+
     #[Route('/confirm', name: 'app_2fa_confirm', methods: ['GET', 'POST'])]
     public function confirm(Request $request): Response
     {

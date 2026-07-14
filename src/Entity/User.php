@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\UserRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -14,6 +16,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 #[ORM\HasLifecycleCallbacks]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    use HasPublicUuid;
+
     public const SOURCE_MANUAL = 'manual';
     public const SOURCE_SSO = 'sso';
 
@@ -56,6 +60,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /** Opaque token for one-click, unauthenticated unsubscribe links. */
     #[ORM\Column(name: 'unsubscribe_token', length: 32, unique: true, nullable: true)]
     private ?string $unsubscribeToken = null;
+
+    /**
+     * No-shows before this instant do not count toward the automatic ban
+     * threshold (reset on unban). Null = count all no-shows.
+     */
+    #[ORM\Column(name: 'no_show_baseline_at', nullable: true)]
+    private ?\DateTimeImmutable $noShowBaselineAt = null;
 
     #[ORM\Column(name: 'totp_secret', type: 'encrypted_string', nullable: true)]
     private ?string $totpSecret = null;
@@ -113,6 +124,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
+        $this->uuid = Uuid::v4();
         $this->groupAssignments = new ArrayCollection();
         $this->badges = new ArrayCollection();
     }
@@ -269,6 +281,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->onboardingCompleted = false;
         $this->onboardingCompletedAt = null;
+
+        return $this;
+    }
+
+    public function getNoShowBaselineAt(): ?\DateTimeImmutable
+    {
+        return $this->noShowBaselineAt;
+    }
+
+    public function setNoShowBaselineAt(?\DateTimeImmutable $noShowBaselineAt): static
+    {
+        $this->noShowBaselineAt = $noShowBaselineAt;
 
         return $this;
     }
@@ -655,6 +679,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function isStaff(): bool
     {
         return array_intersect(['ROLE_STAFF', 'ROLE_SUBADMIN', 'ROLE_ADMIN'], $this->getRoles()) !== [];
+    }
+
+    /** Member of the Info Desk group (support-conversation claiming). */
+    public function isInfoDesk(): bool
+    {
+        foreach ($this->getGroups() as $group) {
+            if ($group->getSlug() === 'info-desk') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getUserIdentifier(): string

@@ -76,7 +76,6 @@ final class MigrateCommand extends Command
             return Command::SUCCESS;
         }
 
-        // Acquire the cross-process lock.
         if ($input->getOption('no-wait')) {
             if (!$this->lock->tryAcquire()) {
                 $io->warning('Another migration is already in progress; nothing to do.');

@@ -9,12 +9,10 @@
     actions: [{label: '← Search', href: path('app_backstage_distribute'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  {# Hours breakdown #}
-  <div class="card mb-3">
-    <div class="card-body">
+  {{ d.card_start() }}
       <div class="d-flex justify-content-between align-items-center mb-2">
         <div><span class="fw-semibold">Credited hours:</span> <span class="fs-4">{{ cache.totalHours|round(2) }}</span></div>
-        <form method="post" action="{{ path('app_backstage_distribute_refresh', {id: user.id}) }}">
+        <form method="post" action="{{ path('app_backstage_distribute_refresh', {id: user.uuid}) }}">
           <input type="hidden" name="_token" value="{{ csrf_token('refresh' ~ user.id) }}">
           <button class="btn btn-sm btn-outline-secondary">↻ Recalculate</button>
         </form>
@@ -27,28 +25,26 @@
         <div class="col"><div class="fw-bold text-dark">{{ cache.completedShiftsCount }}</div>Shifts</div>
       </div>
       <div class="text-muted small mt-2">Last calculated {{ cache.lastCalculatedAt|app_datetime }}</div>
-    </div>
-  </div>
+  {{ d.card_end() }}
 
   {% set eligible = eligibility.rows|filter(r => r.tier == 'eligible') %}
   {% set pending = eligibility.rows|filter(r => r.tier == 'pending') %}
   {% set claimed = eligibility.rows|filter(r => r.tier == 'claimed') %}
 
-  {# Can claim now #}
   <h2 class="h5">Can claim now</h2>
   {% if eligible is empty %}
-    <p class="text-muted">No items available to claim.</p>
+    {{ d.empty_inline('No items available to claim.', {class: 'text-muted'}) }}
   {% else %}
     <div class="row g-2 mb-3">
       {% for r in eligible %}
         <div class="col-12 col-md-6">
-          <div class="card h-100"><div class="card-body">
+          {{ d.card_start(null, {class: 'h-100'}) }}
             <div class="d-flex justify-content-between">
               <div class="fw-semibold">{{ r.item.name }}</div>
               <span class="text-muted small">{{ r.item.requiredHours|round(2) }}h{% if r.remaining is not null %} · {{ r.remaining }} left{% endif %}</span>
             </div>
             {% if r.item.description %}<div class="text-muted small mb-2">{{ r.item.description }}</div>{% endif %}
-            <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.id}) }}" class="row g-2 align-items-end">
+            <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.uuid}) }}" class="row g-2 align-items-end">
               <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
               <input type="hidden" name="item" value="{{ r.item.id }}">
               <div class="col-4">
@@ -59,16 +55,15 @@
                 <button class="btn btn-sm btn-primary w-100">Give</button>
               </div>
             </form>
-          </div></div>
+          {{ d.card_end() }}
         </div>
       {% endfor %}
     </div>
   {% endif %}
 
-  {# Will be eligible #}
   <h2 class="h5">Will be eligible</h2>
   {% if pending is empty %}
-    <p class="text-muted">Nothing pending.</p>
+    {{ d.empty_inline('Nothing pending.', {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
       <thead><tr><th>Item</th><th>Required</th><th>Hours short</th></tr></thead>
@@ -80,7 +75,6 @@
     {{ d.table_end() }}
   {% endif %}
 
-  {# Already claimed (at max) #}
   {% if claimed is not empty %}
     <h2 class="h5">Already claimed (at limit)</h2>
     {{ d.table_start({hover: false}) }}
@@ -91,10 +85,9 @@
     {{ d.table_end() }}
   {% endif %}
 
-  {# History #}
   <h2 class="h5 mt-3">Distribution history</h2>
   {% if history is empty %}
-    <p class="text-muted">No goodies distributed yet.</p>
+    {{ d.empty_inline('No goodies distributed yet.', {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
       <thead><tr><th>When</th><th>Item</th><th>Qty</th><th>Hours then</th><th>By</th></tr></thead>

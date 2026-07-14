@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ type.name }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(type.name, {
+    actions: [{label: '← Volunteer Types', href: path('app_membership_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <div class="row">
+    <div class="col-12 col-lg-8">
+      {{ d.card_start() }}
+          {% if type.description %}<div>{{ type.description|raw }}</div>{% else %}{{ d.empty_inline('No description.', {class: 'text-secondary'}) }}{% endif %}
+      {{ d.card_end() }}
+
+      {% if type.certifications is not empty %}
+        {{ d.card_start('Requirements') }}
+            {% for cert in type.certifications %}{{ d.badge(cert.title, 'bg-secondary-lt', {class: 'me-1 mb-1'}) }}{% endfor %}
+        {{ d.card_end() }}
+      {% endif %}
+
+      {% if type.requiresIntroduction and membership is not null and not membership.confirmed %}
+        <div class="alert alert-warning">Your membership is awaiting confirmation. You cannot apply to associated shifts until it is confirmed.</div>
+      {% endif %}
+    </div>
+
+    <div class="col-12 col-lg-4">
+      {{ d.card_start('Contacts') }}
+          {% for c in type.contacts %}
+            <div class="mb-2">
+              {% if c.name %}<div class="fw-semibold">{{ c.name }}</div>{% endif %}
+              {% if c.email %}<div><a href="mailto:{{ c.email }}">{{ c.email }}</a></div>{% endif %}
+              {% if c.phone %}<div>{{ c.phone }}</div>{% endif %}
+              {% if c.telegram %}<div><a href="https://t.me/{{ c.telegram|trim('@') }}">{{ c.telegram }}</a></div>{% endif %}
+            </div>
+          {% else %}
+            {{ d.empty_inline('No contacts listed.', {tag: 'div', class: 'text-secondary'}) }}
+          {% endfor %}
+      {{ d.card_end() }}
+
+      {% if type.departments is not empty %}
+        {{ d.card_start('Departments') }}
+            {% for dept in type.departments %}{{ d.badge(dept.name, 'bg-secondary-lt', {class: 'me-1'}) }}{% endfor %}
+        {{ d.card_end() }}
+      {% endif %}
+
+      {{ d.card_start(null, {class: '', bodyClass: 'card-body text-center'}) }}
+          {% if membership is null %}
+            <form method="post" action="{{ path('app_membership_join', {id: type.uuid}) }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('join' ~ type.id) }}">
+              <button class="btn btn-primary">{{ type.requiresIntroduction ? 'Apply to join' : 'Join' }}</button>
+            </form>
+          {% else %}
+            <form method="post" action="{{ path('app_membership_leave', {id: type.uuid}) }}"
+                  data-controller="confirm" data-confirm-message-value="Leave this volunteer type?">
+              <input type="hidden" name="_token" value="{{ csrf_token('leave' ~ type.id) }}">
+              <button class="btn btn-outline-danger">Leave</button>
+            </form>
+          {% endif %}
+      {{ d.card_end({bodyClass: 'card-body text-center'}) }}
+    </div>
+  </div>
+{% endblock %}

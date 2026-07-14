@@ -8,14 +8,14 @@ uses a legacy SSO that reports memberships as structured group ids ("roles").
 
 SSO is configured entirely via environment variables (see `.env` `app/sso`):
 
-| Variable | Purpose |
-| --- | --- |
-| `SSO_ENABLED` | `1` to enable the SSO login button and routes. |
-| `SSO_DISCOVERY_URL` | Provider `.well-known/openid-configuration`. **Preferred** — endpoints are discovered automatically. |
-| `SSO_CLIENT_ID` / `SSO_CLIENT_SECRET` | Application client credentials. |
-| `SSO_AUTHORIZATION_URL` / `SSO_TOKEN_URL` / `SSO_USERINFO_URL` | Manual fallback when discovery is not used. |
-| `SSO_SCOPES` | Default `openid profile email`. |
-| `SSO_PROVIDER_LABEL` | Shown on the login button. |
+| Variable                                                       | Purpose                                                                                              |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `SSO_ENABLED`                                                  | `1` to enable the SSO login button and routes.                                                       |
+| `SSO_DISCOVERY_URL`                                            | Provider `.well-known/openid-configuration`. **Preferred** — endpoints are discovered automatically. |
+| `SSO_CLIENT_ID` / `SSO_CLIENT_SECRET`                          | Application client credentials.                                                                      |
+| `SSO_AUTHORIZATION_URL` / `SSO_TOKEN_URL` / `SSO_USERINFO_URL` | Manual fallback when discovery is not used.                                                          |
+| `SSO_SCOPES`                                                   | Default `openid profile email`.                                                                      |
+| `SSO_PROVIDER_LABEL`                                           | Shown on the login button.                                                                           |
 
 The admin status page at `/admin/sso` (permission `config:sso`, step-up protected
 once 2FA is in place) shows whether discovery loaded, the resolved endpoints, the
@@ -43,16 +43,16 @@ be bulk-imported as JSON:
 
 ```json
 [
-  {
-    "id": "0RV39Y2PM21J4N6L",
-    "name": "Art Show",
-    "slug": "art-show",
-    "staffonly": 1,
-    "department": "art-show",
-    "badges": ["security"],
-    "volunteertype": ["Volunteer"],
-    "permissiongroup": ["info-desk"]
-  }
+    {
+        "id": "0RV39Y2PM21J4N6L",
+        "name": "Art Show",
+        "slug": "art-show",
+        "staffonly": 1,
+        "department": "art-show",
+        "badges": ["security"],
+        "volunteertype": ["Volunteer"],
+        "permissiongroup": ["info-desk"]
+    }
 ]
 ```
 
@@ -65,7 +65,7 @@ docker compose -f compose.dev.yaml up -d keycloak
 # Provision the realm, client, groups and test users:
 docker compose -f compose.dev.yaml cp docker/keycloak/provision.sh keycloak:/opt/provision.sh
 docker compose -f compose.dev.yaml exec keycloak bash /opt/provision.sh
-docker compose -f compose.dev.yaml cp keycloak:/opt/keycloak-credentials.txt docs/keycloak-credentials.txt
+docker compose -f compose.dev.yaml cp keycloak:/tmp/keycloak-credentials.txt docs/keycloak-credentials.txt
 ```
 
 `docs/keycloak-credentials.txt` (git-ignored) holds the generated client secret,
@@ -79,6 +79,6 @@ SSO_CLIENT_ID=critter-app
 SSO_CLIENT_SECRET=<from credentials file>
 ```
 
-> Live SSO login requires the running Keycloak and a browser round-trip, so it is
-> verified by manual UAT rather than the automated test suite. The provisioning,
-> mapping import and claim→user logic are covered by tests.
+> Live SSO login requires a running Keycloak and a browser round-trip, so it is verified
+> manually rather than by the automated test suite. The provisioning, mapping import and
+> claim→user logic are covered by tests.

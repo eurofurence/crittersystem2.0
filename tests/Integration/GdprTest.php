@@ -11,6 +11,7 @@ use App\Gdpr\BanChecker;
 use App\Gdpr\DataExportBuilder;
 use App\Gdpr\ErasureService;
 use App\Gdpr\GenerateDataExport;
+use App\Storage\ExportStorage;
 use App\Tests\DatabaseTestCase;
 use Symfony\Component\Messenger\MessageBusInterface;
 
@@ -56,11 +57,20 @@ final class GdprTest extends DatabaseTestCase
         self::assertTrue($reloaded->isReady());
         self::assertTrue($reloaded->isDownloadable());
 
+        $storage = static::getContainer()->get(ExportStorage::class);
+        $key = (string) $reloaded->getStorageKey();
+        self::assertTrue($storage->exists($key), 'the archive is in the export storage, reachable by the process that serves the download');
+
+        // ZipArchive can only read from a real path, so the archive bytes are spooled to a temp file.
+        $path = tempnam(sys_get_temp_dir(), 'critter-test-');
+        file_put_contents($path, $storage->read($key));
         $zip = new \ZipArchive();
-        self::assertTrue($zip->open($reloaded->getFilePath()));
+        self::assertTrue($zip->open($path));
         self::assertNotFalse($zip->getFromName('data.json'));
         $zip->close();
-        @unlink($reloaded->getFilePath());
+
+        @unlink($path);
+        $storage->delete($key);
     }
 
     public function testBanCheckerHashesEmailAndSsoSeparately(): void

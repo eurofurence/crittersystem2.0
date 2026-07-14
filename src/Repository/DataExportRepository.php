@@ -20,4 +20,20 @@ class DataExportRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['uuid' => $uuid]);
     }
+
+    /**
+     * Expired exports that still hold an archive. The archive is a full copy of the user's personal
+     * data, so it must not outlive the download window it was created for.
+     *
+     * @return DataExport[]
+     */
+    public function findExpiredWithArchive(\DateTimeImmutable $now): array
+    {
+        return $this->createQueryBuilder('e')
+            ->where('e.expiresAt <= :now')
+            ->andWhere('e.storageKey IS NOT NULL')
+            ->setParameter('now', $now)
+            ->getQuery()
+            ->getResult();
+    }
 }

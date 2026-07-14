@@ -3,29 +3,22 @@
 
 {% block title %}My Digital ID{% endblock %}
 
-{# Rotate the page so the embedded QR refreshes before its underlying token expires. #}
-{% block stylesheets %}{{ parent() }}<meta http-equiv="refresh" content="{{ ttlSeconds - 10 }}">{% endblock %}
-
 {% block body %}
   {{ d.page_header('Digital ID', {subtitle: 'Show this QR to verify your identity. It rotates automatically.'}) }}
 
   <div class="row g-3 justify-content-center">
-    <div class="col-12 col-md-6 col-lg-5">
-      <div class="card text-center">
-        <div class="card-body">
-          <img src="{{ qrDataUri }}" alt="Digital ID QR code" class="img-fluid mb-2" style="max-width: 320px;">
-          <div class="fw-semibold">{{ app.user.name }}</div>
-          <div class="text-muted small">User ID #{{ app.user.id }}</div>
-          <div class="text-muted small mt-2">Valid until {{ token.expiresAt|app_time }}</div>
-          <form method="post" action="{{ path('app_digital_id_refresh') }}" class="mt-3">
-            <input type="hidden" name="_token" value="{{ csrf_token('digital-id-refresh') }}">
-            <button class="btn btn-sm btn-outline-primary">↻ Refresh now</button>
-          </form>
-        </div>
-      </div>
-      <div class="text-muted small text-center mt-2">
-        Scanner URL: <code>{{ verifyUrl }}</code>
-      </div>
+    {#
+      The card re-renders itself just before the current token expires, which
+      rotates the QR. This has to be a Stimulus timer rather than a
+      <meta http-equiv="refresh">: Turbo never reloads the document, so a meta
+      refresh keeps ticking after the user has navigated away and drags them back
+      to this page.
+    #}
+    <div class="col-12 col-md-6 col-lg-5"
+         data-controller="live-refresh"
+         data-live-refresh-url-value="{{ path('app_digital_id_card') }}"
+         data-live-refresh-interval-value="{{ refreshIntervalMs }}">
+      {{ include('digital_id/_card.html.twig') }}
     </div>
   </div>
 {% endblock %}

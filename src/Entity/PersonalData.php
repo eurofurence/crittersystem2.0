@@ -38,6 +38,10 @@ class PersonalData
     #[ORM\Column(name: 'planned_departure_date', nullable: true)]
     private ?\DateTimeImmutable $plannedDepartureDate = null;
 
+    /** Storage-relative key of the profile picture (see App\Storage\FileStorage); null = fallback monogram. */
+    #[ORM\Column(name: 'avatar_path', length: 255, nullable: true)]
+    private ?string $avatarPath = null;
+
     public function __construct(User $user)
     {
         $this->user = $user;
@@ -56,6 +60,18 @@ class PersonalData
     public function setUser(User $user): static
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    public function getAvatarPath(): ?string
+    {
+        return $this->avatarPath;
+    }
+
+    public function setAvatarPath(?string $avatarPath): static
+    {
+        $this->avatarPath = $avatarPath;
 
         return $this;
     }

@@ -15,21 +15,57 @@
       {{ f.field(form.description, {col: 'col-12'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Contact</h2>
-    <div class="row">
-      {{ f.field(form.contactName, {col: 'col-12 col-md-5'}) }}
-      {{ f.field(form.contactDect, {col: 'col-12 col-md-3'}) }}
-      {{ f.field(form.contactEmail, {col: 'col-12 col-md-4'}) }}
+    <h2 class="h6 mt-2">Contacts</h2>
+    <div data-controller="collection" data-prototype="{{ form_widget(form.contacts.vars.prototype)|e('html_attr') }}">
+      <div data-collection-container>
+        {% for contact in form.contacts %}
+          <div data-collection-item class="border rounded p-2 mb-2">
+            <div class="row">
+              {{ f.field(contact.name, {col: 'col-6 col-md-3'}) }}
+              {{ f.field(contact.phone, {col: 'col-6 col-md-3'}) }}
+              {{ f.field(contact.telegram, {col: 'col-6 col-md-3'}) }}
+              {{ f.field(contact.email, {col: 'col-6 col-md-3'}) }}
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-action="collection#remove">Remove</button>
+          </div>
+        {% endfor %}
+      </div>
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-action="collection#add">Add contact</button>
     </div>
 
-    <h2 class="h6 mt-2">Configuration flags</h2>
+    <h2 class="h6 mt-3">Certifications / requirements</h2>
     <div class="row">
-      {{ f.check(form.restricted) }}
-      {{ f.check(form.shiftSelfSignup) }}
-      {{ f.check(form.showOnDashboard) }}
-      {{ f.check(form.hideRegister) }}
-      {{ f.check(form.hideOnShiftView) }}
-      {{ f.check(form.staffOnly) }}
+      {% for cert in form.certifications %}
+        <div class="col-12 col-md-4">
+          <div class="form-check">
+            {{ form_widget(cert, {attr: {class: 'form-check-input'}}) }}
+            {{ form_label(cert, null, {label_attr: {class: 'form-check-label'}}) }}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+
+    <h2 class="h6 mt-3">Configuration flags</h2>
+    <div class="row" data-controller="volunteer-type-flags">
+      <div class="col-12 col-md-4"><div class="form-check">
+        {{ form_widget(form.staffOnly, {attr: {class: 'form-check-input', 'data-volunteer-type-flags-target': 'staffOnly', 'data-action': 'change->volunteer-type-flags#sync'}}) }}
+        {{ form_label(form.staffOnly, null, {label_attr: {class: 'form-check-label'}}) }}
+      </div></div>
+      <div class="col-12 col-md-4"><div class="form-check">
+        {{ form_widget(form.departmentOnly, {attr: {class: 'form-check-input', 'data-volunteer-type-flags-target': 'departmentOnly'}}) }}
+        {{ form_label(form.departmentOnly, null, {label_attr: {class: 'form-check-label'}}) }}
+      </div></div>
+      <div class="col-12 col-md-4"><div class="form-check">
+        {{ form_widget(form.hideOnShiftView, {attr: {class: 'form-check-input', 'data-volunteer-type-flags-target': 'hideOnShiftView'}}) }}
+        {{ form_label(form.hideOnShiftView, null, {label_attr: {class: 'form-check-label'}}) }}
+      </div></div>
+      <div class="col-12 col-md-4"><div class="form-check">
+        {{ form_widget(form.showOnDashboard, {attr: {class: 'form-check-input', 'data-volunteer-type-flags-target': 'showOnDashboard'}}) }}
+        {{ form_label(form.showOnDashboard, null, {label_attr: {class: 'form-check-label'}}) }}
+      </div></div>
+      {{ f.check(form.restricted, {col: 'col-12 col-md-4'}) }}
+      {{ f.check(form.shiftSelfSignup, {col: 'col-12 col-md-4'}) }}
+      {{ f.check(form.hideRegister, {col: 'col-12 col-md-4'}) }}
     </div>
 
     <button class="btn btn-primary mt-3">Save</button>

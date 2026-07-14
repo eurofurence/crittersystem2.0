@@ -8,9 +8,8 @@ use App\Repository\ShiftEntryRepository;
 use App\Repository\UserRepository;
 
 /**
- * Aggregates per-user and team statistics for the staff suite (doc 03,
- * StaffStatsService), reusing the existing hours/goodies services. Computed
- * live (no separate cache table in this phase).
+ * Aggregates per-user and team statistics for the staff suite, reusing the
+ * existing hours/goodies services. Computed live — there is no cache table.
  */
 final class StaffStatsService
 {

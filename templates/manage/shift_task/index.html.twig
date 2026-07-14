@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Shift Tasks{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Shift Tasks', {
+    subtitle: 'Categories and templates for shifts.',
+    actions: [
+      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: '+ New shift type', href: path('app_manage_shift_task_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if shiftTasks is empty %}
+    {{ d.empty_state('No shift types yet', {
+      message: 'Create the first shift type to categorise shifts.',
+      actionLabel: '+ New shift type',
+      actionHref: path('app_manage_shift_task_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Visibility</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for st in shiftTasks %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ st.name }}</div>
+              {% if st.description %}<div class="text-muted small">{{ st.description }}</div>{% endif %}
+            </td>
+            <td>{{ st.department ? st.department.name : '—' }}</td>
+            <td>
+              {% if st.staffOnly %}{{ d.badge('Staff only', 'text-bg-warning') }}
+              {% else %}{{ d.badge('Public', 'text-bg-success') }}{% endif %}
+            </td>
+            {% set del %}
+              {{ d.delete_form(path('app_manage_shift_task_delete', {id: st.uuid}), csrf_token('delete' ~ st.id), {
+                message: 'Delete shift type "' ~ st.name ~ '"?'
+              }) }}
+            {% endset %}
+            {{ d.row_actions([
+              {label: 'Edit', href: path('app_manage_shift_task_edit', {id: st.uuid})}
+            ], {extraHtml: del}) }}
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

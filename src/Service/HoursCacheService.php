@@ -43,45 +43,24 @@ final class HoursCacheService
     {
         $cache ??= $this->caches->findOneByUser($user) ?? new UserHoursCache($user);
 
-        $dayHours = 0.0;
-        $nightHours = 0.0;
-        $noshowPenalty = 0.0;
-        $completed = 0;
-        $nightCount = 0;
-        $noshowCount = 0;
-
-        foreach ($this->entries->findByUserOrdered($user) as $entry) {
-            $shift = $entry->getShift();
-            if (!$shift->isPast()) {
-                continue; // Goodie hours count completed shifts only...
-            }
-
-            $base = $shift->getDurationHours();
-            if ($entry->isNoshow()) {
-                $noshowPenalty += $base * HoursCalculator::NOSHOW_MULTIPLIER;
-                ++$noshowCount;
-                continue;
-            }
-
-            ++$completed;
-            if ($this->calculator->overlapsNight($shift)) {
-                $nightHours += $base * HoursCalculator::NIGHT_MULTIPLIER;
-                ++$nightCount;
-            } else {
-                $dayHours += $base;
-            }
-        }
+        // Goodie hours count completed (already-ended) shifts only. Overlapping
+        // time is deduplicated by the shared breakdown.
+        $completedEntries = array_filter(
+            $this->entries->findByUserOrdered($user),
+            static fn ($entry) => $entry->getShift()->isPast(),
+        );
+        $breakdown = $this->calculator->breakdown($completedEntries);
 
         $worklogHours = $this->worklogs->sumHoursForUser($user);
 
-        $cache->setDayShiftsHours($dayHours)
-            ->setNightShiftsHours($nightHours)
-            ->setNoshowPenaltyHours($noshowPenalty)
+        $cache->setDayShiftsHours($breakdown->dayHours)
+            ->setNightShiftsHours($breakdown->nightHours)
+            ->setNoshowPenaltyHours($breakdown->noshowPenaltyHours)
             ->setWorklogHours($worklogHours)
-            ->setTotalHours($dayHours + $nightHours + $noshowPenalty + $worklogHours)
-            ->setCompletedShiftsCount($completed)
-            ->setNightShiftsCount($nightCount)
-            ->setNoshowShiftsCount($noshowCount)
+            ->setTotalHours($breakdown->total() + $worklogHours)
+            ->setCompletedShiftsCount($breakdown->completedCount)
+            ->setNightShiftsCount($breakdown->nightCount)
+            ->setNoshowShiftsCount($breakdown->noshowCount)
             ->setLastCalculatedAt(new \DateTimeImmutable());
 
         if ($cache->getId() === null) {

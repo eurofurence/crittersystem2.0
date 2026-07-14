@@ -8,12 +8,12 @@
     actions: [{label: '← Back to questions', href: path('app_manage_questions_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  <div class="card mb-3"><div class="card-body">
+  {{ d.card_start() }}
     <div class="small text-muted">{{ question.user ? question.user.name : 'Unknown' }} · {{ question.createdAt|app_datetime }}</div>
     <div class="fw-semibold">{{ question.text|nl2br }}</div>
-  </div></div>
+  {{ d.card_end() }}
 
-  <form method="post" action="{{ path('app_manage_questions_answer', {id: question.id}) }}">
+  <form method="post" action="{{ path('app_manage_questions_answer', {id: question.uuid}) }}">
     <input type="hidden" name="_token" value="{{ csrf_token('answer' ~ question.id) }}">
     <div class="mb-2">
       <label class="form-label" for="answer">Answer</label>

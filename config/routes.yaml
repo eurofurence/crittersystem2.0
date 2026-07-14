@@ -1,11 +1,8 @@
 # yaml-language-server: $schema=../vendor/symfony/routing/Loader/schema/routing.schema.json
 
-# This file is the entry point to configure the routes of your app.
-# Methods with the #[Route] attribute are automatically imported.
-# See also https://symfony.com/doc/current/routing.html
-
-# To list all registered routes, run the following command:
-#   bin/console debug:router
-
+# `routing.controllers` imports routes from every controller *service*, not from a directory
+# scan, so an `exclude:` on this import has no effect. The UI kit pages (App\Dev\Controller,
+# /dev/ui/*) are kept out of production by excluding src/Dev/ from the service container in
+# prod — see config/services.yaml. In prod they have no route at all: a 404, not a 403.
 controllers:
     resource: routing.controllers

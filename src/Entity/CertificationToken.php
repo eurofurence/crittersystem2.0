@@ -8,7 +8,7 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * Short-lived token for the certification check-in QR. An admin opens
  * the QR page for a certification; scanning the QR (after login) approves the
- * scanning user's pending application for that certification...
+ * scanning user's pending application for that certification.
  */
 #[ORM\Entity(repositoryClass: CertificationTokenRepository::class)]
 #[ORM\Table(name: 'certification_tokens')]

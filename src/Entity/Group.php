@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\GroupRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -11,6 +13,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'groups')]
 class Group
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -41,6 +45,7 @@ class Group
 
     public function __construct(string $name, string $slug, ?string $role = null)
     {
+        $this->uuid = Uuid::v4();
         $this->name = $name;
         $this->slug = $slug;
         $this->role = $role;

@@ -27,7 +27,7 @@
       {{ form_end(form) }}
 
       <form method="post" action="{{ path('app_manage_privacy_notice_reset') }}" class="mt-2"
-            onsubmit="return confirm('Replace the current notice body with the shipped default?');">
+            data-controller="confirm" data-confirm-message-value="Replace the current notice body with the shipped default?">
         <input type="hidden" name="_token" value="{{ csrf_token('privacy_reset') }}">
         <button class="btn btn-outline-warning btn-sm">Restore default text</button>
       </form>

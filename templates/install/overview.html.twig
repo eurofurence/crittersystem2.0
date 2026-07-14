@@ -1,12 +1,12 @@
 {% extends 'install/_layout.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 
 {% block title %}System overview · Setup · VMS{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
 
-    <div class="card card-md">
-        <div class="card-body">
+    {{ d.card_start(null, {class: 'card-md'}) }}
             <h2 class="mb-1">System overview</h2>
             <p class="text-secondary">
                 Detected deployment: <strong>{{ deployment }}</strong>. The checks below must all pass before you
@@ -19,9 +19,9 @@
                         <div class="row align-items-center">
                             <div class="col-auto">
                                 {% if check.ok %}
-                                    <span class="badge bg-success text-white">OK</span>
+                                    {{ d.badge('OK', 'bg-success text-white') }}
                                 {% else %}
-                                    <span class="badge bg-danger text-white">Fix</span>
+                                    {{ d.badge('Fix', 'bg-danger text-white') }}
                                 {% endif %}
                             </div>
                             <div class="col text-truncate">
@@ -35,8 +35,7 @@
                     </div>
                 {% endfor %}
             </div>
-        </div>
-    </div>
+    {{ d.card_end() }}
 
     {% embed 'install/_progress.html.twig' %}
         {% block buttons %}

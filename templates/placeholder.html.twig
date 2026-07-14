@@ -1,0 +1,9 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(title, {subtitle: subtitle|default('')}) }}
+  {{ d.empty_state('Coming soon', {message: 'This section is being built.'}) }}
+{% endblock %}

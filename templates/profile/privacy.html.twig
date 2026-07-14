@@ -6,9 +6,7 @@
 {% block body %}
   {{ d.page_header('Privacy & my data', {subtitle: 'Export your data or delete your account.'}) }}
 
-  <div class="card mb-4">
-    <div class="card-header"><strong>Export my data</strong></div>
-    <div class="card-body">
+  {{ d.card_start('Export my data', {class: 'mb-4', titleTag: 'strong', titleClass: ''}) }}
       <p class="text-muted small">We prepare a downloadable archive of your data. You will get an email with a link valid for 24 hours.</p>
       <form method="post" action="{{ path('app_profile_data_export') }}">
         <input type="hidden" name="_token" value="{{ csrf_token('data_export') }}">
@@ -24,12 +22,9 @@
           {% endfor %}
         </ul>
       {% endif %}
-    </div>
-  </div>
+  {{ d.card_end() }}
 
-  <div class="card border-danger">
-    <div class="card-header text-danger"><strong>Delete my account</strong></div>
-    <div class="card-body">
+  {{ d.card_start('Delete my account', {class: 'border-danger', headerClass: 'card-header text-danger', titleTag: 'strong', titleClass: ''}) }}
       <p>This permanently deletes your account and data. <strong>This cannot be undone.</strong></p>
       <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#confirm1">Delete my account…</button>
 
@@ -53,6 +48,5 @@
           </form>
         </div>
       </div></div></div>
-    </div>
-  </div>
+  {{ d.card_end() }}
 {% endblock %}

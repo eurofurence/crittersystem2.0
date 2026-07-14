@@ -4,28 +4,31 @@
 {% block title %}Certified — {{ certification.title }}{% endblock %}
 
 {% block body %}
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-7 col-lg-5">
-      <div class="card text-center shadow-sm">
-        <div class="card-body">
-          <div class="display-6 mb-2">🎉</div>
-          <h1 class="h4 mb-2">{{ certification.title }}</h1>
+  {% set icon %}<div class="display-6 mb-2">🎉</div>{% endset %}
+  {{ d.message_card_start(certification.title, {
+    width: 'col-12 col-md-7 col-lg-5',
+    class: 'text-center shadow-sm',
+    bodyClass: 'card-body',
+    titleTag: 'h1',
+    titleClass: 'h4 mb-2',
+    iconHtml: icon
+  }) }}
           <p class="text-muted mb-3">{{ app.user.name }}, your certification has been approved.</p>
 
-          <dl class="row mb-0 small text-start">
-            <dt class="col-5">Certified on</dt>
-            <dd class="col-7">{{ record.dateCertified|app_datetime }}</dd>
-            {% if record.dateExpires %}
-              <dt class="col-5">Valid until</dt>
-              <dd class="col-7">{{ record.dateExpires|app_date }}</dd>
-            {% else %}
-              <dt class="col-5">Validity</dt><dd class="col-7">Never expires</dd>
-            {% endif %}
-          </dl>
+          {% set details = [{ label: 'Certified on', value: record.dateCertified|app_datetime }] %}
+          {% if record.dateExpires %}
+            {% set details = details|merge([{ label: 'Valid until', value: record.dateExpires|app_date }]) %}
+          {% else %}
+            {% set details = details|merge([{ label: 'Validity', value: 'Never expires' }]) %}
+          {% endif %}
+          {{ d.definition_list(details, {
+            class: 'mb-0 small text-start',
+            labelCol: 'col-5',
+            valueCol: 'col-7',
+            labelClass: '',
+            valueClass: ''
+          }) }}
 
           <a class="btn btn-primary mt-3" href="{{ path('app_certifications_index') }}">My certifications</a>
-        </div>
-      </div>
-    </div>
-  </div>
+  {{ d.message_card_end() }}
 {% endblock %}

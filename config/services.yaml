@@ -1,20 +1,12 @@
 # yaml-language-server: $schema=../vendor/symfony/dependency-injection/Loader/schema/services.schema.json
 
-# This file is the entry point to configure your own services.
-# Files in the packages/ subdirectory configure your dependencies.
-# See also https://symfony.com/doc/current/service_container/import.html
-
-# Put parameters here that don't need to change on each machine where the app is deployed
-# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
 
 services:
-    # default configuration for services in *this* file
     _defaults:
-        autowire: true      # Automatically injects dependencies in your services.
-        autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+        autowire: true
+        autoconfigure: true
         bind:
-            # Shared scalar bindings for install/deployment services.
             $projectDir: '%kernel.project_dir%'
             string $environment: '%kernel.environment%'
             # Password that gates the /admin/install wizard. Empty = installer disabled.
@@ -23,6 +15,8 @@ services:
             string $encryptionKey: '%env(APP_ENCRYPTION_KEY)%'
             # Pepper for hashing banned identities (one-way, never reversible).
             string $banPepper: '%env(APP_SECRET)%'
+            # Comma-separated hosts allowed for embedded location maps (frame-src CSP).
+            string $allowedDomains: '%env(LOCATION_EMBED_ALLOWED_DOMAINS)%'
             # SSO / OIDC connection — configured via environment (Infisical).
             bool $ssoEnabled: '%env(bool:SSO_ENABLED)%'
             string $ssoDiscoveryUrl: '%env(SSO_DISCOVERY_URL)%'
@@ -34,20 +28,64 @@ services:
             string $ssoScopes: '%env(SSO_SCOPES)%'
             string $ssoProviderLabel: '%env(SSO_PROVIDER_LABEL)%'
 
-    # makes classes in src/ available to be used as services
-    # this creates a service per class whose id is the fully-qualified class name
+    # src/Dev/ (the UI kit pages) is excluded here and registered below for non-prod only.
+    # This exclusion is what keeps the kit out of production: `routing.controllers` derives
+    # routes from controller *services*, not from a directory scan, so a controller that is
+    # not a service in prod has no route in prod.
     App\:
         resource: '../src/'
-
-    # add more service definitions when explicit configuration is needed
-    # please note that last definitions always *replace* previous ones
+        exclude:
+            - '../src/Dev/'
 
     # Primed onto the encrypted DBAL type in Kernel::boot(), so it must be
     # fetchable from the container.
     App\Service\SecretCipher:
         public: true
 
+    # Uploads filesystem: one pluggable backend (local folder in dev, S3 in prod)
+    # chosen by the UPLOAD_STORAGE_DSN env var. App\Storage\FileStorage is the
+    # only thing application code touches.
+    app.uploads_filesystem:
+        class: League\Flysystem\Filesystem
+        factory: ['@App\Storage\FileStorageFactory', 'create']
+        arguments: ['%env(UPLOAD_STORAGE_DSN)%']
+
+    App\Storage\FileStorage:
+        arguments:
+            $uploads: '@app.uploads_filesystem'
+
+    # Exports filesystem: audit legal packages and GDPR data exports. Separate from uploads so it can
+    # have its own bucket and lifecycle policy. It must be reachable by every process — the web
+    # request that serves a download and the messenger worker that writes the archive are different
+    # containers, and in Kubernetes they do not share a disk at all.
+    app.exports_filesystem:
+        class: League\Flysystem\Filesystem
+        factory: ['@App\Storage\FileStorageFactory', 'create']
+        arguments: ['%env(EXPORT_STORAGE_DSN)%']
+
+    App\Storage\ExportStorage:
+        arguments:
+            $exports: '@app.exports_filesystem'
+
     # The Doctrine Migrations bundle registers the DependencyFactory privately
     # under "doctrine.migrations.dependency_factory"; alias it so our install
     # services can autowire the native migration status API.
     Doctrine\Migrations\DependencyFactory: '@doctrine.migrations.dependency_factory'
+
+# The UI kit pages exist only outside production. Each one also carries #[IsGranted('global:admin')],
+# so a non-admin cannot reach them in dev/test either.
+when@dev:
+    services:
+        _defaults:
+            autowire: true
+            autoconfigure: true
+        App\Dev\:
+            resource: '../src/Dev/'
+
+when@test:
+    services:
+        _defaults:
+            autowire: true
+            autoconfigure: true
+        App\Dev\:
+            resource: '../src/Dev/'

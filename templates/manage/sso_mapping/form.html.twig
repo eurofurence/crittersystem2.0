@@ -1,0 +1,46 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
+
+{% block title %}{{ heading }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(heading, {actions: [{label: '← Back', href: path('app_manage_sso_mapping_index'), class: 'btn btn-outline-secondary'}]}) }}
+  {{ form_start(form) }}
+    <div class="row g-3">
+      {{ f.field(form.ssoGroupId, {col: 'col-12 col-md-6', help: 'The provider\'s structured group id, e.g. 0RV39Y2PLMX1J4N6.'}) }}
+      {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
+      {{ f.field(form.slug, {col: 'col-12 col-md-6'}) }}
+      <div class="col-12 col-md-6 mb-3 d-flex align-items-center">
+        <label class="form-check">
+          {{ form_widget(form.staffOnly, {attr: {class: 'form-check-input'}}) }}
+          <span class="form-check-label">{{ form_label(form.staffOnly) }}</span>
+        </label>
+      </div>
+      {{ f.field(form.department, {col: 'col-12 col-md-6'}) }}
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12 col-md-4 mb-3">
+        {{ form_label(form.permissionGroups, null, {label_attr: {class: 'form-label'}}) }}
+        {{ form_widget(form.permissionGroups, {attr: {class: 'form-select', size: 8}}) }}
+        <div class="form-text">Ctrl/Cmd-click to select multiple.</div>
+        {{ form_errors(form.permissionGroups) }}
+      </div>
+      <div class="col-12 col-md-4 mb-3">
+        {{ form_label(form.volunteerTypes, null, {label_attr: {class: 'form-label'}}) }}
+        {{ form_widget(form.volunteerTypes, {attr: {class: 'form-select', size: 8}}) }}
+        <div class="form-text">Ctrl/Cmd-click to select multiple.</div>
+        {{ form_errors(form.volunteerTypes) }}
+      </div>
+      <div class="col-12 col-md-4 mb-3">
+        {{ form_label(form.badges, null, {label_attr: {class: 'form-label'}}) }}
+        {{ form_widget(form.badges, {attr: {class: 'form-select', size: 8}}) }}
+        <div class="form-text">Ctrl/Cmd-click to select multiple.</div>
+        {{ form_errors(form.badges) }}
+      </div>
+    </div>
+
+    <div class="mt-3"><button class="btn btn-primary">Save</button></div>
+  {{ form_end(form) }}
+{% endblock %}

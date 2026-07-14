@@ -14,9 +14,8 @@
         ]
     }) }}
 
-    <div class="card mb-3">
-        <div class="card-header"><h3 class="card-title">Account</h3></div>
-        <div class="card-body">
+    {{ d.card_start('Account') }}
+            {# Not definition_list(): the "Roles" value is a list of badges, not a scalar. #}
             <dl class="row mb-0">
                 <dt class="col-sm-3">Username</dt>
                 <dd class="col-sm-9">{{ user.name }}</dd>
@@ -30,38 +29,29 @@
                 <dt class="col-sm-3">Roles</dt>
                 <dd class="col-sm-9">
                     {% for role in user.roles %}
-                        <span class="badge bg-primary-lt">{{ role }}</span>
+                        {{ d.badge(role, 'bg-primary-lt') }}
                     {% endfor %}
                 </dd>
             </dl>
-        </div>
-    </div>
+    {{ d.card_end() }}
 
-    <div class="card mb-3">
-        <div class="card-header"><h3 class="card-title">Groups</h3></div>
-        <div class="card-body">
+    {{ d.card_start('Groups') }}
             {% for group in user.groups %}
-                <span class="badge bg-blue-lt">{{ group.name }}</span>
+                {{ d.badge(group.name, 'bg-blue-lt') }}
             {% else %}
-                <span class="text-muted">No groups assigned.</span>
+                {{ d.empty_inline('No groups assigned.', {tag: 'span', class: 'text-muted'}) }}
             {% endfor %}
-        </div>
-    </div>
+    {{ d.card_end() }}
 
-    <div class="card mb-3">
-        <div class="card-header"><h3 class="card-title">Effective privileges ({{ user.privilegeNames|length }})</h3></div>
-        <div class="card-body">
+    {{ d.card_start('Effective privileges (' ~ user.privilegeNames|length ~ ')') }}
             {% for privilege in user.privilegeNames|sort %}
                 <code class="d-inline-block me-2 mb-1">{{ privilege }}</code>
             {% else %}
-                <span class="text-muted">No privileges.</span>
+                {{ d.empty_inline('No privileges.', {tag: 'span', class: 'text-muted'}) }}
             {% endfor %}
-        </div>
-    </div>
+    {{ d.card_end() }}
 
-    <div class="card">
-        <div class="card-header"><h3 class="card-title">Privilege voter check (live)</h3></div>
-        <div class="card-body">
+    {{ d.card_start('Privilege voter check (live)', {class: ''}) }}
             <p class="text-muted small">Demonstrates the fine-grained privilege voter via <code>is_granted()</code>.</p>
             <ul class="list-unstyled mb-0">
                 {% for privilege in ['user:view', 'news:manage', 'goodie:manage', 'shift:view'] %}
@@ -71,6 +61,5 @@
                     </li>
                 {% endfor %}
             </ul>
-        </div>
-    </div>
+    {{ d.card_end() }}
 {% endblock %}

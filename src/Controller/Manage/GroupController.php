@@ -12,7 +12,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -76,9 +78,9 @@ final class GroupController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_manage_group_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    #[Route('/{id}/edit', name: 'app_manage_group_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('rbac:group:manage')]
-    public function edit(Request $request, Group $group): Response
+    public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Group $group): Response
     {
         $form = $this->createForm(GroupType::class, $group);
         $form->handleRequest($request);
@@ -103,9 +105,9 @@ final class GroupController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'app_manage_group_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Route('/{id}/delete', name: 'app_manage_group_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('rbac:group:manage')]
-    public function delete(Request $request, Group $group): Response
+    public function delete(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Group $group): Response
     {
         if (!$this->isCsrfTokenValid('delete'.$group->getId(), (string) $request->request->get('_token'))) {
             return $this->redirectToRoute('app_manage_group_index');

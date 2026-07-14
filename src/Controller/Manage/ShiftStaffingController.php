@@ -8,12 +8,15 @@ use App\Entity\ShiftEntry;
 use App\Repository\ShiftEntryRepository;
 use App\Repository\UserRepository;
 use App\Repository\VolunteerTypeRepository;
+use App\Service\NoShowBanService;
 use App\Service\ShiftSignupService;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/shifts')]
@@ -26,11 +29,12 @@ final class ShiftStaffingController extends AbstractController
         private readonly VolunteerTypeRepository $volunteerTypes,
         private readonly UserRepository $users,
         private readonly ShiftEntryRepository $entries,
+        private readonly NoShowBanService $noShowBans,
     ) {
     }
 
-    #[Route('/{id}/staffing', name: 'app_manage_shift_needs', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function staffing(Request $request, Shift $shift): Response
+    #[Route('/{id}/staffing', name: 'app_manage_shift_needs', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function staffing(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
         $q = trim((string) $request->query->get('q', ''));
 
@@ -45,8 +49,8 @@ final class ShiftStaffingController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/assign', name: 'app_manage_shift_assign', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function assign(Request $request, Shift $shift): Response
+    #[Route('/{id}/assign', name: 'app_manage_shift_assign', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function assign(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
         if ($this->isCsrfTokenValid('assign'.$shift->getId(), (string) $request->request->get('_token'))) {
             $user = $this->users->find((int) $request->request->get('user'));
@@ -64,13 +68,13 @@ final class ShiftStaffingController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shift->getId()]);
+        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shift->getUuid()]);
     }
 
-    #[Route('/entries/{id}/unassign', name: 'app_manage_shift_entry_unassign', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function unassign(Request $request, ShiftEntry $entry): Response
+    #[Route('/entries/{id}/unassign', name: 'app_manage_shift_entry_unassign', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function unassign(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftEntry $entry): Response
     {
-        $shiftId = $entry->getShift()->getId();
+        $shiftId = $entry->getShift()->getUuid();
         if ($this->isCsrfTokenValid('unassign'.$entry->getId(), (string) $request->request->get('_token'))) {
             $name = $entry->getUser()->getName();
             $this->em->remove($entry);
@@ -81,8 +85,8 @@ final class ShiftStaffingController extends AbstractController
         return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shiftId]);
     }
 
-    #[Route('/{id}/needs', name: 'app_manage_shift_need_add', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function addNeed(Request $request, Shift $shift): Response
+    #[Route('/{id}/needs', name: 'app_manage_shift_need_add', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function addNeed(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
         if ($this->isCsrfTokenValid('need-add'.$shift->getId(), (string) $request->request->get('_token'))) {
             $type = $this->volunteerTypes->find((int) $request->request->get('volunteer_type'));
@@ -101,14 +105,14 @@ final class ShiftStaffingController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shift->getId()]);
+        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shift->getUuid()]);
     }
 
-    #[Route('/{id}/needs/{needId}/delete', name: 'app_manage_shift_need_delete', methods: ['POST'], requirements: ['id' => '\d+', 'needId' => '\d+'])]
-    public function deleteNeed(Request $request, Shift $shift, int $needId): Response
+    #[Route('/{id}/needs/{needId}/delete', name: 'app_manage_shift_need_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID, 'needId' => Requirement::UUID])]
+    public function deleteNeed(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, string $needId): Response
     {
         if ($this->isCsrfTokenValid('need-del'.$needId, (string) $request->request->get('_token'))) {
-            $need = $this->em->getRepository(NeededVolunteerType::class)->find($needId);
+            $need = $this->em->getRepository(NeededVolunteerType::class)->findOneBy(['uuid' => $needId]);
             if ($need !== null && $need->getShift() === $shift) {
                 $this->em->remove($need);
                 $this->em->flush();
@@ -116,19 +120,25 @@ final class ShiftStaffingController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shift->getId()]);
+        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shift->getUuid()]);
     }
 
-    #[Route('/entries/{id}/noshow', name: 'app_manage_shift_entry_noshow', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function toggleNoshow(Request $request, ShiftEntry $entry): Response
+    #[Route('/entries/{id}/noshow', name: 'app_manage_shift_entry_noshow', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function toggleNoshow(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftEntry $entry): Response
     {
         if ($this->isCsrfTokenValid('noshow'.$entry->getId(), (string) $request->request->get('_token'))) {
             $entry->setNoshow(!$entry->isNoshow());
             $entry->setNoshowComment($entry->isNoshow() ? (string) $request->request->get('comment') ?: null : null);
             $this->em->flush();
-            $this->addFlash('success', $entry->isNoshow() ? 'Marked as no-show.' : 'No-show cleared.');
+
+            // Reaching the configured no-show threshold locks the account.
+            if ($entry->isNoshow() && $this->noShowBans->evaluate($entry->getUser())) {
+                $this->addFlash('warning', 'This user reached the no-show threshold and has been automatically banned.');
+            } else {
+                $this->addFlash('success', $entry->isNoshow() ? 'Marked as no-show.' : 'No-show cleared.');
+            }
         }
 
-        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $entry->getShift()->getId()]);
+        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $entry->getShift()->getUuid()]);
     }
 }

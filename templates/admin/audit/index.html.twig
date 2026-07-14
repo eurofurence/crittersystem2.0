@@ -6,16 +6,14 @@
 {% block body %}
   {{ d.page_header('Audit log', {subtitle: 'Forensic record of security-relevant actions. Admin only.'}) }}
 
-  <div class="card mb-4">
-    <div class="card-header"><strong>Legal export</strong></div>
-    <div class="card-body">
+  {{ d.card_start('Legal export', {class: 'mb-4', titleTag: 'strong'}) }}
       <p class="text-muted small mb-3">
         Generates a signed package (machine-readable JSON + presentation PDF + manifest with SHA-256
         and signing certificate). System and internal actions are always included, even when a focus
         user is set. The file is available for download for {{ constant('App\\Entity\\AuditExport::RETENTION_DAYS') }} days.
       </p>
       {% if is_granted('audit:export') %}
-        <form method="post" action="{{ path('app_admin_audit_export') }}" class="row g-2 align-items-end">
+        <form method="post" action="{{ path('app_manage_audit_export') }}" class="row g-2 align-items-end">
           <input type="hidden" name="_token" value="{{ csrf_token('audit_export') }}">
           <div class="col-auto">
             <label class="form-label">From</label>
@@ -40,12 +38,10 @@
       {% else %}
         <p class="text-muted mb-0">You do not have permission to generate exports.</p>
       {% endif %}
-    </div>
-  </div>
+  {{ d.card_end() }}
 
   {% if exports is not empty %}
-    <div class="card mb-4">
-      <div class="card-header"><strong>Recent exports</strong></div>
+    {{ d.card_start('Recent exports', {class: 'mb-4', titleTag: 'strong', bodyClass: ''}) }}
       {{ d.table_start() }}
         <thead><tr><th>Created</th><th>Scope</th><th>Events</th><th>Expires</th><th>Status</th><th class="text-end">File</th></tr></thead>
         <tbody>
@@ -61,29 +57,29 @@
                 {% else %}{{ d.badge('Ready', 'text-bg-azure') }}{% endif %}
               </td>
               <td class="text-end">
-                {% if not ex.isExpired and ex.fileExists and is_granted('audit:export') %}
-                  <a class="btn btn-sm btn-outline-primary" href="{{ path('app_admin_audit_download', {uuid: ex.uuid}) }}">Download</a>
+                {% if not ex.isExpired and storedKeys[ex.storageKey] is defined and is_granted('audit:export') %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_audit_download', {uuid: ex.uuid}) }}">Download</a>
                 {% else %}<span class="text-muted small">—</span>{% endif %}
               </td>
             </tr>
           {% endfor %}
         </tbody>
       {{ d.table_end() }}
-    </div>
+    {{ d.card_end({bodyClass: ''}) }}
   {% endif %}
 
-  <div class="card">
-    <div class="card-header d-flex align-items-center justify-content-between">
-      <strong>Recent events</strong>
-      <form method="get" class="d-flex gap-2">
-        <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
-          <option value="">All types</option>
-          {% for value, label in eventTypes %}
-            <option value="{{ value }}" {{ value == selectedType ? 'selected' }}>{{ label }}</option>
-          {% endfor %}
-        </select>
-      </form>
-    </div>
+  {% set eventsFilter %}
+    <form method="get" class="d-flex gap-2">
+      <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+        <option value="">All types</option>
+        {% for value, label in eventTypes %}
+          <option value="{{ value }}" {{ value == selectedType ? 'selected' }}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  {% endset %}
+
+  {{ d.card_start('Recent events', {class: '', titleTag: 'strong', bodyClass: '', headerActions: eventsFilter}) }}
     {% if events is empty %}
       {{ d.empty_state('No audit events', {message: 'Nothing has been recorded yet for this filter.'}) }}
     {% else %}
@@ -110,5 +106,5 @@
         </tbody>
       {{ d.table_end() }}
     {% endif %}
-  </div>
+  {{ d.card_end({bodyClass: ''}) }}
 {% endblock %}

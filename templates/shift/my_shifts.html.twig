@@ -9,12 +9,10 @@
     actions: [{label: 'Browse shifts', href: path('app_shift_index'), class: 'btn btn-outline-primary'}]
   }) }}
 
-  <div class="card mb-3">
-    <div class="card-body d-flex justify-content-between align-items-center">
+  {{ d.card_start(null, {bodyClass: 'card-body d-flex justify-content-between align-items-center'}) }}
       <span class="fw-semibold">Total credited hours</span>
       <span class="fs-4">{{ totalHours|round(2) }}</span>
-    </div>
-  </div>
+  {{ d.card_end({bodyClass: 'card-body d-flex justify-content-between align-items-center'}) }}
 
   {% if entries is empty %}
     {{ d.empty_state('No shifts yet', {
@@ -31,14 +29,14 @@
         {% for entry in entries %}
           {% set shift = entry.shift %}
           <tr class="{{ entry.noshow ? 'table-danger' : (shift.past ? 'opacity-75' : '') }}">
-            <td><a href="{{ path('app_shift_show', {id: shift.id}) }}">{{ shift.title }}</a></td>
+            <td><a href="{{ path('app_shift_show', {id: shift.uuid}) }}">{{ shift.title }}</a></td>
             <td class="small">{{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}</td>
             <td>{{ entry.volunteerType.name }}{% if entry.noshow %} {{ d.badge('No-show', 'text-bg-danger') }}{% endif %}</td>
             <td>{{ perEntryHours[entry.id]|round(2) }}</td>
             <td class="text-end">
               {% if not shift.past %}
-                <form method="post" action="{{ path('app_shift_cancel', {id: entry.id}) }}" class="d-inline"
-                      onsubmit="return confirm('Cancel this sign-up?');">
+                <form method="post" action="{{ path('app_shift_cancel', {id: entry.uuid}) }}" class="d-inline"
+                      data-controller="confirm" data-confirm-message-value="Cancel this sign-up?">
                   <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ entry.id) }}">
                   <button class="btn btn-sm btn-outline-danger">Cancel</button>
                 </form>

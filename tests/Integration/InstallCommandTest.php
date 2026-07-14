@@ -24,7 +24,7 @@ final class InstallCommandTest extends DatabaseTestCase
         $this->em->clear();
 
         $groupRepository = $this->em->getRepository(Group::class);
-        self::assertCount(11, $groupRepository->findAll());
+        self::assertCount(12, $groupRepository->findAll());
         self::assertNotNull($groupRepository->findOneBy(['slug' => 'global-admin']));
         self::assertNotNull($groupRepository->findOneBy(['slug' => 'sub-admin']));
 
@@ -41,7 +41,7 @@ final class InstallCommandTest extends DatabaseTestCase
         $this->runInstall();
         $this->em->clear();
 
-        self::assertCount(11, $this->em->getRepository(Group::class)->findAll());
+        self::assertCount(12, $this->em->getRepository(Group::class)->findAll());
         self::assertCount(1, $this->em->getRepository(User::class)->findAll());
     }
 }

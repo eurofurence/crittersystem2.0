@@ -15,8 +15,11 @@
       {{ f.field(form.url, {col: 'col-12 col-md-4', help: 'Optional link'}) }}
       {{ f.field(form.startsAt, {col: 'col-12 col-md-3'}) }}
       {{ f.field(form.endsAt, {col: 'col-12 col-md-3'}) }}
-      {{ f.choice(form.shiftType, {col: 'col-12 col-md-3'}) }}
+      {{ f.choice(form.department, {col: 'col-12 col-md-3'}) }}
+      {{ f.choice(form.shiftTask, {col: 'col-12 col-md-3'}) }}
       {{ f.choice(form.location, {col: 'col-12 col-md-3'}) }}
+      {{ f.choice(form.audience, {col: 'col-12 col-md-3'}) }}
+      {{ f.field(form.requireCheckin, {col: 'col-12 col-md-3'}) }}
       {{ f.field(form.description, {col: 'col-12'}) }}
     </div>
     <button class="btn btn-primary mt-2">Save</button>

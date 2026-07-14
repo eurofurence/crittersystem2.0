@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\SsoGroupMappingRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -16,6 +18,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'sso_group_mappings')]
 class SsoGroupMapping
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -55,6 +59,7 @@ class SsoGroupMapping
 
     public function __construct(string $ssoGroupId = '')
     {
+        $this->uuid = Uuid::v4();
         $this->ssoGroupId = $ssoGroupId;
         $this->permissionGroups = new ArrayCollection();
         $this->volunteerTypes = new ArrayCollection();

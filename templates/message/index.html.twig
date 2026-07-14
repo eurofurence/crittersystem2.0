@@ -4,46 +4,62 @@
 {% block title %}Messages{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Messages', {subtitle: 'Your private conversations.'}) }}
+  {{ d.page_header('Messages', {subtitle: 'Chat with the Info Desk and your contacts.'}) }}
 
-  <form method="get" action="{{ path('app_messages_index') }}" class="row g-2 mb-3">
-    <div class="col-12 col-md-8">
-      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Start a conversation — search by name, email, or ID…">
-    </div>
-    <div class="col-12 col-md-4"><button class="btn btn-outline-primary w-100">Search</button></div>
-  </form>
-
-  {% if q != '' %}
-    {% if searchResults is empty %}
-      <p class="text-muted">No users match "{{ q }}".</p>
-    {% else %}
-      <div class="list-group mb-3">
-        {% for u in searchResults %}
-          <a class="list-group-item list-group-item-action d-flex justify-content-between" href="{{ path('app_messages_conversation', {id: u.id}) }}">
-            <span>{{ u.name }}</span><span class="text-muted small">{{ u.email }}</span>
+  <div class="row g-3">
+    <div class="col-12 col-lg-4">
+      {{ d.card_start(null, {bodyClass: ''}) }}
+        <div class="list-group list-group-flush">
+          <a href="{{ path('app_messages_conversation', {id: support.uuid}) }}"
+             class="list-group-item list-group-item-action d-flex align-items-center">
+            <span class="avatar avatar-sm bg-blue-lt me-2">ID</span>
+            <span class="fw-bold">Info Desk Team</span>
           </a>
-        {% endfor %}
+          {% for row in mine %}
+            {% set c = row.conversation %}
+            {% if c.type.value != 'support' or c.subject.id != app.user.id %}
+              <a href="{{ path('app_messages_conversation', {id: c.uuid}) }}"
+                 class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+                <span>
+                  {% if c.type.value == 'support' %}Support: {{ c.subject ? c.subject.name : '—' }}
+                  {% else %}
+                    {{ c.participants|filter(p => p.user.id != app.user.id)|map(p => p.user.name)|join(', ') }}
+                  {% endif %}
+                </span>
+                {% if row.unread > 0 %}{{ d.badge(row.unread, 'bg-red') }}{% endif %}
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {{ d.card_end({bodyClass: ''}) }}
+    </div>
+
+    {% if canClaim %}
+      <div class="col-12 col-lg-8">
+        {{ d.card_start('Waiting (' ~ waiting|length ~ ')', {bodyClass: ''}) }}
+          <div class="list-group list-group-flush">
+            {% for c in waiting %}
+              <a href="{{ path('app_messages_conversation', {id: c.uuid}) }}" class="list-group-item list-group-item-action">
+                {{ c.subject ? c.subject.name : 'Unknown' }}
+                <span class="text-secondary small">· {{ c.updatedAt|app_datetime }}</span>
+              </a>
+            {% else %}
+              {{ d.empty_inline('No conversations waiting.', {tag: 'div', class: 'list-group-item text-secondary'}) }}
+            {% endfor %}
+          </div>
+        {{ d.card_end({bodyClass: ''}) }}
+        {{ d.card_start('Claimed by you (' ~ claimed|length ~ ')', {class: '', bodyClass: ''}) }}
+          <div class="list-group list-group-flush">
+            {% for c in claimed %}
+              <a href="{{ path('app_messages_conversation', {id: c.uuid}) }}" class="list-group-item list-group-item-action">
+                {{ c.subject ? c.subject.name : 'Unknown' }} {{ d.badge('claimed', 'bg-green-lt') }}
+              </a>
+            {% else %}
+              {{ d.empty_inline('You have no claimed conversations.', {tag: 'div', class: 'list-group-item text-secondary'}) }}
+            {% endfor %}
+          </div>
+        {{ d.card_end({bodyClass: ''}) }}
       </div>
     {% endif %}
-  {% endif %}
-
-  {% if conversations is empty %}
-    {{ d.empty_state('No messages yet', {message: 'Search for someone above to start a conversation.'}) }}
-  {% else %}
-    <div class="list-group">
-      {% for c in conversations %}
-        <a class="list-group-item list-group-item-action" href="{{ path('app_messages_conversation', {id: c.user.id}) }}">
-          <div class="d-flex justify-content-between">
-            <span class="fw-semibold">{{ c.user.name }}
-              {% if c.unread > 0 %}{{ d.badge(c.unread ~ ' new', 'text-bg-danger') }}{% endif %}
-            </span>
-            <span class="text-muted small">{{ c.last.createdAt|app_datetime }}</span>
-          </div>
-          <div class="text-muted small text-truncate">
-            {{ c.last.sender.id == app.user.id ? 'You: ' }}{{ c.last.text }}
-          </div>
-        </a>
-      {% endfor %}
-    </div>
-  {% endif %}
+  </div>
 {% endblock %}

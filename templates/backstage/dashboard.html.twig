@@ -6,21 +6,12 @@
 {% block body %}
   {{ d.page_header('Backstage', {subtitle: 'Goodies distribution and rewards.'}) }}
 
-  {# KPIs #}
   <div class="row g-3 mb-3">
-    <div class="col-6 col-md-3">
-      <div class="card text-center"><div class="card-body">
-        <div class="fs-3">{{ distributedToday }}</div><div class="text-muted small">Distributed today</div>
-      </div></div>
-    </div>
-    <div class="col-6 col-md-3">
-      <div class="card text-center"><div class="card-body">
-        <div class="fs-3">{{ distributedThisWeek }}</div><div class="text-muted small">This week</div>
-      </div></div>
-    </div>
+    {{ d.stat_card(distributedToday, 'Distributed today', {col: 'col-6 col-md-3', size: 'fs-3'}) }}
+    {{ d.stat_card(distributedThisWeek, 'This week', {col: 'col-6 col-md-3', size: 'fs-3'}) }}
   </div>
 
-  {# Action cards (per privilege). Add a card here when a backstage resource is introduced. #}
+  {# Each card is gated by the privilege that guards its controller. #}
   {% set cards = [
     {priv: 'goodie:distribute', route: 'app_backstage_distribute',            icon: '🎁', title: 'Distribute Goodies', text: 'Find a volunteer and hand out goodies.'},
     {priv: 'goodie:manage', route: 'app_backstage_goodie_category_index', icon: '🗂️', title: 'Goodie Categories', text: 'Manage categories.'},
@@ -29,23 +20,21 @@
   <div class="row g-3 mb-4">
     {% for c in cards %}
       {% if is_granted(c.priv) %}
-        <div class="col-12 col-md-6 col-lg-4">
-          <a href="{{ path(c.route) }}" class="text-decoration-none text-reset">
-            <div class="card h-100 shadow-sm"><div class="card-body">
-              <div class="fs-3 mb-1" aria-hidden="true">{{ c.icon }}</div>
-              <div class="fw-bold">{{ c.title }}</div>
-              <div class="text-muted small">{{ c.text }}</div>
-            </div></div>
-          </a>
-        </div>
+        {% set cardIcon %}<span class="fs-3" aria-hidden="true">{{ c.icon }}</span>{% endset %}
+        {{ d.action_card(c.title, {
+          text: c.text,
+          href: path(c.route),
+          iconHtml: cardIcon,
+          col: 'col-12 col-md-6 col-lg-4',
+          class: 'shadow-sm'
+        }) }}
       {% endif %}
     {% endfor %}
   </div>
 
-  {# Recent activity #}
   <h2 class="h5">Recent distributions</h2>
   {% if recent is empty %}
-    <p class="text-muted">No distributions yet.</p>
+    {{ d.empty_inline('No distributions yet.', {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
       <thead><tr><th>When</th><th>Volunteer</th><th>Item</th><th>Qty</th><th>By</th></tr></thead>

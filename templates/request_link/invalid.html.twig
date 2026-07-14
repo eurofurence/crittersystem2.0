@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Link unavailable{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Link unavailable') }}
+  {{ d.empty_state('This link is no longer valid', {
+    message: 'It may have expired or been revoked. Ask the department for a new link.'
+  }) }}
+{% endblock %}

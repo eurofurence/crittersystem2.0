@@ -10,7 +10,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/backstage/goodies/items')]
@@ -60,8 +62,8 @@ final class GoodieItemController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_backstage_goodie_item_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
-    public function edit(Request $request, GoodieItem $item): Response
+    #[Route('/{id}/edit', name: 'app_backstage_goodie_item_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
+    public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] GoodieItem $item): Response
     {
         $form = $this->createForm(GoodieItemType::class, $item);
         $form->handleRequest($request);
@@ -79,8 +81,8 @@ final class GoodieItemController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'app_backstage_goodie_item_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(Request $request, GoodieItem $item): Response
+    #[Route('/{id}/delete', name: 'app_backstage_goodie_item_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function delete(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] GoodieItem $item): Response
     {
         if ($this->isCsrfTokenValid('delete'.$item->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($item);

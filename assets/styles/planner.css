@@ -1,0 +1,439 @@
+/* Standard Planner grid. Blocks are positioned as a percentage
+   of a 24-hour day column; a 30-minute raster is drawn with a CSS gradient so the
+   DOM stays light. Colours use Tabler CSS variables to stay theme-aware. */
+
+.planner {
+    --planner-hour-height: 40px;
+    --planner-day-height: calc(var(--planner-hour-height) * 24);
+    /* Tall enough for a phase tag stacked above the date on setup/teardown days. */
+    --planner-head-height: 48px;
+}
+
+.planner-grid {
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    border: 1px solid var(--tblr-border-color);
+    border-radius: var(--tblr-border-radius);
+    background: var(--tblr-bg-surface);
+}
+
+/*
+ * The hour axis is frozen to the left edge: over a multi-day event the grid scrolls horizontally and
+ * the manager would otherwise lose the only time reference on the screen. It needs an opaque
+ * background and a z-index above .planner-block (which reaches 6 for the paint preview) so the blocks
+ * scroll underneath it rather than through it.
+ */
+.planner-axis {
+    flex: 0 0 56px;
+    border-right: 1px solid var(--tblr-border-color);
+    user-select: none;
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: var(--tblr-bg-surface);
+}
+
+.planner-axis-head {
+    height: var(--planner-head-height);
+    border-bottom: 1px solid var(--tblr-border-color);
+}
+
+.planner-axis-hour {
+    height: var(--planner-hour-height);
+    font-size: 11px;
+    color: var(--tblr-secondary);
+    text-align: right;
+    padding-right: 6px;
+    transform: translateY(-7px);
+}
+
+.planner-day {
+    flex: 1 1 130px;
+    min-width: 130px;
+    border-right: 1px solid var(--tblr-border-color);
+}
+
+.planner-day:last-child {
+    border-right: 0;
+}
+
+.planner-day-head {
+    height: var(--planner-head-height);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.3;
+    font-weight: 600;
+    font-size: 13px;
+    border-bottom: 1px solid var(--tblr-border-color);
+    position: sticky;
+    top: 0;
+}
+
+.planner-day-label {
+    white-space: nowrap;
+}
+
+.planner-phase-tag {
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    color: var(--tblr-secondary);
+}
+
+/* Setup/teardown columns get a distinct background. */
+.planner-phase-setup .planner-day-body,
+.planner-phase-teardown .planner-day-body {
+    background-color: color-mix(in srgb, var(--tblr-warning) 8%, transparent);
+}
+
+.planner-day-body {
+    position: relative;
+    height: var(--planner-day-height);
+    background-image:
+        repeating-linear-gradient(
+            to bottom,
+            var(--tblr-border-color-light, rgba(98, 105, 118, .16)) 0,
+            var(--tblr-border-color-light, rgba(98, 105, 118, .16)) 1px,
+            transparent 1px,
+            transparent var(--planner-hour-height)
+        );
+    cursor: crosshair;
+    touch-action: none;
+}
+
+/* The 30-minute raster line, lighter than the hour line. */
+.planner-day-body::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent calc(var(--planner-hour-height) / 2 - 1px),
+            var(--tblr-border-color-light, rgba(98, 105, 118, .08)) calc(var(--planner-hour-height) / 2 - 1px),
+            var(--tblr-border-color-light, rgba(98, 105, 118, .08)) calc(var(--planner-hour-height) / 2),
+            transparent calc(var(--planner-hour-height) / 2)
+        );
+}
+
+.planner-block {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    min-height: 16px;
+    border-radius: 4px;
+    padding: 2px 5px;
+    font-size: 11px;
+    line-height: 1.25;
+    overflow: hidden;
+    cursor: grab;
+    border: 1px solid transparent;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, .12);
+}
+
+.planner-block:focus-visible {
+    outline: 2px solid var(--tblr-primary);
+    outline-offset: 1px;
+}
+
+.planner-block.is-dragging {
+    cursor: grabbing;
+    opacity: .85;
+    z-index: 5;
+}
+
+.planner-block.is-selected {
+    outline: 2px solid var(--tblr-primary);
+    outline-offset: 1px;
+    z-index: 4;
+}
+
+/* Public volunteer shifts vs staff-only get clearly different treatment. */
+.planner-audience-public {
+    background-color: color-mix(in srgb, var(--tblr-blue) 18%, var(--tblr-bg-surface));
+    border-color: var(--tblr-blue);
+}
+
+.planner-audience-staff {
+    background-color: color-mix(in srgb, var(--tblr-purple) 18%, var(--tblr-bg-surface));
+    border-color: var(--tblr-purple);
+}
+
+/* Draft shifts read differently from published (dashed, not colour alone). */
+.planner-block-draft {
+    border-style: dashed;
+    opacity: .9;
+}
+
+.planner-block-time {
+    display: block;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.planner-block-title {
+    display: block;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+.planner-block-badge {
+    position: absolute;
+    top: 2px;
+    right: 4px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    opacity: .75;
+}
+
+.planner-block-overnight {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 10px;
+}
+
+.planner-block-resize {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 6px;
+    cursor: ns-resize;
+}
+
+/* The transient block drawn while painting a new shift. */
+.planner-paint-preview {
+    position: absolute;
+    left: 3px;
+    right: 3px;
+    border-radius: 4px;
+    background-color: color-mix(in srgb, var(--tblr-blue) 28%, transparent);
+    border: 1px dashed var(--tblr-blue);
+    pointer-events: none;
+    z-index: 6;
+}
+
+.planner-legend-swatch {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    vertical-align: -1px;
+}
+
+.planner-legend-swatch.planner-audience-public {
+    background-color: var(--tblr-blue);
+}
+
+.planner-legend-swatch.planner-audience-staff {
+    background-color: var(--tblr-purple);
+}
+
+.planner-legend-swatch.planner-phase-setup {
+    background-color: color-mix(in srgb, var(--tblr-warning) 40%, transparent);
+}
+
+/* Advanced Matrix Planner. Wide table, scrolls horizontally; the
+   first "When" column and the header stay put while scrolling. */
+.matrix-scroll {
+    overflow: auto;
+    max-height: 70vh;
+}
+
+.matrix-table th,
+.matrix-table td {
+    vertical-align: middle;
+}
+
+.matrix-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--tblr-bg-surface);
+}
+
+.matrix-group {
+    background: color-mix(in srgb, var(--tblr-primary) 10%, var(--tblr-bg-surface)) !important;
+}
+
+.matrix-position {
+    font-size: 12px;
+    white-space: nowrap;
+    min-width: 6rem;
+}
+
+.matrix-sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--tblr-bg-surface);
+}
+
+.matrix-cell {
+    min-width: 6rem;
+}
+
+.matrix-cell-open {
+    background: color-mix(in srgb, var(--tblr-warning) 8%, transparent);
+}
+
+.matrix-cell-filled {
+    background: color-mix(in srgb, var(--tblr-blue) 6%, transparent);
+}
+
+/*
+ * The cell's control is a real <button> so it can be reached by keyboard, but it must fill the cell
+ * and read as part of the table rather than as a button.
+ */
+.matrix-cell-button {
+    display: block;
+    width: 100%;
+    min-height: 2.25rem;
+    padding: 0.25rem;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.matrix-cell-button:hover {
+    background: color-mix(in srgb, var(--tblr-primary) 10%, transparent);
+}
+
+.matrix-cell-button:focus-visible {
+    outline: 2px solid var(--tblr-primary);
+    outline-offset: -2px;
+}
+
+/* The affordance for a position that is not enabled on this shift: visible only on hover/focus. */
+.matrix-cell-empty {
+    color: var(--tblr-border-color);
+}
+
+.matrix-cell-button:hover .matrix-cell-empty,
+.matrix-cell-button:focus-visible .matrix-cell-empty {
+    color: var(--tblr-primary);
+}
+
+.matrix-note {
+    font-size: 10px;
+    color: var(--tblr-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 8rem;
+}
+
+/* Planning Availability grid. Value colours read in both themes and
+   are paired with the value label, never relying on colour alone. */
+.avail-swatch-preferred { --avail-color: var(--tblr-green); }
+.avail-swatch-available { --avail-color: var(--tblr-blue); }
+.avail-swatch-avoid { --avail-color: var(--tblr-orange); }
+.avail-swatch-unavailable { --avail-color: var(--tblr-red); }
+
+label.avail-swatch-preferred.active,
+label.avail-swatch-available.active,
+label.avail-swatch-avoid.active,
+label.avail-swatch-unavailable.active,
+.btn-check:checked + label[class*="avail-swatch-"] {
+    background-color: color-mix(in srgb, var(--avail-color) 25%, transparent);
+    border-color: var(--avail-color);
+}
+
+.avail-block {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    border-radius: 3px;
+    background-color: color-mix(in srgb, var(--avail-color) 40%, transparent);
+    border: 1px solid var(--avail-color);
+    pointer-events: none;
+}
+
+.avail-overlay {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    border-radius: 3px;
+    background-image: repeating-linear-gradient(
+        45deg,
+        color-mix(in srgb, var(--tblr-secondary) 30%, transparent) 0,
+        color-mix(in srgb, var(--tblr-secondary) 30%, transparent) 6px,
+        transparent 6px,
+        transparent 12px
+    );
+    border: 1px solid var(--tblr-secondary);
+    font-size: 9px;
+    color: var(--tblr-secondary);
+    padding: 1px 3px;
+    overflow: hidden;
+    z-index: 3;
+}
+
+/* Staff schedule timeline: users on the Y-axis, time across days on
+   the X-axis, colored assignment blocks with accessible labels. */
+.schedule-scroll { overflow-x: auto; }
+.schedule { min-width: 640px; }
+.schedule-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--tblr-border-color); }
+.schedule-headrow { position: sticky; top: 0; background: var(--tblr-bg-surface); z-index: 2; font-weight: 600; }
+.schedule-user {
+    flex: 0 0 130px;
+    padding: 4px 8px;
+    border-right: 1px solid var(--tblr-border-color);
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+}
+.schedule-day-head { flex: 1 1 0; text-align: center; padding: 4px; font-size: 12px; border-right: 1px solid var(--tblr-border-color); }
+.schedule-day {
+    flex: 1 1 0;
+    position: relative;
+    height: 30px;
+    border-right: 1px solid var(--tblr-border-color);
+    background-image: repeating-linear-gradient(to right,
+        var(--tblr-border-color-light, rgba(98,105,118,.12)) 0,
+        var(--tblr-border-color-light, rgba(98,105,118,.12)) 1px,
+        transparent 1px, transparent 12.5%);
+}
+.schedule-block {
+    position: absolute;
+    top: 3px;
+    bottom: 3px;
+    min-width: 3px;
+    border-radius: 3px;
+    overflow: hidden;
+    font-size: 9px;
+    line-height: 1.4;
+    padding: 0 2px;
+    color: #10233f;
+    border: 1px solid rgba(0,0,0,.15);
+}
+.schedule-block-label { white-space: nowrap; }
+.schedule-hue-0 { background: color-mix(in srgb, var(--tblr-blue) 45%, white); }
+.schedule-hue-1 { background: color-mix(in srgb, var(--tblr-green) 45%, white); }
+.schedule-hue-2 { background: color-mix(in srgb, var(--tblr-orange) 45%, white); }
+.schedule-hue-3 { background: color-mix(in srgb, var(--tblr-purple) 45%, white); }
+.schedule-hue-4 { background: color-mix(in srgb, var(--tblr-cyan) 45%, white); }
+.schedule-hue-5 { background: color-mix(in srgb, var(--tblr-pink) 45%, white); }
+
+/* Info Desk chat. Simple, theme-aware bubbles. */
+.chat-thread { max-height: 55vh; overflow-y: auto; }
+.chat-bubble { max-width: 80%; margin-bottom: 8px; padding: 6px 10px; border-radius: 8px;
+    background: color-mix(in srgb, var(--tblr-secondary) 12%, transparent); }
+.chat-bubble-mine { margin-left: auto; background: color-mix(in srgb, var(--tblr-primary) 16%, transparent); }
+.chat-bubble-internal { background: color-mix(in srgb, var(--tblr-warning) 16%, transparent); font-style: italic; }
+.chat-bubble-meta { display: flex; gap: 6px; align-items: baseline; font-size: 11px; }
+.chat-bubble-body { white-space: pre-wrap; word-break: break-word; }
+.chat-bubble-image { max-width: 240px; border-radius: 6px; margin-top: 4px; }
+.chat-typing { padding: 4px 10px; }

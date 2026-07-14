@@ -9,24 +9,22 @@
     actions: [{label: '← All news', href: path('app_news_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  <div class="card mb-3 {{ news.highlighted ? 'border-warning' : '' }}">
-    <div class="card-body">
+  {{ d.card_start(null, {class: 'mb-3 ' ~ (news.highlighted ? 'border-warning' : '')}) }}
       {% if news.staffOnly %}{{ d.badge('Staff only', 'text-bg-secondary') }}{% endif %}
       <p class="mb-0 mt-2">{{ news.fullText|nl2br }}</p>
-    </div>
-  </div>
+  {{ d.card_end() }}
 
   <h2 class="h5">Comments ({{ news.comments|length }})</h2>
   {% for comment in news.comments %}
-    <div class="card mb-2"><div class="card-body py-2">
+    {{ d.card_start(null, {class: 'mb-2', bodyClass: 'card-body py-2'}) }}
       <div class="small text-muted">{{ comment.author ? comment.author.name : 'Unknown' }} · {{ comment.createdAt|app_datetime }}</div>
       <div>{{ comment.text|nl2br }}</div>
-    </div></div>
+    {{ d.card_end({bodyClass: 'card-body py-2'}) }}
   {% else %}
-    <p class="text-muted">No comments yet.</p>
+    {{ d.empty_inline('No comments yet.', {class: 'text-muted'}) }}
   {% endfor %}
 
-  <form method="post" action="{{ path('app_news_comment', {id: news.id}) }}" class="mt-3">
+  <form method="post" action="{{ path('app_news_comment', {id: news.uuid}) }}" class="mt-3">
     <input type="hidden" name="_token" value="{{ csrf_token('comment' ~ news.id) }}">
     <div class="mb-2">
       <label class="form-label" for="comment-text">Add a comment</label>

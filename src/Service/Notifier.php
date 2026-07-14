@@ -13,7 +13,7 @@ use Symfony\Component\Mime\Email;
  * Sends event email notifications respecting per-user preferences.
  * The dev mailer DSN is null://null, so sends are no-ops until SMTP is set.
  *
- * !!! Shift-related notifications are intentionally not wired yet!!!
+ * Shift-related notifications are deliberately not routed through here.
  */
 final class Notifier
 {
@@ -57,6 +57,12 @@ final class Notifier
         );
 
         return true;
+    }
+
+    /** Generic notification email to a user (used by the notification centre). */
+    public function sendTo(User $user, string $subject, string $body): void
+    {
+        $this->send($user->getEmail(), $subject, $body);
     }
 
     private function send(string $to, string $subject, string $body, ?User $user = null, ?string $unsubscribeType = null): void

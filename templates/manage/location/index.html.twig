@@ -40,14 +40,14 @@
               {% if location.staffOnly %}{{ d.badge('Staff only', 'text-bg-warning') }}
               {% else %}{{ d.badge('Public', 'text-bg-success') }}{% endif %}
             </td>
-            <td class="text-end text-nowrap">
-              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_location_edit', {id: location.id}) }}">Edit</a>
-              <form method="post" action="{{ path('app_manage_location_delete', {id: location.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Delete location &quot;{{ location.name|e('js') }}&quot;?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ location.id) }}">
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
+            {% set del %}
+              {{ d.delete_form(path('app_manage_location_delete', {id: location.uuid}), csrf_token('delete' ~ location.id), {
+                message: 'Delete location "' ~ location.name ~ '"?'
+              }) }}
+            {% endset %}
+            {{ d.row_actions([
+              {label: 'Edit', href: path('app_manage_location_edit', {id: location.uuid})}
+            ], {extraHtml: del}) }}
           </tr>
         {% endfor %}
       </tbody>

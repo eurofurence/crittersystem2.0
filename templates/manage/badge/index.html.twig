@@ -18,18 +18,18 @@
     <tbody>
       {% for b in badges %}
         <tr>
-          <td><span class="badge text-bg-{{ b.color }}">{{ b.name }}</span> <code class="ms-1">{{ b.slug }}</code></td>
+          <td>{{ d.badge(b.name, 'text-bg-' ~ b.color) }} <code class="ms-1">{{ b.slug }}</code></td>
           <td class="small">{{ b.position ? 'Position' : 'Standard' }}</td>
           <td class="small">{{ b.position ? b.priority : '—' }}</td>
           <td class="small">{{ b.users|length }}</td>
-          <td class="text-end text-nowrap">
-            <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_badge_edit', {id: b.id}) }}">Edit</a>
-            <form method="post" action="{{ path('app_manage_badge_delete', {id: b.id}) }}" class="d-inline"
-                  onsubmit="return confirm('Delete badge &quot;{{ b.name|e('js') }}&quot;?');">
-              <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ b.id) }}">
-              <button class="btn btn-sm btn-outline-danger">Delete</button>
-            </form>
-          </td>
+          {% set del %}
+            {{ d.delete_form(path('app_manage_badge_delete', {id: b.uuid}), csrf_token('delete' ~ b.id), {
+              message: 'Delete badge "' ~ b.name ~ '"?'
+            }) }}
+          {% endset %}
+          {{ d.row_actions([
+            {label: 'Edit', href: path('app_manage_badge_edit', {id: b.uuid})}
+          ], {extraHtml: del}) }}
         </tr>
       {% endfor %}
     </tbody>

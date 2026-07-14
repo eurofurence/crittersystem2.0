@@ -3,11 +3,14 @@
 {% block title %}Recovery codes{% endblock %}
 {% block body %}
   {{ d.page_header('Save your recovery codes') }}
-  <div class="card"><div class="card-body">
+  {{ d.card_start(null, {class: ''}) }}
+    {% if regenerated|default(false) %}
+      <p class="text-success mb-2">Your recovery codes were regenerated. Any previous codes no longer work.</p>
+    {% endif %}
     <p class="text-danger"><strong>Store these now.</strong> Each code can be used once if you lose access to your authenticator. They will not be shown again.</p>
     <ul class="list-inline fs-5">
       {% for c in codes %}<li class="list-inline-item me-3"><code>{{ c }}</code></li>{% endfor %}
     </ul>
     <a class="btn btn-primary" href="{{ path('app_2fa') }}">Done</a>
-  </div></div>
+  {{ d.card_end() }}
 {% endblock %}

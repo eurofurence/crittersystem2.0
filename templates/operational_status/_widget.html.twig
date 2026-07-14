@@ -1,0 +1,11 @@
+{# A Turbo Frame so set/clear swap in place; live-refresh re-fetches the inner
+   fragment so auto-transitions (override expiry, shift start/end) surface without
+   a full-page refresh. Keep the frame id stable — the server responses target it
+   by id. #}
+<turbo-frame id="operational-status"
+             data-controller="live-refresh"
+             data-live-refresh-url-value="{{ path('app_operational_status') }}"
+             data-live-refresh-interval-value="60000"
+             class="d-none d-md-flex align-items-center me-2">
+  {% include 'operational_status/_content.html.twig' with {vm: vm} only %}
+</turbo-frame>

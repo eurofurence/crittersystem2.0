@@ -7,12 +7,11 @@ use App\Entity\User;
 use App\Gdpr\ErasureService;
 use App\Gdpr\GenerateDataExport;
 use App\Repository\DataExportRepository;
+use App\Storage\ExportStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -30,6 +29,7 @@ final class ProfilePrivacyController extends AbstractController
         private readonly DataExportRepository $exports,
         private readonly MessageBusInterface $bus,
         private readonly ErasureService $erasure,
+        private readonly ExportStorage $storage,
     ) {
     }
 
@@ -76,13 +76,17 @@ final class ProfilePrivacyController extends AbstractController
             return $this->redirectToRoute('app_profile_privacy');
         }
 
+        $key = (string) $export->getStorageKey();
+        if (!$this->storage->exists($key)) {
+            $this->addFlash('danger', 'That export has expired or is not ready.');
+
+            return $this->redirectToRoute('app_profile_privacy');
+        }
+
         $export->markDownloaded(new \DateTimeImmutable());
         $this->em->flush();
 
-        $response = new BinaryFileResponse($export->getFilePath());
-        $response->setContentDisposition(ResponseHeaderBag::DISPOSITION_ATTACHMENT, 'my-data-'.$uuid.'.zip');
-
-        return $response;
+        return $this->storage->download($key, 'my-data-'.$uuid.'.zip');
     }
 
     #[Route('/erase-request', name: 'app_profile_erase_request', methods: ['POST'])]

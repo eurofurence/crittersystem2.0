@@ -11,7 +11,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -57,8 +59,8 @@ final class InternalNoteController extends AbstractController
             if (\in_array($category, InternalNote::CATEGORIES, true)) {
                 $note->setCategory($category);
             }
-            if ($deptId = $request->request->getInt('department')) {
-                $note->setDepartment($this->departments->find($deptId));
+            if ($deptId = $request->request->get('department')) {
+                $note->setDepartment($this->departments->findOneByUuid((string) $deptId));
             }
             if ($subjectId = $request->request->getInt('subject')) {
                 $note->setSubjectUser($this->users->find($subjectId));
@@ -72,8 +74,8 @@ final class InternalNoteController extends AbstractController
         return $this->redirectToRoute('app_staff_notes');
     }
 
-    #[Route('/{id}/delete', name: 'app_staff_notes_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(Request $request, InternalNote $note): Response
+    #[Route('/{id}/delete', name: 'app_staff_notes_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function delete(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] InternalNote $note): Response
     {
         if ($this->isCsrfTokenValid('note-del'.$note->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($note);

@@ -9,7 +9,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/faq')]
@@ -48,8 +50,8 @@ final class FaqController extends AbstractController
         return $this->render('manage/faq/form.html.twig', ['form' => $form, 'heading' => 'New FAQ entry']);
     }
 
-    #[Route('/{id}/edit', name: 'app_manage_faq_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
-    public function edit(Request $request, Faq $faq): Response
+    #[Route('/{id}/edit', name: 'app_manage_faq_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
+    public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Faq $faq): Response
     {
         $form = $this->createForm(FaqType::class, $faq);
         $form->handleRequest($request);
@@ -64,8 +66,8 @@ final class FaqController extends AbstractController
         return $this->render('manage/faq/form.html.twig', ['form' => $form, 'heading' => 'Edit FAQ entry']);
     }
 
-    #[Route('/{id}/delete', name: 'app_manage_faq_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(Request $request, Faq $faq): Response
+    #[Route('/{id}/delete', name: 'app_manage_faq_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function delete(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Faq $faq): Response
     {
         if ($this->isCsrfTokenValid('delete'.$faq->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($faq);

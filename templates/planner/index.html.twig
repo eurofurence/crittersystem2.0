@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Shift Planner — {{ department.name }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Shift Planner', {
+    subtitle: 'Paint, move and resize draft shifts. Changes autosave as drafts until you publish.',
+    actions: [{label: '← Shift Manager', href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ d.card_start(null, {bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
+      <form method="get" class="d-flex align-items-end gap-2">
+        <div>
+          <label class="form-label mb-1" for="planner-department">Department</label>
+          <select id="planner-department" name="department" class="form-select" onchange="this.form.submit()">
+            {% for dept in departments %}
+              <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+
+      <div class="ms-auto text-secondary small">
+        <span class="planner-legend-swatch planner-audience-public"></span> Public
+        <span class="planner-legend-swatch planner-audience-staff ms-2"></span> Staff-only
+        <span class="planner-legend-swatch planner-phase-setup ms-2"></span> Setup/teardown
+      </div>
+  {{ d.card_end({bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-8 col-xl-9">
+      {% include 'planner/_toolbar.html.twig' %}
+
+      <div
+        class="planner"
+        data-controller="planner"
+        data-planner-department-value="{{ department.uuid }}"
+        data-planner-timezone-value="{{ timezone }}"
+        data-planner-raster-value="{{ grid.rasterMinutes }}"
+        data-planner-paint-url-value="{{ path('app_manage_shifts_planner_paint') }}"
+        data-planner-paint-token-value="{{ csrf_token('planner_paint') }}"
+        data-planner-edit-token-value="{{ csrf_token('planner_edit') }}"
+      >
+        {% include 'planner/_grid.html.twig' %}
+      </div>
+    </div>
+
+    <div class="col-12 col-lg-4 col-xl-3">
+      {% include 'planner/_panel.html.twig' %}
+    </div>
+  </div>
+
+  {% include 'planner/_modal_add.html.twig' %}
+{% endblock %}

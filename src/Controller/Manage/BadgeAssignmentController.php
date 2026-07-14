@@ -32,8 +32,8 @@ final class BadgeAssignmentController extends AbstractController
     #[Route('', name: 'app_manage_badge_assign', methods: ['GET', 'POST'])]
     public function assign(Request $request): Response
     {
-        $badgeId = $request->query->getInt('badge') ?: (int) $request->request->get('badge');
-        $badge = $badgeId > 0 ? $this->badges->find($badgeId) : null;
+        $badgeId = $request->query->get('badge') ?: $request->request->get('badge');
+        $badge = $badgeId ? $this->badges->findOneByUuid((string) $badgeId) : null;
         $query = trim((string) ($request->query->get('q') ?? $request->request->get('q', '')));
 
         if ($request->isMethod('POST') && $badge !== null) {
@@ -61,7 +61,7 @@ final class BadgeAssignmentController extends AbstractController
             ]);
             $this->addFlash('success', \sprintf('%s badge "%s" for %d user(s).', $action === 'add' ? 'Assigned' : 'Removed', $badge->getName(), $changed));
 
-            return $this->redirectToRoute('app_manage_badge_assign', ['badge' => $badge->getId(), 'q' => $query]);
+            return $this->redirectToRoute('app_manage_badge_assign', ['badge' => $badge->getUuid(), 'q' => $query]);
         }
 
         $results = $query !== '' ? $this->users->search($query, 50) : [];

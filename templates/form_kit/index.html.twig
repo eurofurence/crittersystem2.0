@@ -1,16 +1,16 @@
 {% extends 'base.html.twig' %}
 {% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
 
 {% block title %}{{ pageTitle }}{% endblock %}
 
 {% block body %}
-<div class="container py-4">
-  <h1 class="mb-3">{{ pageTitle }}</h1>
-
-  <div class="d-flex gap-2 mb-4">
-    <a class="btn btn-outline-primary" href="{{ path('app_home') }}">Home</a>
-    <a class="btn btn-outline-secondary" href="{{ path('app_dashboard') }}">Dashboard</a>
-  </div>
+  {{ d.page_header(pageTitle, {
+    subtitle: 'field, datetime_local, range_slider, check, choice, choice_multiple, search_input — templates/components/forms/_macros.twig',
+    actions: [
+      {label: 'Back to the kit index', href: path('app_navigation_kit'), class: 'btn btn-outline-primary'}
+    ]
+  }) }}
 
   {% if submitted %}
     <div class="alert alert-info">
@@ -19,49 +19,152 @@
     </div>
   {% endif %}
 
+  {# ------------------------------------------------------- the Symfony form demo #}
 
-    <hr class="my-4">
+  {{ d.card_start('A Symfony form, rendered with the macros', {
+    subtitle: 'FormKitDemoType — every row goes through a macro, so it picks up .form-control / .form-select and the help/error slots.'
+  }) }}
+    {{ form_start(form) }}
+      <div class="row">
+        {{ f.field(form.title, {col: 'col-12 col-md-6', help: 'A plain text input (e.g. “Demo Department briefing”).'}) }}
+        {{ f.datetime_local(form.startsAt, {col: 'col-12 col-md-6', help: 'Same field, forced to type="datetime-local".'}) }}
+        {{ f.range_slider(form.priority, {col: 'col-12', min: 0, max: 10, step: 1, help: 'Range slider with a live value badge.'}) }}
+        {{ f.choice_multiple(form.departments, {col: 'col-12', size: 4, help: 'ChoiceType with multiple: true → select[multiple].'}) }}
+      </div>
 
-    <h2 class="h4 mb-3">Debounced Search (Turbo Frame)</h2>
+      <button class="btn btn-primary">{{ form.save.vars.label }}</button>
+    {{ form_end(form) }}
 
-    {{ f.search_input('q', {
-        label: 'Department search',
-        placeholder: 'Type e.g. "reg" or "sec"...',
-        debounceMs: 250,
-        turboFrame: 'kit_search_frame',
-        help: 'Updates results via Turbo Frame using ?q= parameter'
-       })
-    }}
+<pre class="mt-3 mb-0"><code>{% verbatim %}{% import 'components/forms/_macros.twig' as f %}
 
-    <turbo-frame
-        id="kit_search_frame"
-        src="{{ path('app_form_kit_search_frame') }}"
-        loading="lazy"
-    ></turbo-frame>
-
-
-  {{ form_start(form) }}
-
+{{ form_start(form) }}
   <div class="row">
-    {{ f.field(form.title, {col: 'col-12 col-md-6', help: 'Regular text input'}) }}
-    {{ f.datetime_local(form.startsAt, {col: 'col-12 col-md-6', help: 'Rendered as datetime-local'}) }}
+    {{ f.field(form.title, {col: 'col-12 col-md-6', help: 'A plain text input.'}) }}
+    {{ f.datetime_local(form.startsAt, {col: 'col-12 col-md-6'}) }}
+    {{ f.range_slider(form.priority, {min: 0, max: 10, step: 1}) }}
+    {{ f.choice_multiple(form.departments, {size: 4}) }}
+  </div>
+  <button class="btn btn-primary">{{ form.save.vars.label }}</button>
+{{ form_end(form) }}{% endverbatim %}</code></pre>
+  {{ d.card_end() }}
 
-    {# Render priority as a range slider for the demo #}
-    {{ f.range_slider(form.priority, {col: 'col-12', min: 0, max: 10, step: 1, help: 'Range slider with live value'}) }}
+  {# ----------------------------------------------------------- the field variants #}
 
-    {# Multi-select: we’ll render the Symfony field as default for now, and later add a macro for Symfony ChoiceType #}
-    <div class="col-12 mb-3">
-        {{ f.choice_multiple(form.departments, {
-        col: 'col-12',
-        size: 6,
-        help: 'ChoiceType multiple rendered via macro'
+  {{ d.card_start('Field variants', {
+    subtitle: 'A second, never-submitted demo form (built in FormKitController) so every option has something to hang on.'
+  }) }}
+    {{ form_start(extras, {attr: {novalidate: 'novalidate'}}) }}
+      <div class="row">
+        {{ d.section_header('Help text, prefix and suffix', {size: 'h6', class: 'col-12 mb-2'}) }}
+
+        {{ f.field(extras.budget, {
+          col: 'col-12 col-md-6',
+          prefix: '€',
+          suffix: '.00',
+          help: 'prefix / suffix wrap the widget in an .input-group.'
         }) }}
+
+        {{ f.field(extras.apiKey, {
+          col: 'col-12 col-md-6',
+          help: 'A disabled field — pass disabled: true when building the form type, not to the macro.'
+        }) }}
+
+        {{ d.section_header('Validation error state', {size: 'h6', class: 'col-12 mt-3 mb-2'}) }}
+
+        {{ f.field(extras.email, {
+          col: 'col-12 col-md-6',
+          help: 'This field carries a FormError, so f.field() renders form_errors() underneath it.'
+        }) }}
+
+        <div class="col-12 col-md-6 mb-3">
+          <p class="text-muted small mb-0">
+            The error next to it is a real <code>FormError</code> on the field (the same thing a
+            failed constraint leaves behind on an invalid submit) — the macro always renders
+            <code>form_errors(row)</code>, so you get it for free. Note it renders through the
+            <em>default</em> Symfony form theme (a plain list), because no Bootstrap form theme
+            is configured for this app.
+          </p>
+        </div>
+
+        {{ d.section_header('Checkbox, single choice, multiple choice', {size: 'h6', class: 'col-12 mt-3 mb-2'}) }}
+
+        {{ f.check(extras.newsletter, {col: 'col-12 col-md-6', help: 'check() renders a Bootstrap .form-check.'}) }}
+        {{ f.choice(extras.department, {col: 'col-12 col-md-6', help: 'choice() → a single .form-select.'}) }}
+        {{ f.choice_multiple(extras.skills, {col: 'col-12 col-md-6', size: 4, help: 'choice_multiple() → select[multiple] with a size.'}) }}
+      </div>
+    {{ form_end(extras, {render_rest: false}) }}
+
+<pre class="mb-0"><code>{% verbatim %}{# help text + input-group #}
+{{ f.field(form.budget, {col: 'col-12 col-md-6', prefix: '€', suffix: '.00', help: 'Per demo event.'}) }}
+
+{# disabled: set it on the form type, the macro just renders the widget #}
+->add('apiKey', TextType::class, ['disabled' => true])
+{{ f.field(form.apiKey) }}
+
+{# error state: nothing to do — field() always renders form_errors(row) #}
+{{ f.field(form.email) }}
+
+{# checkbox / choice / multiple choice #}
+{{ f.check(form.newsletter) }}
+{{ f.choice(form.department, {help: 'Pick one.'}) }}
+{{ f.choice_multiple(form.skills, {size: 4}) }}{% endverbatim %}</code></pre>
+  {{ d.card_end() }}
+
+  {# -------------------------------------------------------------- narrow container #}
+
+  {{ d.section_header('In a narrow container', {
+    subtitle: 'The macros are grid-aware: every one takes col (default col-12) and lays out inside whatever column you give it.'
+  }) }}
+
+  <div class="row g-3 mb-3">
+    <div class="col-12 col-md-4">
+      {{ d.card_start('col-md-4 card') }}
+        <div class="row">
+          {{ f.field(narrow.budget, {prefix: '€', help: 'Full-width (col-12) inside a narrow card.'}) }}
+          {{ f.choice(narrow.department) }}
+          {{ f.check(narrow.newsletter, {col: 'col-12'}) }}
+        </div>
+      {{ d.card_end() }}
+    </div>
+    <div class="col-12 col-md-8">
+      {{ d.card_start('col-md-8 card, two fields per row') }}
+        <div class="row">
+          {{ f.field(narrow.email, {col: 'col-12 col-sm-6', help: 'The error state wraps too.'}) }}
+          {{ f.choice_multiple(narrow.skills, {col: 'col-12 col-sm-6', size: 3}) }}
+        </div>
+      {{ d.card_end() }}
     </div>
   </div>
 
-  <button class="btn btn-primary">{{ form.save.vars.label }}</button>
+  {# ------------------------------------------------------- search + Turbo Frame #}
 
-  {{ form_end(form) }}
-  
-</div>
+  {{ d.card_start('search_input + Turbo Frame', {
+    subtitle: 'A debounced search box that reloads only the frame — no Symfony form, no page refresh.'
+  }) }}
+    <div class="row">
+      {{ f.search_input('q', {
+        col: 'col-12 col-md-6',
+        label: 'Search demo departments',
+        placeholder: 'Type e.g. “demo” or “log”…',
+        debounceMs: 250,
+        turboFrame: 'kit_search_frame',
+        help: 'Debounced 250 ms; reloads the frame with ?q=…'
+      }) }}
+    </div>
+
+    <turbo-frame
+      id="kit_search_frame"
+      src="{{ path('app_form_kit_search_frame') }}"
+      loading="lazy"
+    ></turbo-frame>
+
+<pre class="mt-3 mb-0"><code>{% verbatim %}{{ f.search_input('q', {
+  label: 'Search demo departments',
+  debounceMs: 250,
+  turboFrame: 'kit_search_frame',
+  help: 'Reloads the frame with ?q=…'
+}) }}
+
+<turbo-frame id="kit_search_frame" src="{{ path('app_form_kit_search_frame') }}" loading="lazy"></turbo-frame>{% endverbatim %}</code></pre>
+  {{ d.card_end() }}
 {% endblock %}

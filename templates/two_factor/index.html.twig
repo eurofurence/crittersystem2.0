@@ -3,9 +3,30 @@
 {% block title %}Two-factor authentication{% endblock %}
 {% block body %}
   {{ d.page_header('Two-factor authentication', {subtitle: 'Protect your account with an authenticator app.'}) }}
-  <div class="card"><div class="card-body">
+  {{ d.card_start(null, {class: ''}) }}
     {% if user.twoFactorEnabled %}
       <p>{{ d.badge('Enabled', 'text-bg-success') }} Two-factor authentication is active on your account.</p>
+
+      {% set remaining = user.backupCodes|length %}
+      <div class="mb-4">
+        <h3 class="h4">Recovery codes</h3>
+        {% if remaining == 0 %}
+          <p class="text-danger mb-2">{{ d.badge('0 left', 'text-bg-danger') }} You have no recovery codes. If you lose your authenticator you could be locked out — generate a new set now.</p>
+        {% else %}
+          <p class="mb-2">
+            {{ d.badge(remaining ~ ' remaining', remaining <= 2 ? 'text-bg-warning' : 'text-bg-secondary') }}
+            single-use codes for signing in if you lose your authenticator.
+            {% if remaining <= 2 %}<span class="text-warning">Running low — consider regenerating.</span>{% endif %}
+          </p>
+        {% endif %}
+        <p class="text-muted small mb-2">Regenerating creates a fresh set and immediately invalidates your old codes.</p>
+        <form method="post" action="{{ path('app_2fa_recovery_regenerate') }}" class="row g-2 align-items-end" style="max-width:28rem"
+              data-controller="confirm" data-confirm-message-value="Generate new recovery codes? Your current codes will stop working.">
+          <div class="col-auto"><label class="form-label">Enter a current code to confirm</label><input name="code" class="form-control" autocomplete="one-time-code" required></div>
+          <div class="col-auto"><button class="btn btn-outline-primary">Regenerate recovery codes</button></div>
+        </form>
+      </div>
+
       {% if not user.mustUseTwoFactor %}
         <form method="post" action="{{ path('app_2fa_disable') }}" class="row g-2 align-items-end" style="max-width:24rem">
           <div class="col-auto"><label class="form-label">Enter a current code to disable</label><input name="code" class="form-control" autocomplete="one-time-code" required></div>
@@ -18,5 +39,5 @@
       <p>{{ d.badge('Not set up', 'text-bg-secondary') }} Add an extra layer of security.</p>
       <a class="btn btn-primary" href="{{ path('app_2fa_setup') }}">Set up two-factor authentication</a>
     {% endif %}
-  </div></div>
+  {{ d.card_end() }}
 {% endblock %}

@@ -1,0 +1,54 @@
+{% import 'components/data/_macros.twig' as d %}
+{% set shift = row.shift %}
+<turbo-frame id="grid-panel">
+  {{ d.card_start(shift.title, {class: ''}) }}
+      {{ d.definition_list([
+        {label: 'When',     value: (shift.startsAt|app_datetime) ~ ' – ' ~ (shift.endsAt|app_time)},
+        {label: 'Location', value: shift.location ? shift.location.name : '—'},
+        {label: 'Task',     value: shift.shiftTask ? shift.shiftTask.name : '—'},
+        {label: 'Audience', value: shift.audience.label},
+        {label: 'Fill',     value: row.assigned ~ ' / ' ~ row.needed}
+      ], {class: 'mb-3 small', labelClass: '', valueClass: ''}) }}
+
+      <h4 class="h5">Assignments ({{ assignments|length }})</h4>
+      <ul class="list-unstyled mb-3">
+        {% for entry in assignments %}
+          <li>
+            {{ entry.user.name }} <span class="text-secondary small">· {{ entry.volunteerType.name }}</span>
+            {% if entry.overridden %}{{ d.badge('override', 'bg-red-lt') }}{% endif %}
+          </li>
+        {% else %}
+          {{ d.empty_inline('No one assigned.', {tag: 'li', class: 'text-secondary'}) }}
+        {% endfor %}
+      </ul>
+
+      {% if applications|length > 0 %}
+        <h4 class="h5">Applications ({{ applications|length }})</h4>
+        <ul class="list-unstyled mb-3">
+          {% for entry in applications %}
+            <li>{{ entry.user.name }} <span class="text-secondary small">· {{ entry.volunteerType.name }}</span></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if shift.shiftPositions|length > 0 %}
+        <h4 class="h5">Positions</h4>
+        <ul class="list-unstyled mb-3 small">
+          {% for sp in shift.shiftPositions %}
+            <li>
+              {{ sp.namedPosition.name }} —
+              {% if sp.cellState == 'filled' %}{{ d.badge('filled', 'bg-blue-lt') }}
+              {% elseif sp.cellState == 'open' %}{{ d.badge('open', 'bg-orange-lt') }}
+              {% else %}<span class="text-secondary">not required</span>{% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+  {% set panelFooter %}
+      {% if is_granted('assignment:manage', shift.department) %}
+        <a href="{{ path('app_shift_staffing', {id: shift.uuid}) }}" class="btn btn-sm btn-primary" data-turbo="false">Manage staffing</a>
+      {% endif %}
+      <a href="{{ path('app_manage_shifts_planner', {department: shift.department.uuid}) }}" class="btn btn-sm btn-outline-secondary" data-turbo="false">Open planner</a>
+  {% endset %}
+  {{ d.card_end({footer: panelFooter, footerClass: 'card-footer d-flex flex-wrap gap-2'}) }}
+</turbo-frame>

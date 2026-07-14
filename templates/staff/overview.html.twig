@@ -13,11 +13,8 @@
   }) }}
 
   <div class="row g-3">
-    {# Duty status #}
     <div class="col-12 col-lg-6">
-      <div class="card h-100">
-        <div class="card-header fw-semibold">Duty status</div>
-        <div class="card-body">
+      {{ d.card_start('Duty status', {class: 'h-100', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
           {% if currentDuty %}
             <p class="mb-1">
               {{ d.badge('On duty', 'text-bg-success') }}
@@ -37,25 +34,22 @@
                 <label class="form-label small mb-0" for="duty-dep">Duty area</label>
                 <select id="duty-dep" name="department" class="form-select form-select-sm">
                   <option value="">— No specific area —</option>
-                  {% for dep in departments %}<option value="{{ dep.id }}">{{ dep.name }}</option>{% endfor %}
+                  {% for dep in departments %}<option value="{{ dep.uuid }}">{{ dep.name }}</option>{% endfor %}
                 </select>
               </div>
               <div class="col-4"><button class="btn btn-success w-100">Start duty</button></div>
             </form>
           {% endif %}
-        </div>
-      </div>
+      {{ d.card_end() }}
     </div>
 
-    {# Shift + hours summary #}
     <div class="col-12 col-lg-6">
-      <div class="card h-100">
-        <div class="card-header fw-semibold">At a glance</div>
-        <div class="card-body">
+      {{ d.card_start('At a glance', {class: 'h-100', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
+          {# Not definition_list(): the "Next shift" value is a link, not a scalar. #}
           <dl class="row mb-0">
             <dt class="col-7">Next shift</dt>
             <dd class="col-5 text-end">
-              {% if nextShift %}<a href="{{ path('app_shift_show', {id: nextShift.shift.id}) }}">{{ nextShift.shift.startsAt|app_datetime }}</a>
+              {% if nextShift %}<a href="{{ path('app_shift_show', {id: nextShift.shift.uuid}) }}">{{ nextShift.shift.startsAt|app_datetime }}</a>
               {% else %}—{% endif %}
             </dd>
             <dt class="col-7">Shift hours</dt><dd class="col-5 text-end">{{ stats.shiftHours|round(2) }}</dd>
@@ -63,14 +57,13 @@
             <dt class="col-7">Goodies received</dt><dd class="col-5 text-end">{{ stats.goodies }}</dd>
           </dl>
           <a class="small" href="{{ path('app_my_shifts') }}">View my shifts →</a>
-        </div>
-      </div>
+      {{ d.card_end() }}
     </div>
   </div>
 
   <h2 class="h5 mt-4">Received goodies</h2>
   {% if goodies is empty %}
-    <p class="text-muted">No goodies received yet.</p>
+    {{ d.empty_inline('No goodies received yet.', {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
       <thead><tr><th>Item</th><th>Qty</th><th>When</th></tr></thead>

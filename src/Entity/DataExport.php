@@ -36,8 +36,9 @@ class DataExport
     #[ORM\Column(length: 16)]
     private string $status = self::STATUS_PENDING;
 
+    /* The archive's key in the export storage (see App\Storage\ExportStorage), not a local path. */
     #[ORM\Column(name: 'file_path', length: 1024, nullable: true)]
-    private ?string $filePath = null;
+    private ?string $storageKey = null;
 
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
@@ -81,20 +82,26 @@ class DataExport
         return $this->status;
     }
 
-    public function getFilePath(): ?string
+    public function getStorageKey(): ?string
     {
-        return $this->filePath;
+        return $this->storageKey;
     }
 
-    public function markReady(string $filePath): void
+    public function markReady(string $storageKey): void
     {
         $this->status = self::STATUS_READY;
-        $this->filePath = $filePath;
+        $this->storageKey = $storageKey;
     }
 
     public function markFailed(): void
     {
         $this->status = self::STATUS_FAILED;
+    }
+
+    /** The archive has been purged; the record survives so the request stays auditable. */
+    public function forgetArchive(): void
+    {
+        $this->storageKey = null;
     }
 
     public function getCreatedAt(): \DateTimeImmutable
@@ -127,8 +134,12 @@ class DataExport
         return $this->status === self::STATUS_READY;
     }
 
+    /**
+     * Whether the record permits a download. The archive itself lives in the export storage, which
+     * the entity cannot reach — the caller confirms the key is still there.
+     */
     public function isDownloadable(?\DateTimeImmutable $now = null): bool
     {
-        return $this->isReady() && !$this->isExpired($now) && $this->filePath !== null && is_file($this->filePath);
+        return $this->isReady() && !$this->isExpired($now) && $this->storageKey !== null;
     }
 }

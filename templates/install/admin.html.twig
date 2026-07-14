@@ -1,4 +1,5 @@
 {% extends 'install/_layout.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 
 {% block title %}Administrator · Setup · VMS{% endblock %}
 
@@ -6,15 +7,13 @@
     {% include 'install/_brand.html.twig' %}
 
     {% if alreadyExists %}
-        <div class="card card-md">
-            <div class="card-body">
+        {{ d.card_start(null, {class: 'card-md'}) }}
                 <h2 class="mb-1">Administrator account</h2>
                 <div class="alert alert-info mt-2" role="alert">
                     An account already exists, so no administrator needs to be created. You can manage users from
                     inside the application after signing in.
                 </div>
-            </div>
-        </div>
+        {{ d.card_end() }}
 
         {% embed 'install/_progress.html.twig' %}
             {% block buttons %}
@@ -22,8 +21,16 @@
             {% endblock %}
         {% endembed %}
     {% else %}
-        <form class="card card-md" method="post" action="{{ path('app_install_admin') }}" data-turbo="false">
-            <div class="card-body">
+        {% set adminFooter %}
+            <div class="btn-list justify-content-end">
+                <button type="submit" class="btn btn-primary">Create administrator</button>
+            </div>
+        {% endset %}
+        {{ d.card_start(null, {
+            tag: 'form',
+            class: 'card-md',
+            attrs: {method: 'post', action: path('app_install_admin'), 'data-turbo': 'false'}
+        }) }}
                 <h2 class="mb-1">Create the first administrator</h2>
                 <p class="text-secondary">This account has full access. You can change the password later from the app.</p>
 
@@ -49,13 +56,7 @@
                     <label class="form-label required">Confirm password</label>
                     <input type="password" name="password_confirm" class="form-control" autocomplete="new-password" required>
                 </div>
-            </div>
-            <div class="card-footer">
-                <div class="btn-list justify-content-end">
-                    <button type="submit" class="btn btn-primary">Create administrator</button>
-                </div>
-            </div>
-        </form>
+        {{ d.card_end({tag: 'form', footer: adminFooter}) }}
 
         {% embed 'install/_progress.html.twig' %}
             {% block buttons %}{% endblock %}

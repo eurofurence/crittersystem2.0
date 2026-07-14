@@ -9,7 +9,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/consent-texts')]
@@ -38,14 +40,14 @@ final class ConsentTextController extends AbstractController
         return $this->handleForm($request, $text, true);
     }
 
-    #[Route('/{id}/edit', name: 'app_manage_consent_text_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
-    public function edit(Request $request, ConsentText $text): Response
+    #[Route('/{id}/edit', name: 'app_manage_consent_text_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
+    public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ConsentText $text): Response
     {
         return $this->handleForm($request, $text, false);
     }
 
-    #[Route('/{id}/delete', name: 'app_manage_consent_text_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(Request $request, ConsentText $text): Response
+    #[Route('/{id}/delete', name: 'app_manage_consent_text_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function delete(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ConsentText $text): Response
     {
         if ($this->isCsrfTokenValid('delete'.$text->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($text);

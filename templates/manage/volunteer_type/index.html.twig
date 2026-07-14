@@ -48,15 +48,15 @@
                 {% if vt.staffOnly %}{{ d.badge('Staff only', 'text-bg-dark') }}{% endif %}
               </div>
             </td>
-            <td class="text-end text-nowrap">
-              <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_vt_members', {id: vt.id}) }}">Members</a>
-              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_volunteer_type_edit', {id: vt.id}) }}">Edit</a>
-              <form method="post" action="{{ path('app_manage_volunteer_type_delete', {id: vt.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Delete volunteer type &quot;{{ vt.name|e('js') }}&quot;?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ vt.id) }}">
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
+            {% set del %}
+              {{ d.delete_form(path('app_manage_volunteer_type_delete', {id: vt.uuid}), csrf_token('delete' ~ vt.id), {
+                message: 'Delete volunteer type "' ~ vt.name ~ '"?'
+              }) }}
+            {% endset %}
+            {{ d.row_actions([
+              {label: 'Members', href: path('app_manage_vt_members', {id: vt.uuid}), class: 'btn btn-sm btn-outline-secondary'},
+              {label: 'Edit', href: path('app_manage_volunteer_type_edit', {id: vt.uuid})}
+            ], {extraHtml: del}) }}
           </tr>
         {% endfor %}
       </tbody>

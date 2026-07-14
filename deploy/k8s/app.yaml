@@ -82,6 +82,122 @@ spec:
         - name: public
           emptyDir: {}
 ---
+# ----------------------------------------------------------------------------
+# Messenger worker. NOT OPTIONAL: without it, audit events, GDPR data exports
+# and all outbound mail are queued in `messenger_messages` and never processed.
+# The application keeps serving and silently records nothing.
+#
+# The queue is durable (PostgreSQL), so a restarted or rescheduled worker resumes
+# where it left off; nothing is lost while it is down, only delayed. Keep exactly
+# one replica unless you have measured a backlog — Messenger's doctrine transport
+# locks rows, so several replicas are safe, but one is enough and keeps ordering
+# easy to reason about.
+#
+# --time-limit/--memory-limit make the process exit periodically; Kubernetes
+# restarts it, which is the intended way to recycle a long-lived PHP worker.
+# Alert on `php bin/console app:audit:health` (queue depth / oldest message age).
+# ----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: critter-worker
+  namespace: critter
+  labels:
+    app: critter-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: critter-worker
+  template:
+    metadata:
+      labels:
+        app: critter-worker
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/YOUR_ORG/critter:latest   # <-- replace with your image
+          command: ["php", "bin/console", "messenger:consume", "async", "--time-limit=3600", "--memory-limit=192M", "-v"]
+          envFrom:
+            - secretRef:
+                name: critter-secrets
+          env:
+            - name: APP_ENV
+              value: prod
+            - name: RUN_MIGRATIONS_ON_START   # migrations belong to the app's initContainer
+              value: "0"
+          # Do not add a liveness probe on queue depth: a backlog means the worker is busy, and
+          # killing it under load would restart-loop it exactly when it is needed most.
+          # Restart-on-exit plus --time-limit is the recycling mechanism; monitor the backlog from
+          # outside the worker — see the CronJob below.
+---
+# Queue alarm. A stalled worker is otherwise invisible: the application keeps serving normally.
+# This CronJob runs `app:audit:health`, which exits non-zero when the queue is backing up, when the
+# oldest unconsumed message is too old, or when messages have landed in the failed transport. Wire
+# the job's failure into your alerting (a failed Job shows up in any k8s monitor).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: critter-audit-health
+  namespace: critter
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: audit-health
+              image: ghcr.io/YOUR_ORG/critter:latest   # <-- replace with your image
+              command: ["php", "bin/console", "app:audit:health"]
+              envFrom:
+                - secretRef:
+                    name: critter-secrets
+              env:
+                - name: APP_ENV
+                  value: prod
+---
+# Retention. Export archives are short-lived bundles of personal data and must not accumulate: the
+# GDPR archive is a complete copy of one user's data with a 24-hour download window, and the audit
+# package is a signed legal artifact kept for 30 days. Both commands are idempotent — an archive that
+# is already gone is skipped — so a missed run simply catches up on the next one.
+#
+# EXPORT_STORAGE_DSN must be an `s3://` DSN here. Pods share no filesystem: a `local://` DSN would put
+# the archive on the disk of whichever pod happened to build it, invisible to the pod serving the
+# download and to this job, and gone at the next restart.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: critter-purge-exports
+  namespace: critter
+spec:
+  schedule: "17 * * * *"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: purge-exports
+              image: ghcr.io/YOUR_ORG/critter:latest   # <-- replace with your image
+              command:
+                - /bin/sh
+                - -c
+                - php bin/console app:gdpr:purge-exports && php bin/console app:audit:purge-exports
+              envFrom:
+                - secretRef:
+                    name: critter-secrets
+              env:
+                - name: APP_ENV
+                  value: prod
+---
 apiVersion: v1
 kind: Service
 metadata:

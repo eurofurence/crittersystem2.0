@@ -1,0 +1,60 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Staff schedule — {{ department.name }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Staff schedule timeline', {
+    subtitle: 'Confirmed assignments by user and time.',
+    actions: [
+      {label: 'Download PDF', href: path('app_schedule_timeline_pdf', {department: department.uuid}), class: 'btn btn-outline-primary'},
+      {label: '← Department grid', href: path('app_department_grid', {department: department.uuid}), class: 'btn btn-outline-secondary'}
+    ]
+  }) }}
+
+  {{ d.card_start() }}
+      <form method="get" class="d-flex align-items-end gap-2">
+        <div>
+          <label class="form-label mb-1" for="sched-department">Department</label>
+          <select id="sched-department" name="department" class="form-select" onchange="this.form.submit()">
+            {% for dept in departments %}
+              <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </form>
+  {{ d.card_end() }}
+
+  {% if rows is empty %}
+    {{ d.empty_state('No confirmed assignments', {message: 'Assign staff to shifts to populate the schedule.'}) }}
+  {% else %}
+    {{ d.card_start(null, {class: '', bodyClass: ''}) }}
+      <div class="schedule-scroll">
+        <div class="schedule">
+          <div class="schedule-row schedule-headrow">
+            <div class="schedule-user schedule-corner"></div>
+            {% for day in days %}<div class="schedule-day-head">{{ day.label }}</div>{% endfor %}
+          </div>
+          {% for row in rows %}
+            <div class="schedule-row">
+              <div class="schedule-user">{{ row.user.name }}</div>
+              {% for day in days %}
+                {% set dayIndex = loop.index0 %}
+                <div class="schedule-day">
+                  {% for block in row.blocks|filter(b => b.dayIndex == dayIndex) %}
+                    <div class="schedule-block schedule-hue-{{ loop.index0 % 6 }}"
+                         style="left: {{ block.left }}%; width: {{ block.width }}%;"
+                         title="{{ block.title }} {{ block.startsAt|app_time }}–{{ block.endsAt|app_time }}{{ block.location ? ' @ ' ~ block.location : '' }}"
+                         aria-label="{{ row.user.name }}: {{ block.title }} {{ block.startsAt|app_time }} to {{ block.endsAt|app_time }}{{ block.location ? ' at ' ~ block.location : '' }}">
+                      <span class="schedule-block-label">{{ block.location ?: block.title }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% endfor %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {{ d.card_end({bodyClass: ''}) }}
+  {% endif %}
+{% endblock %}

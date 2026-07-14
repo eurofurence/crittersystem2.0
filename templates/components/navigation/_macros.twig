@@ -1,13 +1,15 @@
-{# templates/components/navigation/_macros.twig #}
-{#
-   Tabler navigation components. `options.icon` is a Tabler icon *slug*
+{# Tabler navigation components. `options.icon` is a Tabler icon *slug*
    (see components/icon/_macros.twig), not an emoji.
-#}
+
+   Twig's `|default` also fires on `''` and `false`, so options whose empty value is
+   meaningful (`exact: false`, `active: false`) are read with `is defined ?`. #}
 
 {# ------------------------------------------------------------------------------------------------------------------ #}
 
-{% macro nav_item(label, routeName, options = {}) %}
+{% macro nav_item(label, routeName = null, options = {}) %}
 {# options:
+    - href (string)   -- use instead of routeName for a plain/external link
+    - active (bool)   -- force the active state, for links the router cannot resolve
     - icon (Tabler icon slug, optional)
     - exact (bool, default true)
     - params (route params)
@@ -17,16 +19,19 @@
 {% import 'components/icon/_macros.twig' as i %}
 {% set params = options.params|default({}) %}
 {% set current = app.request.attributes.get('_route') %}
-{% set isActive = false %}
-{% if options.exact|default(true) %}
-    {% set isActive = (current == routeName) %}
-{% else %}
-    {% set isActive = current starts with routeName %}
+{% set href = options.href|default(routeName ? path(routeName, params) : '#') %}
+{% set isActive = options.active is defined ? options.active : false %}
+{% if routeName and not isActive %}
+    {% if options.exact is defined ? options.exact : true %}
+        {% set isActive = (current == routeName) %}
+    {% else %}
+        {% set isActive = current starts with routeName %}
+    {% endif %}
 {% endif %}
 
 <li class="nav-item {% if isActive %}active{% endif %}">
     <a class="nav-link {{ options.class|default('') }}"
-       href="{{ path(routeName, params) }}"
+       href="{{ href }}"
        {% if isActive %}aria-current="page"{% endif %}>
         {% if options.icon is defined %}
             <span class="nav-link-icon d-md-none d-lg-inline-block">{{ i.icon(options.icon) }}</span>
@@ -39,22 +44,31 @@
 
 {# ------------------------------------------------------------------------------------------------------------------ #}
 
-{% macro sidebar_item(label, routeName, options = {}) %}
-{# Vertical list-group style entry (used by the dev Navigation Kit). #}
+{% macro sidebar_item(label, routeName = null, options = {}) %}
+{# Vertical list-group style entry.
+   options:
+    - href: string  -- use instead of routeName for a plain/external link
+    - active: bool  -- force the active state, for links the router cannot resolve
+                       (e.g. an in-page anchor like href="#profile")
+    - icon, exact (default true), params, badge
+#}
 {% import 'components/icon/_macros.twig' as i %}
 {% set params = options.params|default({}) %}
 {% set current = app.request.attributes.get('_route') %}
+{% set href = options.href|default(routeName ? path(routeName, params) : '#') %}
 
-{% set isActive = false %}
-{% if options.exact|default(true) %}
-    {% set isActive = (current == routeName) %}
-{% else %}
-    {% set isActive = current starts with routeName %}
+{% set isActive = options.active is defined ? options.active : false %}
+{% if routeName and not isActive %}
+    {% if options.exact is defined ? options.exact : true %}
+        {% set isActive = (current == routeName) %}
+    {% else %}
+        {% set isActive = current starts with routeName %}
+    {% endif %}
 {% endif %}
 
 <a class="list-group-item list-group-item-action d-flex align-items-center gap-2
             {% if isActive %}active{% endif %}"
-    href="{{ path(routeName, params) }}"
+    href="{{ href }}"
     {% if isActive %}aria-current="page"{% endif %}>
     {% if options.icon is defined %}{{ i.icon(options.icon, {class: 'icon-1 text-muted'}) }}{% endif %}
     <span class="flex-grow-1">{{ label }}</span>

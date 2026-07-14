@@ -1,0 +1,49 @@
+{# Standard Planner time×day grid. Blocks are positioned by the percentage offsets
+   computed in PlannerPresenter; the `planner` Stimulus controller handles
+   paint/move/resize/delete. #}
+<div class="planner-grid" data-planner-target="grid">
+  <div class="planner-axis">
+    <div class="planner-axis-head"></div>
+    {% for hour in 0..23 %}
+      <div class="planner-axis-hour">{{ '%02d:00'|format(hour) }}</div>
+    {% endfor %}
+  </div>
+
+  {% for day in grid.days %}
+    {% set dayIndex = loop.index0 %}
+    <div class="planner-day planner-phase-{{ day.phase }}">
+      <div class="planner-day-head">
+        {% if day.phase != 'main' %}<span class="planner-phase-tag">{{ day.phase }}</span>{% endif %}
+        <span class="planner-day-label">{{ day.label }}</span>
+      </div>
+      <div
+        class="planner-day-body"
+        data-planner-target="dayBody"
+        data-planner-day="{{ day.iso }}"
+      >
+        {% for block in grid.blocks|filter(b => b.dayIndex == dayIndex) %}
+          {% set shift = block.shift %}
+          <div
+            class="planner-block {{ shift.audience.isPublic ? 'planner-audience-public' : 'planner-audience-staff' }} {{ shift.draft ? 'planner-block-draft' : 'planner-block-published' }}"
+            style="top: {{ block.top }}%; height: {{ block.height }}%;"
+            data-shift-id="{{ shift.uuid }}"
+            data-planner-target="block"
+            data-start="{{ shift.startsAt|date('c') }}"
+            data-end="{{ shift.endsAt|date('c') }}"
+            data-move-url="{{ path('app_manage_shifts_planner_move', {id: shift.uuid}) }}"
+            data-delete-url="{{ path('app_manage_shifts_planner_delete', {id: shift.uuid}) }}"
+            tabindex="0"
+            role="button"
+            aria-label="{{ shift.title }} {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}{{ shift.draft ? ' (draft)' : '' }}"
+          >
+            <span class="planner-block-time">{{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}</span>
+            <span class="planner-block-title">{{ shift.shiftTask ? shift.shiftTask.name : shift.title }}</span>
+            {% if shift.draft %}<span class="planner-block-badge">draft</span>{% endif %}
+            {% if block.overnight %}<span class="planner-block-overnight" title="Continues past midnight">▾</span>{% endif %}
+            <span class="planner-block-resize" data-planner-target="resizeHandle" aria-hidden="true"></span>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>

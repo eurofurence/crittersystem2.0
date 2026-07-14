@@ -28,7 +28,7 @@
               <td class="fw-semibold">{{ u.name }}</td>
               <td class="small">{{ u.email }}</td>
               <td class="text-end">
-                <a class="btn btn-sm btn-primary" href="{{ path('app_backstage_distribute_user', {id: u.id}) }}">Open</a>
+                <a class="btn btn-sm btn-primary" href="{{ path('app_backstage_distribute_user', {id: u.uuid}) }}">Open</a>
               </td>
             </tr>
           {% endfor %}

@@ -23,6 +23,9 @@ final class AuditEvents
     public const GDPR = 'GDPR';
     public const SECURITY = 'SECURITY';
     public const NOTIFICATION = 'NOTIFICATION';
+    public const OPERATIONAL_STATUS = 'OPERATIONAL_STATUS';
+    public const CHAT = 'CHAT';
+    public const CALL = 'CALL';
 
     // Actions
     public const LOGIN = 'LOGIN';
@@ -37,6 +40,31 @@ final class AuditEvents
     public const GRANT = 'GRANT';
     public const REVOKE = 'REVOKE';
     public const EXPIRE = 'EXPIRE';
+    public const STATUS_CHANGE = 'STATUS_CHANGE';
+    public const BAN = 'BAN';
+    public const UNBAN = 'UNBAN';
+    public const NOSHOW_RESET = 'NOSHOW_RESET';
+    public const ASSIGN = 'ASSIGN';
+    public const UNASSIGN = 'UNASSIGN';
+    public const PUBLISH = 'PUBLISH';
+    public const POSITION_ASSIGN = 'POSITION_ASSIGN';
+    public const POSITION_UNASSIGN = 'POSITION_UNASSIGN';
+    public const INVITE_CREATE = 'INVITE_CREATE';
+    public const INVITE_REVOKE = 'INVITE_REVOKE';
+    public const INVITE_REOPEN = 'INVITE_REOPEN';
+    public const INVITE_USE = 'INVITE_USE';
+    public const AVAILABILITY_REQUEST = 'AVAILABILITY_REQUEST';
+    public const AUTO_MEMBERSHIP = 'AUTO_MEMBERSHIP';
+    public const OVERRIDE = 'OVERRIDE';
+    public const ACKNOWLEDGE = 'ACKNOWLEDGE';
+    public const CLAIM = 'CLAIM';
+    public const UNCLAIM = 'UNCLAIM';
+    public const JOIN = 'JOIN';
+    public const CLOSE = 'CLOSE';
+    public const REOPEN = 'REOPEN';
+    public const CANCEL = 'CANCEL';
+    public const REFUSE = 'REFUSE';
+    public const ACCEPT = 'ACCEPT';
 
     // Outcomes
     public const SUCCESS = 'SUCCESS';

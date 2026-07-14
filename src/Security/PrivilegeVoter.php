@@ -4,7 +4,7 @@ namespace App\Security;
 
 use App\Entity\Department;
 use App\Entity\Shift;
-use App\Entity\ShiftType;
+use App\Entity\ShiftTask;
 use App\Entity\User;
 use App\Entity\VolunteerType;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -44,11 +44,21 @@ class PrivilegeVoter extends Voter
             return false;
         }
 
-        if ($user->hasPrivilege(PrivilegeCatalog::SUPER)) {
+        // ROLE_ADMIN has full, unrestricted access: it satisfies every
+        // permission check, whether or not the global:admin privilege is attached
+        // to one of its groups. The explicit super-privilege keeps working too.
+        $roles = $user->getRoles();
+        if (\in_array('ROLE_ADMIN', $roles, true) || $user->hasPrivilege(PrivilegeCatalog::SUPER)) {
             return true;
         }
 
-        // Collect the active assignments whose group grants this permission.
+        // ROLE_SUBADMIN mirrors ROLE_ADMIN but is denied the admin-level/critical
+        // permissions (configuration, audit, PII, RBAC management).
+        // It therefore holds every sub-admin-level permission unscoped.
+        if (\in_array('ROLE_SUBADMIN', $roles, true) && PrivilegeCatalog::level($attribute) === PrivilegeCatalog::LEVEL_SUBADMIN) {
+            return true;
+        }
+
         $granting = [];
         foreach ($user->getActiveAssignments() as $assignment) {
             foreach ($assignment->getGroup()->getPrivileges() as $privilege) {
@@ -89,8 +99,8 @@ class PrivilegeVoter extends Voter
     {
         return match (true) {
             $subject instanceof Department => [$subject],
-            $subject instanceof ShiftType => array_filter([$subject->getDepartment()]),
-            $subject instanceof Shift => array_filter([$subject->getShiftType()?->getDepartment()]),
+            $subject instanceof ShiftTask => array_filter([$subject->getDepartment()]),
+            $subject instanceof Shift => array_filter([$subject->getShiftTask()?->getDepartment()]),
             $subject instanceof VolunteerType => $subject->getDepartments()->toArray(),
             default => [],
         };

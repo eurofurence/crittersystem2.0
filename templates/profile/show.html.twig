@@ -1,0 +1,206 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ header.user.name }}{% endblock %}
+
+{% block body %}
+  {% set u = header.user %}
+  {{ d.card_start() }}
+      <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+        <div>
+          {% if header.hasAvatar %}
+            <span class="avatar avatar-xl" style="background-image: url('{{ path('app_media_avatar', {id: u.uuid}) }}')"></span>
+          {% else %}
+            <span class="avatar avatar-xl">{{ u.name|slice(0, 2)|upper }}</span>
+          {% endif %}
+        </div>
+
+        <div class="flex-grow-1">
+          {% if header.priorityBadge %}
+            <div class="mb-1">{{ d.badge(header.priorityBadge.name, 'fs-3 bg-purple-lt') }}</div>
+          {% endif %}
+
+          <h2 class="mb-1">{{ u|display_name }}</h2>
+
+          <div class="mb-2">
+            {% for b in header.badges %}
+              {% if not (header.priorityBadge and b.id == header.priorityBadge.id) %}
+                {{ d.badge(b.name, 'bg-secondary-lt', {class: 'me-1'}) }}
+              {% endif %}
+            {% endfor %}
+          </div>
+
+          <div class="d-flex flex-wrap gap-3 text-secondary">
+            <div><span class="text-muted">Status:</span> {{ header.status }}</div>
+            <div><span class="text-muted">Planned arrival:</span> {{ header.plannedArrival ? header.plannedArrival|app_date : '—' }}</div>
+            <div><span class="text-muted">Checked in:</span>
+              {{ header.arrived ? (header.arrivalDate ? header.arrivalDate|app_datetime : 'Yes') : 'Not yet' }}
+            </div>
+            <div><span class="text-muted">Next shift:</span> {{ header.nextShiftAt ? header.nextShiftAt|app_datetime : '—' }}</div>
+            <div><span class="text-muted">Total shifts:</span> {{ header.totalShifts }}</div>
+          </div>
+        </div>
+
+        <div>
+          {% if isSelf %}
+            <a href="{{ path('app_settings') }}" class="btn btn-outline-secondary">Settings</a>
+          {% endif %}
+        </div>
+      </div>
+  {{ d.card_end() }}
+
+  <div class="row g-3">
+    <div class="col-12">
+      {% set workHistoryActions %}
+          {% if canAddWorklog %}
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#add-worklog-modal">Add worklog</button>
+          {% endif %}
+      {% endset %}
+      {{ d.card_start('Work history', {class: '', bodyClass: '', headerActions: workHistoryActions}) }}
+        {% if workHistory is null %}
+          <div class="card-body text-secondary">You do not have permission to view this user's shift history.</div>
+        {% elseif workHistory is empty %}
+          {{ d.empty_state('No work yet', {message: 'Shifts and worklog entries will appear here.'}) }}
+        {% else %}
+          {{ d.table_start() }}
+            <thead>
+              <tr>
+                <th>Date</th><th>Time</th><th>Duration</th><th>Location</th>
+                <th>Volunteer Type</th><th>Status</th><th class="text-end">Rewarded</th>
+                {% if isSelf %}<th></th>{% endif %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in workHistory %}
+                <tr>
+                  <td>{{ r.start|app_date }}</td>
+                  <td>
+                    {% if r.kind == 'shift' %}{{ r.start|app_time }}–{{ r.end|app_time }}{% else %}{{ r.start|app_time }}{% endif %}
+                  </td>
+                  <td>{% if r.kind == 'shift' %}{{ r.duration|round(2) }}h{% else %}—{% endif %}</td>
+                  <td>{{ r.kind == 'shift' ? (r.location ?? '—') : '—' }}</td>
+                  <td>
+                    {% if r.kind == 'shift' %}
+                      {{ r.volunteerType.name }}
+                    {% else %}
+                      {{ d.badge('Worklog' ~ (r.creator ? ' · by ' ~ r.creator : ''), 'bg-azure-lt') }}
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if r.kind == 'shift' %}{{ d.status_badge(r.status) }}{% else %}<span class="text-secondary">{{ r.comment }}</span>{% endif %}
+                  </td>
+                  <td class="text-end">{{ r.rewarded|round(2) }}h</td>
+                  {% if isSelf %}
+                    <td class="text-end text-nowrap">
+                      {% if r.kind == 'worklog' and r.editable %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_worklog_self_edit', {id: r.worklogUuid}) }}">Edit</a>
+                        <form method="post" action="{{ path('app_worklog_self_delete', {id: r.worklogUuid}) }}" class="d-inline"
+                              data-controller="confirm" data-confirm-message-value="Delete this worklog entry?">
+                          <input type="hidden" name="_token" value="{{ csrf_token('worklog-delete-' ~ r.worklogUuid) }}">
+                          <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                        </form>
+                      {% elseif r.kind == 'worklog' %}
+                        <span class="text-secondary small" title="Recorded by {{ r.creator }}">Locked — contact {{ r.creator }}</span>
+                      {% endif %}
+                    </td>
+                  {% endif %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          {{ d.table_end() }}
+        {% endif %}
+      {{ d.card_end({bodyClass: ''}) }}
+    </div>
+
+    <div class="col-12 col-lg-6">
+      {{ d.card_start('Volunteer Types', {class: 'h-100'}) }}
+          {% if memberships is empty %}
+            {{ d.empty_inline('No memberships.', {tag: 'div', class: 'text-secondary'}) }}
+          {% else %}
+            {% for m in memberships %}
+              {{ d.badge(
+                m.type.name ~ (m.confirmed ? '' : ' (pending)'),
+                m.confirmed ? 'bg-green-lt' : 'bg-yellow-lt',
+                {class: 'me-1 mb-1'}
+              ) }}
+            {% endfor %}
+          {% endif %}
+      {{ d.card_end() }}
+    </div>
+
+    {% if goodies is not null %}
+      <div class="col-12 col-lg-6">
+        {% set goodiesActions %}<span class="text-secondary">{{ goodies.hours|round(1) }}h credited</span>{% endset %}
+        {{ d.card_start('Goodies', {class: 'h-100', headerActions: goodiesActions}) }}
+            <div class="mb-2">
+              <div class="fw-bold small text-uppercase text-muted">Claimable now</div>
+              {% for r in goodies.eligible %}{{ d.badge(r.item.name, 'bg-green-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('None yet.', {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
+            </div>
+            <div class="mb-2">
+              <div class="fw-bold small text-uppercase text-muted">Next targets</div>
+              {% for r in goodies.pending %}{{ d.badge(r.item.name ~ ' (+' ~ r.gap|round(1) ~ 'h)', 'bg-secondary-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('None.', {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
+            </div>
+            <div>
+              <div class="fw-bold small text-uppercase text-muted">Collected</div>
+              {% for r in goodies.claimed %}{{ d.badge(r.item.name ~ ' ×' ~ r.claimed, 'bg-blue-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('None.', {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
+            </div>
+        {{ d.card_end() }}
+      </div>
+    {% endif %}
+  </div>
+
+  {% if banReview is not null %}
+    {{ d.card_start('Ban & no-show review', {class: 'mt-3 border-danger'}) }}
+        <p>No-shows counting toward the ban threshold: <strong>{{ banReview.count }}</strong> / {{ banReview.threshold }}</p>
+        {% if banReview.bans is empty %}
+          {{ d.empty_inline('No ban history.', {tag: 'div', class: 'text-secondary'}) }}
+        {% else %}
+          {{ d.table_start() }}
+            <thead><tr><th>Banned at</th><th>Reason</th><th>Origin</th><th>Appeal</th></tr></thead>
+            <tbody>
+              {% for b in banReview.bans %}
+                <tr>
+                  <td class="small">{{ b.bannedAt|app_datetime }}</td>
+                  <td class="small">{{ b.reason ?? '—' }}</td>
+                  <td>{% if b.automatic %}{{ d.badge('Automatic', 'bg-red-lt') }}{% else %}{{ d.badge('Manual', 'bg-secondary-lt') }}{% endif %}</td>
+                  <td>{{ b.appeal ? 'Yes' : '—' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          {{ d.table_end() }}
+        {% endif %}
+    {{ d.card_end() }}
+  {% endif %}
+
+  {% if canAddWorklog %}
+    <div class="modal fade" id="add-worklog-modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog">
+        <form class="modal-content" method="post" action="{{ path('app_worklog_self_create') }}">
+          <div class="modal-header">
+            <h5 class="modal-title">Add worklog hours</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" name="worklog_self[_token]" value="{{ csrf_token('worklog_self') }}">
+            <div class="mb-3">
+              <label class="form-label" for="wl-hours">Hours</label>
+              <input class="form-control" id="wl-hours" type="number" step="0.25" min="0" name="worklog_self[hours]" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="wl-when">Worked at</label>
+              <input class="form-control" id="wl-when" type="datetime-local" name="worklog_self[workedAt]" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="wl-comment">Comment</label>
+              <textarea class="form-control" id="wl-comment" name="worklog_self[comment]" rows="2"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">Add</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}

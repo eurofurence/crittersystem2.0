@@ -9,7 +9,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/questions')]
@@ -30,8 +32,8 @@ final class QuestionController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/answer', name: 'app_manage_questions_answer', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
-    public function answer(Request $request, Question $question): Response
+    #[Route('/{id}/answer', name: 'app_manage_questions_answer', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
+    public function answer(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Question $question): Response
     {
         /** @var User $me */
         $me = $this->getUser();

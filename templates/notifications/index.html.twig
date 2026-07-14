@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Notifications', {
+    subtitle: 'Your notification history.',
+    actions: [{label: 'Preferences', href: path('app_notifications_preferences'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {% if notifications is empty %}
+    {{ d.empty_state('No notifications yet', {message: 'Notifications about shifts, messages and calls will appear here.'}) }}
+  {% else %}
+    <div class="list-group">
+      {% for n in notifications %}
+        <a href="{{ path('app_notifications_open', {id: n.uuid}) }}"
+           class="list-group-item list-group-item-action {{ n.isRead ? '' : 'fw-semibold' }}">
+          <div class="d-flex justify-content-between">
+            <span>{{ n.title }}</span>
+            <span class="text-secondary small">{{ n.createdAt|app_datetime }}</span>
+          </div>
+          <div class="text-secondary small">{{ n.message }}</div>
+        </a>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}

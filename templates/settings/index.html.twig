@@ -1,30 +1,82 @@
 {% extends 'base.html.twig' %}
+{% import 'components/navigation/_macros.twig' as nav %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Settings{% endblock %}
+{% block title %}Account settings{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Settings', {subtitle: 'Personal account settings.'}) }}
-
-  {% set tiles = [
-    {icon: '🎨', title: 'Theme',       text: 'Pick the look of the site.',          route: 'app_settings_theme'},
-    {icon: '🪪', title: 'Digital ID',  text: 'Your scannable identity QR.',         route: 'app_digital_id'},
-    {icon: '🔑', title: 'API key',     text: 'Use the JSON API and feeds.',         route: 'app_api_key'}
-  ] %}
+  {{ d.page_header('Account settings', {subtitle: 'Manage your profile, notifications and security.'}) }}
 
   <div class="row g-3">
-    {% for t in tiles %}
-      <div class="col-12 col-md-6 col-lg-4">
-        <a href="{{ path(t.route) }}" class="text-decoration-none text-reset">
-          <div class="card h-100 shadow-sm">
-            <div class="card-body">
-              <div class="fs-3 mb-1" aria-hidden="true">{{ t.icon }}</div>
-              <div class="fw-bold">{{ t.title }}</div>
-              <div class="text-muted small">{{ t.text }}</div>
-            </div>
-          </div>
-        </a>
+    <div class="col-12 col-md-3">
+      <div class="list-group">
+        {{ nav.sidebar_item('Profile & account', null, {href: '#profile', active: true}) }}
+        {{ nav.sidebar_item('My availability', 'app_availability') }}
+        {{ nav.sidebar_item('Notifications', 'app_notifications_preferences') }}
+        {{ nav.sidebar_item('Privacy & my data', 'app_profile_privacy') }}
+        {{ nav.sidebar_item('Two-factor authentication', 'app_2fa') }}
+        {{ nav.sidebar_item('Telegram', 'app_profile_telegram') }}
+        {{ nav.sidebar_item('Digital ID', 'app_digital_id') }}
+        {{ nav.sidebar_item('Theme', 'app_settings_theme') }}
+        {{ nav.sidebar_item('API key', 'app_api_key') }}
+        {{ nav.sidebar_item('View my profile', 'app_profile') }}
       </div>
-    {% endfor %}
+    </div>
+
+    <div class="col-12 col-md-9" id="profile">
+      {{ form_start(form) }}
+        {{ d.card_start('Account') }}
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Username</label>
+                <input type="text" class="form-control" value="{{ user.name }}" disabled>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Email</label>
+                <input type="text" class="form-control" value="{{ user.email }}" disabled>
+              </div>
+            </div>
+            {% if user.ssoManaged %}
+              <p class="text-secondary small mb-0">Your name and email are managed by single sign-on and cannot be changed here.</p>
+            {% endif %}
+        {{ d.card_end() }}
+
+        {{ d.card_start('Profile') }}
+            <div class="row">
+              <div class="col-md-6">{{ form_row(form.firstName) }}</div>
+              <div class="col-md-6">{{ form_row(form.lastName) }}</div>
+              <div class="col-md-6">{{ form_row(form.pronoun) }}</div>
+              <div class="col-md-6">{{ form_row(form.mobile) }}</div>
+              <div class="col-md-6">{{ form_row(form.plannedArrivalDate) }}</div>
+              <div class="col-md-6">{{ form_row(form.plannedDepartureDate) }}</div>
+              <div class="col-md-6">
+                {{ form_row(form.avatar) }}
+                {% if hasAvatar %}
+                  <span class="avatar avatar-lg mt-1" style="background-image: url('{{ path('app_media_avatar', {id: user.uuid}) }}')"></span>
+                {% endif %}
+              </div>
+            </div>
+        {{ d.card_end() }}
+
+        {{ d.card_start('Preferences') }}
+            <div class="row">
+              <div class="col-md-6">{{ form_row(form.language) }}</div>
+              <div class="col-md-6">{{ form_row(form.theme) }}</div>
+            </div>
+        {{ d.card_end() }}
+
+        {% if form.newPassword is defined %}
+          {{ d.card_start('Change password') }}
+              <div class="row">
+                <div class="col-md-6">{{ form_row(form.currentPassword) }}</div>
+                <div class="col-md-6">{{ form_row(form.newPassword) }}</div>
+              </div>
+              <p class="text-secondary small mb-0">Leave blank to keep your current password.</p>
+          {{ d.card_end() }}
+        {% endif %}
+
+        <button class="btn btn-primary">Save settings</button>
+      {{ form_end(form) }}
+    </div>
   </div>
 {% endblock %}

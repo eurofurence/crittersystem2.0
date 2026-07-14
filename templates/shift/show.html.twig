@@ -11,20 +11,19 @@
 
   <div class="row g-3">
     <div class="col-12 col-lg-7">
-      <div class="card mb-3">
-        <div class="card-body">
+      {{ d.card_start() }}
+          {# Not definition_list(): the optional "Link" value is an <a>, not a scalar. #}
           <dl class="row mb-0">
-            <dt class="col-4">Type</dt><dd class="col-8">{{ shift.shiftType ? shift.shiftType.name : '—' }}</dd>
+            <dt class="col-4">Type</dt><dd class="col-8">{{ shift.shiftTask ? shift.shiftTask.name : '—' }}</dd>
             <dt class="col-4">Location</dt><dd class="col-8">{{ shift.location ? shift.location.name : '—' }}</dd>
             {% if shift.url %}<dt class="col-4">Link</dt><dd class="col-8"><a href="{{ shift.url }}">{{ shift.url }}</a></dd>{% endif %}
           </dl>
           {% if shift.description %}<hr><p class="mb-0">{{ shift.description|nl2br }}</p>{% endif %}
-        </div>
-      </div>
+      {{ d.card_end() }}
 
       <h2 class="h5">Staffing</h2>
       {% if availability is empty %}
-        <p class="text-muted">No roles are requested for this shift yet.</p>
+        {{ d.empty_inline('No roles are requested for this shift yet.', {class: 'text-muted'}) }}
       {% else %}
         {{ d.table_start({hover: false}) }}
           <thead><tr><th>Role</th><th>Filled</th><th>Status</th></tr></thead>
@@ -42,13 +41,11 @@
     </div>
 
     <div class="col-12 col-lg-5">
-      <div class="card">
-        <div class="card-header fw-semibold">Your sign-up</div>
-        <div class="card-body">
+      {{ d.card_start('Your sign-up', {class: '', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
           {% if myEntry %}
             <p>You are signed up as <strong>{{ myEntry.volunteerType.name }}</strong>.</p>
-            <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.id}) }}"
-                  onsubmit="return confirm('Cancel your sign-up?');">
+            <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.uuid}) }}"
+                  data-controller="confirm" data-confirm-message-value="Cancel your sign-up?">
               <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ myEntry.id) }}">
               <button class="btn btn-outline-danger">Cancel sign-up</button>
             </form>
@@ -61,7 +58,7 @@
               <a href="{{ path('app_membership_index') }}">Volunteer Types</a>.
             </p>
           {% else %}
-            <form method="post" action="{{ path('app_shift_signup', {id: shift.id}) }}">
+            <form method="post" action="{{ path('app_shift_signup', {id: shift.uuid}) }}">
               <input type="hidden" name="_token" value="{{ csrf_token('signup' ~ shift.id) }}">
               <div class="mb-3">
                 <label class="form-label" for="volunteer_type">Sign up as</label>
@@ -76,8 +73,7 @@
               <button class="btn btn-primary w-100">Sign up</button>
             </form>
           {% endif %}
-        </div>
-      </div>
+      {{ d.card_end() }}
     </div>
   </div>
 {% endblock %}

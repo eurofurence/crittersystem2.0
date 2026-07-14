@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\NewsRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -14,6 +16,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\HasLifecycleCallbacks]
 class News
 {
+    use HasPublicUuid;
+
     /** Marker that splits a short preview from the full article body */
     public const MORE_TAG = '[more]';
 
@@ -60,6 +64,7 @@ class News
 
     public function __construct()
     {
+        $this->uuid = Uuid::v4();
         $this->comments = new ArrayCollection();
     }
 

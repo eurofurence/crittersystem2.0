@@ -49,4 +49,31 @@ final class TwoFactorTest extends DatabaseTestCase
         self::assertTrue($svc->verify($user, $code), 'recovery code works once');
         self::assertFalse($svc->verify($user, $code), 'and cannot be reused');
     }
+
+    public function testRegenerateReplacesCodesAndInvalidatesOldOnes(): void
+    {
+        /** @var TwoFactorService $svc */
+        $svc = static::getContainer()->get(TwoFactorService::class);
+        $user = $this->makeUser();
+        $original = $svc->enable($user, $svc->newSecret());
+
+        $fresh = $svc->regenerateBackupCodes($user);
+        self::assertCount(8, $fresh);
+        self::assertSame(8, $svc->remainingBackupCodeCount($user));
+        self::assertEmpty(array_intersect($original, $fresh), 'a fresh set is issued');
+        self::assertFalse($svc->verify($user, $original[0]), 'old codes no longer work');
+        self::assertTrue($svc->verify($user, $fresh[0]), 'new codes work');
+    }
+
+    public function testRemainingCountTracksConsumption(): void
+    {
+        /** @var TwoFactorService $svc */
+        $svc = static::getContainer()->get(TwoFactorService::class);
+        $user = $this->makeUser();
+        $codes = $svc->enable($user, $svc->newSecret());
+
+        self::assertSame(8, $svc->remainingBackupCodeCount($user));
+        $svc->verify($user, $codes[0]);
+        self::assertSame(7, $svc->remainingBackupCodeCount($user));
+    }
 }

@@ -8,14 +8,18 @@ use App\Entity\User;
 use App\Entity\VolunteerType;
 use App\Repository\NeededVolunteerTypeRepository;
 use App\Repository\ShiftEntryRepository;
+use App\Exception\CapacityConflictException;
 use App\Repository\UserVolunteerTypeRepository;
+use App\Service\Shift\CheckInPolicy;
+use App\Service\Shift\ShiftConcurrency;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Encapsulates the sign-up and cancellation rules.
  *
- * Note: certification-requirement enforcement is deferred until
- * the certification workflow exists; {@see signUpError()} marks the hook.
+ * Certification requirements are NOT enforced on sign-up; {@see signUpError()}
+ * marks the hook where that check belongs.
  */
 final class ShiftSignupService
 {
@@ -27,6 +31,8 @@ final class ShiftSignupService
         private readonly UserVolunteerTypeRepository $memberships,
         private readonly NeededVolunteerTypeRepository $needed,
         private readonly EventConfigStore $config,
+        private readonly CheckInPolicy $checkIn,
+        private readonly ShiftConcurrency $concurrency,
     ) {
     }
 
@@ -120,12 +126,18 @@ final class ShiftSignupService
             return 'You are already booked for an overlapping shift.';
         }
 
+        // Event-phase check-in gate: main-event shifts and shifts with
+        // the per-shift override require the applicant to be checked in.
+        if (($checkInError = $this->checkIn->checkInError($shift, $user)) !== null) {
+            return $checkInError;
+        }
+
         if (!$this->memberships->isConfirmedMember($user, $type)) {
             return 'You are not a confirmed member of this volunteer type.';
         }
 
-        // Certification requirements — enforced once the
-        // certification workflow lands.
+        // TODO: reject sign-up when the user lacks a certification the volunteer
+        // type requires. Certifications are recorded but not enforced here.
 
         $need = $this->needed->findEffectiveForShift($shift)[$type->getId()] ?? null;
         if ($need === null) {
@@ -138,19 +150,40 @@ final class ShiftSignupService
         return null;
     }
 
+    /**
+     * Sign the user up, guarding against the last-slot race: the shift
+     * is write-locked so eligibility (which includes capacity) is re-checked
+     * against a stable view, and the unique (shift,user) constraint is the final
+     * backstop against a duplicate entry slipping through.
+     */
     public function signUp(User $user, Shift $shift, VolunteerType $type, ?string $comment = null): ShiftEntry
     {
+        // Pre-check outside the transaction for a fast, friendly error.
         $error = $this->signUpError($user, $shift, $type);
         if ($error !== null) {
             throw new \RuntimeException($error);
         }
 
-        $entry = new ShiftEntry($shift, $type, $user);
-        $entry->setUserComment($comment);
-        $this->em->persist($entry);
-        $this->em->flush();
+        try {
+            return $this->concurrency->transactional(function () use ($user, $shift, $type, $comment): ShiftEntry {
+                $this->concurrency->lockForUpdate($shift);
 
-        return $entry;
+                // Re-check under the lock: capacity/overlap may have changed.
+                $error = $this->signUpError($user, $shift, $type);
+                if ($error !== null) {
+                    throw new CapacityConflictException($error);
+                }
+
+                $entry = new ShiftEntry($shift, $type, $user);
+                $entry->setUserComment($comment);
+                $this->em->persist($entry);
+                $this->em->flush();
+
+                return $entry;
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw new CapacityConflictException('You are already signed up for this shift.');
+        }
     }
 
     /**

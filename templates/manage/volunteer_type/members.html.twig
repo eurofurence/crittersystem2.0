@@ -25,18 +25,18 @@
             </td>
             <td class="text-end text-nowrap">
               {% if not m.confirmed %}
-                <form method="post" action="{{ path('app_manage_vt_member_confirm', {id: type.id, membershipId: m.id}) }}" class="d-inline">
-                  <input type="hidden" name="_token" value="{{ csrf_token('confirm' ~ m.id) }}">
+                <form method="post" action="{{ path('app_manage_vt_member_confirm', {id: type.uuid, membershipId: m.uuid}) }}" class="d-inline">
+                  <input type="hidden" name="_token" value="{{ csrf_token('confirm' ~ m.uuid) }}">
                   <button class="btn btn-sm btn-outline-success">Confirm</button>
                 </form>
               {% endif %}
-              <form method="post" action="{{ path('app_manage_vt_member_supporter', {id: type.id, membershipId: m.id}) }}" class="d-inline">
-                <input type="hidden" name="_token" value="{{ csrf_token('supporter' ~ m.id) }}">
+              <form method="post" action="{{ path('app_manage_vt_member_supporter', {id: type.uuid, membershipId: m.uuid}) }}" class="d-inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('supporter' ~ m.uuid) }}">
                 <button class="btn btn-sm btn-outline-primary">{{ m.supporter ? 'Demote' : 'Make supporter' }}</button>
               </form>
-              <form method="post" action="{{ path('app_manage_vt_member_remove', {id: type.id, membershipId: m.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Remove {{ m.user.name|e('js') }}?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('remove' ~ m.id) }}">
+              <form method="post" action="{{ path('app_manage_vt_member_remove', {id: type.uuid, membershipId: m.uuid}) }}" class="d-inline"
+                    data-controller="confirm" data-confirm-message-value="Remove {{ m.user.name }}?">
+                <input type="hidden" name="_token" value="{{ csrf_token('remove' ~ m.uuid) }}">
                 <button class="btn btn-sm btn-outline-danger">Remove</button>
               </form>
             </td>

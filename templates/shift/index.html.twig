@@ -3,18 +3,24 @@
 
 {% block title %}Shifts{% endblock %}
 
-{% macro status_badge(status) %}
-  {% set map = {
-    'signed_up': ['Signed up', 'text-bg-success'],
-    'available': ['Open', 'text-bg-primary'],
-    'full': ['Full', 'text-bg-secondary'],
-    'overlap': ['Overlaps', 'text-bg-warning'],
-    'ineligible': ['Not eligible', 'text-bg-light'],
-    'past': ['Past', 'text-bg-light']
-  } %}
-  {% set m = map[status] %}
-  <span class="badge {{ m[1] }}">{{ m[0] }}</span>
-{% endmacro %}
+{# This page's own shift-status vocabulary, passed into d.status_badge() via its
+   `map`/`label` options. #}
+{% set shiftStatusStyles = {
+  'signed_up': 'text-bg-success',
+  'available': 'text-bg-primary',
+  'full': 'text-bg-secondary',
+  'overlap': 'text-bg-warning',
+  'ineligible': 'text-bg-light',
+  'past': 'text-bg-light'
+} %}
+{% set shiftStatusLabels = {
+  'signed_up': 'Signed up',
+  'available': 'Open',
+  'full': 'Full',
+  'overlap': 'Overlaps',
+  'ineligible': 'Not eligible',
+  'past': 'Past'
+} %}
 
 {% block body %}
   {{ d.page_header('Shifts', {
@@ -22,7 +28,7 @@
     actions: [{label: 'My shifts', href: path('app_my_shifts'), class: 'btn btn-outline-primary'}]
   }) }}
 
-  {# ---- Date selector (links preserve the other filters) ---- #}
+  {# Date links preserve the other active filters. #}
   <div class="d-flex flex-wrap gap-1 mb-2" role="group" aria-label="Date">
     {% for day in days %}
       {% set isSel = day == selectedDate|date('Y-m-d') %}
@@ -31,12 +37,11 @@
         {{ day|date('D d M') }}
       </a>
     {% endfor %}
-    {% if days is empty %}<span class="text-muted small">No upcoming shifts.</span>{% endif %}
+    {% if days is empty %}{{ d.empty_inline('No upcoming shifts.', {tag: 'span', class: 'text-muted small'}) }}{% endif %}
   </div>
 
-  {# ---- Filter form (controls auto-submit; carries the selected date) ---- #}
-  <form method="get" action="{{ path('app_shift_index') }}" class="card mb-3">
-    <div class="card-body">
+  {# The filter controls auto-submit; the form carries the selected date. #}
+  {{ d.card_start(null, {tag: 'form', class: 'mb-3', attrs: {method: 'get', action: path('app_shift_index')}}) }}
       <input type="hidden" name="date" value="{{ selectedDate|date('Y-m-d') }}">
       <div class="row g-2 align-items-end">
         <div class="col-6 col-md-3">
@@ -50,7 +55,7 @@
           <label class="form-label small mb-0" for="f-type">Shift type</label>
           <select id="f-type" name="type" class="form-select form-select-sm" onchange="this.form.submit()">
             <option value="">All</option>
-            {% for t in shiftTypes %}<option value="{{ t.id }}" {{ filters.type == t.id ? 'selected' }}>{{ t.name }}</option>{% endfor %}
+            {% for t in shiftTasks %}<option value="{{ t.id }}" {{ filters.type == t.id ? 'selected' }}>{{ t.name }}</option>{% endfor %}
           </select>
         </div>
         <div class="col-12 col-md-6 d-flex gap-3 pb-1">
@@ -65,50 +70,51 @@
           <noscript><button class="btn btn-sm btn-primary">Apply</button></noscript>
         </div>
       </div>
-    </div>
-  </form>
+  {{ d.card_end({tag: 'form'}) }}
 
-  {# ---- Shifts grouped by hour ---- #}
   {% if byHour is empty %}
     {{ d.empty_state('No shifts', {message: 'No shifts match your filters for ' ~ selectedDate|app_date ~ '.'}) }}
   {% else %}
     {% for hour, cards in byHour %}
-      <h2 class="h6 text-muted mt-3">{{ hour }}</h2>
+      {{ d.section_header(hour, {size: 'h2', class: 'mt-3'}) }}
       {% for card in cards %}
         {% set shift = card.shift %}
-        <div class="card mb-2 {{ shift.past ? 'opacity-75' : '' }}">
-          <div class="card-body py-2">
+        {{ d.card_start(null, {
+          class: ('mb-2 ' ~ (shift.past ? 'opacity-75' : ''))|trim,
+          bodyClass: 'card-body py-2'
+        }) }}
             <div class="d-flex justify-content-between align-items-start gap-2">
               <div>
-                <a href="{{ path('app_shift_show', {id: shift.id}) }}" class="fw-semibold text-decoration-none">{{ shift.title }}</a>
+                <a href="{{ path('app_shift_show', {id: shift.uuid}) }}" class="fw-semibold text-decoration-none">{{ shift.title }}</a>
                 <div class="text-muted small">
-                  {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}
+                  {{ shift.startsAt|app_time }}-{{ shift.endsAt|app_time }}
                   {% if shift.location %} · {{ shift.location.name }}{% endif %}
-                  {% if shift.shiftType %} · {{ shift.shiftType.name }}{% endif %}
+                  {% if shift.shiftTask %} · {{ 'Task:' | trans }} {{ shift.shiftTask.name }}{% endif %}
                 </div>
               </div>
-              {{ _self.status_badge(card.status) }}
+              {{ d.status_badge(card.status, {map: shiftStatusStyles, label: shiftStatusLabels[card.status]}) }}
             </div>
 
             {% if card.availability is not empty %}
               <div class="d-flex flex-wrap gap-1 mt-2">
                 {% for row in card.availability %}
-                  <span class="badge {{ row.assigned >= row.needed ? 'text-bg-success' : 'text-bg-secondary' }}">
-                    {{ row.type.name }} {{ row.assigned }}/{{ row.needed }}
-                  </span>
+                  {{ d.badge(
+                    row.type.name ~ ' ' ~ row.assigned ~ '/' ~ row.needed,
+                    row.assigned >= row.needed ? 'text-bg-success' : 'text-bg-secondary'
+                  ) }}
                 {% endfor %}
               </div>
             {% endif %}
 
             <div class="d-flex flex-wrap gap-2 mt-2">
               {% if card.myEntry %}
-                <form method="post" action="{{ path('app_shift_cancel', {id: card.myEntry.id}) }}"
-                      onsubmit="return confirm('Cancel your sign-up?');">
-                  <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ card.myEntry.id) }}">
-                  <button class="btn btn-sm btn-outline-danger">Cancel sign-up</button>
-                </form>
+                {{ d.delete_form(
+                  path('app_shift_cancel', {id: card.myEntry.uuid}),
+                  csrf_token('cancel' ~ card.myEntry.id),
+                  {label: 'Cancel sign-up', message: 'Cancel your sign-up?'}
+                ) }}
               {% elseif card.options is not empty %}
-                <form method="post" action="{{ path('app_shift_signup', {id: shift.id}) }}" class="d-flex gap-2">
+                <form method="post" action="{{ path('app_shift_signup', {id: shift.uuid}) }}" class="d-flex gap-2">
                   <input type="hidden" name="_token" value="{{ csrf_token('signup' ~ shift.id) }}">
                   <select name="volunteer_type" class="form-select form-select-sm" style="width:auto">
                     {% for id, type in card.options %}<option value="{{ id }}">{{ type.name }}</option>{% endfor %}
@@ -118,11 +124,10 @@
               {% endif %}
 
               {% if is_granted('shift:manage') %}
-                <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_shift_needs', {id: shift.id}) }}">Manage</a>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_shift_needs', {id: shift.uuid}) }}">Manage</a>
               {% endif %}
             </div>
-          </div>
-        </div>
+        {{ d.card_end({bodyClass: 'card-body py-2'}) }}
       {% endfor %}
     {% endfor %}
   {% endif %}

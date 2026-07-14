@@ -7,34 +7,11 @@ use App\Entity\InviteToken;
 use App\Entity\Privilege;
 use App\Entity\Settings;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\DatabaseWebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class UserManagementTest extends WebTestCase
+final class UserManagementTest extends DatabaseWebTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
-        }
-
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
-    }
-
     private function makeUser(string $name, ?string $role, array $privileges, bool $maskPii = false): User
     {
         $group = new Group('G'.$name, 'g-'.$name, $role);

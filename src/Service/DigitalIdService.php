@@ -9,7 +9,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Issues and rotates short-lived digital-ID tokens that back the user's
- * public-scannable QR code (§ legacy DigitalIdController/QrController).
+ * public-scannable QR code.
  */
 final class DigitalIdService
 {
@@ -19,10 +19,24 @@ final class DigitalIdService
     ) {
     }
 
-    /** Return the user's active token, creating a fresh one when missing/expired. */
+    /**
+     * A token with less than this left is rotated rather than reused, so a QR we
+     * are about to render is always scannable for a usable stretch of time.
+     */
+    public const MIN_REMAINING_SECONDS = 30;
+
+    /**
+     * Return the user's active token, creating a fresh one when it is missing,
+     * expired, or too close to expiry to be worth showing.
+     */
     public function getOrCreateActive(User $user): DigitalIdToken
     {
-        return $this->tokens->findActiveForUser($user) ?? $this->refresh($user);
+        $token = $this->tokens->findActiveForUser($user);
+        if ($token !== null && $token->getExpiresAt()->getTimestamp() - time() > self::MIN_REMAINING_SECONDS) {
+            return $token;
+        }
+
+        return $this->refresh($user);
     }
 
     public function refresh(User $user): DigitalIdToken

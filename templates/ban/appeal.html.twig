@@ -1,9 +1,15 @@
 {% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 {% block title %}Appeal{% endblock %}
 {% block body %}
-  <div class="row justify-content-center"><div class="col-md-6"><div class="card"><div class="card-body">
-    <h2 class="card-title">The Ledger-Keeper</h2>
+  {{ d.message_card_start('The Ledger-Keeper', {
+    width: 'col-md-6',
+    titleTag: 'h2',
+    titleClass: 'card-title',
+    bodyClass: 'card-body'
+  }) }}
     <p>{{ message }}</p>
+    {% if extraMessage %}<div class="alert alert-info">{{ extraMessage }}</div>{% endif %}
     {% if done %}
       <p class="text-success">If an account matches, your appeal has been forwarded for review.</p>
     {% else %}
@@ -13,5 +19,5 @@
         <button class="btn btn-primary">Submit appeal</button>
       </form>
     {% endif %}
-  </div></div></div></div>
+  {{ d.message_card_end() }}
 {% endblock %}

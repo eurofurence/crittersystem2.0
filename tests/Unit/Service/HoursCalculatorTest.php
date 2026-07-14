@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Entity\VolunteerType;
 use App\Repository\ShiftEntryRepository;
 use App\Repository\WorklogRepository;
+use App\Service\EventConfigStore;
 use App\Service\HoursCalculator;
 use PHPUnit\Framework\TestCase;
 
@@ -15,10 +16,16 @@ final class HoursCalculatorTest extends TestCase
 {
     private function calculator(): HoursCalculator
     {
-        // entryHours()/overlapsNight() do not touch the repositories.
+        // entryHours()/overlapsNight() do not touch the repositories. The config
+        // stub returns each key's default, preserving the standard multipliers.
+        $config = $this->createStub(EventConfigStore::class);
+        $config->method('getFloat')->willReturnCallback(static fn (string $key, float $default) => $default);
+        $config->method('getInt')->willReturnCallback(static fn (string $key, int $default) => $default);
+
         return new HoursCalculator(
             $this->createStub(ShiftEntryRepository::class),
             $this->createStub(WorklogRepository::class),
+            $config,
         );
     }
 

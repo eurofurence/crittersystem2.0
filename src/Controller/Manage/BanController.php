@@ -6,16 +6,21 @@ use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
 use App\Entity\BannedIdentity;
 use App\Repository\BannedIdentityRepository;
+use App\Service\NoShowBanService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Admin review of ban appeals. A ban can only be lifted once the user has
- * submitted an appeal — admins cannot lift bans unprompted.
+ * Ban administration. Lists all bans with their reason and whether
+ * they were automatic or manual. Behavioural bans (linked to a live user) can
+ * be lifted directly, which also resets the no-show counter; hashed GDPR bans
+ * still require the user to have appealed first.
  */
 #[Route('/manage/bans')]
 #[IsGranted('user:delete')]
@@ -24,6 +29,7 @@ final class BanController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly BannedIdentityRepository $bans,
+        private readonly NoShowBanService $noShowBans,
         private readonly AuditLogger $audit,
     ) {
     }
@@ -31,18 +37,27 @@ final class BanController extends AbstractController
     #[Route('', name: 'app_manage_ban_index', methods: ['GET'])]
     public function index(): Response
     {
-        return $this->render('manage/ban/index.html.twig', ['appeals' => $this->bans->findWithAppeals()]);
+        return $this->render('manage/ban/index.html.twig', ['bans' => $this->bans->findRecentAll()]);
     }
 
-    #[Route('/{id}/lift', name: 'app_manage_ban_lift', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function lift(Request $request, BannedIdentity $ban): Response
+    #[Route('/{id}/lift', name: 'app_manage_ban_lift', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function lift(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] BannedIdentity $ban): Response
     {
         if (!$this->isCsrfTokenValid('lift'.$ban->getId(), (string) $request->request->get('_token'))) {
             return $this->redirectToRoute('app_manage_ban_index');
         }
 
+        $user = $ban->getUser();
+        if ($user !== null) {
+            // Behavioural ban: lift all of the user's ban records and reset the counter.
+            $this->noShowBans->liftAndReset($user, 'Lifted by administrator');
+            $this->addFlash('success', 'Ban lifted and no-show counter reset.');
+
+            return $this->redirectToRoute('app_manage_ban_index');
+        }
+
         if (!$ban->hasAppeal()) {
-            $this->addFlash('danger', 'A ban can only be lifted after the user submits an appeal.');
+            $this->addFlash('danger', 'A GDPR ban can only be lifted after the user submits an appeal.');
 
             return $this->redirectToRoute('app_manage_ban_index');
         }
@@ -50,10 +65,9 @@ final class BanController extends AbstractController
         $id = $ban->getId();
         $this->em->remove($ban);
         $this->em->flush();
-        $this->audit->log(AuditEvents::GDPR, AuditEvents::DELETE, [
+        $this->audit->log(AuditEvents::GDPR, AuditEvents::UNBAN, [
             'resourceType' => 'BannedIdentity',
             'resourceId' => $id,
-            'details' => ['action' => 'ban_lifted'],
         ]);
         $this->addFlash('success', 'Ban lifted.');
 

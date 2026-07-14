@@ -1,0 +1,55 @@
+{% import 'components/data/_macros.twig' as d %}
+{% set shift = row.shift %}
+<div class="list-group-item">
+  <div class="row align-items-center g-2">
+    <div class="col-12 col-md-4">
+      <div class="fw-bold">{{ shift.title }}</div>
+      <div class="text-secondary small">
+        {{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}
+        {% if shift.location %} · {{ shift.location.name }}{% endif %}
+      </div>
+    </div>
+    <div class="col-6 col-md-2">
+      <span class="text-secondary small">Fill</span><br>
+      <span class="{{ row.needed > 0 and row.assigned >= row.needed ? 'text-red' : 'text-green' }}">
+        {{ row.assigned }} / {{ row.needed }}
+      </span>
+    </div>
+    <div class="col-6 col-md-2">
+      {% if row.availability.occupied %}
+        {{ d.badge('Occupied', 'bg-secondary-lt') }}
+      {% elseif row.availability.value %}
+        {{ d.badge(row.availability.value.label, 'bg-azure-lt') }}
+      {% else %}
+        <span class="text-secondary small">—</span>
+      {% endif %}
+    </div>
+    <div class="col-6 col-md-2">{{ d.status_badge(row.status) }}</div>
+    <div class="col-6 col-md-2 text-md-end">
+      {% if row.status == 'signed_up' %}
+        <form method="post" action="{{ path('app_manage_shifts_apply_cancel', {id: shift.uuid}) }}"
+              data-turbo="false" data-controller="confirm" data-confirm-message-value="Cancel this application?">
+          <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ shift.id) }}">
+          <button class="btn btn-sm btn-outline-danger">Cancel</button>
+        </form>
+      {% elseif row.status == 'available' %}
+        <form method="post" action="{{ path('app_manage_shifts_apply_do', {id: shift.uuid}) }}" data-turbo="false"
+              class="d-flex flex-wrap gap-1 justify-content-md-end align-items-center">
+          <input type="hidden" name="_token" value="{{ csrf_token('apply' ~ shift.id) }}">
+          {% if signupOptions|length > 1 %}
+            <select name="volunteer_type" class="form-select form-select-sm" style="max-width: 9rem;">
+              {% for type in signupOptions %}<option value="{{ type.id }}">{{ type.name }}</option>{% endfor %}
+            </select>
+          {% endif %}
+          {% if row.overHours %}
+            <label class="form-check form-check-inline small text-orange mb-0">
+              <input type="checkbox" class="form-check-input" name="acknowledge_hours" value="1">
+              <span class="form-check-label">I understand (over hours)</span>
+            </label>
+          {% endif %}
+          <button class="btn btn-sm btn-primary">Apply</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+</div>

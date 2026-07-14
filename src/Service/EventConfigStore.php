@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use App\Audit\AuditEvents;
+use App\Audit\AuditLogger;
 use App\Entity\EventConfig;
 use App\Repository\EventConfigRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -23,7 +25,15 @@ class EventConfigStore
     public const KEY_TEARDOWN_END = 'event.teardown_end';
     public const KEY_DEFAULT_THEME = 'theme.default';
 
-    // Display / regional settings (§ Configuration). These control how dates and
+    /*
+     * Identity-provider role IDs that lift an SSO user above plain staff in every department they are
+     * mapped into. They hold raw IdP identifiers, so the page that edits them is admin-only and
+     * step-up guarded — see App\Controller\Admin\SsoRoleController.
+     */
+    public const KEY_SSO_ROLE_DEPARTMENT_MANAGER = 'sso.role.department_manager';
+    public const KEY_SSO_ROLE_SHIFT_MANAGER = 'sso.role.shift_manager';
+
+    // Display / regional settings. These control how dates and
     // times are rendered for everyone, server-side, regardless of the viewer's
     // browser locale or timezone. See {@see \App\Service\DisplaySettings}.
     public const KEY_TIMEZONE = 'display.timezone';
@@ -38,9 +48,52 @@ class EventConfigStore
 
     public const ACCESS_MODES = ['public', 'staff', 'admin'];
 
+    // Operational configuration, all admin-editable via /manage/operations.
+    // Defaults must never be hard-coded at call sites — read them from here.
+    public const KEY_BAN_NOSHOW_THRESHOLD = 'ban.noshow_threshold';
+    public const KEY_BAN_SCREEN_MESSAGE = 'ban.screen_message';
+    public const KEY_MESSAGES_ENABLED = 'messages.enabled';
+    public const KEY_INFODESK_WELCOME = 'infodesk.welcome_message';
+    public const KEY_INFODESK_FINALIZATION = 'infodesk.finalization_message';
+    public const KEY_INFODESK_CLAIM_TIMEOUT = 'infodesk.claim_timeout';
+    public const KEY_MESSAGE_EDIT_WINDOW = 'messages.edit_window';
+    public const KEY_CALL_RESPONSE_TIMEOUT = 'call.response_timeout';
+    public const KEY_CALL_MANAGER_LEAD = 'call.manager_lead';
+    public const KEY_SHIFT_REMINDER_LEAD = 'shift.reminder_lead';
+    public const KEY_HOURS_RECOMMENDED_MAX = 'hours.recommended_max';
+    public const KEY_MEMBERSHIP_AUTO_FROM_LINKS = 'membership.auto_from_links';
+    public const KEY_HOURS_NIGHT_START = 'hours.night_start';
+    public const KEY_HOURS_NIGHT_END = 'hours.night_end';
+    public const KEY_HOURS_NIGHT_MULTIPLIER = 'hours.night_multiplier';
+    public const KEY_HOURS_NOSHOW_MULTIPLIER = 'hours.noshow_multiplier';
+
+    /*
+     * How long a session survives without a request. It lives here rather than in framework.yaml because
+     * `framework.session.*` is compile-time container configuration and cannot read the database; see
+     * App\EventSubscriber\SessionIdleSubscriber, which enforces it per request.
+     */
+    public const KEY_SESSION_IDLE_MINUTES = 'session.idle_minutes';
+
+    public const DEFAULT_BAN_NOSHOW_THRESHOLD = 2;       // no-show shifts
+    public const DEFAULT_BAN_SCREEN_MESSAGE = "Your account is suspended :)";       // Ban Message
+    public const DEFAULT_INFODESK_CLAIM_TIMEOUT = 300;   // seconds
+    public const DEFAULT_INFODESK_WELCOME = "Welcome to Info Desk Support - What can we do to help?";  // Initial Message for Chat
+    public const DEFAULT_INFODESK_FINALIZATION = "Chat closed - Thanks for your contact";  // Closing message for Chat
+    public const DEFAULT_MESSAGE_EDIT_WINDOW = 60;       // seconds
+    public const DEFAULT_CALL_RESPONSE_TIMEOUT = 600;    // seconds
+    public const DEFAULT_CALL_MANAGER_LEAD = 300;        // seconds before shift start
+    public const DEFAULT_SHIFT_REMINDER_LEAD = 1800;     // seconds
+    public const DEFAULT_HOURS_RECOMMENDED_MAX = 20;     // hours, warning threshold
+    public const DEFAULT_HOURS_NIGHT_START = 2;          // hour of day (inclusive)
+    public const DEFAULT_HOURS_NIGHT_END = 8;            // hour of day (exclusive)
+    public const DEFAULT_HOURS_NIGHT_MULTIPLIER = 2.0;   // Night factor
+    public const DEFAULT_HOURS_NOSHOW_MULTIPLIER = -2.0; // No-show Multiplier
+    public const DEFAULT_SESSION_IDLE_MINUTES = 60;      // Minutes without a request
+
     public function __construct(
         private readonly EventConfigRepository $repository,
         private readonly EntityManagerInterface $em,
+        private readonly AuditLogger $audit,
     ) {
     }
 
@@ -74,19 +127,77 @@ class EventConfigStore
         }
     }
 
+    public function getInt(string $key, int $default): int
+    {
+        $value = $this->get($key);
+
+        return is_numeric($value) ? (int) $value : $default;
+    }
+
+    public function getFloat(string $key, float $default): float
+    {
+        $value = $this->get($key);
+
+        return is_numeric($value) ? (float) $value : $default;
+    }
+
+    public function getBool(string $key, bool $default): bool
+    {
+        $value = $this->get($key);
+
+        return $value === null ? $default : filter_var($value, \FILTER_VALIDATE_BOOL);
+    }
+
+    public function getString(string $key, string $default = ''): string
+    {
+        $value = $this->get($key);
+
+        return \is_string($value) ? $value : $default;
+    }
+
     /**
      * Queue a value for the given key. Call {@see flush()} to persist.
+     *
+     * Every write is audited HERE rather than in the controllers, because this store is the choke
+     * point every config screen goes through (/manage/configuration, /manage/event-config,
+     * /manage/operations). Auditing at the store means a new config screen cannot forget to.
+     *
+     * The old value is recorded alongside the new one, so the trail answers "who changed it, from
+     * what, to what".
      */
     public function set(string $key, mixed $value): void
     {
         $config = $this->repository->findOneByKey($key);
+        $previous = $config?->getValue();
+
         if ($config === null) {
             $this->em->persist(new EventConfig($key, $value));
-
-            return;
+        } else {
+            if ($previous === $value) {
+                return; // Not a change; do not manufacture an audit event for a no-op save.
+            }
+            $config->setValue($value);
         }
 
-        $config->setValue($value);
+        $this->audit->log(AuditEvents::CONFIGURATION, AuditEvents::UPDATE, [
+            'resourceType' => 'EventConfig',
+            'resourceId' => $key,
+            'details' => [
+                'key' => $key,
+                'old_value' => self::scalarise($previous),
+                'new_value' => self::scalarise($value),
+            ],
+        ]);
+    }
+
+    /** Keep audit details JSON-safe and bounded; a config value can be an array or a long string. */
+    private static function scalarise(mixed $value): mixed
+    {
+        if ($value === null || \is_scalar($value)) {
+            return \is_string($value) && mb_strlen($value) > 500 ? mb_substr($value, 0, 500).'…' : $value;
+        }
+
+        return json_encode($value);
     }
 
     public function flush(): void

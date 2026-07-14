@@ -2,13 +2,18 @@
 
 namespace App\Form;
 
+use App\Entity\Department;
 use App\Entity\Location;
 use App\Entity\Shift;
-use App\Entity\ShiftType;
+use App\Entity\ShiftTask;
+use App\Enum\ShiftAudience;
+use App\Repository\DepartmentRepository;
 use App\Service\DisplaySettings;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
+use Symfony\Component\Form\Extension\Core\Type\EnumType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\Extension\Core\Type\UrlType;
@@ -54,10 +59,19 @@ final class ShiftFormType extends AbstractType
                 'view_timezone' => $tz,
                 'model_timezone' => 'UTC',
             ])
-            ->add('shiftType', EntityType::class, [
-                'label' => 'Shift type',
-                'class' => ShiftType::class,
+            ->add('department', EntityType::class, [
+                'label' => 'Department',
+                'class' => Department::class,
                 'choice_label' => 'name',
+                // Organizational departments cannot own shifts.
+                'query_builder' => fn (DepartmentRepository $repo) => $repo->createQueryBuilder('d')
+                    ->andWhere('d.organizational = false')
+                    ->orderBy('d.name', 'ASC'),
+            ])
+            ->add('shiftTask', EntityType::class, [
+                'label' => 'Shift Task',
+                'class' => ShiftTask::class,
+                'choice_label' => 'displayName',
                 'required' => false,
                 'placeholder' => '— None —',
             ])
@@ -67,6 +81,17 @@ final class ShiftFormType extends AbstractType
                 'choice_label' => 'name',
                 'required' => false,
                 'placeholder' => '— None —',
+            ])
+            ->add('audience', EnumType::class, [
+                'label' => 'Audience',
+                'class' => ShiftAudience::class,
+                'choice_label' => fn (ShiftAudience $a) => $a->label(),
+                'help' => 'Staff-only shifts are never shown to volunteers.',
+            ])
+            ->add('requireCheckin', CheckboxType::class, [
+                'label' => 'Require check-in',
+                'required' => false,
+                'help' => 'Volunteers must be checked in before applying — even during setup and teardown.',
             ]);
     }
 

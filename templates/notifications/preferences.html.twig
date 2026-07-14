@@ -1,0 +1,64 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Notification preferences{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Notification preferences', {
+    subtitle: 'Choose how you are notified for each category.',
+    actions: [{label: '← Notifications', href: path('app_notifications'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <form method="post">
+    <input type="hidden" name="_token" value="{{ csrf_token('notif_prefs') }}">
+
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th class="text-center">In-app</th>
+          <th class="text-center">Email</th>
+          <th class="text-center">Telegram</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in matrix %}
+          <tr>
+            <td>
+              {{ row.label }}
+              {% if row.system %}{{ d.badge('system', 'bg-secondary-lt', {class: 'ms-1'}) }}{% endif %}
+            </td>
+            <td class="text-center">
+              <input type="checkbox" class="form-check-input" name="pref[{{ row.category }}][inApp]" value="1"
+                     {{ row.inApp ? 'checked' : '' }} {{ row.system ? 'disabled' : '' }}>
+            </td>
+            <td class="text-center">
+              <input type="checkbox" class="form-check-input" name="pref[{{ row.category }}][email]" value="1"
+                     {{ row.email ? 'checked' : '' }} {{ row.inAppOnly ? 'disabled' : '' }}>
+            </td>
+            <td class="text-center">
+              <input type="checkbox" class="form-check-input" name="pref[{{ row.category }}][telegram]" value="1"
+                     {{ row.telegram ? 'checked' : '' }} {{ row.inAppOnly ? 'disabled' : '' }}>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+
+    <p class="text-secondary small">System notifications always appear in-app and cannot be turned off there.</p>
+
+    <div class="mb-3" style="max-width: 24rem;">
+      <label class="form-label" for="reminder_lead">Shift reminder lead time</label>
+      <select class="form-select" id="reminder_lead" name="reminder_lead">
+        <option value="" {{ reminderLead is null ? 'selected' : '' }}>Use system default</option>
+        {% for minutes in reminderChoices %}
+          <option value="{{ minutes }}" {{ reminderLead == minutes ? 'selected' : '' }}>
+            {{ minutes >= 60 ? (minutes // 60) ~ (minutes // 60 > 1 ? ' hours' : ' hour') : minutes ~ ' minutes' }} before
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button class="btn btn-primary">Save preferences</button>
+  </form>
+{% endblock %}

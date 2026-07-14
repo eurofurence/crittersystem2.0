@@ -12,8 +12,10 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/manage/certifications')]
@@ -29,8 +31,8 @@ final class CertificationController extends AbstractController
     ) {
     }
 
-    #[Route('/{id}/qr', name: 'app_manage_certification_qr', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function qr(Certification $certification): Response
+    #[Route('/{id}/qr', name: 'app_manage_certification_qr', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function qr(#[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {
         $token = $this->service->getOrCreateToken($certification);
         $verifyUrl = $this->urls->generate('app_certification_scan_verify', ['token' => $token->getToken()], UrlGeneratorInterface::ABSOLUTE_URL);
@@ -44,15 +46,15 @@ final class CertificationController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/qr/refresh', name: 'app_manage_certification_qr_refresh', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function refreshQr(Request $request, Certification $certification): Response
+    #[Route('/{id}/qr/refresh', name: 'app_manage_certification_qr_refresh', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function refreshQr(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {
         if ($this->isCsrfTokenValid('cert-qr-refresh'.$certification->getId(), (string) $request->request->get('_token'))) {
             $this->service->refreshToken($certification);
             $this->addFlash('success', 'A fresh QR has been issued.');
         }
 
-        return $this->redirectToRoute('app_manage_certification_qr', ['id' => $certification->getId()]);
+        return $this->redirectToRoute('app_manage_certification_qr', ['id' => $certification->getUuid()]);
     }
 
     #[Route('', name: 'app_manage_certification_index', methods: ['GET'])]
@@ -84,8 +86,8 @@ final class CertificationController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/edit', name: 'app_manage_certification_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
-    public function edit(Request $request, Certification $certification): Response
+    #[Route('/{id}/edit', name: 'app_manage_certification_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
+    public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {
         $form = $this->createForm(CertificationType::class, $certification);
         $form->handleRequest($request);
@@ -103,8 +105,8 @@ final class CertificationController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'app_manage_certification_delete', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function delete(Request $request, Certification $certification): Response
+    #[Route('/{id}/delete', name: 'app_manage_certification_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function delete(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {
         if ($this->isCsrfTokenValid('delete'.$certification->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($certification);

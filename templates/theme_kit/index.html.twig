@@ -9,7 +9,7 @@
     actions: [{label: 'Save as my theme', href: path('app_settings_theme'), class: 'btn btn-outline-primary'}]
   }) }}
 
-  {# ---- Theme switcher (preview via ?theme=<slug>, no save) ---- #}
+  {# Preview only: ?theme=<slug> switches the active theme without saving it. #}
   <div class="card mb-3"><div class="card-body">
     <div class="d-flex flex-wrap gap-2 align-items-center">
       <span class="text-muted small">Active:</span>
@@ -31,7 +31,6 @@
     </div>
   </div></div>
 
-  {# ---- Component showcase ---- #}
   <h2 class="h5">Typography</h2>
   <h1>H1 Heading</h1><h2>H2 Heading</h2><h3>H3 Heading</h3>
   <p class="lead">A lead paragraph standing in for an introductory sentence.</p>

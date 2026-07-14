@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Gdpr\BanChecker;
 use App\Repository\BannedIdentityRepository;
 use App\Repository\UserRepository;
+use App\Service\EventConfigStore;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,6 +30,7 @@ final class BanAppealController extends AbstractController
         private readonly UserRepository $users,
         private readonly EntityManagerInterface $em,
         private readonly MailerInterface $mailer,
+        private readonly EventConfigStore $config,
     ) {
     }
 
@@ -51,6 +53,7 @@ final class BanAppealController extends AbstractController
 
         return $this->render('ban/appeal.html.twig', [
             'message' => self::LEDGER_KEEPER,
+            'extraMessage' => $this->config->get(EventConfigStore::KEY_BAN_SCREEN_MESSAGE),
             'done' => $done,
         ]);
     }

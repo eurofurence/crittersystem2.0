@@ -11,7 +11,7 @@
       <label class="form-label">Badge</label>
       <select name="badge" class="form-select">
         <option value="">— choose —</option>
-        {% for b in badges %}<option value="{{ b.id }}" {{ badge and badge.id == b.id ? 'selected' }}>{{ b.name }}</option>{% endfor %}
+        {% for b in badges %}<option value="{{ b.uuid }}" {{ badge and badge.uuid == b.uuid ? 'selected' }}>{{ b.name }}</option>{% endfor %}
       </select>
     </div>
     <div class="col-auto">
@@ -23,7 +23,7 @@
 
   {% if badge and results %}
     <form method="post" action="{{ path('app_manage_badge_assign') }}">
-      <input type="hidden" name="badge" value="{{ badge.id }}">
+      <input type="hidden" name="badge" value="{{ badge.uuid }}">
       <input type="hidden" name="q" value="{{ query }}">
       {{ d.table_start() }}
         <thead><tr><th></th><th>User</th><th>Has badge?</th></tr></thead>
@@ -32,7 +32,7 @@
             <tr>
               <td><input type="checkbox" name="users[]" value="{{ u.id }}" class="form-check-input"></td>
               <td>{{ u.name }} <span class="text-muted small">#{{ u.id }}</span></td>
-              <td>{% if u.hasBadge(badge) %}<span class="badge text-bg-{{ badge.color }}">{{ badge.name }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td>{% if u.hasBadge(badge) %}{{ d.badge(badge.name, 'text-bg-' ~ badge.color) }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
             </tr>
           {% endfor %}
         </tbody>

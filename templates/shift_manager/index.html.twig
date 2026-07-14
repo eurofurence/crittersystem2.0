@@ -1,0 +1,39 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/icon/_macros.twig' as i %}
+
+{% block title %}Shift Manager{% endblock %}
+
+{% block body %}
+  {{ d.page_header('Shift Manager', {subtitle: 'Apply to, manage and create staff shifts.'}) }}
+
+  {#
+    One tile per action. `priv: null` = available to every staff member in the module;
+    otherwise the tile is gated by that privilege (checked here, never in a macro).
+    These are not d.action_card() tiles: the `data-action` hook and the empty
+    stretched-link anchor are part of this page's contract.
+  #}
+  {% set actions = [
+    {action: 'apply',    priv: null,             route: 'app_manage_shifts_apply',   icon: 'checklist', color: 'text-blue',  title: 'Apply to staff shifts',       text: 'Browse and apply to the staff shifts you are eligible for.'},
+    {action: 'overview', priv: null,             route: 'app_my_shifts',             icon: 'clock',     color: 'text-blue',  title: 'My shifts & duties',          text: 'Your applications, assignments and worklog.'},
+    {action: 'manage',   priv: 'shift:manage',   route: 'app_manage_shifts_planner', icon: 'dashboard', color: 'text-green', title: 'Manage shifts',               text: 'Open the planner to edit, assign and publish shifts.'},
+    {action: 'create',   priv: 'shift:manage',   route: 'app_manage_shifts_planner', icon: 'plus',      color: 'text-green', title: 'Create shifts',               text: 'Paint new shifts on the grid or run the Shift Wizard.'},
+    {action: 'grid',     priv: 'shift:manage',   route: 'app_department_grid',       icon: 'checklist', color: 'text-green', title: 'Department grid',             text: 'Fill status, assignments and open positions at a glance.'},
+    {action: 'links',    priv: 'invite:manage',  route: 'app_request_links',         icon: 'mail',      color: 'text-green', title: 'Availability & invitations',  text: 'Send availability requests and shift invitation links.'}
+  ] %}
+
+  <div class="row row-cards">
+    {% for c in actions %}
+      {% if c.priv is null or is_granted(c.priv) %}
+        <div class="col-sm-6 col-lg-4">
+          {{ d.card_start(null, {class: 'card-link h-100', attrs: {'data-action': c.action}}) }}
+              <div class="mb-2 {{ c.color }}">{{ i.icon(c.icon) }}</div>
+              <h3 class="card-title mb-1">{{ c.title }}</h3>
+              <p class="text-secondary">{{ c.text }}</p>
+              <a href="{{ path(c.route) }}" class="stretched-link"></a>
+          {{ d.card_end() }}
+        </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endblock %}

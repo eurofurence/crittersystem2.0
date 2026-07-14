@@ -6,36 +6,11 @@ use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\User;
 use App\Service\EventConfigStore;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\DatabaseWebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class ManageEventConfigTest extends WebTestCase
+final class ManageEventConfigTest extends DatabaseWebTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
-
-        $container = static::getContainer();
-        $this->em = $container->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
-        }
-
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
-    }
-
     private function loginAdmin(): void
     {
         $group = new Group('Admins', 'admins');
@@ -62,9 +37,9 @@ final class ManageEventConfigTest extends WebTestCase
     }
 
     /**
-     * Regression: with a date already stored (as DATE_ATOM, "+00:00" offset),
-     * rendering the form used to throw because the value's timezone name
-     * ("+00:00") did not match the field's model_timezone ("UTC").
+     * Regression: a stored date is written as DATE_ATOM with a "+00:00" offset. The form throws on
+     * render unless it is read back in the *named* "UTC" zone, because the field's model_timezone
+     * ("UTC") must match the value's timezone name.
      */
     public function testRendersWithAStoredDate(): void
     {

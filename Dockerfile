@@ -22,6 +22,7 @@ RUN install-php-extensions \
         intl \
         zip \
         opcache \
+        gd \
         @composer
 
 # Runtime utilities used by the entrypoint (postgres client for readiness, bash).

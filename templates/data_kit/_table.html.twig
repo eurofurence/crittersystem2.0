@@ -1,13 +1,14 @@
+{# The demo table shared by the gallery and by the Turbo Frame. All data is fake. #}
 {% import 'components/data/_macros.twig' as d %}
 
-{{ d.table_start() }}
+{{ d.table_start({class: 'table-vcenter'}) }}
   <thead>
     <tr>
       <th style="width: 80px;">ID</th>
       <th>Name</th>
       <th style="width: 140px;">Status</th>
       <th style="width: 120px;" class="text-end">Members</th>
-      <th style="width: 140px;" class="text-end">Actions</th>
+      <th style="width: 200px;" class="text-end">Actions</th>
     </tr>
   </thead>
   <tbody>
@@ -15,12 +16,20 @@
       <tr>
         <td>{{ r.id }}</td>
         <td class="fw-semibold">{{ r.name }}</td>
-        <td>{{ d.status_badge(r.status) }}</td>
+        <td>{{ d.status_badge(r.status, {map: {'archived': 'bg-purple-lt'}}) }}</td>
         <td class="text-end">{{ r.members }}</td>
-        <td class="text-end">
-          <a class="btn btn-sm btn-outline-secondary" href="#">View</a>
-        </td>
+        {% set deleteHtml %}
+          {{ d.delete_form(path('app_data_kit_delete'), csrf_token('data_kit_demo'), {
+            message: 'Delete "' ~ r.name ~ '"? (This demo deletes nothing.)'
+          }) }}
+        {% endset %}
+        {{ d.row_actions(
+          [{label: 'View', href: path('app_data_kit'), class: 'btn btn-sm btn-outline-secondary me-1'}],
+          {extraHtml: deleteHtml}
+        ) }}
       </tr>
+    {% else %}
+      {{ d.empty_row(5, 'No demo departments match that search.') }}
     {% endfor %}
   </tbody>
 {{ d.table_end() }}

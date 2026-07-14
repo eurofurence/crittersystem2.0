@@ -16,6 +16,12 @@ class BadgeRepository extends ServiceEntityRepository
         parent::__construct($registry, Badge::class);
     }
 
+    /** Resolve a badge by its public UUID (as exposed in URLs); null for a malformed uuid. */
+    public function findOneByUuid(string $uuid): ?Badge
+    {
+        return \Symfony\Component\Uid\Uuid::isValid($uuid) ? $this->findOneBy(['uuid' => $uuid]) : null;
+    }
+
     public function findOneBySlug(string $slug): ?Badge
     {
         return $this->findOneBy(['slug' => $slug]);

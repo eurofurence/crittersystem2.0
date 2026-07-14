@@ -1,0 +1,30 @@
+{% import 'components/data/_macros.twig' as d %}
+{% if calls is empty %}
+  {{ d.empty_state('No open calls', {message: 'There are no calls for help you are eligible for right now.'}) }}
+{% else %}
+  <div class="row row-cards">
+    {% for call in calls %}
+      {% set shift = call.shift %}
+      <div class="col-12 col-md-6 col-lg-4">
+        {{ d.card_start(null, {class: ''}) }}
+            <h3 class="card-title mb-1">{{ shift.title }}</h3>
+            <div class="text-secondary small mb-2">
+              {{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}
+              {% if shift.location %}· {{ shift.location.name }}{% endif %}
+            </div>
+            <div class="mb-3">{{ d.badge(call.slotsRemaining ~ ' slot(s) left', 'bg-orange-lt') }}</div>
+            <div class="d-flex gap-2">
+              <form method="post" action="{{ path('app_call_accept', {id: call.uuid}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('call_respond' ~ call.id) }}">
+                <button class="btn btn-success btn-sm">Accept</button>
+              </form>
+              <form method="post" action="{{ path('app_call_refuse', {id: call.uuid}) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('call_respond' ~ call.id) }}">
+                <button class="btn btn-outline-secondary btn-sm">Not now</button>
+              </form>
+            </div>
+        {{ d.card_end() }}
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}

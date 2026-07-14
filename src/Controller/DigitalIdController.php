@@ -2,7 +2,6 @@
 
 namespace App\Controller;
 
-use App\Entity\DigitalIdToken;
 use App\Entity\User;
 use App\Service\DigitalIdService;
 use App\Service\QrCodeGenerator;
@@ -27,9 +26,29 @@ final class DigitalIdController extends AbstractController
     ) {
     }
 
+    /**
+     * Re-render the QR this many seconds before the token behind it expires, so
+     * the code on screen is never a dead one.
+     */
+    private const REFRESH_MARGIN_SECONDS = 10;
+
     #[IsGranted('ROLE_USER')]
     #[Route('', name: 'app_digital_id', methods: ['GET'])]
     public function index(): Response
+    {
+        return $this->render('digital_id/index.html.twig', $this->cardData());
+    }
+
+    /** The QR card on its own — polled by the page to rotate the code in place. */
+    #[IsGranted('ROLE_USER')]
+    #[Route('/card', name: 'app_digital_id_card', methods: ['GET'])]
+    public function card(): Response
+    {
+        return $this->render('digital_id/_card.html.twig', $this->cardData());
+    }
+
+    /** @return array<string, mixed> */
+    private function cardData(): array
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -37,12 +56,19 @@ final class DigitalIdController extends AbstractController
 
         $verifyUrl = $this->urls->generate('app_digital_id_verify', ['token' => $token->getToken()], UrlGeneratorInterface::ABSOLUTE_URL);
 
-        return $this->render('digital_id/index.html.twig', [
+        // Drive the refresh off the token actually on screen, not off the full
+        // TTL: getOrCreateActive() may hand back a token that is already part-way
+        // through its life, and refreshing on the full TTL would leave a dead QR
+        // on display in the meantime.
+        $remaining = $token->getExpiresAt()->getTimestamp() - time();
+        $refreshIn = max(DigitalIdService::MIN_REMAINING_SECONDS, $remaining) - self::REFRESH_MARGIN_SECONDS;
+
+        return [
             'token' => $token,
             'verifyUrl' => $verifyUrl,
             'qrDataUri' => $this->qr->dataUri($verifyUrl, 320, 12),
-            'ttlSeconds' => DigitalIdToken::DEFAULT_TTL_SECONDS,
-        ]);
+            'refreshIntervalMs' => $refreshIn * 1000,
+        ];
     }
 
     #[IsGranted('ROLE_USER')]

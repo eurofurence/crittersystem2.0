@@ -19,8 +19,7 @@ use Symfony\Component\Security\Http\Authenticator\Passport\SelfValidatingPasspor
  * Stateless API-key authentication for the ^/api firewall.
  *
  * Accepts the key via "Authorization: Bearer <key>", "X-API-Key: <key>", or
- * "?key=<key>". Wired now so the contract is fixed; API endpoints arrive in a
- * later phase.
+ * "?key=<key>".
  */
 class ApiKeyAuthenticator extends AbstractAuthenticator
 {

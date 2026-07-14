@@ -12,8 +12,10 @@
   {{ form_start(form) }}
     <div class="row">
       {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
+      {{ f.choice(form.parent, {col: 'col-12 col-md-3', help: 'Optional parent (max 2 levels deep)'}) }}
       {{ f.field(form.dect, {col: 'col-12 col-md-3', help: 'Internal phone extension'}) }}
-      {{ f.field(form.mapUrl, {col: 'col-12', help: 'Optional link to an embedded map'}) }}
+      {{ f.field(form.mapUrl, {col: 'col-12'}) }}
+      {{ f.field(form.embedHtml, {col: 'col-12'}) }}
       {{ f.field(form.description, {col: 'col-12'}) }}
       <div class="col-12 mb-3">
         <div class="form-check">

@@ -11,7 +11,9 @@ use App\Entity\User;
 use App\Entity\UserConsent;
 use App\Entity\UserVolunteerType;
 use App\Repository\ConsentTextRepository;
+use App\Repository\GroupRepository;
 use App\Repository\PrivacyNoticeRepository;
+use App\Repository\UserVolunteerTypeRepository;
 use App\Repository\VolunteerTypeRepository;
 use App\Service\PrivacyNoticeProvider;
 use App\Service\TextVariables;
@@ -26,13 +28,17 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * First-run onboarding wizard: consent & privacy, profile confirmation, Telegram
  * link (skippable), notification opt-ins, and finally setting a password. On
- * completion the user is flagged onboarded and assigned the Volunteer (or Staff)
- * volunteer type.
+ * completion the user is flagged onboarded and assigned — already confirmed —
+ * the Volunteer (or Staff) volunteer type, plus the Volunteer permission group
+ * for non-staff.
  */
 #[Route('/onboarding')]
 #[IsGranted('ROLE_USER')]
 final class OnboardingController extends AbstractController
 {
+    /** Baseline permission group every non-staff user needs to use the app. */
+    private const VOLUNTEER_GROUP_SLUG = 'volunteer';
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ConsentTextRepository $consentTexts,
@@ -40,6 +46,8 @@ final class OnboardingController extends AbstractController
         private readonly PrivacyNoticeProvider $privacyProvider,
         private readonly TextVariables $variables,
         private readonly VolunteerTypeRepository $volunteerTypes,
+        private readonly UserVolunteerTypeRepository $memberships,
+        private readonly GroupRepository $groups,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly AuditLogger $audit,
     ) {
@@ -169,7 +177,7 @@ final class OnboardingController extends AbstractController
                 $user->setPassword($this->passwordHasher->hashPassword($user, $password));
             }
 
-            $this->assignDefaultVolunteerType($user);
+            $this->assignDefaults($user);
             $user->completeOnboarding();
             $this->em->flush();
             $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, ['details' => ['onboarding' => 'completed']]);
@@ -181,12 +189,34 @@ final class OnboardingController extends AbstractController
         return $this->render('onboarding/finish.html.twig', ['user' => $user]);
     }
 
-    private function assignDefaultVolunteerType(User $user): void
+    /**
+     * Give the finishing user everything they need to actually use the app: the
+     * default volunteer type (Staff for staff, Volunteer otherwise), confirmed
+     * right away because it is granted by the system rather than requested, and
+     * — for plain volunteers — the baseline Volunteer permission group, without
+     * which they would land on the dashboard with no privileges at all.
+     */
+    private function assignDefaults(User $user): void
     {
         $name = $user->isStaff() ? 'Staff' : 'Volunteer';
         $type = $this->volunteerTypes->findOneByName($name);
         if ($type !== null) {
-            $this->em->persist(new UserVolunteerType($user, $type));
+            // An SSO group mapping may already have created the membership.
+            $membership = $this->memberships->findOneByUserAndType($user, $type);
+            if ($membership === null) {
+                $membership = new UserVolunteerType($user, $type);
+                $this->em->persist($membership);
+            }
+            if (!$membership->isConfirmed()) {
+                $membership->setConfirmedBy($user);
+            }
+        }
+
+        if (!$user->isStaff()) {
+            $group = $this->groups->findOneBySlug(self::VOLUNTEER_GROUP_SLUG);
+            if ($group !== null) {
+                $user->addGroup($group);
+            }
         }
     }
 

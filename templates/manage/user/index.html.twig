@@ -21,13 +21,13 @@
         <tr>
           <td>
             <span class="fw-semibold">{{ u.name }}</span> <span class="text-muted small">#{{ u.id }}</span>
-            {% for b in u.badges %}<span class="badge text-bg-{{ b.color }} ms-1">{{ b.name }}</span>{% endfor %}
+            {% for b in u.badges %}{{ d.badge(b.name, 'text-bg-' ~ b.color, {class: 'ms-1'}) }}{% endfor %}
           </td>
           <td class="small">{{ u.email|pii_email }}</td>
           <td class="small">{{ u.positionBadge ? u.positionBadge.name : '—' }}</td>
           <td>{% if u.onboardingCompleted %}{{ d.badge('Yes', 'text-bg-success') }}{% else %}{{ d.badge('Pending', 'text-bg-warning') }}{% endif %}</td>
           <td class="text-end text-nowrap">
-            {% if is_granted('user:edit') %}<a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_user_edit', {id: u.id}) }}">Edit</a>{% endif %}
+            {% if is_granted('user:edit') %}<a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_user_edit', {id: u.uuid}) }}">Edit</a>{% endif %}
           </td>
         </tr>
       {% endfor %}

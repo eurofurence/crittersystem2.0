@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    * { font-family: 'DejaVu Sans', sans-serif; }
+    body { font-size: 8px; color: #1a2230; }
+    h1 { font-size: 13px; margin: 0 0 2px; }
+    .sub { color: #666; font-size: 8px; margin: 0 0 6px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #cfd6e4; padding: 2px 3px; vertical-align: middle; }
+    th { background: #eef1f7; text-align: center; }
+    th.left, td.left { text-align: left; }
+    .group { background: #e3ecfb; }
+    .cell-filled { background: #dbe7fb; }
+    .cell-open { background: #fdecd8; text-align: center; }
+    .cell-notreq { color: #99a; text-align: center; }
+    .note { color: #667; font-size: 7px; }
+    .user { display: block; }
+  </style>
+</head>
+<body>
+  <h1>Staffing matrix — {{ department.name }}</h1>
+  <p class="sub">Advanced Matrix Planner export. Generated for posting.</p>
+
+  {% if matrix.columns is empty %}
+    <p>No positions configured for this department.</p>
+  {% else %}
+    <table>
+      <thead>
+        <tr>
+          <th class="left" rowspan="2">When</th>
+          <th class="left" rowspan="2">Location</th>
+          <th class="left" rowspan="2">Task</th>
+          <th class="left" rowspan="2">Shift</th>
+          {% for group in matrix.groups %}
+            <th class="group" colspan="{{ group.positions|length }}">{{ group.name }}</th>
+          {% endfor %}
+        </tr>
+        <tr>
+          {% for column in matrix.columns %}<th>{{ column.name }}</th>{% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in matrix.rows %}
+          {% set shift = row.shift %}
+          <tr>
+            <td class="left">
+              {{ shift.startsAt|app_datetime }}<br>
+              – {{ shift.endsAt|app_time }}{% if row.overnight %} (+1){% endif %}
+            </td>
+            <td class="left">{{ shift.location ? shift.location.name : '—' }}</td>
+            <td class="left">{{ shift.shiftTask ? shift.shiftTask.name : '—' }}</td>
+            <td class="left">{{ shift.title }}</td>
+            {% for column in matrix.columns %}
+              {% set cell = row.cells[column.positionId] %}
+              <td class="cell-{{ cell.state == 'not_required' ? 'notreq' : cell.state }}">
+                {% if cell.state == 'filled' %}
+                  {% for name in cell.occupants %}<span class="user">{{ name }}</span>{% endfor %}
+                {% elseif cell.state == 'open' %}?
+                {% elseif cell.state == 'not_required' %}–
+                {% endif %}
+                {% if cell.note %}<div class="note">{{ cell.note }}</div>{% endif %}
+              </td>
+            {% endfor %}
+          </tr>
+        {% else %}
+          <tr><td class="left" colspan="{{ 4 + matrix.columns|length }}">No shifts in range.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</body>
+</html>

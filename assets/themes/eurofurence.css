@@ -1,16 +1,15 @@
 /*
  * Eurofurence — official brand theme (light).
  *
- * Palette + type taken from the official ef30 website
- * (./ef30_website/www → css/main.css, css/theme.css):
+ * Palette + type taken from the official Eurofurence website:
  *   --ef-green:       #005953   (primary brand teal)
  *   --ef-green-light: #69a3a2   (lighter accent)
  *   headings:         Georgia serif    body: system sans-serif
  *   border-radius:    6px (already the Tabler default — no override needed)
  *
- * !! CRITICAL !!
  * Tabler is a Bootstrap 5 theme, so overriding its `--tblr-*` tokens rebrands
- * the whole UI without touching markup. Loaded LAST in <head> so it wins :P
+ * the whole UI without touching markup. This file is loaded LAST in <head>,
+ * after Tabler's CSS, so its overrides win the cascade.
  */
 
 :root,
@@ -61,8 +60,7 @@ h1, h2, h3, h4, h5, h6,
   font-family: Georgia, "Times New Roman", Times, serif;
 }
 
-/* Full-page fixed background image from the official EF site (img/bg.jpg)
-*/
+/* Full-page fixed background image from the official EF site. */
 html::before {
   content: "";
   position: fixed;

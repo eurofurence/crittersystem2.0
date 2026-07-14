@@ -7,17 +7,19 @@ use App\Entity\UserVolunteerType;
 use App\Entity\VolunteerType;
 use App\Repository\UserVolunteerTypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Member management for a volunteer type. Open to holders of
  * admin_volunteer_types and to supporters of the type itself
  */
-#[Route('/manage/volunteer-types/{id}/members', requirements: ['id' => '\d+'])]
+#[Route('/manage/volunteer-types/{id}/members', requirements: ['id' => Requirement::UUID])]
 #[IsGranted('ROLE_USER')]
 final class VolunteerTypeMembersController extends AbstractController
 {
@@ -28,7 +30,7 @@ final class VolunteerTypeMembersController extends AbstractController
     }
 
     #[Route('', name: 'app_manage_vt_members', methods: ['GET'])]
-    public function index(VolunteerType $type): Response
+    public function index(#[MapEntity(mapping: ['id' => 'uuid'])] VolunteerType $type): Response
     {
         $this->assertCanManage($type);
 
@@ -38,8 +40,8 @@ final class VolunteerTypeMembersController extends AbstractController
         ]);
     }
 
-    #[Route('/{membershipId}/confirm', name: 'app_manage_vt_member_confirm', methods: ['POST'], requirements: ['membershipId' => '\d+'])]
-    public function confirm(Request $request, VolunteerType $type, int $membershipId): Response
+    #[Route('/{membershipId}/confirm', name: 'app_manage_vt_member_confirm', methods: ['POST'], requirements: ['membershipId' => Requirement::UUID])]
+    public function confirm(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] VolunteerType $type, string $membershipId): Response
     {
         $this->assertCanManage($type);
         $membership = $this->resolveMembership($type, $membershipId);
@@ -52,11 +54,11 @@ final class VolunteerTypeMembersController extends AbstractController
             $this->addFlash('success', \sprintf('Confirmed %s.', $membership->getUser()->getName()));
         }
 
-        return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getId()]);
+        return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getUuid()]);
     }
 
-    #[Route('/{membershipId}/supporter', name: 'app_manage_vt_member_supporter', methods: ['POST'], requirements: ['membershipId' => '\d+'])]
-    public function toggleSupporter(Request $request, VolunteerType $type, int $membershipId): Response
+    #[Route('/{membershipId}/supporter', name: 'app_manage_vt_member_supporter', methods: ['POST'], requirements: ['membershipId' => Requirement::UUID])]
+    public function toggleSupporter(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] VolunteerType $type, string $membershipId): Response
     {
         $this->assertCanManage($type);
         $membership = $this->resolveMembership($type, $membershipId);
@@ -73,11 +75,11 @@ final class VolunteerTypeMembersController extends AbstractController
             $this->addFlash('success', \sprintf('%s is %s a supporter.', $membership->getUser()->getName(), $membership->isSupporter() ? 'now' : 'no longer'));
         }
 
-        return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getId()]);
+        return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getUuid()]);
     }
 
-    #[Route('/{membershipId}/remove', name: 'app_manage_vt_member_remove', methods: ['POST'], requirements: ['membershipId' => '\d+'])]
-    public function remove(Request $request, VolunteerType $type, int $membershipId): Response
+    #[Route('/{membershipId}/remove', name: 'app_manage_vt_member_remove', methods: ['POST'], requirements: ['membershipId' => Requirement::UUID])]
+    public function remove(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] VolunteerType $type, string $membershipId): Response
     {
         $this->assertCanManage($type);
         $membership = $this->resolveMembership($type, $membershipId);
@@ -89,12 +91,12 @@ final class VolunteerTypeMembersController extends AbstractController
             $this->addFlash('success', \sprintf('Removed %s.', $name));
         }
 
-        return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getId()]);
+        return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getUuid()]);
     }
 
-    private function resolveMembership(VolunteerType $type, int $membershipId): ?UserVolunteerType
+    private function resolveMembership(VolunteerType $type, string $membershipId): ?UserVolunteerType
     {
-        $membership = $this->em->getRepository(UserVolunteerType::class)->find($membershipId);
+        $membership = $this->em->getRepository(UserVolunteerType::class)->findOneBy(['uuid' => $membershipId]);
 
         return ($membership !== null && $membership->getVolunteerType() === $type) ? $membership : null;
     }

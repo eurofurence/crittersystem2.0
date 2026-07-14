@@ -25,7 +25,7 @@
               {% else %}{{ d.badge('Open', 'text-bg-secondary') }}{% endif %}
             </td>
             <td class="text-end">
-              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_questions_answer', {id: q.id}) }}">
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_questions_answer', {id: q.uuid}) }}">
                 {{ q.answered ? 'Edit answer' : 'Answer' }}
               </a>
             </td>

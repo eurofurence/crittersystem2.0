@@ -1,0 +1,28 @@
+{% import 'components/icon/_macros.twig' as i %}
+<div class="nav-item dropdown">
+  <button type="button"
+          class="btn btn-sm dropdown-toggle {{ vm.value == 'free_to_help' ? 'btn-success' : (vm.value == 'not_available' ? 'btn-outline-danger' : 'btn-outline-secondary') }}"
+          data-bs-toggle="dropdown" aria-expanded="false" title="Operational status">
+    {{ i.icon('activity', {class: 'icon-1 me-1'}) }}<span class="nav-status-label">{{ vm.label }}</span>
+  </button>
+  <div class="dropdown-menu dropdown-menu-end">
+    {% if vm.freeToHelp %}
+      <span class="dropdown-header">Free to help until {{ vm.expiresAt|app_time }}</span>
+      <form method="post" action="{{ path('app_operational_status_clear') }}">
+        <input type="hidden" name="_op_token" value="{{ csrf_token('op_status') }}">
+        <button class="dropdown-item" type="submit">Stop being free to help</button>
+      </form>
+    {% else %}
+      <span class="dropdown-header">Set “Free to help” for…</span>
+      {% for minutes in vm.durations %}
+        <form method="post" action="{{ path('app_operational_status_set') }}">
+          <input type="hidden" name="_op_token" value="{{ csrf_token('op_status') }}">
+          <input type="hidden" name="minutes" value="{{ minutes }}">
+          <button class="dropdown-item" type="submit">
+            {{ minutes >= 60 ? (minutes // 60) ~ (minutes // 60 > 1 ? ' hours' : ' hour') : minutes ~ ' minutes' }}
+          </button>
+        </form>
+      {% endfor %}
+    {% endif %}
+  </div>
+</div>

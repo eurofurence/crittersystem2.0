@@ -31,13 +31,12 @@
             <td class="small">{{ w.workedAt|app_datetime }}</td>
             <td class="small">{{ w.comment ?: '—' }}</td>
             <td class="small text-muted">{{ w.creator ? w.creator.name : '—' }}</td>
-            <td class="text-end">
-              <form method="post" action="{{ path('app_manage_worklog_delete', {id: w.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Delete this worklog?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ w.id) }}">
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
+            {% set del %}
+              {{ d.delete_form(path('app_manage_worklog_delete', {id: w.uuid}), csrf_token('delete' ~ w.id), {
+                message: 'Delete this worklog?'
+              }) }}
+            {% endset %}
+            {{ d.row_actions([], {class: 'text-end', extraHtml: del}) }}
           </tr>
         {% endfor %}
       </tbody>

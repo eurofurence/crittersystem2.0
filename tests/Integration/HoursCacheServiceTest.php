@@ -12,6 +12,18 @@ use App\Tests\DatabaseTestCase;
 
 final class HoursCacheServiceTest extends DatabaseTestCase
 {
+    private ?\App\Entity\Department $dept = null;
+
+    private function department(): \App\Entity\Department
+    {
+        if ($this->dept === null) {
+            $this->dept = new \App\Entity\Department('Dept '.bin2hex(random_bytes(3)), 'dept-'.bin2hex(random_bytes(3)));
+            $this->em->persist($this->dept);
+        }
+
+        return $this->dept;
+    }
+
     private function service(): HoursCacheService
     {
         return static::getContainer()->get(HoursCacheService::class);
@@ -28,7 +40,7 @@ final class HoursCacheServiceTest extends DatabaseTestCase
 
     private function entry(User $user, VolunteerType $type, string $start, string $end, bool $noshow = false): void
     {
-        $shift = (new Shift())->setTitle('S')->setStartsAt(new \DateTimeImmutable($start))->setEndsAt(new \DateTimeImmutable($end));
+        $shift = (new Shift())->setTitle('S')->setStartsAt(new \DateTimeImmutable($start))->setEndsAt(new \DateTimeImmutable($end))->setDepartment($this->department());
         $this->em->persist($shift);
         $e = new ShiftEntry($shift, $type, $user);
         $e->setNoshow($noshow);

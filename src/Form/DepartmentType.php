@@ -40,6 +40,12 @@ final class DepartmentType extends AbstractType
                 'label' => 'Staff only',
                 'required' => false,
             ])
+            ->add('organizational', CheckboxType::class, [
+                'label' => 'Organizational (cannot own shifts)',
+                'required' => false,
+                'disabled' => (bool) $options['lock_organizational'],
+                'help' => 'Can only be changed while the department has no shifts.',
+            ])
             ->add('locations', EntityType::class, [
                 'label' => 'Locations',
                 'class' => Location::class,
@@ -75,6 +81,8 @@ final class DepartmentType extends AbstractType
     {
         $resolver->setDefaults([
             'data_class' => Department::class,
+            'lock_organizational' => false,
         ]);
+        $resolver->setAllowedTypes('lock_organizational', 'bool');
     }
 }

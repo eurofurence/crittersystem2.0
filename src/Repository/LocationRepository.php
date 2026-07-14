@@ -16,6 +16,16 @@ class LocationRepository extends ServiceEntityRepository
         parent::__construct($registry, Location::class);
     }
 
+    /** @return Location[] */
+    public function findRootsOrdered(): array
+    {
+        return $this->createQueryBuilder('l')
+            ->andWhere('l.parent IS NULL')
+            ->orderBy('l.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findOneByName(string $name): ?Location
     {
         return $this->findOneBy(['name' => $name]);

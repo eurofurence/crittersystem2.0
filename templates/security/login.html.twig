@@ -1,11 +1,11 @@
 {% extends 'base.html.twig' %}
 
 {% import 'components/notification/_macros.twig' as n %}
+{% import 'components/data/_macros.twig' as d %}
 
 {% block title %}{{ eventName ? eventName ~ ' · Sign in' : 'Sign in · Critter' }}{% endblock %}
 
 {% block body %}
-    {# ---- Event header ---- #}
     <div class="text-center mb-4">
         <h1 class="display-6 mb-2">{{ eventName ?: 'Volunteer & Staff Management' }}</h1>
         {% if welcomeMessage %}
@@ -13,34 +13,30 @@
         {% endif %}
     </div>
 
-    {# ---- Event timeline (only dates that are set) ---- #}
     {% set shownDates = timeline|filter(date => date is not null) %}
     {% if shownDates is not empty %}
         <div class="row g-3 justify-content-center mb-4">
             {% for label, date in shownDates %}
                 {% set upcoming = date > date() %}
                 <div class="col-6 col-md-3">
-                    <div class="card h-100 text-center {{ upcoming ? '' : 'opacity-75' }}">
-                        <div class="card-body py-3">
+                    {{ d.card_start(null, {class: 'h-100 text-center ' ~ (upcoming ? '' : 'opacity-75'), bodyClass: 'card-body py-3'}) }}
                             <div class="text-muted small text-uppercase">{{ label }}</div>
                             <div class="fw-semibold">{{ date|app_date }}</div>
                             <div class="small">{{ date|app_time }}</div>
-                            <span class="badge {{ upcoming ? 'text-bg-primary' : 'text-bg-secondary' }} mt-2">
-                                {% if upcoming %}in {{ date.diff(date()).days }} day(s){% else %}passed{% endif %}
-                            </span>
-                        </div>
-                    </div>
+                            {{ d.badge(
+                                upcoming ? 'in ' ~ date.diff(date()).days ~ ' day(s)' : 'passed',
+                                upcoming ? 'text-bg-primary' : 'text-bg-secondary',
+                                {class: 'mt-2'}
+                            ) }}
+                    {{ d.card_end({bodyClass: 'card-body py-3'}) }}
                 </div>
             {% endfor %}
         </div>
     {% endif %}
 
-    {# ---- Sign-in card ---- #}
     <div class="row justify-content-center">
         <div class="col-12 col-md-9 col-lg-6">
-            <div class="card shadow-sm">
-                <div class="card-header"><h3 class="card-title">Sign in</h3></div>
-                <div class="card-body">
+            {{ d.card_start('Sign in', {class: 'shadow-sm'}) }}
                     {% if error %}
                         {{ n.alert('danger', error.messageKey|trans(error.messageData, 'security'), { icon: '⚠️' }) }}
                     {% endif %}
@@ -70,8 +66,7 @@
                             🔐 Sign in with {{ sso_provider_label() }}
                         </a>
                     {% endif %}
-                </div>
-            </div>
+            {{ d.card_end() }}
         </div>
     </div>
 {% endblock %}

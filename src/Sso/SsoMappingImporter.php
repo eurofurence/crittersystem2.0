@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Sso;
 
+use App\Entity\Department;
 use App\Entity\SsoGroupMapping;
 use App\Entity\VolunteerType;
 use App\Repository\BadgeRepository;
@@ -17,6 +18,10 @@ use Doctrine\ORM\EntityManagerInterface;
  * Upserts SSO group mappings from the JSON bulk-upload format. Each row is keyed
  * by the structured SSO group id; slugs are resolved to local entities and any
  * that cannot be resolved are reported as warnings (the row is still saved).
+ *
+ * A referenced `department` slug that does not exist yet is created on the fly
+ * (named after the mapping, or the humanized slug) and linked, so the SSO import
+ * can bootstrap the departments it maps to.
  */
 final class SsoMappingImporter
 {
@@ -41,6 +46,10 @@ final class SsoMappingImporter
         $warnings = [];
         $vtIndex = $this->volunteerTypeIndex();
 
+        // Departments created during this batch, keyed by slug, so several rows
+        // pointing at the same new department reuse the one unflushed instance.
+        $createdDepartments = [];
+
         foreach ($rows as $i => $row) {
             $id = (string) ($row['id'] ?? '');
             if ($id === '') {
@@ -54,10 +63,22 @@ final class SsoMappingImporter
                 ->setStaffOnly((bool) ($row['staffonly'] ?? false));
 
             if (isset($row['department'])) {
-                $dept = $this->departments->findOneBySlug((string) $row['department']);
-                $mapping->setDepartment($dept);
-                if ($dept === null) {
-                    $warnings[] = "Row $i: unknown department '{$row['department']}'.";
+                $slug = $this->slugify((string) $row['department']);
+                if ($slug === '') {
+                    $mapping->setDepartment(null);
+                    $warnings[] = "Row $i: invalid department slug '{$row['department']}'.";
+                } else {
+                    $dept = $createdDepartments[$slug] ?? $this->departments->findOneBySlug($slug);
+                    if ($dept === null) {
+                        $name = isset($row['name']) && trim((string) $row['name']) !== ''
+                            ? trim((string) $row['name'])
+                            : $this->humanizeSlug($slug);
+                        $dept = new Department($this->uniqueDepartmentName($name, $createdDepartments), $slug);
+                        $this->em->persist($dept);
+                        $createdDepartments[$slug] = $dept;
+                        $warnings[] = "Row $i: created department '{$dept->getName()}' ({$slug}).";
+                    }
+                    $mapping->setDepartment($dept);
                 }
             }
 
@@ -104,5 +125,29 @@ final class SsoMappingImporter
     private function slugify(string $value): string
     {
         return trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($value)) ?? '', '-');
+    }
+
+    /** "art-show" => "Art Show" — a readable default department name. */
+    private function humanizeSlug(string $slug): string
+    {
+        return ucwords(str_replace('-', ' ', $slug));
+    }
+
+    /**
+     * A department name that is unique against both existing departments and the
+     * ones created earlier in this batch (Department.name is unique).
+     *
+     * @param array<string, Department> $created
+     */
+    private function uniqueDepartmentName(string $base, array $created): string
+    {
+        $taken = array_map(static fn (Department $d): string => strtolower($d->getName()), $created);
+        $name = $base;
+        $n = 2;
+        while (\in_array(strtolower($name), $taken, true) || $this->departments->findOneByName($name) !== null) {
+            $name = $base.' '.$n++;
+        }
+
+        return $name;
     }
 }

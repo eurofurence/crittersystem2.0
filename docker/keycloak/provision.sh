@@ -18,7 +18,7 @@ REALM="${REALM:-critter}"
 APP_CLIENT="${APP_CLIENT:-critter-app}"
 APP_REDIRECT="${APP_REDIRECT:-http://localhost:8000/login/sso/check}"
 KC="${KC:-/opt/keycloak/bin/kcadm.sh}"
-CRED_FILE="${CRED_FILE:-/opt/keycloak-credentials.txt}"
+CRED_FILE="${CRED_FILE:-/tmp/keycloak-credentials.txt}"
 
 rand() { tr -dc 'A-Z0-9' </dev/urandom | head -c "${1:-16}"; }
 

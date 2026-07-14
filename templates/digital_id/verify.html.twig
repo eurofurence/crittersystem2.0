@@ -4,12 +4,15 @@
 {% block title %}Digital ID — {{ user.name }}{% endblock %}
 
 {% block body %}
-  <div class="row justify-content-center">
-    <div class="col-12 col-md-7 col-lg-5">
-      <div class="card text-center shadow-sm">
-        <div class="card-body">
-          <div class="display-6 mb-2">✅</div>
-          <h1 class="h3 mb-1">{{ user.name }}</h1>
+  {% set icon %}<div class="display-6 mb-2">✅</div>{% endset %}
+  {{ d.message_card_start(user.name, {
+    width: 'col-12 col-md-7 col-lg-5',
+    class: 'text-center shadow-sm',
+    bodyClass: 'card-body',
+    titleTag: 'h1',
+    titleClass: 'h3 mb-1',
+    iconHtml: icon
+  }) }}
           <div class="text-muted small mb-3">User ID #{{ user.id }}</div>
 
           {% if user.groups is not empty %}
@@ -20,8 +23,5 @@
 
           <hr>
           <div class="small text-muted">Verified at {{ "now"|app_datetime }}</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  {{ d.message_card_end() }}
 {% endblock %}

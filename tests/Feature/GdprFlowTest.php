@@ -9,33 +9,10 @@ use App\Entity\Privilege;
 use App\Entity\Settings;
 use App\Entity\User;
 use App\Gdpr\BanChecker;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\DatabaseWebTestCase;
 
-final class GdprFlowTest extends WebTestCase
+final class GdprFlowTest extends DatabaseWebTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
-        }
-
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
-    }
-
     private function makeUser(string $name, ?string $role, array $privileges = []): User
     {
         $group = new Group('G'.$name, 'g-'.$name, $role);
@@ -98,7 +75,7 @@ final class GdprFlowTest extends WebTestCase
         $crawler = $this->client->request('GET', '/manage/bans');
         self::assertResponseIsSuccessful();
         $token = $crawler->filter('input[name="_token"]')->first()->attr('value');
-        $this->client->request('POST', '/manage/bans/'.$ban->getId().'/lift', ['_token' => $token]);
+        $this->client->request('POST', '/manage/bans/'.$ban->getUuid().'/lift', ['_token' => $token]);
         self::assertResponseRedirects('/manage/bans');
 
         $this->em->clear();

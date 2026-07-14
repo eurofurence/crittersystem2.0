@@ -66,7 +66,7 @@ final class StaffController extends AbstractController
             if ($this->duty->getCurrentDuty($user) !== null) {
                 $this->addFlash('warning', 'You are already on duty.');
             } else {
-                $department = ($id = $request->request->getInt('department')) ? $this->departments->find($id) : null;
+                $department = ($id = $request->request->get('department')) ? $this->departments->findOneByUuid((string) $id) : null;
                 $this->duty->startDuty($user, $department);
                 $this->addFlash('success', 'You are now on duty.');
             }
@@ -122,8 +122,8 @@ final class StaffController extends AbstractController
 
         // Admins may view another user's stats via ?user=ID.
         $target = $me;
-        if ($this->isGranted('global:admin') && ($id = $request->query->getInt('user'))) {
-            $target = $users->find($id) ?? $me;
+        if ($this->isGranted('global:admin') && ($id = $request->query->get('user'))) {
+            $target = $users->findOneByUuid((string) $id) ?? $me;
         }
 
         return $this->render('staff/stats.html.twig', [

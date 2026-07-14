@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\BadgeRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -21,6 +23,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Table(name: 'badges')]
 class Badge
 {
+    use HasPublicUuid;
+
     public const TYPE_POSITION = 'position';
     public const TYPE_STANDARD = 'standard';
 
@@ -52,6 +56,7 @@ class Badge
 
     public function __construct(string $name = '', string $slug = '', string $type = self::TYPE_STANDARD)
     {
+        $this->uuid = Uuid::v4();
         $this->name = $name;
         $this->slug = $slug;
         $this->type = $type;

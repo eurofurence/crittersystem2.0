@@ -1,0 +1,63 @@
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    # Integration tests fetch these services straight from the container. Some of them have no
+    # other consumer, so without `public: true` the container would remove them under test.
+    App\Service\Shift\PositionService:
+        public: true
+
+    App\Service\Shift\CheckInPolicy:
+        public: true
+
+    App\Service\Shift\ShiftConcurrency:
+        public: true
+
+    App\Service\Shift\PlannerDraftStore:
+        public: true
+
+    App\Service\Shift\PlannerPresenter:
+        public: true
+
+    App\Service\Shift\ShiftWizardService:
+        public: true
+
+    App\Service\Shift\PublicationService:
+        public: true
+
+    App\Service\Shift\MatrixPresenter:
+        public: true
+
+    App\Service\Availability\AvailabilityService:
+        public: true
+
+    App\Service\Invite\RequestLinkService:
+        public: true
+
+    App\Service\Shift\StaffApplicationService:
+        public: true
+
+    App\Service\Assignment\ManualAssignmentService:
+        public: true
+
+    App\Service\Assignment\AutoAssignmentPlanner:
+        public: true
+
+    App\Service\Assignment\EventHoursGuard:
+        public: true
+
+    App\Service\Shift\DepartmentGridService:
+        public: true
+
+    App\Service\Shift\ScheduleTimelineService:
+        public: true
+
+    App\Service\Chat\ConversationService:
+        public: true
+
+    App\Service\Chat\InfoDeskQueueService:
+        public: true
+
+    App\Service\Call\HelpCallService:
+        public: true

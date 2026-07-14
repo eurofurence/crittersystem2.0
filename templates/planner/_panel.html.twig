@@ -1,0 +1,57 @@
+{# Selection-driven side panel: overview / single / batch. #}
+{% import 'components/data/_macros.twig' as d %}
+<div
+  class="card planner-panel"
+  data-controller="planner-panel"
+  data-planner-panel-panel-url-value="{{ path('app_manage_shifts_planner_panel', {id: '__ID__'}) }}"
+  data-action="planner:selection@window->planner-panel#update"
+>
+  <div class="card-body" data-planner-panel-target="overview">
+    <h3 class="card-title">Planning overview</h3>
+    <p class="text-secondary">
+      Drag on the grid to paint a shift, or click a shift to edit it. Hold
+      Shift/Ctrl (or tap several) to select multiple shifts for batch changes.
+    </p>
+    {{ d.definition_list([
+      {label: 'Department',   value: department.name},
+      {label: 'Shifts shown', value: grid.blocks|length}
+    ], {class: 'mb-0 small', labelCol: 'col-6', valueCol: 'col-6', labelClass: '', valueClass: ''}) }}
+  </div>
+
+  {# The single-shift edit form is fetched into here by the planner-panel controller. #}
+  <div data-planner-panel-target="single" hidden></div>
+
+  {# Batch edit exposes only the fields that are compatible across the selection. #}
+  <div class="card-body" data-planner-panel-target="batch" hidden>
+    <h3 class="card-title">Batch edit {{ d.badge(0, 'bg-blue-lt', {attrs: {'data-planner-panel-target': 'count'}}) }} shifts</h3>
+    <form
+      method="post"
+      action="{{ path('app_manage_shifts_planner_batch') }}"
+      data-controller="planner-form"
+    >
+      <input type="hidden" name="_token" value="{{ csrf_token('planner_edit') }}">
+      <span data-planner-panel-target="ids"></span>
+
+      <div class="mb-2">
+        <label class="form-label" for="batch-duration">Duration (minutes)</label>
+        <input type="number" min="30" step="30" class="form-control" id="batch-duration" name="duration_minutes" placeholder="Leave blank to keep">
+      </div>
+
+      <fieldset class="mb-2">
+        <legend class="form-label">Required volunteer type &amp; quantity</legend>
+        <div class="d-flex gap-2">
+          <select class="form-select" name="needed_type">
+            <option value="0">— None —</option>
+            {% for vt in volunteerTypes ?? [] %}
+              <option value="{{ vt.id }}">{{ vt.name }}</option>
+            {% endfor %}
+          </select>
+          <input type="number" min="0" class="form-control" name="needed_count" placeholder="Qty" style="max-width: 6rem;">
+        </div>
+        <small class="text-secondary">Applied to every selected shift. Quantity 0 removes the requirement.</small>
+      </fieldset>
+
+      <button type="submit" class="btn btn-primary w-100" data-action="planner-form#submit">Apply to selection</button>
+    </form>
+  </div>
+</div>

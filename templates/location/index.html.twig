@@ -1,0 +1,31 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Locations{% endblock %}
+
+{% macro branch(nodes) %}
+  {% import _self as tree %}
+  {# macros get their own scope: the template-level import of the data macros is not visible here #}
+  {% import 'components/data/_macros.twig' as d %}
+  <ul class="list-unstyled ms-3">
+    {% for node in nodes %}
+      <li class="mb-1">
+        <a href="{{ path('app_location_show', {id: node.location.uuid}) }}">{{ node.location.name }}</a>
+        {% if node.location.staffOnly %}{{ d.badge('Staff only', 'bg-secondary-lt', {class: 'ms-1'}) }}{% endif %}
+        {% if node.children is not empty %}{{ tree.branch(node.children) }}{% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
+
+{% block body %}
+  {{ d.page_header('Locations', {subtitle: 'Where shifts take place.'}) }}
+
+  {% if tree is empty %}
+    {{ d.empty_state('No locations', {message: 'No locations are visible to you.'}) }}
+  {% else %}
+    {{ d.card_start(null, {class: ''}) }}
+      {{ _self.branch(tree) }}
+    {{ d.card_end() }}
+  {% endif %}
+{% endblock %}

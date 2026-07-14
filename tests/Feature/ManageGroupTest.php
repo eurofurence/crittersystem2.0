@@ -5,34 +5,13 @@ namespace App\Tests\Feature;
 use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\DatabaseWebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class ManageGroupTest extends WebTestCase
+final class ManageGroupTest extends DatabaseWebTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
+    private const TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
 
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
-
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
-        }
-
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
-    }
 
     /** @param string[] $privileges */
     private function makeUser(string $name, array $privileges, ?string $role = null): User
@@ -68,6 +47,20 @@ final class ManageGroupTest extends WebTestCase
         return $privilege;
     }
 
+    private function enableTwoFactor(User $user): void
+    {
+        $user->setTotpSecret(self::TOTP_SECRET)->setTwoFactorEnabled(true);
+        $this->em->flush();
+    }
+
+    /** Pass a fresh step-up by confirming a current TOTP code. */
+    private function stepUp(): void
+    {
+        $totp = static::getContainer()->get(\App\TwoFactor\TotpService::class);
+        $code = $totp->codeForCounter(self::TOTP_SECRET, intdiv(time(), 30));
+        $this->client->request('POST', '/2fa/confirm', ['return' => '/manage/groups', 'code' => $code]);
+    }
+
     public function testAnonymousIsRedirectedToLogin(): void
     {
         $this->client->request('GET', '/manage/groups');
@@ -94,10 +87,25 @@ final class ManageGroupTest extends WebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    public function testManagerWithoutTwoFactorIsSentToEnrol(): void
+    {
+        // rbac:group:manage is a step-up permission: a holder without 2FA is
+        // redirected to enrol before they can mutate groups.
+        $this->client->loginUser($this->makeUser('boss', ['rbac:group:view', 'rbac:group:manage']));
+
+        $this->client->request('GET', '/manage/groups/new');
+        self::assertResponseRedirects('/2fa/setup');
+    }
+
     public function testManagerCanCreateGroupWithPermissions(): void
     {
-        $this->client->loginUser($this->makeUser('boss', ['rbac:group:view', 'rbac:group:manage']));
+        $boss = $this->makeUser('boss', ['rbac:group:view', 'rbac:group:manage']);
+        $this->enableTwoFactor($boss);
+        $this->client->loginUser($boss);
         $this->seededPrivilege('news:manage');
+
+        // rbac:group:manage requires a fresh step-up.
+        $this->stepUp();
 
         $crawler = $this->client->request('GET', '/manage/groups/new');
         self::assertResponseIsSuccessful();

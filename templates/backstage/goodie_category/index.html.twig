@@ -31,14 +31,14 @@
             <td>{{ c.displayOrder }}</td>
             <td>{{ c.items|length }}</td>
             <td>{% if c.active %}{{ d.badge('Active', 'text-bg-success') }}{% else %}{{ d.badge('Inactive', 'text-bg-secondary') }}{% endif %}</td>
-            <td class="text-end text-nowrap">
-              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_backstage_goodie_category_edit', {id: c.id}) }}">Edit</a>
-              <form method="post" action="{{ path('app_backstage_goodie_category_delete', {id: c.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Delete &quot;{{ c.name|e('js') }}&quot; and its items?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ c.id) }}">
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
+            {% set del %}
+              {{ d.delete_form(path('app_backstage_goodie_category_delete', {id: c.uuid}), csrf_token('delete' ~ c.id), {
+                message: 'Delete "' ~ c.name ~ '" and its items?'
+              }) }}
+            {% endset %}
+            {{ d.row_actions([
+              {label: 'Edit', href: path('app_backstage_goodie_category_edit', {id: c.uuid})}
+            ], {extraHtml: del}) }}
           </tr>
         {% endfor %}
       </tbody>

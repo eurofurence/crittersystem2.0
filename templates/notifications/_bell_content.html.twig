@@ -1,0 +1,46 @@
+{% import 'components/icon/_macros.twig' as i %}
+{% import 'components/data/_macros.twig' as d %}
+<a href="#" class="nav-link px-0 position-relative" data-bs-toggle="dropdown" tabindex="-1"
+   aria-label="Show notifications" aria-expanded="false">
+  {{ i.icon('bell') }}
+  {% if vm.count > 0 %}
+    {{ d.badge(vm.count > 99 ? '99+' : vm.count, 'bg-red text-white', {
+      class: 'position-absolute top-0 end-0',
+      attrs: {style: 'font-size:.6rem;'}
+    }) }}
+  {% endif %}
+</a>
+<div class="dropdown-menu dropdown-menu-end dropdown-menu-card" style="min-width: 20rem;">
+  {% set bellActions %}
+      {% if vm.count > 0 %}
+        <form method="post" action="{{ path('app_notifications_read_all') }}" class="m-0">
+          <input type="hidden" name="_notif_token" value="{{ csrf_token('notif') }}">
+          <button class="btn btn-sm btn-link p-0" type="submit">Mark all read</button>
+        </form>
+      {% endif %}
+  {% endset %}
+  {{ d.card_start('Notifications', {
+    class: '',
+    bodyClass: '',
+    titleTag: 'span',
+    headerClass: 'card-header py-2',
+    headerActions: bellActions
+  }) }}
+    <div class="list-group list-group-flush">
+      {% for n in vm.recent %}
+        <a href="{{ path('app_notifications_open', {id: n.uuid}) }}"
+           class="list-group-item list-group-item-action {{ n.isRead ? '' : 'fw-semibold' }}">
+          <div class="d-flex justify-content-between">
+            <span>{{ n.title }}</span>
+            {% if not n.isRead %}{{ d.badge('new', 'bg-primary-lt', {class: 'ms-2'}) }}{% endif %}
+          </div>
+          <div class="text-secondary small text-truncate">{{ n.message }}</div>
+          <div class="text-secondary small">{{ n.createdAt|app_datetime }}</div>
+        </a>
+      {% else %}
+        {{ d.empty_inline('No notifications.', {tag: 'div', class: 'list-group-item text-secondary small'}) }}
+      {% endfor %}
+    </div>
+  {% set bellFooter %}<a href="{{ path('app_notifications') }}" data-turbo-frame="_top">View all</a>{% endset %}
+  {{ d.card_end({bodyClass: '', footer: bellFooter, footerClass: 'card-footer text-center py-2'}) }}
+</div>

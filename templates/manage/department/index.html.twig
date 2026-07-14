@@ -12,6 +12,20 @@
     ]
   }) }}
 
+  {{ d.card_start('Bulk import (JSON)', {class: 'mb-4', titleTag: 'strong'}) }}
+      <p class="text-muted small mb-2">
+        Paste an array of departments. Only <code>name</code> is required — the
+        <code>slug</code> (alias) is generated from the name when omitted. Optional:
+        <code>description</code>, <code>staffonly</code>, <code>organizational</code>.
+        Existing departments (matched by name or slug) are updated.
+      </p>
+      <form method="post" action="{{ path('app_manage_department_import') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('department_import') }}">
+        <textarea name="json" class="form-control font-monospace" rows="8" placeholder='[{"name":"Art Show","staffonly":1},{"name":"Logistics","slug":"logistics","description":"Move and store convention needs.","organizational":0}]'></textarea>
+        <button class="btn btn-primary mt-2">Import</button>
+      </form>
+  {{ d.card_end() }}
+
   {% if departments is empty %}
     {{ d.empty_state('No departments yet', {
       message: 'Create the first department to start organising teams.',
@@ -26,6 +40,7 @@
           <th>Locations</th>
           <th>Volunteer types</th>
           <th>Visibility</th>
+          <th>SSO</th>
           <th class="text-end">Actions</th>
         </tr>
       </thead>
@@ -42,14 +57,21 @@
               {% if dept.staffOnly %}{{ d.badge('Staff only', 'text-bg-warning') }}
               {% else %}{{ d.badge('Public', 'text-bg-success') }}{% endif %}
             </td>
-            <td class="text-end text-nowrap">
-              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_department_edit', {id: dept.id}) }}">Edit</a>
-              <form method="post" action="{{ path('app_manage_department_delete', {id: dept.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Delete department &quot;{{ dept.name|e('js') }}&quot;?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ dept.id) }}">
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
+            <td>
+              {% if dept.id in ssoLinkedIds %}
+                <a href="{{ path('app_manage_sso_mapping_index') }}" class="text-decoration-none" title="Linked to an SSO group mapping">{{ d.badge('Linked', 'text-bg-azure') }}</a>
+              {% else %}
+                <span class="text-muted">—</span>
+              {% endif %}
             </td>
+            {% set del %}
+              {{ d.delete_form(path('app_manage_department_delete', {id: dept.uuid}), csrf_token('delete' ~ dept.id), {
+                message: 'Delete department "' ~ dept.name ~ '"?'
+              }) }}
+            {% endset %}
+            {{ d.row_actions([
+              {label: 'Edit', href: path('app_manage_department_edit', {id: dept.uuid})}
+            ], {extraHtml: del}) }}
           </tr>
         {% endfor %}
       </tbody>

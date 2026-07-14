@@ -38,19 +38,19 @@
               <div class="text-muted">{{ shift.durationHours }}h{% if shift.past %} · past{% endif %}</div>
             </td>
             <td class="small">
-              {{ shift.shiftType ? shift.shiftType.name : '—' }}
+              {{ shift.shiftTask ? shift.shiftTask.name : '—' }}
               <div class="text-muted">{{ shift.location ? shift.location.name : 'No location' }}</div>
             </td>
             <td>{{ shift.entries|length }}</td>
-            <td class="text-end text-nowrap">
-              <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_shift_needs', {id: shift.id}) }}">Staffing</a>
-              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_shift_edit', {id: shift.id}) }}">Edit</a>
-              <form method="post" action="{{ path('app_manage_shift_delete', {id: shift.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Delete shift &quot;{{ shift.title|e('js') }}&quot;?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ shift.id) }}">
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
+            {% set del %}
+              {{ d.delete_form(path('app_manage_shift_delete', {id: shift.uuid}), csrf_token('delete' ~ shift.id), {
+                message: 'Delete shift "' ~ shift.title ~ '"?'
+              }) }}
+            {% endset %}
+            {{ d.row_actions([
+              {label: 'Staffing', href: path('app_manage_shift_needs', {id: shift.uuid}), class: 'btn btn-sm btn-outline-secondary'},
+              {label: 'Edit', href: path('app_manage_shift_edit', {id: shift.uuid})}
+            ], {extraHtml: del}) }}
           </tr>
         {% endfor %}
       </tbody>

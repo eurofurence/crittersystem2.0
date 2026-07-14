@@ -9,10 +9,9 @@
     actions: [{label: '← Back to shifts', href: path('app_manage_shift_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  {# ---- Effective availability (three-tier) ---- #}
   <h2 class="h5">Coverage</h2>
   {% if availability is empty %}
-    <p class="text-muted">No staffing requirements apply to this shift yet.</p>
+    {{ d.empty_inline('No staffing requirements apply to this shift yet.', {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
       <thead><tr><th>Volunteer type</th><th>Assigned</th><th>Needed</th><th>Status</th></tr></thead>
@@ -32,7 +31,6 @@
     {{ d.table_end() }}
   {% endif %}
 
-  {# ---- Shift-level staffing requirements ---- #}
   <h2 class="h5 mt-4">Shift-level requirements</h2>
   <div class="table-responsive">
     <table class="table align-middle">
@@ -41,20 +39,20 @@
           <tr>
             <td>{{ need.count }} × {{ need.volunteerType.name }}</td>
             <td class="text-end">
-              <form method="post" action="{{ path('app_manage_shift_need_delete', {id: shift.id, needId: need.id}) }}" class="d-inline">
-                <input type="hidden" name="_token" value="{{ csrf_token('need-del' ~ need.id) }}">
+              <form method="post" action="{{ path('app_manage_shift_need_delete', {id: shift.uuid, needId: need.uuid}) }}" class="d-inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('need-del' ~ need.uuid) }}">
                 <button class="btn btn-sm btn-outline-danger">Remove</button>
               </form>
             </td>
           </tr>
         {% else %}
-          <tr><td class="text-muted">No shift-level requirements (location/shift-type needs may still apply above).</td></tr>
+          {{ d.empty_row(1, 'No shift-level requirements (location/shift-task needs may still apply above).', {class: 'text-muted'}) }}
         {% endfor %}
       </tbody>
     </table>
   </div>
 
-  <form method="post" action="{{ path('app_manage_shift_need_add', {id: shift.id}) }}" class="row g-2 align-items-end">
+  <form method="post" action="{{ path('app_manage_shift_need_add', {id: shift.uuid}) }}" class="row g-2 align-items-end">
     <input type="hidden" name="_token" value="{{ csrf_token('need-add' ~ shift.id) }}">
     <div class="col-12 col-md-6">
       <label class="form-label" for="volunteer_type">Volunteer type</label>
@@ -72,10 +70,9 @@
     </div>
   </form>
 
-  {# ---- Sign-ups ---- #}
   <h2 class="h5 mt-4">Sign-ups ({{ entries|length }})</h2>
   {% if entries is empty %}
-    <p class="text-muted">No one has signed up yet.</p>
+    {{ d.empty_inline('No one has signed up yet.', {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
       <thead><tr><th>Volunteer</th><th>Type</th><th>No-show</th><th class="text-end">Action</th></tr></thead>
@@ -86,14 +83,14 @@
             <td>{{ entry.volunteerType.name }}</td>
             <td>{% if entry.noshow %}{{ d.badge('No-show', 'text-bg-danger') }}{% else %}—{% endif %}</td>
             <td class="text-end text-nowrap">
-              <form method="post" action="{{ path('app_manage_shift_entry_noshow', {id: entry.id}) }}" class="d-inline">
+              <form method="post" action="{{ path('app_manage_shift_entry_noshow', {id: entry.uuid}) }}" class="d-inline">
                 <input type="hidden" name="_token" value="{{ csrf_token('noshow' ~ entry.id) }}">
                 <button class="btn btn-sm {{ entry.noshow ? 'btn-outline-success' : 'btn-outline-danger' }}">
                   {{ entry.noshow ? 'Clear no-show' : 'Mark no-show' }}
                 </button>
               </form>
-              <form method="post" action="{{ path('app_manage_shift_entry_unassign', {id: entry.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Remove {{ entry.user.name|e('js') }} from this shift?');">
+              <form method="post" action="{{ path('app_manage_shift_entry_unassign', {id: entry.uuid}) }}" class="d-inline"
+                    data-controller="confirm" data-confirm-message-value="Remove {{ entry.user.name }} from this shift?">
                 <input type="hidden" name="_token" value="{{ csrf_token('unassign' ~ entry.id) }}">
                 <button class="btn btn-sm btn-outline-secondary">Unassign</button>
               </form>
@@ -104,9 +101,8 @@
     {{ d.table_end() }}
   {% endif %}
 
-  {# ---- Manager: assign a volunteer (override) ---- #}
   <h2 class="h5 mt-4">Assign a volunteer</h2>
-  <form method="get" action="{{ path('app_manage_shift_needs', {id: shift.id}) }}" class="row g-2 mb-2">
+  <form method="get" action="{{ path('app_manage_shift_needs', {id: shift.uuid}) }}" class="row g-2 mb-2">
     <div class="col-12 col-md-8">
       <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Search volunteers by name, email, or ID…">
     </div>
@@ -115,7 +111,7 @@
 
   {% if q != '' %}
     {% if searchResults is empty %}
-      <p class="text-muted">No volunteers match "{{ q }}".</p>
+      {{ d.empty_inline('No volunteers match "' ~ q ~ '".', {class: 'text-muted'}) }}
     {% else %}
       {{ d.table_start({hover: false}) }}
         <thead><tr><th>Volunteer</th><th>Email</th><th class="text-end">Assign as</th></tr></thead>
@@ -125,7 +121,7 @@
               <td>{{ u.name }}</td>
               <td class="small">{{ u.email }}</td>
               <td class="text-end">
-                <form method="post" action="{{ path('app_manage_shift_assign', {id: shift.id}) }}" class="d-flex gap-2 justify-content-end">
+                <form method="post" action="{{ path('app_manage_shift_assign', {id: shift.uuid}) }}" class="d-flex gap-2 justify-content-end">
                   <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ shift.id) }}">
                   <input type="hidden" name="user" value="{{ u.id }}">
                   <select name="volunteer_type" class="form-select form-select-sm" style="width:auto" required>

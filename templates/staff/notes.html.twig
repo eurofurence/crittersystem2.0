@@ -9,9 +9,11 @@
     actions: [{label: '← Staff overview', href: path('app_staff_overview'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  {# New note #}
-  <form method="post" action="{{ path('app_staff_notes_new') }}" class="card mb-4">
-    <div class="card-body">
+  {{ d.card_start(null, {
+    class: 'mb-4',
+    tag: 'form',
+    attrs: {method: 'post', action: path('app_staff_notes_new')}
+  }) }}
       <input type="hidden" name="_token" value="{{ csrf_token('note-new') }}">
       <div class="mb-2">
         <label class="form-label" for="note-content">Note</label>
@@ -28,7 +30,7 @@
           <label class="form-label small mb-0" for="note-dep">Area</label>
           <select id="note-dep" name="department" class="form-select form-select-sm">
             <option value="">—</option>
-            {% for dep in departments %}<option value="{{ dep.id }}">{{ dep.name }}</option>{% endfor %}
+            {% for dep in departments %}<option value="{{ dep.uuid }}">{{ dep.name }}</option>{% endfor %}
           </select>
         </div>
         <div class="col-6 col-md-3">
@@ -40,10 +42,8 @@
         </div>
         <div class="col-6 col-md-3"><button class="btn btn-primary w-100">Add note</button></div>
       </div>
-    </div>
-  </form>
+  {{ d.card_end({tag: 'form'}) }}
 
-  {# Filter #}
   <form method="get" action="{{ path('app_staff_notes') }}" class="d-flex gap-2 mb-3">
     <select name="category" class="form-select form-select-sm" style="width:auto" onchange="this.form.submit()">
       <option value="">All categories</option>
@@ -56,7 +56,7 @@
     {{ d.empty_state('No notes', {message: 'No internal notes match the filter.'}) }}
   {% else %}
     {% for note in notes %}
-      <div class="card mb-2"><div class="card-body py-2">
+      {{ d.card_start(null, {class: 'mb-2', bodyClass: 'card-body py-2'}) }}
         <div class="d-flex justify-content-between">
           <div>
             {{ d.badge(note.category|capitalize, 'text-bg-info') }}
@@ -68,12 +68,12 @@
           </div>
         </div>
         <div class="mt-1">{{ note.content|nl2br }}</div>
-        <form method="post" action="{{ path('app_staff_notes_delete', {id: note.id}) }}" class="mt-1"
-              onsubmit="return confirm('Delete this note?');">
+        <form method="post" action="{{ path('app_staff_notes_delete', {id: note.uuid}) }}" class="mt-1"
+              data-controller="confirm" data-confirm-message-value="Delete this note?">
           <input type="hidden" name="_token" value="{{ csrf_token('note-del' ~ note.id) }}">
           <button class="btn btn-sm btn-link text-danger p-0">Delete</button>
         </form>
-      </div></div>
+      {{ d.card_end({bodyClass: 'card-body py-2'}) }}
     {% endfor %}
   {% endif %}
 {% endblock %}

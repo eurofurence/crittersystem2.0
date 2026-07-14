@@ -42,9 +42,28 @@ class Settings
     #[ORM\Column(name: 'mobile_show')]
     private bool $mobileShow = false;
 
+    /**
+     * Minutes before a shift a reminder should be created. Null
+     * means "use the admin-configured system default".
+     */
+    #[ORM\Column(name: 'notification_reminder_lead', nullable: true)]
+    private ?int $notificationReminderLead = null;
+
     public function __construct(User $user)
     {
         $this->user = $user;
+    }
+
+    public function getNotificationReminderLead(): ?int
+    {
+        return $this->notificationReminderLead;
+    }
+
+    public function setNotificationReminderLead(?int $minutes): static
+    {
+        $this->notificationReminderLead = $minutes;
+
+        return $this;
     }
 
     public function getId(): ?int

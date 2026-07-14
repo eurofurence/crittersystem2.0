@@ -1,28 +1,37 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Ban appeals{% endblock %}
+{% block title %}Bans{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Ban appeals', {
-    subtitle: 'Pending appeals. Bans can only be lifted after an appeal is submitted.',
+  {{ d.page_header('Bans', {
+    subtitle: 'Automatic (no-show) and manual bans. Lifting a behavioural ban resets the no-show counter.',
     actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  {% if appeals is empty %}
-    {{ d.empty_state('No pending appeals', {message: 'There are no ban appeals to review.'}) }}
+  {% if bans is empty %}
+    {{ d.empty_state('No bans', {message: 'There are no active bans.'}) }}
   {% else %}
     {{ d.table_start() }}
-      <thead><tr><th>Type</th><th>Banned at</th><th>Appeal at</th><th class="text-end">Action</th></tr></thead>
+      <thead><tr>
+        <th>User</th><th>Type</th><th>Reason</th><th>Origin</th><th>Banned at</th><th>Appeal</th><th class="text-end">Action</th>
+      </tr></thead>
       <tbody>
-        {% for b in appeals %}
+        {% for b in bans %}
           <tr>
+            <td>
+              {% if b.user %}<a href="{{ path('app_profile_show', {id: b.user.uuid}) }}">{{ b.user.name }}</a>{% else %}<span class="text-secondary">(hashed)</span>{% endif %}
+            </td>
             <td>{{ b.hashType }}</td>
+            <td class="small">{{ b.reason ?? '—' }}{% if b.noShowCount is not null %} <span class="text-secondary">({{ b.noShowCount }} no-shows)</span>{% endif %}</td>
+            <td>
+              {% if b.automatic %}{{ d.badge('Automatic', 'bg-red-lt') }}{% else %}{{ d.badge('Manual', 'bg-secondary-lt') }}{% endif %}
+            </td>
             <td class="small">{{ b.bannedAt|app_datetime }}</td>
-            <td class="small">{{ b.appealRequestedAt|app_datetime }}</td>
+            <td class="small">{{ b.appeal ? (b.appealRequestedAt|app_datetime) : '—' }}</td>
             <td class="text-end">
-              <form method="post" action="{{ path('app_manage_ban_lift', {id: b.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Lift this ban?');">
+              <form method="post" action="{{ path('app_manage_ban_lift', {id: b.uuid}) }}" class="d-inline"
+                    data-controller="confirm" data-confirm-message-value="Lift this ban?">
                 <input type="hidden" name="_token" value="{{ csrf_token('lift' ~ b.id) }}">
                 <button class="btn btn-sm btn-outline-success">Lift ban</button>
               </form>

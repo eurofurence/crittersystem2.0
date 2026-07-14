@@ -116,7 +116,7 @@ final class FeedController extends AbstractController
             'title' => $s->getTitle(),
             'start' => $s->getStartsAt()->format(\DATE_ATOM),
             'end' => $s->getEndsAt()->format(\DATE_ATOM),
-            'shiftType' => $s->getShiftType()?->getName(),
+            'shiftTask' => $s->getShiftTask()?->getName(),
             'location' => $s->getLocation()?->getName(),
         ], $shifts->findUpcoming());
 

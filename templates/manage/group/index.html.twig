@@ -40,14 +40,16 @@
           <td class="small">{{ group.assignments|length }}</td>
           <td class="text-end text-nowrap">
             {% if is_granted('rbac:group:manage') %}
-              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_group_edit', {id: group.id}) }}">Edit</a>
-              {% if group.slug not in core_group_slugs %}
-                <form method="post" action="{{ path('app_manage_group_delete', {id: group.id}) }}" class="d-inline"
-                      onsubmit="return confirm('Delete group &quot;{{ group.name|e('js') }}&quot;?');">
-                  <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ group.id) }}">
-                  <button class="btn btn-sm btn-outline-danger">Delete</button>
-                </form>
-              {% endif %}
+              {% set del %}
+                {% if group.slug not in core_group_slugs %}
+                  {{ d.delete_form(path('app_manage_group_delete', {id: group.uuid}), csrf_token('delete' ~ group.id), {
+                    message: 'Delete group "' ~ group.name ~ '"?'
+                  }) }}
+                {% endif %}
+              {% endset %}
+              {{ d.row_actions([
+                {label: 'Edit', href: path('app_manage_group_edit', {id: group.uuid})}
+              ], {cell: false, extraHtml: del}) }}
             {% else %}
               <span class="text-muted small">View only</span>
             {% endif %}

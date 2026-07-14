@@ -1,42 +1,137 @@
 {% extends 'base.html.twig' %}
 {% import 'components/navigation/_macros.twig' as nav %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/icon/_macros.twig' as i %}
 
 {% block title %}{{ pageTitle }}{% endblock %}
 
 {% block body %}
   {{ d.page_header(pageTitle, {
-    subtitle: 'Tabler horizontal navbar + list-group sidebar component with consistent active state.',
-    actions: [
-      {label: 'Go to Data Kit', href: path('app_data_kit'), class: 'btn btn-outline-primary'}
-    ]
+    subtitle: 'The index of the UI kit — every kit page, plus the navigation components themselves.'
   }) }}
 
+  {# ------------------------------------------------------------------ the hub #}
+
+  {{ d.section_header('The UI kit', {
+    subtitle: 'Every component demo lives on one of these pages. All of them are admin-only dev tools (src/Dev).'
+  }) }}
+
+  <div class="row row-cards mb-3">
+    {% set kits = [
+      {title: 'Data Kit',         route: 'app_data_kit',         icon: 'checklist', text: 'Cards, tables, badges & status badges, empty states, stat cards and action cards.'},
+      {title: 'Form Kit',         route: 'app_form_kit',         icon: 'puzzle',    text: 'Form fields (help text, prefix/suffix, errors), checkboxes, choices, debounced search.'},
+      {title: 'Modal Kit',        route: 'app_modal_kit',        icon: 'help',      text: 'Confirmations & dialogs — the supported mechanism. Never window.confirm()/alert().'},
+      {title: 'Notification Kit', route: 'app_notification_kit', icon: 'bell',      text: 'Alerts (4 types, dismissible), Symfony flash messages, and toasts.'},
+      {title: 'Theme Kit',        route: 'app_theme_kit',        icon: 'palette',   text: 'The registered themes, their CSS variables, and how the active theme is resolved.'}
+    ] %}
+
+    {% for kit in kits %}
+      {% set kitIcon %}{{ i.icon(kit.icon) }}{% endset %}
+      {{ d.action_card(kit.title, {
+        text: kit.text,
+        href: path(kit.route),
+        iconHtml: kitIcon
+      }) }}
+    {% endfor %}
+
+    {% set thisIcon %}{{ i.icon('compass') }}{% endset %}
+    {{ d.action_card('Navigation Kit', {
+      text: 'You are here. The kit index, plus nav_item / sidebar / sidebar_item.',
+      iconHtml: thisIcon,
+      class: 'border-primary'
+    }) }}
+  </div>
+
+  {{ d.card_start('Written reference') }}
+    <p class="mb-0">
+      The full, authoritative component reference is
+      <code>docs/ui-components.md</code> — every macro, every option, and the rules
+      (no business logic in macros, no CSRF minted in macros, only <code>…Html</code>
+      options accept trusted markup). These kit pages are the <em>visual</em> counterpart:
+      what each component looks like, and a snippet you can paste.
+    </p>
+  {{ d.card_end() }}
+
+  {# --------------------------------------------------- the navigation components #}
+
+  {{ d.section_header('Navigation components', {
+    subtitle: 'templates/components/navigation/_macros.twig — nav_item, sidebar, sidebar_item.'
+  }) }}
+
+  {{ d.card_start('nav_item', {subtitle: 'A horizontal navbar entry. Active state is derived from the current route name.'}) }}
+    <div class="navbar navbar-expand p-0 mb-3 border rounded">
+      <ul class="navbar-nav">
+        {{ nav.nav_item('Navigation Kit', 'app_navigation_kit', {icon: 'compass'}) }}
+        {{ nav.nav_item('Data Kit', 'app_data_kit', {icon: 'checklist'}) }}
+        {{ nav.nav_item('Form Kit', 'app_form_kit') }}
+        {{ nav.nav_item('Notification Kit', 'app_notification_kit', {icon: 'bell', badge: 3}) }}
+      </ul>
+    </div>
+
+    <p class="text-muted small">
+      The first entry is <strong>active</strong> because <code>_route == 'app_navigation_kit'</code>;
+      the others are not. The third has no icon; the fourth carries a badge.
+      Pass <code>exact: false</code> to match a route <em>prefix</em> (so a whole
+      <code>app_manage_department_*</code> section stays highlighted on its sub-pages).
+    </p>
+
+<pre class="mb-0"><code>{% verbatim %}{% import 'components/navigation/_macros.twig' as nav %}
+
+&lt;ul class="navbar-nav"&gt;
+  {{ nav.nav_item('Navigation Kit', 'app_navigation_kit', {icon: 'compass'}) }}
+  {{ nav.nav_item('Form Kit', 'app_form_kit') }}
+  {{ nav.nav_item('Notification Kit', 'app_notification_kit', {icon: 'bell', badge: 3}) }}
+
+  {# prefix match: active on every route starting with this name #}
+  {{ nav.nav_item('Departments', 'app_manage_department_index', {exact: false}) }}
+
+  {# route parameters #}
+  {{ nav.nav_item('My shifts', 'app_shift_index', {params: {filter: 'mine'}}) }}
+&lt;/ul&gt;{% endverbatim %}</code></pre>
+  {{ d.card_end() }}
+
   <div class="row g-3">
-    <aside class="col-12 col-lg-3">
+    <aside class="col-12 col-lg-4">
       {% set items %}
-        {{ nav.sidebar_item('Home', 'app_home', {icon: 'home'}) }}
-        {{ nav.sidebar_item('Dashboard', 'app_dashboard', {icon: 'dashboard'}) }}
-        {{ nav.sidebar_item('Form Kit', 'app_form_kit', {icon: 'puzzle'}) }}
-        {{ nav.sidebar_item('Data Kit', 'app_data_kit', {icon: 'checklist'}) }}
-        {{ nav.sidebar_item('Modal Kit', 'app_modal_kit', {icon: 'help'}) }}
-        {{ nav.sidebar_item('Notification Kit', 'app_notification_kit', {icon: 'news'}) }}
         {{ nav.sidebar_item('Navigation Kit', 'app_navigation_kit', {icon: 'compass'}) }}
+        {{ nav.sidebar_item('Data Kit', 'app_data_kit', {icon: 'checklist', badge: 7}) }}
+        {{ nav.sidebar_item('Form Kit', 'app_form_kit', {icon: 'puzzle'}) }}
+        {{ nav.sidebar_item('Anchor (forced active)', null, {href: '#nav-anchor-demo', icon: 'point', active: true}) }}
+        {{ nav.sidebar_item('Plain href (no route)', null, {href: 'https://tabler.io/icons', icon: 'code'}) }}
       {% endset %}
-      {{ nav.sidebar('Dev Kits', items) }}
+      {{ nav.sidebar('Sidebar demo', items) }}
     </aside>
 
-    <div class="col-12 col-lg-9">
-      <div class="card">
-        <div class="card-body">
-          <p class="mb-0">
-            This page exists to verify the Tabler shell:
-            <span class="fw-semibold">top navbar renders</span>,
-            <span class="fw-semibold">sidebar list-group renders</span>,
-            and <span class="fw-semibold">active state</span> works based on route name.
-          </p>
-        </div>
-      </div>
+    <div class="col-12 col-lg-8" id="nav-anchor-demo">
+      {{ d.card_start('sidebar + sidebar_item') }}
+        <p>
+          <code>sidebar(title, contentHtml)</code> is a card with a flush list-group; the
+          <code>contentHtml</code> is <strong>captured markup</strong> — build it with
+          <code>{% verbatim %}{% set items %}…{% endset %}{% endverbatim %}</code>, never from user input.
+        </p>
+        <ul class="text-muted small">
+          <li><strong>Route-based</strong> — pass a route name; active state is derived from the current route (entry 1, active here).</li>
+          <li><strong>Badge</strong> — <code>badge: 7</code> (entry 2).</li>
+          <li><strong>Forced active</strong> — <code>active: true</code>, for targets the router cannot resolve, e.g. an in-page anchor (entry 4).</li>
+          <li><strong>href-based</strong> — <code>href: '…'</code> instead of a route name, for plain/external links (entry 5).</li>
+        </ul>
+
+<pre class="mb-0"><code>{% verbatim %}{% set items %}
+  {# route-based: active when the current route matches #}
+  {{ nav.sidebar_item('Data Kit', 'app_data_kit', {icon: 'checklist', badge: 7}) }}
+
+  {# forced active (an anchor the router cannot resolve) #}
+  {{ nav.sidebar_item('Profile', null, {href: '#profile', icon: 'user', active: true}) }}
+
+  {# plain / external link #}
+  {{ nav.sidebar_item('Tabler icons', null, {href: 'https://tabler.io/icons', icon: 'code'}) }}
+
+  {# prefix match #}
+  {{ nav.sidebar_item('Shifts', 'app_shift', {exact: false, icon: 'clock'}) }}
+{% endset %}
+
+{{ nav.sidebar('Dev Kits', items) }}{% endverbatim %}</code></pre>
+      {{ d.card_end() }}
     </div>
   </div>
 {% endblock %}

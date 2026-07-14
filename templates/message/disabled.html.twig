@@ -1,0 +1,7 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% block title %}Messages{% endblock %}
+{% block body %}
+  {{ d.page_header('Messages') }}
+  {{ d.empty_state('Messaging is disabled', {message: 'An administrator has turned off the messaging feature.'}) }}
+{% endblock %}

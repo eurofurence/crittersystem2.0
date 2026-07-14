@@ -10,7 +10,9 @@ use App\Service\CertificationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -52,8 +54,8 @@ final class CertificationController extends AbstractController
         return $this->render('certification/index.html.twig', ['rows' => $rows]);
     }
 
-    #[Route('/{id}/apply', name: 'app_certifications_apply', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function apply(Request $request, Certification $certification): Response
+    #[Route('/{id}/apply', name: 'app_certifications_apply', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function apply(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -68,8 +70,8 @@ final class CertificationController extends AbstractController
         return $this->redirectToRoute('app_certifications_index');
     }
 
-    #[Route('/{id}/self-confirm', name: 'app_certifications_self_confirm', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function selfConfirm(Request $request, Certification $certification): Response
+    #[Route('/{id}/self-confirm', name: 'app_certifications_self_confirm', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function selfConfirm(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {
         /** @var User $user */
         $user = $this->getUser();

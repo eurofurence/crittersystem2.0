@@ -68,6 +68,27 @@ final class TwoFactorService
         $this->em->flush();
     }
 
+    /**
+     * Generate a fresh set of recovery codes for an already-enrolled user,
+     * discarding any previous ones. Returns the new codes (shown once).
+     *
+     * @return string[]
+     */
+    public function regenerateBackupCodes(User $user): array
+    {
+        $codes = $this->generateBackupCodes();
+        $user->setBackupCodes($codes);
+        $this->em->flush();
+
+        return $codes;
+    }
+
+    /** How many single-use recovery codes the user has left. */
+    public function remainingBackupCodeCount(User $user): int
+    {
+        return \count($user->getBackupCodes());
+    }
+
     /** Verify a TOTP code or consume a recovery code. */
     public function verify(User $user, string $code): bool
     {

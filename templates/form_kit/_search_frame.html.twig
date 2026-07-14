@@ -1,19 +1,16 @@
-<turbo-frame id="kit_search_frame">
-  <div class="card">
-    <div class="card-body">
-      <div class="fw-bold mb-2">
-        Search results {% if q %}<span class="text-muted">for “{{ q }}”</span>{% endif %}
-      </div>
+{% import 'components/data/_macros.twig' as d %}
 
-      {% if items is empty %}
-        <div class="text-muted">No matches.</div>
-      {% else %}
-        <ul class="mb-0">
-          {% for item in items %}
-            <li>{{ item }}</li>
-          {% endfor %}
-        </ul>
-      {% endif %}
-    </div>
-  </div>
+<turbo-frame id="kit_search_frame">
+  {% set title %}Demo search results{% if q %} for “{{ q }}”{% endif %}{% endset %}
+  {{ d.card_start(title, {subtitle: 'Rendered by app_form_kit_search_frame — only this frame is reloaded.'}) }}
+    {% if items is empty %}
+      {{ d.empty_inline('No demo departments match.') }}
+    {% else %}
+      <ul class="mb-0">
+        {% for item in items %}
+          <li>{{ item }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {{ d.card_end() }}
 </turbo-frame>

@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
 use Symfony\Component\Security\Http\Authenticator\AbstractLoginFormAuthenticator;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\CsrfTokenBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
@@ -22,6 +23,9 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
     use TargetPathTrait;
 
     public const LOGIN_ROUTE = 'app_login';
+
+    /** Marks the 401 a background request gets when the session is gone, so the client can be certain. */
+    public const SESSION_EXPIRED_HEADER = 'X-Session-Expired';
 
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
@@ -59,6 +63,40 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
         }
 
         return new RedirectResponse($this->urlGenerator->generate('app_dashboard'));
+    }
+
+    /**
+     * A background request must never be answered with the login page.
+     *
+     * The default entry point redirects to /login, and `fetch()` follows redirects, so a polling widget
+     * receives 200 OK carrying the whole login document and injects it into itself — which is how an
+     * expired session used to shred the navbar. Answer those requests with a bare 401 instead and let
+     * the client decide to leave the page; only a real navigation gets the redirect.
+     */
+    public function start(Request $request, ?AuthenticationException $authException = null): Response
+    {
+        if (self::isBackgroundRequest($request)) {
+            return new Response('', Response::HTTP_UNAUTHORIZED, [self::SESSION_EXPIRED_HEADER => '1']);
+        }
+
+        return parent::start($request, $authException);
+    }
+
+    /**
+     * A request the browser made on the page's behalf (poll, Turbo frame, form post over fetch) rather
+     * than a top-level navigation. Symfony also skips saving a target path for these, which is what
+     * stops a poll of /status from becoming the place the user is returned to after signing in again.
+     */
+    public static function isBackgroundRequest(Request $request): bool
+    {
+        if ($request->isXmlHttpRequest() || $request->headers->has('Turbo-Frame')) {
+            return true;
+        }
+
+        // Sent by every modern browser; absent on curl and old clients, which then read as a navigation.
+        $mode = $request->headers->get('Sec-Fetch-Mode');
+
+        return $mode !== null && $mode !== 'navigate';
     }
 
     protected function getLoginUrl(Request $request): string

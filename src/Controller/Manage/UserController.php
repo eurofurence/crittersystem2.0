@@ -28,7 +28,9 @@ use Symfony\Component\Mime\Email;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -55,15 +57,15 @@ final class UserController extends AbstractController
     ) {
     }
 
-    #[Route('/{id}/reset-2fa', name: 'app_manage_user_reset_2fa', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Route('/{id}/reset-2fa', name: 'app_manage_user_reset_2fa', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('global:admin')]
-    public function resetTwoFactor(Request $request, User $user): Response
+    public function resetTwoFactor(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): Response
     {
         if ($stepUp = $this->stepUp->guard($request)) {
             return $stepUp;
         }
         if (!$this->isCsrfTokenValid('reset2fa'.$user->getId(), (string) $request->request->get('_token'))) {
-            return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getId()]);
+            return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getUuid()]);
         }
 
         $this->twoFactor->disable($user);
@@ -80,7 +82,7 @@ final class UserController extends AbstractController
         );
         $this->addFlash('success', "Two-factor authentication reset for {$user->getName()}.");
 
-        return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getId()]);
+        return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getUuid()]);
     }
 
     #[Route('', name: 'app_manage_user_index', methods: ['GET'])]
@@ -140,9 +142,9 @@ final class UserController extends AbstractController
         return $this->render('manage/user/invite.html.twig', ['form' => $form]);
     }
 
-    #[Route('/{id}/edit', name: 'app_manage_user_edit', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    #[Route('/{id}/edit', name: 'app_manage_user_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('user:edit')]
-    public function edit(Request $request, User $user): Response
+    public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): Response
     {
         if (!$this->canManage($user)) {
             throw $this->createAccessDeniedException('You cannot manage this account.');
@@ -167,7 +169,7 @@ final class UserController extends AbstractController
                     if (!$user->isStaff() && !$this->isGranted('global:admin')) {
                         $this->addFlash('danger', 'A non-staff user can only be promoted to an elevated role by a global admin.');
 
-                        return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getId()]);
+                        return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getUuid()]);
                     }
                 }
                 $this->syncGroups($user, $groupIds);
@@ -197,21 +199,21 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/unlink-telegram', name: 'app_manage_user_unlink_telegram', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Route('/{id}/unlink-telegram', name: 'app_manage_user_unlink_telegram', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('user:telegram:admin')]
-    public function unlinkTelegram(Request $request, User $user, \App\Telegram\TelegramLinkService $links): Response
+    public function unlinkTelegram(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user, \App\Telegram\TelegramLinkService $links): Response
     {
         if ($this->canManage($user) && $this->isCsrfTokenValid('untg'.$user->getId(), (string) $request->request->get('_token'))) {
             $links->unlink($user, $this->getUser() instanceof User ? $this->getUser() : null);
             $this->addFlash('success', 'Telegram account unlinked.');
         }
 
-        return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getId()]);
+        return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getUuid()]);
     }
 
-    #[Route('/{id}/deactivate', name: 'app_manage_user_deactivate', methods: ['POST'], requirements: ['id' => '\d+'])]
+    #[Route('/{id}/deactivate', name: 'app_manage_user_deactivate', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('user:delete')]
-    public function deactivate(Request $request, User $user): Response
+    public function deactivate(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): Response
     {
         if ($this->canManage($user) && $this->isCsrfTokenValid('deactivate'.$user->getId(), (string) $request->request->get('_token'))) {
             $state = $user->getState() ?? new State($user);

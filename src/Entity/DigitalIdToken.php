@@ -6,7 +6,7 @@ use App\Repository\DigitalIdTokenRepository;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Short-lived public lookup token for a user's digital ID QR (legacy parity).
+ * Short-lived public lookup token for a user's digital ID QR.
  * The token is what gets encoded into the QR; the public profile URL is
  * /digital-id/verify/{token}. Tokens rotate every {@see ::DEFAULT_TTL_SECONDS}.
  */

@@ -23,7 +23,6 @@ final class FormKitDemoType extends AbstractType
             ->add('startsAt', TextType::class, [
                 'label' => 'Starts at',
                 'required' => false,
-                // we’ll render as datetime-local via the macro
             ])
             ->add('priority', IntegerType::class, [
                 'label' => 'Priority',

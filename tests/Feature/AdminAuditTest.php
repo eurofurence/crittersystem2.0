@@ -6,35 +6,14 @@ use App\Entity\AuditExport;
 use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Storage\ExportStorage;
+use App\Tests\DatabaseWebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class AdminAuditTest extends WebTestCase
+final class AdminAuditTest extends DatabaseWebTestCase
 {
     private const TOTP_SECRET = 'JBSWY3DPEHPK3PXP';
 
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
-        }
-
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
-    }
 
     private function makeUser(string $name, ?string $role, array $privileges): User
     {
@@ -66,13 +45,13 @@ final class AdminAuditTest extends WebTestCase
     {
         $totp = static::getContainer()->get(\App\TwoFactor\TotpService::class);
         $code = $totp->codeForCounter(self::TOTP_SECRET, intdiv(time(), 30));
-        $this->client->request('POST', '/2fa/confirm', ['return' => '/admin/audit', 'code' => $code]);
+        $this->client->request('POST', '/2fa/confirm', ['return' => '/manage/audit', 'code' => $code]);
     }
 
     public function testNonAdminCannotReachAudit(): void
     {
         $this->client->loginUser($this->makeUser('vol', null, ['shift:view']));
-        $this->client->request('GET', '/admin/audit');
+        $this->client->request('GET', '/manage/audit');
         self::assertResponseStatusCodeSame(403);
     }
 
@@ -80,23 +59,45 @@ final class AdminAuditTest extends WebTestCase
     {
         $this->client->loginUser($this->makeUser('boss', 'ROLE_ADMIN', ['global:admin']));
 
-        $crawler = $this->client->request('GET', '/admin/audit');
+        // Audit is critical data: viewing it requires a fresh step-up.
+        // Without one the admin is redirected to the 2FA confirm challenge.
+        $this->client->request('GET', '/manage/audit');
+        self::assertResponseRedirects('/2fa/confirm?return=/manage/audit');
+
+        $this->stepUp();
+
+        $crawler = $this->client->request('GET', '/manage/audit');
         self::assertResponseIsSuccessful();
         $token = $crawler->filter('input[name="_token"]')->first()->attr('value');
 
-        // Exporting requires a fresh step-up authentication.
-        $this->stepUp();
-
-        $this->client->request('POST', '/admin/audit/export', [
+        $this->client->request('POST', '/manage/audit/export', [
             '_token' => $token,
             'from' => (new \DateTimeImmutable('-1 day'))->format('Y-m-d'),
             'to' => (new \DateTimeImmutable('+1 day'))->format('Y-m-d'),
         ]);
-        self::assertResponseRedirects('/admin/audit');
+        self::assertResponseRedirects('/manage/audit');
 
         $exports = $this->em->getRepository(AuditExport::class)->findAll();
         self::assertCount(1, $exports);
-        self::assertTrue($exports[0]->fileExists());
-        @unlink($exports[0]->getFilePath());
+        $storage = static::getContainer()->get(ExportStorage::class);
+        self::assertTrue($storage->exists($exports[0]->getStorageKey()));
+
+        /*
+         * Render the page again now that an export row exists. The first render above had none, so the
+         * export table body was never reached — which is how a stale method call in it went unnoticed.
+         */
+        $crawler = $this->client->request('GET', '/manage/audit');
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            1,
+            $crawler->filter('a[href="/manage/audit/download/'.$exports[0]->getUuid().'"]')->count(),
+            'a stored, unexpired export offers a download link',
+        );
+
+        // With the archive gone from storage, the row must stop offering a download it cannot serve.
+        $storage->delete($exports[0]->getStorageKey());
+        $crawler = $this->client->request('GET', '/manage/audit');
+        self::assertResponseIsSuccessful();
+        self::assertSame(0, $crawler->filter('a[href^="/manage/audit/download/"]')->count());
     }
 }

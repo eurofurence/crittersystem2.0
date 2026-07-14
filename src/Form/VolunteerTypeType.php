@@ -2,11 +2,13 @@
 
 namespace App\Form;
 
+use App\Entity\Certification;
 use App\Entity\VolunteerType;
+use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -17,16 +19,33 @@ final class VolunteerTypeType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, ['label' => 'Name'])
-            ->add('description', TextareaType::class, [
+            ->add('description', RichTextType::class, [
                 'label' => 'Description',
                 'required' => false,
-                'attr' => ['rows' => 3],
             ])
-            ->add('contactName', TextType::class, ['label' => 'Contact name', 'required' => false])
-            ->add('contactDect', TextType::class, ['label' => 'Contact DECT', 'required' => false])
-            ->add('contactEmail', EmailType::class, ['label' => 'Contact email', 'required' => false])
+            ->add('contacts', CollectionType::class, [
+                'label' => 'Contacts',
+                'entry_type' => VolunteerTypeContactType::class,
+                'allow_add' => true,
+                'allow_delete' => true,
+                'by_reference' => false,
+                'prototype' => true,
+            ])
+            ->add('certifications', EntityType::class, [
+                'label' => 'Certifications / requirements',
+                'class' => Certification::class,
+                'choice_label' => 'title',
+                'multiple' => true,
+                'expanded' => true,
+                'required' => false,
+                'by_reference' => false,
+            ])
             ->add('restricted', CheckboxType::class, [
-                'label' => 'Restricted (requires supporter confirmation to join)',
+                'label' => 'Requires Introduction (cannot apply to shifts until confirmed)',
+                'required' => false,
+            ])
+            ->add('departmentOnly', CheckboxType::class, [
+                'label' => 'Department only (requires Staff only)',
                 'required' => false,
             ])
             ->add('shiftSelfSignup', CheckboxType::class, [

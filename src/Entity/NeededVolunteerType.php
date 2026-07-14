@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\NeededVolunteerTypeRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
@@ -15,6 +17,8 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 #[ORM\Table(name: 'needed_volunteer_types')]
 class NeededVolunteerType
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -37,12 +41,13 @@ class NeededVolunteerType
     #[ORM\JoinColumn(name: 'location_id', nullable: true, onDelete: 'CASCADE')]
     private ?Location $location = null;
 
-    #[ORM\ManyToOne(targetEntity: ShiftType::class)]
-    #[ORM\JoinColumn(name: 'shift_type_id', nullable: true, onDelete: 'CASCADE')]
-    private ?ShiftType $shiftType = null;
+    #[ORM\ManyToOne(targetEntity: ShiftTask::class)]
+    #[ORM\JoinColumn(name: 'shift_task_id', nullable: true, onDelete: 'CASCADE')]
+    private ?ShiftTask $shiftTask = null;
 
     public function __construct(VolunteerType $volunteerType, int $count = 1)
     {
+        $this->uuid = Uuid::v4();
         $this->volunteerType = $volunteerType;
         $this->count = $count;
     }
@@ -50,7 +55,7 @@ class NeededVolunteerType
     #[Assert\Callback]
     public function validateExactlyOneTarget(ExecutionContextInterface $context): void
     {
-        $targets = array_filter([$this->shift, $this->location, $this->shiftType]);
+        $targets = array_filter([$this->shift, $this->location, $this->shiftTask]);
         if (\count($targets) !== 1) {
             $context->buildViolation('A staffing requirement must target exactly one of a shift, location, or shift type.')
                 ->atPath('count')
@@ -111,14 +116,14 @@ class NeededVolunteerType
         return $this;
     }
 
-    public function getShiftType(): ?ShiftType
+    public function getShiftTask(): ?ShiftTask
     {
-        return $this->shiftType;
+        return $this->shiftTask;
     }
 
-    public function setShiftType(?ShiftType $shiftType): static
+    public function setShiftTask(?ShiftTask $shiftTask): static
     {
-        $this->shiftType = $shiftType;
+        $this->shiftTask = $shiftTask;
 
         return $this;
     }

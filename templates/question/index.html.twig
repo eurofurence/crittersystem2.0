@@ -9,21 +9,23 @@
     actions: [{label: 'FAQ', href: path('app_faq_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  <form method="post" action="{{ path('app_questions_ask') }}" class="card mb-4">
-    <div class="card-body">
+  {{ d.card_start(null, {
+    tag: 'form',
+    class: 'mb-4',
+    attrs: {method: 'post', action: path('app_questions_ask')}
+  }) }}
       <input type="hidden" name="_token" value="{{ csrf_token('ask') }}">
       <label class="form-label" for="q-text">Your question</label>
       <textarea id="q-text" name="text" class="form-control mb-2" rows="3" required></textarea>
       <button class="btn btn-primary">Submit</button>
-    </div>
-  </form>
+  {{ d.card_end({tag: 'form'}) }}
 
   <h2 class="h5">Your questions</h2>
   {% if questions is empty %}
     <p class="text-muted">You haven't asked anything yet.</p>
   {% else %}
     {% for q in questions %}
-      <div class="card mb-2"><div class="card-body">
+      {{ d.card_start(null, {class: 'mb-2'}) }}
         <div class="small text-muted">{{ q.createdAt|app_datetime }}</div>
         <div class="fw-semibold">{{ q.text|nl2br }}</div>
         {% if q.answered %}
@@ -33,7 +35,7 @@
         {% else %}
           <div class="text-muted small mt-1">Awaiting an answer…</div>
         {% endif %}
-      </div></div>
+      {{ d.card_end() }}
     {% endfor %}
   {% endif %}
 {% endblock %}

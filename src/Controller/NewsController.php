@@ -10,7 +10,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -34,8 +36,8 @@ final class NewsController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_news_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-    public function show(News $news): Response
+    #[Route('/{id}', name: 'app_news_show', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function show(#[MapEntity(mapping: ['id' => 'uuid'])] News $news): Response
     {
         if ($news->isStaffOnly() && !$this->canSeeStaffOnly()) {
             throw $this->createAccessDeniedException();
@@ -44,8 +46,8 @@ final class NewsController extends AbstractController
         return $this->render('news/show.html.twig', ['news' => $news]);
     }
 
-    #[Route('/{id}/comment', name: 'app_news_comment', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function comment(Request $request, News $news): Response
+    #[Route('/{id}/comment', name: 'app_news_comment', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function comment(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] News $news): Response
     {
         if ($news->isStaffOnly() && !$this->canSeeStaffOnly()) {
             throw $this->createAccessDeniedException();
@@ -60,7 +62,7 @@ final class NewsController extends AbstractController
             $this->addFlash('success', 'Comment posted.');
         }
 
-        return $this->redirectToRoute('app_news_show', ['id' => $news->getId()]);
+        return $this->redirectToRoute('app_news_show', ['id' => $news->getUuid()]);
     }
 
     private function canSeeStaffOnly(): bool

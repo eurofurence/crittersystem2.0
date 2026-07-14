@@ -1,20 +1,20 @@
 {% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 {% block title %}Unsubscribe{% endblock %}
 {% block body %}
-  <div class="row justify-content-center"><div class="col-12 col-md-6">
-    <div class="card"><div class="card-body text-center">
-      {% if done %}
-        <h2 class="card-title">You're unsubscribed</h2>
-        <p>You will no longer receive <strong>{{ label }}</strong> by email.</p>
-        <p class="text-muted small">Critical notifications (password reset, security, support) are still sent.</p>
-      {% else %}
-        <h2 class="card-title">Unsubscribe</h2>
-        <p>Stop receiving <strong>{{ label }}</strong> by email?</p>
-        <form method="post">
-          <input type="hidden" name="type" value="{{ type }}">
-          <button class="btn btn-primary">Yes, unsubscribe</button>
-        </form>
-      {% endif %}
-    </div></div>
-  </div></div>
+  {{ d.message_card_start(done ? "You're unsubscribed" : 'Unsubscribe', {
+    width: 'col-12 col-md-6',
+    titleTag: 'h2'
+  }) }}
+    {% if done %}
+      <p>You will no longer receive <strong>{{ label }}</strong> by email.</p>
+      <p class="text-muted small">Critical notifications (password reset, security, support) are still sent.</p>
+    {% else %}
+      <p>Stop receiving <strong>{{ label }}</strong> by email?</p>
+      <form method="post">
+        <input type="hidden" name="type" value="{{ type }}">
+        <button class="btn btn-primary">Yes, unsubscribe</button>
+      </form>
+    {% endif %}
+  {{ d.message_card_end() }}
 {% endblock %}

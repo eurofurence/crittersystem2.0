@@ -1,4 +1,5 @@
 {% extends 'install/_layout.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 
 {% block title %}Database · Setup · VMS{% endblock %}
 
@@ -7,13 +8,11 @@
 
     {% set running = status.state == 'running' or app.request.query.get('running') %}
 
-    <div class="card card-md">
-        <div class="card-body">
+    {{ d.card_start(null, {class: 'card-md'}) }}
             <h2 class="mb-1">Database check</h2>
             {% include 'install/_flashes.html.twig' %}
 
             {% if not reachable %}
-                {# ---- connection error ---- #}
                 <div class="alert alert-danger" role="alert">
                     <div class="d-flex">
                         <div>
@@ -31,13 +30,11 @@
                     <li>Network/firewall rules block the connection between this app and the database.</li>
                 </ul>
             {% elseif pending == 0 and not running %}
-                {# ---- nothing to do ---- #}
                 <div class="alert alert-success" role="alert">
                     <h4 class="alert-title">The database schema is up to date</h4>
-                    <div class="text-secondary">No migrations are pending.</div>
+                    {{ d.empty_inline('No migrations are pending.', {tag: 'div', class: 'text-secondary'}) }}
                 </div>
             {% else %}
-                {# ---- migration available / running ---- #}
                 <p class="text-secondary">
                     {% if pending %}<strong>{{ pending }}</strong> migration(s) need to be applied{% endif %}
                     {% if latest %} up to version <code>{{ latest }}</code>{% endif %}.
@@ -67,8 +64,7 @@
                     </div>
                 </div>
             {% endif %}
-        </div>
-    </div>
+    {{ d.card_end() }}
 
     {% embed 'install/_progress.html.twig' %}
         {% block buttons %}

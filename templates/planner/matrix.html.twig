@@ -1,0 +1,226 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}Matrix Planner — {{ department.name }}{% endblock %}
+
+{% block body %}
+  {% set canAssign = is_granted('shift:assign', department) %}
+
+  {{ d.page_header('Advanced Matrix Planner', {
+    subtitle: 'Shifts as rows against configurable position columns. Click a cell to staff it.',
+    actions: [
+      {label: 'Download PDF', href: path('app_manage_shifts_matrix_pdf', {department: department.uuid}), class: 'btn btn-outline-primary'},
+      {label: 'Timeline view', href: path('app_manage_shifts_planner', {department: department.uuid}), class: 'btn btn-outline-primary'},
+      {label: '← Shift Manager', href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}
+    ]
+  }) }}
+
+  {# The URLs carry placeholders the controller substitutes per cell; the routes require a uuid, so
+     the placeholders must survive URL generation. #}
+  <div data-controller="matrix"
+       data-matrix-token-value="{{ csrf_token('matrix_edit') }}"
+       data-matrix-can-assign-value="{{ canAssign ? '1' : '0' }}"
+       data-matrix-enable-url-value="{{ path('app_matrix_position_enable', {id: '00000000-0000-4000-8000-000000000000', positionId: '00000000-0000-4000-8000-000000000001'})|replace({'00000000-0000-4000-8000-000000000000': '__SHIFT__', '00000000-0000-4000-8000-000000000001': '__POSITION__'}) }}"
+       data-matrix-assign-url-value="{{ path('app_matrix_position_assign', {id: '00000000-0000-4000-8000-000000000000'})|replace({'00000000-0000-4000-8000-000000000000': '__ID__'}) }}"
+       data-matrix-unassign-url-value="{{ path('app_matrix_position_unassign', {id: '00000000-0000-4000-8000-000000000000'})|replace({'00000000-0000-4000-8000-000000000000': '__ID__'}) }}"
+       data-matrix-required-url-value="{{ path('app_matrix_position_required', {id: '00000000-0000-4000-8000-000000000000'})|replace({'00000000-0000-4000-8000-000000000000': '__ID__'}) }}"
+       data-matrix-note-url-value="{{ path('app_matrix_position_note', {id: '00000000-0000-4000-8000-000000000000'})|replace({'00000000-0000-4000-8000-000000000000': '__ID__'}) }}"
+       data-matrix-disable-url-value="{{ path('app_matrix_position_disable', {id: '00000000-0000-4000-8000-000000000000'})|replace({'00000000-0000-4000-8000-000000000000': '__ID__'}) }}">
+
+    {{ d.card_start(null, {bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
+        <form method="get" class="d-flex align-items-end gap-2">
+          <div>
+            <label class="form-label mb-1" for="matrix-department">Department</label>
+            <select id="matrix-department" name="department" class="form-select" onchange="this.form.submit()">
+              {% for dept in departments %}
+                <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </form>
+        <div class="ms-auto text-secondary small">
+          {{ d.badge('Name', 'bg-blue-lt') }} assigned
+          {{ d.badge('?', 'bg-yellow-lt', {class: 'ms-1'}) }} open/required
+          <span class="text-secondary ms-1">–</span> not required
+          <span class="text-secondary ms-1">·</span> click a cell to edit
+        </div>
+    {{ d.card_end({bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
+
+    {# Everything that changes when a group, position or assignment is added lives inside this
+       region, which the controller swaps in place after each mutation. #}
+    <div data-matrix-target="content">
+      {% if matrix.columns is empty %}
+        {{ d.empty_state('No positions configured', {
+          message: 'Configure Position Groups and Named Positions for this department to use the matrix planner.'
+        }) }}
+      {% else %}
+        {{ d.card_start(null, {class: '', bodyClass: ''}) }}
+          <div class="table-responsive matrix-scroll">
+            <table class="table table-bordered table-sm matrix-table mb-0">
+              <thead>
+                <tr>
+                  <th class="matrix-sticky-col" rowspan="2">When</th>
+                  <th rowspan="2">Location</th>
+                  <th rowspan="2">Task</th>
+                  <th rowspan="2">Shift</th>
+                  {% for group in matrix.groups %}
+                    <th class="text-center matrix-group" colspan="{{ group.positions|length }}">{{ group.name }}</th>
+                  {% endfor %}
+                </tr>
+                <tr>
+                  {% for column in matrix.columns %}
+                    <th class="text-center matrix-position">{{ column.name }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% if matrix.rows is empty %}
+                  {{ d.empty_row(4 + matrix.columns|length, 'No shifts in range. Create shifts in the timeline view first.') }}
+                {% endif %}
+                {% for row in matrix.rows %}
+                  {% set shift = row.shift %}
+                  <tr>
+                    <td class="matrix-sticky-col text-nowrap">
+                      {{ shift.startsAt|app_datetime }}<br>
+                      <span class="text-secondary">– {{ shift.endsAt|app_time }}{% if row.overnight %} <span title="Overnight">▾</span>{% endif %}</span>
+                    </td>
+                    <td>{{ shift.location ? shift.location.name : '—' }}</td>
+                    <td>{{ shift.shiftTask ? shift.shiftTask.name : '—' }}</td>
+                    <td>
+                      {{ shift.title }}
+                      {% if shift.draft %}{{ d.badge('draft', 'bg-yellow-lt') }}{% endif %}
+                    </td>
+                    {% for column in matrix.columns %}
+                      {% set cell = row.cells[column.positionId] %}
+                      <td class="text-center matrix-cell matrix-cell-{{ cell.state }} p-0">
+                        {# A button, not a clickable cell: the editor must be keyboard-reachable. #}
+                        <button type="button"
+                                class="matrix-cell-button"
+                                data-action="matrix#openCell"
+                                data-shift="{{ shift.uuid }}"
+                                data-shift-title="{{ shift.title }}"
+                                data-position="{{ column.name }}"
+                                data-position-uuid="{{ column.positionUuid }}"
+                                data-shift-position-uuid="{{ cell.shiftPositionUuid ?? '' }}"
+                                data-required="{{ cell.required ? '1' : '0' }}"
+                                data-capacity="{{ cell.capacity }}"
+                                data-note="{{ cell.note ?? '' }}"
+                                data-assignments="{{ cell.assignments|json_encode }}"
+                                aria-label="{{ column.name }} on {{ shift.title }} — {{ cell.state == 'filled' ? cell.occupants|join(', ') : (cell.state == 'open' ? 'open' : (cell.state == 'not_required' ? 'not required' : 'not enabled')) }}">
+                          {% if cell.state == 'filled' %}
+                            {% for name in cell.occupants %}
+                              {{ d.badge(name, 'bg-blue-lt', {class: 'd-block'}) }}
+                            {% endfor %}
+                          {% elseif cell.state == 'open' %}
+                            {{ d.badge('?', 'bg-yellow-lt') }}
+                          {% elseif cell.state == 'not_required' %}
+                            <span class="text-secondary">–</span>
+                          {% else %}
+                            <span class="matrix-cell-empty" aria-hidden="true">+</span>
+                          {% endif %}
+                          {% if cell.note %}
+                            <span class="matrix-note" title="{{ cell.note }}">{{ cell.note }}</span>
+                          {% endif %}
+                        </button>
+                      </td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {{ d.card_end({bodyClass: ''}) }}
+      {% endif %}
+
+      <div class="row g-3 mt-1">
+        <div class="col-12 col-lg-4">
+          {{ d.card_start('Add Position Group', {class: ''}) }}
+              <form method="post" action="{{ path('app_matrix_group_create') }}" data-controller="planner-form">
+                <input type="hidden" name="_token" value="{{ csrf_token('matrix_edit') }}">
+                <input type="hidden" name="department" value="{{ department.uuid }}">
+                <div class="input-group">
+                  <input type="text" class="form-control" name="name" placeholder="e.g. Light" required>
+                  <button class="btn btn-primary" type="submit" data-action="planner-form#submit">Add</button>
+                </div>
+              </form>
+          {{ d.card_end() }}
+        </div>
+
+        <div class="col-12 col-lg-4">
+          {{ d.card_start('Add Named Position', {class: ''}) }}
+              {% if matrix.groups is empty %}
+                <p class="text-secondary mb-0">Add a Position Group first.</p>
+              {% else %}
+                <form method="post" action="{{ path('app_matrix_position_create') }}" data-controller="planner-form">
+                  <input type="hidden" name="_token" value="{{ csrf_token('matrix_edit') }}">
+                  <div class="mb-2">
+                    <select class="form-select" name="group" required>
+                      {% for group in matrix.groups %}
+                        <option value="{{ group.id }}">{{ group.name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="input-group">
+                    <input type="text" class="form-control" name="name" placeholder="e.g. FOH" required>
+                    <input type="number" class="form-control" name="capacity" value="1" min="1" style="max-width: 5rem;" title="Capacity">
+                    <button class="btn btn-primary" type="submit" data-action="planner-form#submit">Add</button>
+                  </div>
+                </form>
+              {% endif %}
+          {{ d.card_end() }}
+        </div>
+
+        <div class="col-12 col-lg-4">
+          {{ d.card_start('Copy structure', {class: ''}) }}
+              {% if shifts|length < 2 %}
+                <p class="text-secondary mb-0">Need at least two shifts to copy structure.</p>
+              {% else %}
+                <form method="post" action="{{ path('app_matrix_copy_structure') }}" data-controller="planner-form">
+                  <input type="hidden" name="_token" value="{{ csrf_token('matrix_edit') }}">
+                  <div class="mb-2">
+                    <label class="form-label">From shift</label>
+                    <select class="form-select" name="from" required>
+                      {% for shift in shifts %}
+                        <option value="{{ shift.id }}">{{ shift.title }} — {{ shift.startsAt|app_datetime }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">To shifts</label>
+                    {% for shift in shifts %}
+                      <label class="form-check">
+                        <input type="checkbox" class="form-check-input" name="to[]" value="{{ shift.id }}">
+                        <span class="form-check-label">{{ shift.title }} — {{ shift.startsAt|app_datetime }}</span>
+                      </label>
+                    {% endfor %}
+                  </div>
+                  <button class="btn btn-primary" type="submit" data-action="planner-form#submit">Copy structure</button>
+                </form>
+              {% endif %}
+          {{ d.card_end() }}
+        </div>
+      </div>
+    </div>
+
+    {# The editor reads its volunteer options from here, so the list is rendered (and escaped) by
+       Twig rather than built in JavaScript. #}
+    <select id="matrix-candidates" class="d-none" aria-hidden="true" tabindex="-1">
+      {% for candidate in candidates %}
+        <option value="{{ candidate.id }}">{{ candidate.name }}</option>
+      {% endfor %}
+    </select>
+
+    {# Outside the reloaded region: replacing the content must not tear down an open modal. #}
+    <div class="modal" tabindex="-1" data-matrix-target="editor" aria-labelledby="matrix-editor-title">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="matrix-editor-title" data-matrix-target="editorTitle">Position</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" data-matrix-target="editorBody"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -17,16 +17,14 @@
         <link rel="stylesheet" href="{{ asset(active_theme.assetPath) }}">
     </head>
 
-    <body class="layout-fluid">
-        {# COMPONENTS #}
+    <body>
         {% import 'components/navigation/_macros.twig' as nav %}
         {% import 'components/notification/_macros.twig' as n %}
         {% import 'components/icon/_macros.twig' as i %}
 
         {% block navbar %}
         <div class="page">
-            {# ===================== TOP NAVBAR (brand + user menu) ===================== #}
-            <header class="navbar navbar-expand-md d-print-none">
+            <header class="navbar navbar-expand-md d-print-none layout-fluid">
                 <div class="container-xl">
                     <button class="navbar-toggler" type="button"
                             data-bs-toggle="collapse" data-bs-target="#navbar-menu"
@@ -41,6 +39,10 @@
 
                     <div class="navbar-nav flex-row order-md-last">
                         {% if app.user %}
+                            {% include 'operational_status/_widget.html.twig' with {vm: operational_status()} only %}
+
+                            {% include 'notifications/_bell.html.twig' with {vm: notification_bell()} only %}
+
                             <div class="nav-item dropdown">
                                 <a href="#" class="nav-link d-flex lh-1 p-0 px-2" data-bs-toggle="dropdown"
                                    aria-label="Open user menu" aria-expanded="false">
@@ -83,30 +85,53 @@
                 </div>
             </header>
 
-            {# ===================== HORIZONTAL MENU ===================== #}
             {% if app.user %}
-            <header class="navbar-expand-md d-print-none">
+            <header class="navbar-expand-md d-print-none layout-fluid">
                 <div class="collapse navbar-collapse" id="navbar-menu">
                     <div class="navbar">
                         <div class="container-xl">
+                            {# Permission-gated items are hidden when not granted; the backend
+                               still enforces access on every route. #}
                             <ul class="navbar-nav">
-                                {{ nav.nav_item('Home', 'app_home', {icon: 'home'}) }}
-                                {{ nav.nav_item('Dashboard', 'app_dashboard', {icon: 'dashboard'}) }}
                                 {% if is_granted('news:view') %}{{ nav.nav_item('News', 'app_news_index', {icon: 'news', exact: false}) }}{% endif %}
-                                {{ nav.nav_item('Shifts', 'app_shift_index', {icon: 'clock', exact: false}) }}
-                                {{ nav.nav_item('My Shifts', 'app_my_shifts', {icon: 'checklist'}) }}
-                                {{ nav.nav_item('Volunteer Types', 'app_membership_index', {icon: 'puzzle'}) }}
-                                {% if is_granted('message:use') %}{{ nav.nav_item('Messages', 'app_messages_index', {icon: 'mail', exact: false}) }}{% endif %}
-                                {{ nav.nav_item('Certifications', 'app_certifications_index', {icon: 'award'}) }}
-                                {% if is_granted('ROLE_STAFF') %}{{ nav.nav_item('Staff', 'app_staff_overview', {icon: 'shield', exact: false}) }}{% endif %}
+                                {% if is_granted('shift:self') %}{{ nav.nav_item('My Shifts', 'app_my_shifts', {icon: 'checklist'}) }}{% endif %}
+                                {% if is_granted('shift:view') %}{{ nav.nav_item('Shifts', 'app_shift_index', {icon: 'clock', exact: false}) }}{% endif %}
+                                {% if is_granted('manageshifts:view') %}{{ nav.nav_item('Shift Manager', 'app_manage_shifts', {icon: 'calendar', exact: false}) }}{% endif %}
+                                {% if is_granted('volunteertype:view') %}{{ nav.nav_item('Volunteer Types', 'app_membership_index', {icon: 'puzzle'}) }}{% endif %}
+                                {% if is_granted('location:view') %}{{ nav.nav_item('Locations', 'app_locations', {icon: 'map-pin', exact: false}) }}{% endif %}
+                                {% if is_granted('call:respond') %}{{ nav.nav_item('Bounty Board', 'app_bounty_board', {icon: 'award', exact: false}) }}{% endif %}
+                                {% if is_granted('message:use') %}
+                                    {% if is_granted('ROLE_STAFF') %}
+                                        {{ nav.nav_item('Messages', 'app_messages_index', {icon: 'mail', exact: false}) }}
+                                    {% else %}
+                                        {{ nav.nav_item('Ask Info Desk', 'app_messages_infodesk', {icon: 'mail', exact: false}) }}
+                                    {% endif %}
+                                {% endif %}
+                                {% if is_granted('certification:view') %}{{ nav.nav_item('Certifications', 'app_certifications_index', {icon: 'award'}) }}{% endif %}
+                                {% if is_granted('ROLE_STAFF') %}{{ nav.nav_item('Departments', 'app_departments', {icon: 'building', exact: false}) }}{% endif %}
                                 {% if is_granted('backstage:view') %}{{ nav.nav_item('Backstage', 'app_backstage', {icon: 'gift', exact: false}) }}{% endif %}
-                                {{ nav.nav_item('Navigation Kit', 'app_navigation_kit', {icon: 'compass'}) }}
-                                {{ nav.nav_item('Theme Kit', 'app_theme_kit', {icon: 'palette'}) }}
                                 {% if is_granted('faq:view') %}{{ nav.nav_item('FAQ', 'app_faq_index', {icon: 'help'}) }}{% endif %}
-                                {% if app.user and (is_granted('location:manage') or is_granted('volunteertype:manage') or is_granted('shift:manage') or is_granted('global:admin') or is_granted('config:event')) %}
+                                {% if is_granted('ROLE_ADMIN') %}{{ nav.nav_item('Dashboard', 'app_dashboard', {icon: 'dashboard'}) }}{% endif %}
+
+                                {# Development submenu. The kit routes only exist outside prod
+                                   (see config/services.yaml), so path() would throw there. #}
+                                {% if is_granted('ROLE_ADMIN') and app.environment != 'prod' %}
+                                <li class="nav-item dropdown">
+                                    <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
+                                       role="button" aria-expanded="false">
+                                        <span class="nav-link-icon d-md-none d-lg-inline-block">{{ i.icon('code') }}</span>
+                                        <span class="nav-link-title">Development</span>
+                                    </a>
+                                    <div class="dropdown-menu">
+                                        <a class="dropdown-item" href="{{ path('app_navigation_kit') }}">Navigation Kit</a>
+                                        <a class="dropdown-item" href="{{ path('app_theme_kit') }}">Theme Kit</a>
+                                    </div>
+                                </li>
+                                {% endif %}
+
+                                {% if is_granted('location:manage') or is_granted('volunteertype:manage') or is_granted('shift:manage') or is_granted('global:admin') or is_granted('config:event') or is_granted('audit:view') %}
                                     {{ nav.nav_item('Manage', 'app_manage', {icon: 'tools', exact: false}) }}
                                 {% endif %}
-                                {% if is_granted('audit:view') %}{{ nav.nav_item('Audit', 'app_admin_audit', {icon: 'shield', exact: false}) }}{% endif %}
                             </ul>
                         </div>
                     </div>
@@ -114,15 +139,13 @@
             </header>
             {% endif %}
 
-
-            {# ===================== PAGE CONTENT ===================== #}
             <div class="page-wrapper">
                 <div class="page-body">
                     <div class="container-xl">
-                        {# FLASH MESSAGES #}
                         {{ n.flash_messages(app) }}
 
                         {% block body %}{% endblock %}
+
                     </div>
                 </div>
             </div>

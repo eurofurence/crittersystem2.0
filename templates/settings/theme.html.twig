@@ -9,8 +9,10 @@
     actions: [{label: '← Settings', href: path('app_settings'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  <form method="post" action="{{ path('app_settings_theme') }}" class="card mb-3">
-    <div class="card-body">
+  {{ d.card_start(null, {
+    tag: 'form',
+    attrs: {method: 'post', action: path('app_settings_theme')}
+  }) }}
       <input type="hidden" name="_token" value="{{ csrf_token('settings-theme') }}">
 
       <div class="row g-3">
@@ -45,8 +47,7 @@
 
       <button class="btn btn-primary mt-3">Save</button>
       <a class="btn btn-link" href="?theme={{ active_theme.slug }}">Preview the active theme on the next page</a>
-    </div>
-  </form>
+  {{ d.card_end({tag: 'form'}) }}
 
   <div class="alert alert-info">
     Active theme right now: <code>{{ active_theme.slug }}</code> ({{ active_theme.type }}).

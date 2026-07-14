@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\FaqRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -14,6 +16,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'faqs')]
 class Faq
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -37,6 +41,7 @@ class Faq
 
     public function __construct(string $question = '', string $answer = '')
     {
+        $this->uuid = Uuid::v4();
         $this->question = $question;
         $this->answer = $answer;
     }

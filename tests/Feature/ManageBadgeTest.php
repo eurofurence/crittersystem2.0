@@ -6,34 +6,11 @@ use App\Entity\Badge;
 use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\DatabaseWebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class ManageBadgeTest extends WebTestCase
+final class ManageBadgeTest extends DatabaseWebTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
-        }
-
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
-    }
-
     private function makeUser(string $name, array $privileges): User
     {
         $group = new Group('G'.$name, 'g-'.$name);
@@ -93,7 +70,7 @@ final class ManageBadgeTest extends WebTestCase
         $this->em->flush();
 
         $this->client->request('POST', '/manage/badges/assign', [
-            'badge' => $badge->getId(), 'action' => 'add', 'users' => [$target->getId()],
+            'badge' => $badge->getUuid(), 'action' => 'add', 'users' => [$target->getId()],
         ]);
         self::assertResponseRedirects();
         $this->em->clear();

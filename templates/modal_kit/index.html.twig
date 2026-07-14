@@ -1,5 +1,4 @@
 {% extends 'base.html.twig' %}
-{% import 'components/modal/_macros.twig' as m %}
 {% import 'components/data/_macros.twig' as d %}
 
 {% block title %}{{ pageTitle }}{% endblock %}
@@ -7,58 +6,57 @@
 {% block body %}
 <div class="container py-4">
   {{ d.page_header(pageTitle, {
-    subtitle: 'Confirmation, form, and detail modals',
+    subtitle: 'Confirmations and dialogs — the supported mechanisms',
     actions: [
-      {label: 'Back to Data Kit', href: path('app_data_kit'), class: 'btn btn-outline-secondary'}
+      {label: 'Back to Navigation Kit', href: path('app_navigation_kit'), class: 'btn btn-outline-secondary'}
     ]
   }) }}
 
-  <h2 class="h5 mt-4">Confirmation Modal</h2>
-  <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDelete">
-    Delete department
-  </button>
+  {% set intro %}
+    <p>
+      This project has <strong>no modal macros</strong>. Confirmations and dialogs use the two
+      mechanisms below.
+    </p>
+    <p class="mb-0">
+      Never use <code>window.confirm()</code> or <code>window.alert()</code>: they cannot be styled,
+      cannot be tested, and block the main thread.
+    </p>
+  {% endset %}
+  {{ d.card_start('Confirmations and dialogs', {class: 'mb-3 border-warning'}) }}
+    {{ intro|raw }}
+  {{ d.card_end() }}
 
-  {{ m.confirm(
-    'confirmDelete',
-    'Delete department',
-    'This action cannot be undone. Are you sure?',
-    {
-      confirmLabel: 'Delete',
-      confirmClass: 'btn-danger'
-    }
-  ) }}
+  {{ d.section_header('1. Confirm before submit (declarative)', {
+    subtitle: 'Put the confirm controller on the <form>. This is what every destructive action in the app uses.'
+  }) }}
 
-  <h2 class="h5 mt-5">Detail Modal</h2>
-  <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#detailModal">
-    View details
-  </button>
+  {{ d.card_start() }}
+    {% set demoActions %}
+      {{ d.delete_form(path('app_modal_kit'), csrf_token('modal_kit_demo'), {
+        label: 'Delete department',
+        message: 'This action cannot be undone. Delete “Logistics”?',
+        class: 'btn btn-danger'
+      }) }}
+    {% endset %}
+    {{ d.row_actions([], {cell: false, extraHtml: demoActions}) }}
 
-  {{ m.detail(
-    'detailModal',
-    'Department details',
-    '<dl class="row">
-        <dt class="col-sm-4">Name</dt><dd class="col-sm-8">Logistics</dd>
-        <dt class="col-sm-4">Status</dt><dd class="col-sm-8">Active</dd>
-        <dt class="col-sm-4">Members</dt><dd class="col-sm-8">42</dd>
-     </dl>',
-    { size: 'modal-lg' }
-  ) }}
+    <pre class="mt-3 mb-0"><code>{{ '{{ d.delete_form(path(\'app_manage_location_delete\', {id: location.uuid}),
+              csrf_token(\'delete\' ~ location.id),
+              {message: \'Delete this location?\'}) }}' }}</code></pre>
+  {{ d.card_end() }}
 
-  <h2 class="h5 mt-5">Form Modal</h2>
-  <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#formModal">
-    Create department
-  </button>
+  {{ d.section_header('2. Programmatic confirm / notice (from JavaScript)', {
+    subtitle: 'Import the helpers in a Stimulus controller or fetch handler. Both return a Promise.'
+  }) }}
 
-  {{ m.form_modal(
-    'formModal',
-    'Create department',
-    '<form>
-        <div class="mb-3">
-          <label class="form-label">Name</label>
-          <input class="form-control">
-        </div>
-     </form>',
-    { submitLabel: 'Create' }
-  ) }}
+  {{ d.card_start() }}
+    <pre class="mb-0"><code>import { confirmModal, alertModal } from '../js/modal.js';
+
+if (await confirmModal('Discard the draft shift?', { variant: 'danger' })) {
+    await this.destroy();
+}
+
+await alertModal('The export is ready.');</code></pre>
+  {{ d.card_end() }}
 </div>
 {% endblock %}

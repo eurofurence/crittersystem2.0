@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\VolunteerTypeRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -15,6 +17,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[UniqueEntity('name')]
 class VolunteerType
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -65,14 +69,30 @@ class VolunteerType
     #[ORM\Column(name: 'staff_only')]
     private bool $staffOnly = false;
 
+    /** Visible only to staff in the owning department. Requires staffOnly. */
+    #[ORM\Column(name: 'department_only', options: ['default' => false])]
+    private bool $departmentOnly = false;
+
     /** @var Collection<int, Department> */
     #[ORM\ManyToMany(targetEntity: Department::class, mappedBy: 'volunteerTypes')]
     private Collection $departments;
 
+    /** @var Collection<int, Certification> */
+    #[ORM\ManyToMany(targetEntity: Certification::class)]
+    #[ORM\JoinTable(name: 'volunteer_type_certifications')]
+    private Collection $certifications;
+
+    /** @var Collection<int, VolunteerTypeContact> */
+    #[ORM\OneToMany(mappedBy: 'volunteerType', targetEntity: VolunteerTypeContact::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $contacts;
+
     public function __construct(string $name)
     {
+        $this->uuid = Uuid::v4();
         $this->name = $name;
         $this->departments = new ArrayCollection();
+        $this->certifications = new ArrayCollection();
+        $this->contacts = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -212,9 +232,102 @@ class VolunteerType
         return $this;
     }
 
+    public function isDepartmentOnly(): bool
+    {
+        return $this->departmentOnly;
+    }
+
+    public function setDepartmentOnly(bool $departmentOnly): static
+    {
+        $this->departmentOnly = $departmentOnly;
+
+        return $this;
+    }
+
+    /** "Requires Introduction" is the restricted-membership flag. */
+    public function isRequiresIntroduction(): bool
+    {
+        return $this->restricted;
+    }
+
     /** @return Collection<int, Department> */
     public function getDepartments(): Collection
     {
         return $this->departments;
+    }
+
+    /** @return Collection<int, Certification> */
+    public function getCertifications(): Collection
+    {
+        return $this->certifications;
+    }
+
+    public function addCertification(Certification $certification): static
+    {
+        if (!$this->certifications->contains($certification)) {
+            $this->certifications->add($certification);
+        }
+
+        return $this;
+    }
+
+    public function removeCertification(Certification $certification): static
+    {
+        $this->certifications->removeElement($certification);
+
+        return $this;
+    }
+
+    /** @return Collection<int, VolunteerTypeContact> */
+    public function getContacts(): Collection
+    {
+        return $this->contacts;
+    }
+
+    public function addContact(VolunteerTypeContact $contact): static
+    {
+        if (!$this->contacts->contains($contact)) {
+            $this->contacts->add($contact);
+            $contact->setVolunteerType($this);
+        }
+
+        return $this;
+    }
+
+    public function removeContact(VolunteerTypeContact $contact): static
+    {
+        $this->contacts->removeElement($contact);
+
+        return $this;
+    }
+
+    /**
+     * Enforce the flag interdependencies (also mirrored in the UI).
+     */
+    #[Assert\Callback]
+    public function validateFlags(\Symfony\Component\Validator\Context\ExecutionContextInterface $context): void
+    {
+        if ($this->departmentOnly && !$this->staffOnly) {
+            $context->buildViolation('"Department only" requires "Staff only".')->atPath('departmentOnly')->addViolation();
+        }
+
+        if (!$this->staffOnly) {
+            if ($this->departmentOnly) {
+                $context->buildViolation('Non-staff types cannot be department only.')->atPath('departmentOnly')->addViolation();
+            }
+            if ($this->hideOnShiftView) {
+                $context->buildViolation('Non-staff types cannot be hidden from the shift view.')->atPath('hideOnShiftView')->addViolation();
+            }
+            if (!$this->showOnDashboard) {
+                $context->buildViolation('Non-staff types must be shown on the dashboard.')->atPath('showOnDashboard')->addViolation();
+            }
+        } else {
+            if (!$this->hideOnShiftView) {
+                $context->buildViolation('Staff-only types must be hidden from the shift view.')->atPath('hideOnShiftView')->addViolation();
+            }
+            if ($this->showOnDashboard) {
+                $context->buildViolation('Staff-only types must not be shown on the dashboard.')->atPath('showOnDashboard')->addViolation();
+            }
+        }
     }
 }

@@ -24,7 +24,7 @@
       <tbody>
         {% for n in news %}
           <tr>
-            <td><a href="{{ path('app_news_show', {id: n.id}) }}" class="fw-semibold text-decoration-none">{{ n.title }}</a></td>
+            <td><a href="{{ path('app_news_show', {id: n.uuid}) }}" class="fw-semibold text-decoration-none">{{ n.title }}</a></td>
             <td>
               <div class="d-flex flex-wrap gap-1">
                 {% if n.pinned %}{{ d.badge('Pinned', 'text-bg-primary') }}{% endif %}
@@ -34,14 +34,14 @@
               </div>
             </td>
             <td class="small text-muted">{{ n.createdAt|app_datetime }}</td>
-            <td class="text-end text-nowrap">
-              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_news_edit', {id: n.id}) }}">Edit</a>
-              <form method="post" action="{{ path('app_manage_news_delete', {id: n.id}) }}" class="d-inline"
-                    onsubmit="return confirm('Delete &quot;{{ n.title|e('js') }}&quot;?');">
-                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ n.id) }}">
-                <button class="btn btn-sm btn-outline-danger">Delete</button>
-              </form>
-            </td>
+            {% set del %}
+              {{ d.delete_form(path('app_manage_news_delete', {id: n.uuid}), csrf_token('delete' ~ n.id), {
+                message: 'Delete "' ~ n.title ~ '"?'
+              }) }}
+            {% endset %}
+            {{ d.row_actions([
+              {label: 'Edit', href: path('app_manage_news_edit', {id: n.uuid})}
+            ], {extraHtml: del}) }}
           </tr>
         {% endfor %}
       </tbody>

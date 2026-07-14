@@ -8,13 +8,22 @@ security:
         app_user_provider:
             id: App\Security\UserProvider
 
+    # Core role ladder. ROLE_ADMIN has full, unrestricted access, so it
+    # reaches every role-gated route; ROLE_SUBADMIN is one step below, etc. This
+    # only covers ROLE_* attribute checks — fine-grained permissions go through
+    # App\Security\PrivilegeVoter, which also treats ROLE_ADMIN as a super-role.
+    role_hierarchy:
+        ROLE_ADMIN: [ROLE_SUBADMIN, ROLE_STAFF, ROLE_USER]
+        ROLE_SUBADMIN: [ROLE_STAFF, ROLE_USER]
+        ROLE_STAFF: [ROLE_USER]
+
     firewalls:
         dev:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
         api:
-            # Stateless API-key firewall (Bearer / X-API-Key / ?key=). Endpoints arrive later.
+            # Stateless API-key firewall (Bearer / X-API-Key / ?key=).
             pattern: ^/api
             stateless: true
             provider: app_user_provider
@@ -23,6 +32,7 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            user_checker: App\Security\BannedUserChecker
             custom_authenticators:
                 - App\Security\LoginFormAuthenticator
             entry_point: App\Security\LoginFormAuthenticator
@@ -38,7 +48,7 @@ security:
         - { path: ^/health$, roles: PUBLIC_ACCESS }
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/$, roles: PUBLIC_ACCESS }     # site root redirects (guest -> login, user -> dashboard)
-        - { path: ^/api, roles: PUBLIC_ACCESS }   # per-endpoint authorization handled in the API phase
+        - { path: ^/api, roles: PUBLIC_ACCESS }   # authorization is enforced per endpoint by the API controllers
         - { path: ^/digital-id/verify, roles: PUBLIC_ACCESS } # scannable digital ID — no login required
         - { path: ^/unsubscribe/, roles: PUBLIC_ACCESS } # one-click email unsubscribe — no login required
         - { path: ^/invite/, roles: PUBLIC_ACCESS } # account invitation acceptance — signs the user in

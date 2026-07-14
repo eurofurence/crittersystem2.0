@@ -72,6 +72,32 @@ final class PrivilegeVoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($admin, 'volunteertype:manage'));
     }
 
+    public function testRoleAdminGrantsEverythingWithoutSuperPrivilege(): void
+    {
+        // A group carrying ROLE_ADMIN but NOT the global:admin privilege.
+        $user = new User();
+        $user->addGroup(new Group('Global admin', 'global-admin', 'ROLE_ADMIN'));
+
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'audit:view'));
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'config:sso'));
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'location:manage'));
+    }
+
+    public function testRoleSubadminGrantsSubadminLevelButNotAdminLevel(): void
+    {
+        $user = new User();
+        $user->addGroup(new Group('Sub admin', 'sub-admin', 'ROLE_SUBADMIN'));
+
+        // Sub-admin-level permissions are granted by the role alone (unscoped).
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'user:view'));
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'shift:manage'));
+
+        // Admin-level/critical permissions are denied (config, audit, PII, RBAC).
+        self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote($user, 'audit:view'));
+        self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote($user, 'config:sso'));
+        self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote($user, 'user:pii:view'));
+    }
+
     public function testAbstainsOnNonPrivilegeAttributes(): void
     {
         $user = $this->userWith(['user:view']);

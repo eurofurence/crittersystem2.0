@@ -1,0 +1,155 @@
+<?php
+
+namespace App\Tests\Feature;
+
+use App\Entity\Department;
+use App\Entity\Group;
+use App\Entity\Privilege;
+use App\Entity\Shift;
+use App\Entity\User;
+use App\Entity\VolunteerType;
+use App\Enum\ShiftAudience;
+use App\Enum\ShiftState;
+use App\Tests\DatabaseWebTestCase;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+
+/**
+ * Planner side-panel edit and batch-edit scope: a batch change
+ * applies only to the selected shifts, never to others.
+ */
+final class PlannerEditTest extends DatabaseWebTestCase
+{
+    private function login(): Department
+    {
+        $group = new Group('Managers', 'mgr-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
+        foreach (['manageshifts:view', 'shift:manage'] as $p) {
+            $priv = new Privilege($p);
+            $this->em->persist($priv);
+            $group->addPrivilege($priv);
+        }
+        $this->em->persist($group);
+
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $user = new User();
+        $user->setName('mgr')->setEmail('mgr@example.com')->setApiKey(bin2hex(random_bytes(16)));
+        $user->setPassword($hasher->hashPassword($user, 'secret123'));
+        $user->addGroup($group);
+        $user->completeOnboarding();
+        $this->em->persist($user);
+
+        $dept = new Department('Logistics', 'logistics');
+        $this->em->persist($dept);
+        $this->em->flush();
+
+        $this->client->loginUser($this->em->getRepository(User::class)->findOneBy(['email' => 'mgr@example.com']));
+
+        return $dept;
+    }
+
+    private function draft(Department $dept, string $start, string $end): Shift
+    {
+        $shift = (new Shift())->setTitle('S')
+            ->setStartsAt(new \DateTimeImmutable($start))
+            ->setEndsAt(new \DateTimeImmutable($end))
+            ->setDepartment($dept)
+            ->setState(ShiftState::DRAFT);
+        $this->em->persist($shift);
+        $this->em->flush();
+
+        return $shift;
+    }
+
+    /** Fetch a live planner_edit CSRF token from the rendered planner page. */
+    private function editToken(): string
+    {
+        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+
+        return $crawler->filter('.planner')->attr('data-planner-edit-token-value');
+    }
+
+    /**
+     * The identifier the planner renders for the department must be the one the paint endpoint
+     * accepts: the grid reads it straight out of this attribute and posts it back, so the two must
+     * not drift apart (e.g. a uuid attribute against a client that coerces it to a number).
+     */
+    public function testPaintCreatesDraftFromTheDepartmentIdentifierRenderedOnThePage(): void
+    {
+        $this->login();
+        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+        $planner = $crawler->filter('.planner');
+
+        $this->client->request('POST', '/manage-shifts/planner/paint', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
+            '_token' => $planner->attr('data-planner-paint-token-value'),
+            'department' => $planner->attr('data-planner-department-value'),
+            'intervals' => [['start' => '2026-06-01T10:00:00', 'end' => '2026-06-01T12:00:00']],
+        ]));
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(['ok' => true, 'created' => 1], json_decode($this->client->getResponse()->getContent(), true));
+    }
+
+    public function testBatchDurationAppliesOnlyToSelectedShifts(): void
+    {
+        $dept = $this->login();
+        $a = $this->draft($dept, '2026-06-01 10:00', '2026-06-01 11:00'); // 1h
+        $b = $this->draft($dept, '2026-06-01 12:00', '2026-06-01 13:00'); // 1h
+        $untouched = $this->draft($dept, '2026-06-01 14:00', '2026-06-01 15:00'); // 1h
+
+        $this->client->request('POST', '/manage-shifts/planner/batch', [
+            '_token' => $this->editToken(),
+            'ids' => [$a->getId(), $b->getId()],
+            'duration_minutes' => 120,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $this->em->clear();
+        $repo = $this->em->getRepository(Shift::class);
+        self::assertSame(2.0, $repo->find($a->getId())->getDurationHours());
+        self::assertSame(2.0, $repo->find($b->getId())->getDurationHours());
+        self::assertSame(1.0, $repo->find($untouched->getId())->getDurationHours(), 'unselected shift is unchanged');
+    }
+
+    public function testBatchSetsRequiredVolunteerTypeOnSelection(): void
+    {
+        $dept = $this->login();
+        $type = new VolunteerType('Crew');
+        $this->em->persist($type);
+        $a = $this->draft($dept, '2026-06-01 10:00', '2026-06-01 12:00');
+        $this->em->flush();
+
+        $this->client->request('POST', '/manage-shifts/planner/batch', [
+            '_token' => $this->editToken(),
+            'ids' => [$a->getId()],
+            'needed_type' => $type->getId(),
+            'needed_count' => 3,
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $this->em->clear();
+        $shift = $this->em->getRepository(Shift::class)->find($a->getId());
+        self::assertCount(1, $shift->getNeededVolunteerTypes());
+        self::assertSame(3, $shift->getNeededVolunteerTypes()->first()->getCount());
+    }
+
+    public function testSinglePanelAndEditUpdateFields(): void
+    {
+        $dept = $this->login();
+        $shift = $this->draft($dept, '2026-06-01 10:00', '2026-06-01 12:00');
+
+        // Panel renders the edit form.
+        $this->client->request('GET', '/manage-shifts/planner/shift/'.$shift->getUuid().'/panel');
+        self::assertResponseIsSuccessful();
+
+        $this->client->request('POST', '/manage-shifts/planner/shift/'.$shift->getUuid().'/edit', [
+            '_token' => $this->editToken(),
+            'title' => 'Renamed shift',
+            'audience' => ShiftAudience::ALL_STAFF->value,
+        ]);
+        self::assertResponseIsSuccessful();
+
+        $this->em->clear();
+        $updated = $this->em->getRepository(Shift::class)->find($shift->getId());
+        self::assertSame('Renamed shift', $updated->getTitle());
+        self::assertSame(ShiftAudience::ALL_STAFF, $updated->getAudience());
+    }
+}

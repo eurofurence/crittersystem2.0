@@ -1,10 +1,8 @@
 {% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 {% block title %}Invitation{% endblock %}
 {% block body %}
-  <div class="row justify-content-center"><div class="col-md-6">
-    <div class="card"><div class="card-body text-center">
-      <h2 class="card-title">Invitation no longer valid</h2>
-      <p>This invitation link has expired or has already been used. Please ask an administrator to send a new one.</p>
-    </div></div>
-  </div></div>
+  {{ d.message_card_start('Invitation no longer valid', {width: 'col-md-6', titleTag: 'h2'}) }}
+    <p>This invitation link has expired or has already been used. Please ask an administrator to send a new one.</p>
+  {{ d.message_card_end() }}
 {% endblock %}

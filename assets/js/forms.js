@@ -29,17 +29,15 @@ function initSearchInputs(root = document) {
       const frame = document.getElementById(turboFrame);
       if (!frame) return;
 
-      // IMPORTANT: use the frame's current src (or data-search-url) as the base
+      // Build on the frame's current src so the query parameters it already
+      // carries (filters, page, sort) survive the search request.
       const base = frame.getAttribute('src') || el.getAttribute('data-search-url');
       if (!base) return;
 
       const url = new URL(base, window.location.origin);
       url.searchParams.set('q', el.value);
 
-      // Trigger a Turbo visit restricted to a frame
-      // Works with Turbo Frames (same-origin)
-      // const frame = document.getElementById(turboFrame);
-      // if (frame) frame.src = url.toString();
+      // Assigning src makes Turbo fetch and swap only this frame.
       frame.src = url.toString();
     }, ms);
 
@@ -47,7 +45,7 @@ function initSearchInputs(root = document) {
   });
 }
 
-// Turbo-safe init
+// turbo:load also fires on Turbo Drive navigations, so restored/replaced pages re-init.
 document.addEventListener('turbo:load', () => {
   initRangeSliders();
   initSearchInputs();

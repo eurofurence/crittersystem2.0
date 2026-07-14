@@ -8,13 +8,14 @@ use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
 use App\Entity\TelegramLinkRequest;
 use App\Entity\User;
+use App\Gdpr\BanChecker;
 use App\Repository\TelegramLinkRequestRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
- * Manages Telegram account linking. The actual exchange with the companion bot
- * server is implemented later; {@see confirm()} is the entry point the bot (or
- * the dev dummy bot) calls once it has verified the user holds the code.
+ * Manages Telegram account linking. The exchange with the companion bot server is
+ * not implemented here; {@see confirm()} is the entry point the bot (or the dev
+ * dummy bot) calls once it has verified the user holds the code.
  */
 final class TelegramLinkService
 {
@@ -22,6 +23,7 @@ final class TelegramLinkService
         private readonly EntityManagerInterface $em,
         private readonly TelegramLinkRequestRepository $requests,
         private readonly AuditLogger $audit,
+        private readonly BanChecker $bans,
     ) {
     }
 
@@ -56,6 +58,12 @@ final class TelegramLinkService
         }
 
         $user = $request->getUser();
+
+        // A banned account cannot gain Telegram Bot access.
+        if ($this->bans->isUserBanned($user)) {
+            return null;
+        }
+
         $user->linkTelegram($telegramId, $handle);
         $request->markLinked();
         $this->em->flush();
@@ -74,7 +82,8 @@ final class TelegramLinkService
         $user->unlinkTelegram();
         $this->em->flush();
 
-        // The bot link is revoked through the companion API in a later phase.
+        // Only the local link is dropped: revoking the bot's own binding requires
+        // the companion API, which is not called from here.
         $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, [
             'resourceType' => 'User',
             'resourceId' => $user->getId(),

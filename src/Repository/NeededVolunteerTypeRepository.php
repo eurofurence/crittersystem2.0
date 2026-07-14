@@ -21,7 +21,7 @@ class NeededVolunteerTypeRepository extends ServiceEntityRepository
     /**
      * Effective staffing needs for a shift using the three-tier priority:
      * a shift-level requirement overrides a location- or
-     * shift-type-level one for the same volunteer type.
+     * shift-task-level one for the same volunteer type.
      *
      * @return array<int, NeededVolunteerType> keyed by volunteer type id
      */
@@ -29,10 +29,10 @@ class NeededVolunteerTypeRepository extends ServiceEntityRepository
     {
         /** @var NeededVolunteerType[] $candidates */
         $candidates = $this->createQueryBuilder('n')
-            ->andWhere('n.shift = :shift OR n.location = :location OR n.shiftType = :shiftType')
+            ->andWhere('n.shift = :shift OR n.location = :location OR n.shiftTask = :shiftTask')
             ->setParameter('shift', $shift)
             ->setParameter('location', $shift->getLocation())
-            ->setParameter('shiftType', $shift->getShiftType())
+            ->setParameter('shiftTask', $shift->getShiftTask())
             ->getQuery()
             ->getResult();
 

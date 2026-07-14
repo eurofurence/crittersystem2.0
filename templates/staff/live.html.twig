@@ -20,11 +20,14 @@
     <div class="row g-3">
       {% for group in byDepartment %}
         <div class="col-12 col-md-6 col-lg-4">
-          <div class="card h-100">
-            <div class="card-header d-flex justify-content-between">
-              <span class="fw-semibold">{{ group.department ? group.department.name : 'No specific area' }}</span>
-              {{ d.badge(group.records|length ~ ' on duty', 'text-bg-success') }}
-            </div>
+          {% set dutyCount %}{{ d.badge(group.records|length ~ ' on duty', 'text-bg-success') }}{% endset %}
+          {{ d.card_start(group.department ? group.department.name : 'No specific area', {
+            class: 'h-100',
+            bodyClass: '',
+            titleTag: 'span',
+            titleClass: 'fw-semibold',
+            headerActions: dutyCount
+          }) }}
             <ul class="list-group list-group-flush">
               {% for r in group.records %}
                 <li class="list-group-item d-flex justify-content-between">
@@ -33,7 +36,7 @@
                 </li>
               {% endfor %}
             </ul>
-          </div>
+          {{ d.card_end({bodyClass: ''}) }}
         </div>
       {% endfor %}
     </div>

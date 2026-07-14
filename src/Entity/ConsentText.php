@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\ConsentTextRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -15,6 +17,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\HasLifecycleCallbacks]
 class ConsentText
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -40,6 +44,7 @@ class ConsentText
 
     public function __construct(string $locale = 'en_US')
     {
+        $this->uuid = Uuid::v4();
         $this->locale = $locale;
     }
 

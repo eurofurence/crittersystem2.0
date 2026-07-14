@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\BannedIdentityRepository;
+use App\Entity\Concern\HasPublicUuid;
+use Symfony\Component\Uid\Uuid;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -17,6 +19,8 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\HasLifecycleCallbacks]
 class BannedIdentity
 {
+    use HasPublicUuid;
+
     public const TYPE_EMAIL = 'email';
     public const TYPE_SSO = 'sso';
 
@@ -37,10 +41,76 @@ class BannedIdentity
     #[ORM\Column(name: 'appeal_requested_at', nullable: true)]
     private ?\DateTimeImmutable $appealRequestedAt = null;
 
+    /** Human-readable ban reason. Null for legacy GDPR-erasure bans. */
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $reason = null;
+
+    /** True when the ban was created automatically (e.g. the no-show threshold). */
+    #[ORM\Column(name: 'is_automatic', options: ['default' => false])]
+    private bool $isAutomatic = false;
+
+    /** Live user for behavioural bans; null for hashed GDPR bans. */
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'user_id', nullable: true, onDelete: 'SET NULL')]
+    private ?User $user = null;
+
+    /** No-show count at the time of an automatic ban. */
+    #[ORM\Column(name: 'no_show_count', nullable: true)]
+    private ?int $noShowCount = null;
+
     public function __construct(string $hashType, string $hash)
     {
+        $this->uuid = Uuid::v4();
         $this->hashType = $hashType;
         $this->hash = $hash;
+    }
+
+    public function getReason(): ?string
+    {
+        return $this->reason;
+    }
+
+    public function setReason(?string $reason): static
+    {
+        $this->reason = $reason;
+
+        return $this;
+    }
+
+    public function isAutomatic(): bool
+    {
+        return $this->isAutomatic;
+    }
+
+    public function setAutomatic(bool $isAutomatic): static
+    {
+        $this->isAutomatic = $isAutomatic;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
+
+        return $this;
+    }
+
+    public function getNoShowCount(): ?int
+    {
+        return $this->noShowCount;
+    }
+
+    public function setNoShowCount(?int $noShowCount): static
+    {
+        $this->noShowCount = $noShowCount;
+
+        return $this;
     }
 
     #[ORM\PrePersist]

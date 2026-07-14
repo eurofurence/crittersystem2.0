@@ -7,10 +7,22 @@ use App\Audit\AuditExporter;
 use App\Audit\AuditLogger;
 use App\Audit\CertificateAuthority;
 use App\Entity\AuditExport;
+use App\Storage\ExportStorage;
 use App\Tests\DatabaseTestCase;
 
 final class AuditExportTest extends DatabaseTestCase
 {
+    /** @var string[] */
+    private array $spooled = [];
+
+    protected function tearDown(): void
+    {
+        foreach ($this->spooled as $path) {
+            @unlink($path);
+        }
+        parent::tearDown();
+    }
+
     public function testLoggerPersistsEventsSynchronouslyUnderTest(): void
     {
         /** @var AuditLogger $logger */
@@ -59,12 +71,14 @@ final class AuditExportTest extends DatabaseTestCase
 
         self::assertInstanceOf(AuditExport::class, $export);
         self::assertSame(3, $export->getEventCount());
-        self::assertTrue($export->fileExists());
         self::assertFalse($export->isExpired());
+
+        $storage = static::getContainer()->get(ExportStorage::class);
+        self::assertTrue($storage->exists($export->getStorageKey()));
 
         // Inspect the zip package.
         $zip = new \ZipArchive();
-        self::assertTrue($zip->open($export->getFilePath()));
+        self::assertTrue($zip->open($this->spool($storage->read($export->getStorageKey()))));
         $json = $zip->getFromName('events.json');
         $pdf = $zip->getFromName('events.pdf');
         $manifest = $zip->getFromName('manifest.txt');
@@ -82,6 +96,16 @@ final class AuditExportTest extends DatabaseTestCase
         self::assertCount(3, $decoded['audit_events']);
         self::assertSame('SHA-256', $decoded['export_manifest']['hashing_algorithm']);
 
-        @unlink($export->getFilePath());
+        $storage->delete($export->getStorageKey());
+    }
+
+    /** ZipArchive can only read from a real path, so the archive bytes are spooled to a temp file. */
+    private function spool(string $bytes): string
+    {
+        $path = tempnam(sys_get_temp_dir(), 'critter-test-');
+        file_put_contents($path, $bytes);
+        $this->spooled[] = $path;
+
+        return $path;
     }
 }

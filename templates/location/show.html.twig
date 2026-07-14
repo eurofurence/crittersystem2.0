@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ location.fullName }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(location.fullName, {
+    actions: [{label: '← Locations', href: path('app_locations'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ d.card_start(null, {class: ''}) }}
+      {% if location.description %}<p>{{ location.description }}</p>{% endif %}
+
+      {% if location.departments is not empty %}
+        <h3 class="h6">Departments</h3>
+        {% for dept in location.departments %}{{ d.badge(dept.name, 'bg-secondary-lt', {class: 'me-1'}) }}{% endfor %}
+      {% endif %}
+
+      {% if embedSrc %}
+        <div class="mt-3 ratio ratio-16x9" style="max-width: 640px;">
+          <iframe src="{{ embedSrc }}" title="Map for {{ location.name }}" loading="lazy"
+                  referrerpolicy="no-referrer" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+        </div>
+      {% elseif location.mapUrl %}
+        <p class="mt-3"><a href="{{ location.mapUrl }}" target="_blank" rel="noopener">Open map</a></p>
+      {% endif %}
+  {{ d.card_end() }}
+{% endblock %}

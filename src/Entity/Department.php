@@ -43,6 +43,13 @@ class Department
     #[ORM\Column(name: 'staff_only')]
     private bool $staffOnly = false;
 
+    /**
+     * Organizational departments cannot own shifts; the flag can
+     * only be changed while the department has no shifts.
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $organizational = false;
+
     /** @var Collection<int, Location> */
     #[ORM\ManyToMany(targetEntity: Location::class, inversedBy: 'departments')]
     #[ORM\JoinTable(name: 'department_locations')]
@@ -65,6 +72,23 @@ class Department
     public function getId(): ?int
     {
         return $this->id;
+    }
+
+    public function isOrganizational(): bool
+    {
+        return $this->organizational;
+    }
+
+    public function setOrganizational(bool $organizational): static
+    {
+        $this->organizational = $organizational;
+
+        return $this;
+    }
+
+    public function canOwnShifts(): bool
+    {
+        return !$this->organizational;
     }
 
     public function getUuid(): Uuid

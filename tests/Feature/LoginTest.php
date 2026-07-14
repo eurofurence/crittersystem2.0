@@ -5,34 +5,16 @@ namespace App\Tests\Feature;
 use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\DatabaseWebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class LoginTest extends WebTestCase
+final class LoginTest extends DatabaseWebTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
     protected function setUp(): void
     {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
+        parent::setUp();
 
         $container = static::getContainer();
-        $this->em = $container->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
-        }
-
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
 
         $group = new Group('Volunteer', 'volunteer');
         $privilege = new Privilege('news:view');

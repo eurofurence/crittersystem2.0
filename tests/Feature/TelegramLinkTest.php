@@ -7,34 +7,11 @@ use App\Entity\Privilege;
 use App\Entity\TelegramConfiguration;
 use App\Entity\TelegramLinkRequest;
 use App\Entity\User;
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Tools\SchemaTool;
-use Symfony\Bundle\FrameworkBundle\KernelBrowser;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use App\Tests\DatabaseWebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class TelegramLinkTest extends WebTestCase
+final class TelegramLinkTest extends DatabaseWebTestCase
 {
-    private KernelBrowser $client;
-    private EntityManagerInterface $em;
-
-    protected function setUp(): void
-    {
-        $this->client = static::createClient();
-        $this->client->disableReboot();
-        $this->em = static::getContainer()->get(EntityManagerInterface::class);
-
-        try {
-            $this->em->getConnection()->executeQuery('SELECT 1');
-        } catch (\Throwable $e) {
-            self::markTestSkipped('Database not available: '.$e->getMessage());
-        }
-
-        $schemaTool = new SchemaTool($this->em);
-        $schemaTool->dropDatabase();
-        $schemaTool->createSchema($this->em->getMetadataFactory()->getAllMetadata());
-    }
-
     private function enableTelegram(): void
     {
         $config = new TelegramConfiguration();
@@ -91,7 +68,6 @@ final class TelegramLinkTest extends WebTestCase
         self::assertTrue($reloaded->isTelegramLinked());
         self::assertSame('555111', $reloaded->getTelegramId());
 
-        // Unlink from the profile.
         $crawler = $this->client->request('GET', '/profile/telegram');
         $token = $crawler->filter('input[name="_token"]')->first()->attr('value');
         $this->client->request('POST', '/profile/telegram/unlink', ['_token' => $token]);

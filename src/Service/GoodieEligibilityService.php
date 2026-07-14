@@ -9,8 +9,7 @@ use App\Repository\GoodieItemRepository;
 
 /**
  * Decides which goodie items a user can claim based on their cached hours and
- * prior distributions. Certification requirements are a documented
- * hook, enforced once the certification workflow exists.
+ * prior distributions. Certification requirements are not part of the decision.
  */
 final class GoodieEligibilityService
 {
