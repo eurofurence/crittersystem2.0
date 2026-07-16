@@ -83,8 +83,8 @@ final class AdminAuditTest extends DatabaseWebTestCase
         self::assertTrue($storage->exists($exports[0]->getStorageKey()));
 
         /*
-         * Render the page again now that an export row exists. The first render above had none, so the
-         * export table body was never reached — which is how a stale method call in it went unnoticed.
+         * Render the page again now that an export row exists. Rendering it while the list is empty never
+         * enters the export table body, so nothing in that markup is exercised.
          */
         $crawler = $this->client->request('GET', '/manage/audit');
         self::assertResponseIsSuccessful();

@@ -78,6 +78,7 @@ final class PrivilegeCatalog
         'user:promote' => ['Assign groups and roles to users', 'Users', self::LEVEL_SUBADMIN, true],
         'user:pii:view' => ['View unmasked personal data', 'Users', self::LEVEL_ADMIN, true],
         'user:arrive' => ['Check users in / mark as arrived', 'Users', self::LEVEL_SUBADMIN, false],
+        'user:locate' => ['Locate a user at the info desk (exact email, registration number, or badge scan)', 'Users', self::LEVEL_SUBADMIN, false],
         'user:worklog:edit' => ['Edit user worklog hours', 'Users', self::LEVEL_SUBADMIN, false],
         'profile:view' => ['View any user profile', 'Users', self::LEVEL_SUBADMIN, false],
         'profile:history:view' => ["View another user's shift history", 'Users', self::LEVEL_SUBADMIN, false],
@@ -235,7 +236,7 @@ final class PrivilegeCatalog
             'name' => 'Info Desk',
             'role' => 'ROLE_STAFF',
             'permissions' => [
-                'manageshifts:view', 'user:view', 'user:arrive', 'message:use', 'chat:claim', 'chat:restricted', 'call:trigger', 'call:cancel', 'shift:view', 'shift:assign',
+                'manageshifts:view', 'user:view', 'user:arrive', 'user:locate', 'message:use', 'chat:claim', 'chat:restricted', 'call:trigger', 'call:cancel', 'shift:view', 'shift:assign',
                 'goodie:view', 'goodie:distribute', 'certification:view', 'news:view', 'faq:view',
                 'profile:view', 'profile:history:view', 'worklog:self',
             ],
@@ -253,12 +254,12 @@ final class PrivilegeCatalog
         'goodies-manager' => [
             'name' => 'Goodies Manager',
             'role' => 'ROLE_STAFF',
-            'permissions' => ['goodie:manage', 'goodie:distribute', 'goodie:view', 'backstage:view'],
+            'permissions' => ['goodie:manage', 'goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
         ],
         'goodies-staff' => [
             'name' => 'Goodies Staff',
             'role' => 'ROLE_STAFF',
-            'permissions' => ['goodie:distribute', 'goodie:view', 'backstage:view'],
+            'permissions' => ['goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
         ],
     ];
 

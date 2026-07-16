@@ -10,9 +10,9 @@ use App\Repository\UserRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Service\Assignment\EventHoursGuard;
 use App\Service\Assignment\ManualAssignmentService;
-use App\Service\DepartmentService;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -31,7 +31,6 @@ final class AssignmentController extends AbstractController
 {
     public function __construct(
         private readonly ManualAssignmentService $assignments,
-        private readonly DepartmentService $departments,
         private readonly ShiftEntryRepository $entries,
         private readonly UserVolunteerTypeRepository $memberships,
         private readonly EventHoursGuard $hoursGuard,
@@ -39,7 +38,7 @@ final class AssignmentController extends AbstractController
     }
 
     #[Route('', name: 'app_shift_staffing', methods: ['GET'])]
-    public function index(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, UserRepository $users): Response
+    public function index(#[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
         $this->denyAccessUnlessGranted('assignment:manage', $shift->getDepartment());
 
@@ -52,19 +51,48 @@ final class AssignmentController extends AbstractController
             ];
         }
 
-        // Candidates: department members + optional username/nickname search.
-        $members = $this->departments->members($shift->getDepartment());
-        $candidates = array_merge($members['staff'] ?? [], $members['nonStaff'] ?? [], $members['managers'] ?? [], $members['shiftManagers'] ?? []);
-        if ($q = trim((string) $request->query->get('q'))) {
-            $candidates = $users->search($q);
-        }
-
         return $this->render('assignment/staffing.html.twig', [
             'shift' => $shift,
             'rows' => $rows,
-            'candidates' => $candidates,
-            'query' => $q ?? '',
         ]);
+    }
+
+    /**
+     * Type-ahead source for the user picker: partial username matches only, as a small JSON list
+     * carrying the flags the widget renders (staff suffix, avatar). Users already on the shift are
+     * omitted so they cannot be picked twice.
+     */
+    #[Route('/search', name: 'app_shift_staffing_search', methods: ['GET'])]
+    public function search(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, UserRepository $users): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('assignment:manage', $shift->getDepartment());
+
+        $q = trim((string) $request->query->get('q', ''));
+        if ($q === '') {
+            return new JsonResponse(['results' => []]);
+        }
+
+        $assigned = [];
+        foreach ($shift->getEntries() as $entry) {
+            $assigned[$entry->getUser()->getId()] = true;
+        }
+
+        $results = [];
+        foreach ($users->searchByName($q) as $user) {
+            if (isset($assigned[$user->getId()])) {
+                continue;
+            }
+            $results[] = [
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+                'staff' => $user->isStaff(),
+                'avatar' => $user->getPersonalData()?->getAvatarPath() !== null
+                    ? $this->generateUrl('app_media_avatar', ['id' => $user->getUuid()])
+                    : null,
+            ];
+        }
+
+        return new JsonResponse(['results' => $results]);
     }
 
     #[Route('/assign', name: 'app_shift_staffing_assign', methods: ['POST'])]
@@ -75,23 +103,9 @@ final class AssignmentController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $user = $users->find($request->request->getInt('user'));
-        if ($user === null) {
-            $this->addFlash('danger', 'Choose a user.');
-
-            return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
-        }
-
-        // The user must be a confirmed member of a type requested by the shift.
-        $type = null;
-        foreach ($shift->getNeededVolunteerTypes() as $need) {
-            if ($this->memberships->isConfirmedMember($user, $need->getVolunteerType())) {
-                $type = $need->getVolunteerType();
-                break;
-            }
-        }
-        if ($type === null) {
-            $this->addFlash('danger', 'The user is not a confirmed member of any volunteer type this shift needs.');
+        $ids = array_values(array_unique(array_filter(array_map('intval', (array) $request->request->all('users')))));
+        if ($ids === []) {
+            $this->addFlash('danger', 'Choose at least one user.');
 
             return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
         }
@@ -103,12 +117,46 @@ final class AssignmentController extends AbstractController
             return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
         }
 
-        try {
-            $actor = $this->getUser();
-            $this->assignments->assign($shift, $user, $type, $override, $actor instanceof User ? $actor : null);
-            $this->addFlash('success', \sprintf('%s assigned.', $user->getName()));
-        } catch (\RuntimeException $e) {
-            $this->addFlash('warning', $e->getMessage().' Tick "override" to confirm.');
+        $actor = $this->getUser();
+        $actor = $actor instanceof User ? $actor : null;
+
+        $assigned = $notMember = $needOverride = [];
+        foreach ($ids as $id) {
+            $user = $users->find($id);
+            if ($user === null) {
+                continue;
+            }
+
+            // The user must be a confirmed member of a type the shift needs; that type is the assignment.
+            $type = null;
+            foreach ($shift->getNeededVolunteerTypes() as $need) {
+                if ($this->memberships->isConfirmedMember($user, $need->getVolunteerType())) {
+                    $type = $need->getVolunteerType();
+                    break;
+                }
+            }
+            if ($type === null) {
+                $notMember[] = $user->getName();
+                continue;
+            }
+
+            try {
+                $this->assignments->assign($shift, $user, $type, $override, $actor);
+                $assigned[] = $user->getName();
+            } catch (\RuntimeException) {
+                $needOverride[] = $user->getName();
+            }
+        }
+
+        // Report every outcome so nothing is silently dropped.
+        if ($assigned !== []) {
+            $this->addFlash('success', \sprintf('Assigned: %s.', implode(', ', $assigned)));
+        }
+        if ($notMember !== []) {
+            $this->addFlash('warning', \sprintf('Not a confirmed member of a volunteer type this shift needs: %s.', implode(', ', $notMember)));
+        }
+        if ($needOverride !== []) {
+            $this->addFlash('warning', \sprintf('Availability or hour warnings block these — tick "override" to assign anyway: %s.', implode(', ', $needOverride)));
         }
 
         return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);

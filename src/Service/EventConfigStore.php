@@ -33,6 +33,22 @@ class EventConfigStore
     public const KEY_SSO_ROLE_DEPARTMENT_MANAGER = 'sso.role.department_manager';
     public const KEY_SSO_ROLE_SHIFT_MANAGER = 'sso.role.shift_manager';
 
+    /*
+     * Identity-provider role IDs that make an SSO user a global admin or sub admin across the whole
+     * app (not scoped to a department). Holding the global-admin role wins over the sub-admin role.
+     * Same handling as the department role IDs above — raw IdP identifiers, admin-only, step-up
+     * guarded. See App\Sso\SsoGlobalRoles.
+     */
+    public const KEY_SSO_ROLE_GLOBAL_ADMIN = 'sso.role.global_admin';
+    public const KEY_SSO_ROLE_SUB_ADMIN = 'sso.role.sub_admin';
+
+    /*
+     * Endpoint of the external registration/attendee API queried (with the user's own OAuth token)
+     * right after SSO login to learn their convention registration number. Blank disables the lookup.
+     * Edited on the step-up-guarded /admin/sso page — see App\Sso\RegistrationApiSettings.
+     */
+    public const KEY_SSO_BADGE_API_URL = 'sso.badge_number_api_url';
+
     // Display / regional settings. These control how dates and
     // times are rendered for everyone, server-side, regardless of the viewer's
     // browser locale or timezone. See {@see \App\Service\DisplaySettings}.

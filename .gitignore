@@ -24,3 +24,6 @@
 /assets/vendor/
 ###< symfony/asset-mapper ###
 docs/keycloak-credentials.txt
+
+## Seeds used for testing
+/seeds/

@@ -35,13 +35,15 @@ final class SsoRoleController extends AbstractController
         $data = new SsoRoleData();
         $data->departmentManagerRole = $this->settings->departmentManagerRole();
         $data->shiftManagerRole = $this->settings->shiftManagerRole();
+        $data->globalAdminRole = $this->settings->globalAdminRole();
+        $data->subAdminRole = $this->settings->subAdminRole();
 
         $form = $this->createForm(SsoRoleType::class, $data);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->settings->save($data->departmentManagerRole, $data->shiftManagerRole);
-            $this->addFlash('success', 'SSO department roles saved. They apply on each user\'s next sign-in.');
+            $this->settings->save($data->departmentManagerRole, $data->shiftManagerRole, $data->globalAdminRole, $data->subAdminRole);
+            $this->addFlash('success', 'SSO roles saved. They apply on each user\'s next sign-in.');
 
             return $this->redirectToRoute('app_admin_sso_roles');
         }

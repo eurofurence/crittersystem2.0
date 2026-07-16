@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Sso;
 
+use Psr\Log\LoggerInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
@@ -16,6 +17,7 @@ final class OidcDiscovery
     public function __construct(
         private readonly HttpClientInterface $httpClient,
         private readonly SsoConfig $config,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -34,7 +36,18 @@ final class OidcDiscovery
                     'token' => (string) ($data['token_endpoint'] ?? ''),
                     'userinfo' => (string) ($data['userinfo_endpoint'] ?? ''),
                 ];
-            } catch (\Throwable) {
+            } catch (\Throwable $e) {
+                /*
+                 * This runs on the live login path, and the status page only ever reports "could not
+                 * resolve OIDC endpoints". Whether that is DNS, TLS, a 5xx from the provider or malformed
+                 * JSON is the whole of the diagnosis, and it exists only here.
+                 */
+                $this->logger->error('OIDC discovery failed for {url}: {reason}', [
+                    'url' => $this->config->discoveryUrl(),
+                    'reason' => $e->getMessage(),
+                    'exception' => $e,
+                ]);
+
                 return null;
             }
         }

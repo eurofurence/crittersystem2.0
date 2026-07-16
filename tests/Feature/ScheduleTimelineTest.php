@@ -36,7 +36,7 @@ final class ScheduleTimelineTest extends DatabaseWebTestCase
 
         $dept = new Department('Logistics', 'logistics');
         $this->em->persist($dept);
-        $loc = new Location('Main Gate');
+        $loc = (new Location('Main Gate'))->setAlias('main-gate');
         $this->em->persist($loc);
         $type = new VolunteerType('Crew');
         $this->em->persist($type);

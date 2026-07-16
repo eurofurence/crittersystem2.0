@@ -54,6 +54,18 @@ final class CertificationController extends AbstractController
         return $this->render('certification/index.html.twig', ['rows' => $rows]);
     }
 
+    #[Route('/{id}', name: 'app_certifications_show', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function show(#[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
+    {
+        // Same visibility rule as the list: a staff-only certification is not
+        // shown to volunteers who cannot see staff content.
+        if ($certification->isStaffOnly() && !$this->isGranted('ROLE_STAFF') && !$this->isGranted('global:admin')) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->render('certification/show.html.twig', ['cert' => $certification]);
+    }
+
     #[Route('/{id}/apply', name: 'app_certifications_apply', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function apply(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {

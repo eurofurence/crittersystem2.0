@@ -31,6 +31,11 @@ class LocationRepository extends ServiceEntityRepository
         return $this->findOneBy(['name' => $name]);
     }
 
+    public function findOneByAlias(string $alias): ?Location
+    {
+        return $this->findOneBy(['alias' => $alias]);
+    }
+
     /** @return Location[] */
     public function findAllOrdered(): array
     {

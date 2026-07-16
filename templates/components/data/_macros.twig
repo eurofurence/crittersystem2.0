@@ -386,3 +386,45 @@
     {% if options.extraHtml is defined %}{{ options.extraHtml|raw }}{% endif %}
   {% if cell %}</td>{% endif %}
 {% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro certification_card(cert, options = {}) %}
+  {# One certification as a card: title + description, with a caller-supplied control in the
+     footer (a toggle switch when picking requirements, apply/self-confirm buttons on the
+     volunteer-facing list). Wrap a set of these in <div class="row">.
+     cert: anything exposing .title and .description (the Certification entity).
+     options:
+     - col: string          -- default 'col-md-6 col-lg-3'
+     - infoUrl: string      -- renders a "More information" link in the footer when truthy
+     - control: markup       -- trusted captured HTML shown at the footer's right (switch, buttons)
+     - bodyExtra: markup     -- trusted captured HTML appended under the description (status, validity)
+  #}
+  {% set hasBody = cert.description or (options.bodyExtra is defined and options.bodyExtra) %}
+  {% set hasFooter = (options.infoUrl is defined and options.infoUrl) or (options.control is defined and options.control) %}
+  <div class="{{ options.col|default('col-md-6 col-lg-3') }} mb-3">
+    <div class="card h-100">
+      <div class="card-header">
+        <h3 class="card-title">{{ cert.title }}</h3>
+      </div>
+      {% if hasBody %}
+        <div class="card-body">
+          {% if cert.description %}<p class="text-secondary{{ (options.bodyExtra is defined and options.bodyExtra) ? '' : ' mb-0' }}">{{ cert.description }}</p>{% endif %}
+          {% if options.bodyExtra is defined %}{{ options.bodyExtra|raw }}{% endif %}
+        </div>
+      {% endif %}
+      {% if hasFooter %}
+        <div class="card-footer mt-auto">
+          <div class="row align-items-center">
+            <div class="col-auto">
+              {% if options.infoUrl is defined and options.infoUrl %}<a href="{{ options.infoUrl }}">More information</a>{% endif %}
+            </div>
+            <div class="col-auto ms-auto">
+              {% if options.control is defined %}{{ options.control|raw }}{% endif %}
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}

@@ -2,6 +2,7 @@
 
 namespace App\Controller\Admin;
 
+use App\Repository\PrivacyNoticeRepository;
 use App\Service\EventConfigStore;
 use App\Service\Install\Installer;
 use App\Service\Install\InstallStateStore;
@@ -31,13 +32,16 @@ use Symfony\Component\Routing\Attribute\Route;
  *   3. Database check + run migration (live progress)
  *   4. Create the first administrator (first run only)
  *   5. Optional regional configuration (skippable)
- *   6. Finish → back to the site
+ *   6. Optional privacy-notice essentials (skippable)
+ *   7. Finish → back to the site
  */
 #[Route('/admin/install')]
 final class InstallController extends AbstractController
 {
     private const SESSION_AUTH = 'install_authenticated';
-    private const STEPS_TOTAL = 5;
+    private const STEPS_TOTAL = 6;
+
+    private readonly string $installPassword;
 
     public function __construct(
         private readonly MigrationInspector $inspector,
@@ -45,9 +49,15 @@ final class InstallController extends AbstractController
         private readonly Installer $installer,
         private readonly EventConfigStore $config,
         private readonly SecretCipher $cipher,
-        private readonly string $installPassword,
+        private readonly PrivacyNoticeRepository $privacyNotices,
+        string $installPassword,
         private readonly string $projectDir,
     ) {
+        // Deployment tooling routinely leaves a trailing newline on secret values
+        // (a Docker/K8s secret file, `$(cat secret)`, `echo` without -n, or a quoted
+        // env_file line). Left in, it makes hash_equals reject the correct password,
+        // which then reads to the operator as "wrong password". Normalise it here.
+        $this->installPassword = trim($installPassword);
     }
 
     // ------------------------------------------------------------- step 1: welcome
@@ -78,10 +88,16 @@ final class InstallController extends AbstractController
             return $this->render('install/disabled.html.twig', [], new Response('', Response::HTTP_FORBIDDEN));
         }
 
-        $submitted = (string) $request->request->get('password', '');
+        // A stale/invalid token is a session problem, not a wrong password; say so
+        // rather than sending the operator to double-check a password that is correct.
+        if (!$this->isCsrfTokenValid('install_authenticate', (string) $request->request->get('_token'))) {
+            $this->addFlash('install_error', 'Your setup session expired. Please try again.');
 
-        if (!$this->isCsrfTokenValid('install_authenticate', (string) $request->request->get('_token'))
-            || !hash_equals($this->installPassword, $submitted)) {
+            return $this->redirectToRoute('app_install');
+        }
+
+        $submitted = (string) $request->request->get('password', '');
+        if (!hash_equals($this->installPassword, $submitted)) {
             $this->addFlash('install_error', 'Incorrect installation password.');
 
             return $this->redirectToRoute('app_install');
@@ -297,7 +313,7 @@ final class InstallController extends AbstractController
                 $this->addFlash('install_success', 'Configuration saved.');
             }
 
-            return $this->redirectToRoute('app_install_finish');
+            return $this->redirectToRoute('app_install_privacy');
         }
 
         return $this->render('install/config.html.twig', $this->view(5, [
@@ -309,7 +325,50 @@ final class InstallController extends AbstractController
         ]));
     }
 
-    // ------------------------------------------------------------- step 6: finish
+    // ------------------------------------------------------------- step 6: privacy
+
+    #[Route('/privacy', name: 'app_install_privacy', methods: ['GET', 'POST'])]
+    public function privacy(Request $request): Response
+    {
+        if ($redirect = $this->guard($request)) {
+            return $redirect;
+        }
+
+        if ($request->isMethod('POST')) {
+            if (!$this->isCsrfTokenValid('install_privacy', (string) $request->request->get('_token'))) {
+                $this->addFlash('install_error', 'Invalid request token, please try again.');
+
+                return $this->redirectToRoute('app_install_privacy');
+            }
+
+            // Skipping is allowed — only persist when the user submitted "save".
+            if ($request->request->get('action') === 'save') {
+                $this->installer->savePrivacyNotice(
+                    trim((string) $request->request->get('event_name')),
+                    trim((string) $request->request->get('controller_org')),
+                    trim((string) $request->request->get('contact_email')),
+                    (int) $request->request->get('deletion_days'),
+                );
+                $this->addFlash('install_success', 'Privacy notice saved.');
+            }
+
+            return $this->redirectToRoute('app_install_finish');
+        }
+
+        // Prefill from an existing notice, falling back to the event name just
+        // captured in the configuration step.
+        $notice = $this->privacyNotices->current();
+        $eventName = $notice?->getEventName() ?: (string) $this->config->get(EventConfigStore::KEY_NAME, '');
+
+        return $this->render('install/privacy.html.twig', $this->view(6, [
+            'eventName' => $eventName,
+            'controllerOrg' => $notice?->getControllerOrg() ?? '',
+            'contactEmail' => $notice?->getContactEmail() ?? '',
+            'deletionDays' => $notice?->getDeletionDays() ?? 60,
+        ]));
+    }
+
+    // ------------------------------------------------------------- step 7: finish
 
     #[Route('/finish', name: 'app_install_finish', methods: ['GET'])]
     public function finish(Request $request): Response

@@ -2,6 +2,7 @@
 
 namespace App\Tests\Integration;
 
+use App\Entity\ConsentText;
 use App\Entity\Group;
 use App\Entity\User;
 use App\Tests\DatabaseTestCase;
@@ -43,5 +44,21 @@ final class InstallCommandTest extends DatabaseTestCase
 
         self::assertCount(12, $this->em->getRepository(Group::class)->findAll());
         self::assertCount(1, $this->em->getRepository(User::class)->findAll());
+        // The seeded consent text is created once, never duplicated.
+        self::assertCount(1, $this->em->getRepository(ConsentText::class)->findAll());
+    }
+
+    public function testSeedsEnglishConsentTextCoveringCookiesAndDeletion(): void
+    {
+        $this->runInstall();
+        $this->em->clear();
+
+        $consent = $this->em->getRepository(ConsentText::class)->findOneBy(['locale' => 'en_US']);
+        self::assertNotNull($consent, 'a fresh install must seed the en_US consent text');
+
+        $label = $consent->getCheckboxLabel();
+        self::assertStringContainsStringIgnoringCase('personal data', $label);
+        self::assertStringContainsStringIgnoringCase('cookies', $label);
+        self::assertStringContainsString('%deletion_days', $label);
     }
 }

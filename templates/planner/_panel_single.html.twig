@@ -65,16 +65,18 @@
 
     <fieldset class="mb-3">
       <legend class="form-label">Required volunteer types</legend>
+      {# Keys are prefixed because Twig's merge filter renumbers integer keys (array_merge
+         semantics), which would drop the volunteer-type id and lose the saved count. #}
       {% set neededByType = {} %}
       {% for need in shift.neededVolunteerTypes %}
-        {% set neededByType = neededByType|merge({(need.volunteerType.id): need.count}) %}
+        {% set neededByType = neededByType|merge({('vt' ~ need.volunteerType.id): need.count}) %}
       {% endfor %}
       <div class="row g-2">
         {% for vt in volunteerTypes %}
           <div class="col-12 d-flex align-items-center gap-2">
             <span class="text-truncate flex-grow-1">{{ vt.name }}</span>
             <input type="number" min="0" class="form-control form-control-sm" style="max-width: 5rem;"
-                   name="needed[{{ vt.id }}]" value="{{ neededByType[vt.id] ?? 0 }}">
+                   name="needed[{{ vt.id }}]" value="{{ neededByType['vt' ~ vt.id] ?? 0 }}">
           </div>
         {% else %}
           {{ d.empty_inline('No volunteer types configured.', {tag: 'div', class: 'col-12 text-secondary small'}) }}

@@ -27,7 +27,7 @@ final class LocationsPageTest extends DatabaseWebTestCase
 
     public function testNonStaffCannotSeeStaffOnlyLocation(): void
     {
-        $staffOnly = (new Location('Backstage'))->setStaffOnly(true);
+        $staffOnly = (new Location('Backstage'))->setAlias('backstage')->setStaffOnly(true);
         $this->em->persist($staffOnly);
         $this->em->flush();
 
@@ -42,7 +42,7 @@ final class LocationsPageTest extends DatabaseWebTestCase
 
     public function testStaffSeesStaffOnlyLocation(): void
     {
-        $staffOnly = (new Location('Backstage'))->setStaffOnly(true);
+        $staffOnly = (new Location('Backstage'))->setAlias('backstage')->setStaffOnly(true);
         $this->em->persist($staffOnly);
         $this->em->flush();
 
@@ -56,7 +56,7 @@ final class LocationsPageTest extends DatabaseWebTestCase
     {
         // Security: resources are addressed by uuid; the internal integer primary key
         // must never resolve as a URL identifier.
-        $loc = new Location('Foyer');
+        $loc = (new Location('Foyer'))->setAlias('foyer');
         $this->em->persist($loc);
         $this->em->flush();
 
@@ -73,8 +73,8 @@ final class LocationsPageTest extends DatabaseWebTestCase
 
     public function testHiddenParentDoesNotLeakChild(): void
     {
-        $root = (new Location('Restricted Wing'))->setStaffOnly(true);
-        $child = (new Location('Room 1'))->setParent($root);
+        $root = (new Location('Restricted Wing'))->setAlias('restricted-wing')->setStaffOnly(true);
+        $child = (new Location('Room 1'))->setAlias('room-1')->setParent($root);
         $this->em->persist($root);
         $this->em->persist($child);
         $this->em->flush();

@@ -1,0 +1,57 @@
+/* Tag-style user picker (user_select_controller.js + the forms.user_select macro). */
+
+.user-select {
+    position: relative;
+}
+
+/* The control looks like a form-control but grows to wrap chips and the text input. */
+.user-select-control {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    min-height: 2.25rem;
+    height: auto;
+    cursor: text;
+}
+
+/* Let each chip be a direct flex item of the control so they wrap independently. */
+.user-select-control > [data-user-select-target="chips"] {
+    display: contents;
+}
+
+.user-select-input {
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    border: 0;
+    outline: 0;
+    padding: 0.125rem 0;
+    background: transparent;
+    color: inherit;
+}
+
+.user-select-chip {
+    background: var(--tblr-bg-surface-secondary, rgba(0, 0, 0, 0.06));
+    color: inherit;
+    font-weight: 500;
+}
+
+.user-select-chip .avatar {
+    font-size: 0.625rem;
+}
+
+.user-select-chip .btn-close {
+    --tblr-btn-close-opacity: 0.6;
+    font-size: 0.6rem;
+}
+
+/* The results dropdown is positioned under the control and scrolls when long. */
+.user-select-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 16rem;
+    overflow-y: auto;
+    margin-top: 0.25rem;
+}

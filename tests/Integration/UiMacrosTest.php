@@ -126,4 +126,27 @@ final class UiMacrosTest extends KernelTestCase
         self::assertStringNotContainsString('<img src=x', $html);
         self::assertStringContainsString('&lt;script&gt;', $html);
     }
+
+    public function testCertificationCardRendersTitleDescriptionInfoLinkAndControl(): void
+    {
+        $html = $this->render(
+            "{% set ctrl %}<button>go</button>{% endset %}"
+            ."{{ d.certification_card({title: 'First Aid', description: 'Basic aid'}, {infoUrl: '/c/1', control: ctrl}) }}"
+        );
+
+        self::assertStringContainsString('First Aid', $html);
+        self::assertStringContainsString('Basic aid', $html);
+        self::assertStringContainsString('href="/c/1"', $html);
+        self::assertStringContainsString('More information', $html);
+        self::assertStringContainsString('<button>go</button>', $html, 'the footer control is trusted, captured markup');
+    }
+
+    public function testCertificationCardOmitsFooterAndInfoLinkWhenNotRequested(): void
+    {
+        $html = $this->render("{{ d.certification_card({title: 'Solo', description: ''}) }}");
+
+        self::assertStringContainsString('Solo', $html);
+        self::assertStringNotContainsString('card-footer', $html, 'no control and no infoUrl → no footer');
+        self::assertStringNotContainsString('More information', $html);
+    }
 }

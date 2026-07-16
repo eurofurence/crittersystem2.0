@@ -7,6 +7,7 @@ namespace App\EventSubscriber;
 use App\Entity\User;
 use App\Security\PrivilegeCatalog;
 use App\TwoFactor\StepUpManager;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -38,6 +39,7 @@ final class TwoFactorStepUpSubscriber implements EventSubscriberInterface
         private readonly AuthorizationCheckerInterface $authChecker,
         private readonly StepUpManager $stepUp,
         private readonly UrlGeneratorInterface $urlGenerator,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -101,7 +103,17 @@ final class TwoFactorStepUpSubscriber implements EventSubscriberInterface
             } else {
                 return [];
             }
-        } catch (\ReflectionException) {
+        } catch (\ReflectionException $e) {
+            /*
+             * Returning [] means "this controller needs no step-up", so a reflection failure here fails
+             * *open* on a security gate. It should be impossible — Symfony has already resolved the
+             * controller — but if it ever happens it must not happen quietly.
+             */
+            $this->logger->error('Could not read step-up attributes; treating the controller as unprotected: {reason}', [
+                'reason' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
             return [];
         }
 

@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
 
 {% block title %}Staffing — {{ shift.title }}{% endblock %}
 
@@ -38,25 +39,15 @@
     </div>
 
     <div class="col-12 col-lg-5">
-      {{ d.card_start('Add a user', {class: ''}) }}
-          <form method="get" class="mb-3">
-            <div class="input-group">
-              <input type="text" class="form-control" name="q" value="{{ query }}" placeholder="Search all users by name/nickname">
-              <button class="btn btn-outline-secondary">Search</button>
-            </div>
-          </form>
-
+      {{ d.card_start('Add users', {class: ''}) }}
           <form method="post" action="{{ path('app_shift_staffing_assign', {id: shift.uuid}) }}">
             <input type="hidden" name="_token" value="{{ csrf_token('staffing_assign' ~ shift.id) }}">
-            <div class="mb-2">
-              <label class="form-label" for="assign-user">User</label>
-              <select class="form-select" id="assign-user" name="user" required>
-                <option value="">— Choose —</option>
-                {% for user in candidates %}
-                  <option value="{{ user.id }}">{{ user.name }}</option>
-                {% endfor %}
-              </select>
-            </div>
+            {{ f.user_select('users', {
+              url: path('app_shift_staffing_search', {id: shift.uuid}),
+              label: false,
+              placeholder: 'Type a username…',
+              help: 'Search by username. Picked users are added when you press Assign; click a name to remove it first.',
+            }) }}
             {% if is_granted('assignment:override', shift.department) %}
               <label class="form-check mb-2">
                 <input type="checkbox" class="form-check-input" name="override" value="1">

@@ -26,6 +26,28 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
+     * Partial, case-insensitive username search — no email/id matching. Used by the
+     * type-ahead user pickers, where only the username should be searchable.
+     *
+     * @return User[]
+     */
+    public function searchByName(string $query, int $limit = 15): array
+    {
+        $query = trim($query);
+        if ($query === '') {
+            return [];
+        }
+
+        return $this->createQueryBuilder('u')
+            ->andWhere('LOWER(u.name) LIKE :like')
+            ->setParameter('like', '%'.mb_strtolower($query).'%')
+            ->orderBy('u.name', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Used to upgrade (rehash) the user's password automatically over time.
      */
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
@@ -105,6 +127,54 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         return $this->createQueryBuilder('u')
             ->join('u.settings', 's')
             ->andWhere('s.emailNews = true')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Info-desk user lookup. Deliberately narrow to resist account mining: an email
+     * only ever matches EXACTLY (never a substring), a digit string is treated as a
+     * registration number and matched exactly, and the internal database id is never
+     * searchable. Only plain names fall back to a substring match. Badge-scan tokens
+     * are resolved by the caller (they need the digital-id service), not here.
+     *
+     * @return User[]
+     */
+    public function locate(string $query, int $limit = 25): array
+    {
+        $query = trim($query);
+        if ($query === '') {
+            return [];
+        }
+
+        // Exact email — an '@' means the operator has a full address, so never widen it to a LIKE.
+        if (str_contains($query, '@')) {
+            return $this->createQueryBuilder('u')
+                ->andWhere('LOWER(u.email) = :email')
+                ->setParameter('email', mb_strtolower($query))
+                ->getQuery()
+                ->getResult();
+        }
+
+        // All digits — a registration (badge) number, matched exactly. Never the database id.
+        if (ctype_digit($query)) {
+            return $this->createQueryBuilder('u')
+                ->join('u.personalData', 'p')
+                ->andWhere('p.badgeNumber = :regnum')
+                ->setParameter('regnum', (int) $query)
+                ->orderBy('u.name', 'ASC')
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getResult();
+        }
+
+        // Anything else is treated as a name. Email is intentionally excluded here so a
+        // partial term can never enumerate addresses.
+        return $this->createQueryBuilder('u')
+            ->andWhere('LOWER(u.name) LIKE :like')
+            ->setParameter('like', '%'.mb_strtolower($query).'%')
+            ->orderBy('u.name', 'ASC')
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }

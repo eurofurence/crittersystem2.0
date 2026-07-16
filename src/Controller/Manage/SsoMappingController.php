@@ -9,6 +9,7 @@ use App\Sso\SsoMappingImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
@@ -36,6 +37,20 @@ final class SsoMappingController extends AbstractController
         return $this->render('manage/sso_mapping/index.html.twig', ['mappings' => $this->mappings->findAllOrdered()]);
     }
 
+    #[Route('/export', name: 'app_manage_sso_mapping_export', methods: ['GET'])]
+    public function export(): Response
+    {
+        $json = json_encode($this->importer->export(), \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE);
+
+        $response = new Response($json, Response::HTTP_OK, ['Content-Type' => 'application/json']);
+        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
+            HeaderUtils::DISPOSITION_ATTACHMENT,
+            'sso-mappings.json',
+        ));
+
+        return $response;
+    }
+
     #[Route('/import', name: 'app_manage_sso_mapping_import', methods: ['POST'])]
     public function import(Request $request): Response
     {
@@ -43,8 +58,20 @@ final class SsoMappingController extends AbstractController
             return $this->redirectToRoute('app_manage_sso_mapping_index');
         }
 
-        $rows = json_decode((string) $request->request->get('json', ''), true);
-        if (!\is_array($rows)) {
+        // An uploaded file wins over the textarea; fall back to the pasted contents. The modal always
+        // submits both fields, so an empty (no-file) upload must fall through, not be read.
+        $upload = $request->files->get('file');
+        $payload = $upload !== null && $upload->isValid()
+            ? (string) $upload->getContent()
+            : (string) $request->request->get('json', '');
+        if (trim($payload) === '') {
+            $this->addFlash('danger', 'Provide JSON to import, either pasted or as a file.');
+
+            return $this->redirectToRoute('app_manage_sso_mapping_index');
+        }
+
+        $rows = json_decode($payload, true);
+        if (!\is_array($rows) || array_is_list($rows) === false) {
             $this->addFlash('danger', 'Invalid JSON: expected an array of mappings.');
 
             return $this->redirectToRoute('app_manage_sso_mapping_index');

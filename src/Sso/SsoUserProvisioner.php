@@ -31,6 +31,7 @@ final class SsoUserProvisioner
         private readonly UsernameGenerator $usernames,
         private readonly BanChecker $bans,
         private readonly SsoDepartmentPositions $positions,
+        private readonly SsoGlobalRoles $globalRoles,
         private readonly string $providerLabel = 'oidc',
     ) {
     }
@@ -52,6 +53,7 @@ final class SsoUserProvisioner
 
         $departments = $this->applyMappings($user, $claims->groups);
         $this->positions->apply($user, $claims->groups, $departments);
+        $this->globalRoles->apply($user, $claims->groups);
         $this->em->flush();
 
         return $user;

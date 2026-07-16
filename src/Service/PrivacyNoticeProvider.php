@@ -57,12 +57,24 @@ final class PrivacyNoticeProvider
                 sponsors.</li>
             </ul>
 
-            <h2>5. Automated Deletion Timeline</h2>
+            <h2>5. Cookies</h2>
+            <p>This system uses only cookies that are strictly necessary for it to work. We do not use
+            any advertising, analytics, or tracking cookies, and we do not share cookie data with third
+            parties, so no cookie-consent banner is required.</p>
+            <ul>
+                <li>Session cookie: keeps you signed in while you use the system. It is only set once you
+                log in and is removed when your session ends or expires.</li>
+                <li>Security (CSRF) cookie: a short-lived token that protects forms against
+                cross-site request forgery. It is created when you submit a form and discarded
+                immediately afterwards.</li>
+            </ul>
+
+            <h2>6. Automated Deletion Timeline</h2>
             <p>To respect your right to be forgotten, all personal data collected for this event will be
             permanently deleted and purged from our database within %deletion_days days after the
             conclusion of the convention.</p>
 
-            <h2>6. Your Rights</h2>
+            <h2>7. Your Rights</h2>
             <p>Under the GDPR, you have the right to access a copy of the data we hold about you, ask us
             to correct inaccurate information, and withdraw your volunteer application and demand the
             immediate erasure of your data before the event.</p>

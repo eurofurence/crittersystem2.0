@@ -4,27 +4,53 @@
 {% block title %}Departments{% endblock %}
 
 {% block body %}
+  {% set porter %}
+    <a href="{{ path('app_manage_department_export') }}" class="btn btn-outline-secondary">Export JSON</a>
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#department-import-modal">Import</button>
+  {% endset %}
   {{ d.page_header('Departments', {
     subtitle: 'Teams that organise shifts and volunteers.',
     actions: [
       {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
       {label: '+ New department', href: path('app_manage_department_new'), class: 'btn btn-primary'}
-    ]
+    ],
+    actionsHtml: porter
   }) }}
 
-  {{ d.card_start('Bulk import (JSON)', {class: 'mb-4', titleTag: 'strong'}) }}
-      <p class="text-muted small mb-2">
-        Paste an array of departments. Only <code>name</code> is required — the
-        <code>slug</code> (alias) is generated from the name when omitted. Optional:
-        <code>description</code>, <code>staffonly</code>, <code>organizational</code>.
-        Existing departments (matched by name or slug) are updated.
-      </p>
-      <form method="post" action="{{ path('app_manage_department_import') }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('department_import') }}">
-        <textarea name="json" class="form-control font-monospace" rows="8" placeholder='[{"name":"Art Show","staffonly":1},{"name":"Logistics","slug":"logistics","description":"Move and store convention needs.","organizational":0}]'></textarea>
-        <button class="btn btn-primary mt-2">Import</button>
+  <div class="modal fade" id="department-import-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" method="post" action="{{ path('app_manage_department_import') }}" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Import departments (JSON)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="_token" value="{{ csrf_token('department_import') }}">
+          <p class="text-muted small mb-3">
+            An array of departments. Only <code>name</code> is required — the <code>slug</code> is
+            generated from the name when omitted. Optional: <code>description</code>,
+            <code>staffonly</code>, <code>organizational</code>, <code>locations</code> (location
+            aliases) and <code>volunteerTypes</code> (volunteer type names). Existing departments
+            (matched by name or slug) are updated. Download the current departments with
+            <strong>Export JSON</strong> to use as a template.
+          </p>
+          <div class="mb-3">
+            <label class="form-label" for="department-import-file">Upload a file</label>
+            <input class="form-control" id="department-import-file" type="file" name="file" accept=".json,application/json">
+          </div>
+          <div class="mb-1">
+            <label class="form-label" for="department-import-json">…or paste JSON</label>
+            <textarea class="form-control font-monospace" id="department-import-json" name="json" rows="8"
+              placeholder='[{"name":"Logistics","slug":"logistics","description":"Move and store convention needs.","organizational":0,"locations":["main-hall"],"volunteerTypes":["Volunteer"]}]'></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Import departments</button>
+        </div>
       </form>
-  {{ d.card_end() }}
+    </div>
+  </div>
 
   {% if departments is empty %}
     {{ d.empty_state('No departments yet', {

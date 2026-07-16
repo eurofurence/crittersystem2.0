@@ -47,6 +47,7 @@ security:
         - { path: ^/admin/install, roles: PUBLIC_ACCESS }
         - { path: ^/health$, roles: PUBLIC_ACCESS }
         - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/unavailable$, roles: PUBLIC_ACCESS } # "system restricted" notice for access-mode-gated users
         - { path: ^/$, roles: PUBLIC_ACCESS }     # site root redirects (guest -> login, user -> dashboard)
         - { path: ^/api, roles: PUBLIC_ACCESS }   # authorization is enforced per endpoint by the API controllers
         - { path: ^/digital-id/verify, roles: PUBLIC_ACCESS } # scannable digital ID — no login required

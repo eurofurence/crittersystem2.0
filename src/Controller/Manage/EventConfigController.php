@@ -28,6 +28,8 @@ final class EventConfigController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $previousMode = (string) $this->store->get(EventConfigStore::KEY_ACCESS_MODE, 'public');
+
             $this->store->set(EventConfigStore::KEY_NAME, $data->name);
             $this->store->set(EventConfigStore::KEY_WELCOME_MESSAGE, $data->welcomeMessage);
             $this->store->set(EventConfigStore::KEY_ACCESS_MODE, $data->accessMode);
@@ -39,6 +41,9 @@ final class EventConfigController extends AbstractController
             $this->store->flush();
 
             $this->addFlash('success', 'Event configuration saved.');
+            if ($data->accessMode !== $previousMode && $data->accessMode !== 'public') {
+                $this->addFlash('info', 'Access mode tightened: users who no longer qualify are signed out on their next request.');
+            }
 
             return $this->redirectToRoute('app_manage_event_config');
         }

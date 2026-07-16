@@ -2,20 +2,25 @@
 
 namespace App\Service\Install;
 
+use App\Entity\ConsentText;
 use App\Entity\Contact;
 use App\Entity\Department;
 use App\Entity\Group;
 use App\Entity\PersonalData;
+use App\Entity\PrivacyNotice;
 use App\Entity\Privilege;
 use App\Entity\Settings;
 use App\Entity\ShiftTask;
 use App\Entity\State;
 use App\Entity\User;
 use App\Entity\VolunteerType;
+use App\Repository\ConsentTextRepository;
 use App\Repository\GroupRepository;
+use App\Repository\PrivacyNoticeRepository;
 use App\Repository\PrivilegeRepository;
 use App\Repository\ShiftTaskRepository;
 use App\Repository\VolunteerTypeRepository;
+use App\Service\PrivacyNoticeProvider;
 use App\Audit\CertificateAuthority;
 use App\Badge\BadgeCatalog;
 use App\Entity\Badge;
@@ -46,6 +51,9 @@ final class Installer
         private readonly BadgeRepository $badges,
         private readonly ShiftTaskRepository $shiftTasks,
         private readonly VolunteerTypeRepository $volunteerTypes,
+        private readonly PrivacyNoticeRepository $privacyNotices,
+        private readonly PrivacyNoticeProvider $privacyProvider,
+        private readonly ConsentTextRepository $consentTexts,
     ) {
     }
 
@@ -154,6 +162,63 @@ final class Installer
                 );
             }
         }
+
+        $this->seedConsentText();
+
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Seed the default English consent disclaimer shown during onboarding, so a
+     * fresh install has a working consent gate before any admin edits the text.
+     * Only ever creates the en_US row when absent; an existing (possibly
+     * admin-edited) row is left untouched. The %variables resolve at render time.
+     */
+    private function seedConsentText(): void
+    {
+        if ($this->consentTexts->findOneByLocale('en_US') !== null) {
+            return;
+        }
+
+        $text = (new ConsentText('en_US'))
+            ->setHeaderTitle('Data Protection & Privacy')
+            ->setHeaderBody(
+                'To take part as a volunteer at %event_name we need to process some personal data about '
+                .'you — such as your name, contact details, availability and role preferences. We use it '
+                .'only to organise volunteer shifts and to keep in touch with you about them.'
+            )
+            ->setCheckboxLabel(
+                'I agree to share my personal data with the %event_name volunteer team so that I can use '
+                .'this system. I understand that no tracking cookies are used, and that my data will be '
+                .'permanently deleted within %deletion_days days after the event.'
+            )
+            ->setFooter(
+                'You can withdraw your consent and request deletion of your data at any time. See the '
+                .'full privacy notice above for details.'
+            );
+
+        $this->entityManager->persist($text);
+    }
+
+    /**
+     * Store the essentials of the privacy notice captured during setup (event
+     * name, data controller, contact email, retention period). A fresh notice
+     * gets the shipped default body so the full text is present and editable at
+     * Manage → Privacy notice; an existing notice keeps its body.
+     */
+    public function savePrivacyNotice(string $eventName, string $controllerOrg, string $contactEmail, int $deletionDays): void
+    {
+        $notice = $this->privacyNotices->current();
+        if ($notice === null) {
+            $notice = new PrivacyNotice();
+            $this->privacyProvider->applyDefault($notice);
+            $this->entityManager->persist($notice);
+        }
+
+        $notice->setEventName($eventName)
+            ->setControllerOrg($controllerOrg)
+            ->setContactEmail($contactEmail)
+            ->setDeletionDays(max(1, $deletionDays));
 
         $this->entityManager->flush();
     }

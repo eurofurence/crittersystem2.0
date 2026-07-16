@@ -30,6 +30,7 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
     public function __construct(
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly EntityManagerInterface $entityManager,
+        private readonly AccessModeGate $accessModeGate,
     ) {
     }
 
@@ -56,6 +57,12 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
         if ($user instanceof User) {
             $user->setLastLoginAt(new \DateTimeImmutable());
             $this->entityManager->flush();
+
+            // The Access mode may shut this user out. Land them on the notice (which keeps their
+            // session so their digital badge stays reachable) rather than a target they cannot open.
+            if (!$this->accessModeGate->permits($user)) {
+                return new RedirectResponse($this->urlGenerator->generate('app_system_unavailable'));
+            }
         }
 
         if ($targetPath = $this->getTargetPath($request->getSession(), $firewallName)) {
@@ -69,9 +76,9 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
      * A background request must never be answered with the login page.
      *
      * The default entry point redirects to /login, and `fetch()` follows redirects, so a polling widget
-     * receives 200 OK carrying the whole login document and injects it into itself — which is how an
-     * expired session used to shred the navbar. Answer those requests with a bare 401 instead and let
-     * the client decide to leave the page; only a real navigation gets the redirect.
+     * would receive 200 OK carrying the whole login document and inject it into itself. Answer those
+     * requests with a bare 401 instead and let the client decide to leave the page; only a real
+     * navigation gets the redirect.
      */
     public function start(Request $request, ?AuthenticationException $authException = null): Response
     {

@@ -6,7 +6,7 @@
 
 {% block body %}
   {{ d.page_header(pageTitle, {
-    subtitle: 'field, datetime_local, range_slider, check, choice, choice_multiple, search_input — templates/components/forms/_macros.twig',
+    subtitle: 'field, datetime_local, range_slider, check, switch, choice, choice_multiple, search_input — templates/components/forms/_macros.twig',
     actions: [
       {label: 'Back to the kit index', href: path('app_navigation_kit'), class: 'btn btn-outline-primary'}
     ]
@@ -89,6 +89,7 @@
         {{ d.section_header('Checkbox, single choice, multiple choice', {size: 'h6', class: 'col-12 mt-3 mb-2'}) }}
 
         {{ f.check(extras.newsletter, {col: 'col-12 col-md-6', help: 'check() renders a Bootstrap .form-check.'}) }}
+        {{ f.switch(extras.notify, {col: 'col-12 col-md-6', help: 'switch() renders a .form-check.form-switch toggle.'}) }}
         {{ f.choice(extras.department, {col: 'col-12 col-md-6', help: 'choice() → a single .form-select.'}) }}
         {{ f.choice_multiple(extras.skills, {col: 'col-12 col-md-6', size: 4, help: 'choice_multiple() → select[multiple] with a size.'}) }}
       </div>
@@ -104,8 +105,9 @@
 {# error state: nothing to do — field() always renders form_errors(row) #}
 {{ f.field(form.email) }}
 
-{# checkbox / choice / multiple choice #}
+{# checkbox / switch / choice / multiple choice #}
 {{ f.check(form.newsletter) }}
+{{ f.switch(form.notify, {help: 'Toggle switch — same contract as check().'}) }}
 {{ f.choice(form.department, {help: 'Pick one.'}) }}
 {{ f.choice_multiple(form.skills, {size: 4}) }}{% endverbatim %}</code></pre>
   {{ d.card_end() }}

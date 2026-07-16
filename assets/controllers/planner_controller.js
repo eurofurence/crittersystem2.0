@@ -287,6 +287,7 @@ export default class extends Controller {
                 await alertModal(data.error || 'The change could not be saved. Reload and try again.');
             }
         } catch (e) {
+            console.error('Save request failed.', e);
             await alertModal('Network error while saving. Reload and try again.');
         }
         await this.reloadGrid();
@@ -321,6 +322,9 @@ export default class extends Controller {
                 window.scrollTo(pageX, pageY);
             }
         } catch (e) {
+            // A bug in the swap above would otherwise surface only as the page mysteriously reloading —
+            // and, if it throws again on the way back, as a reload loop with an empty console.
+            console.error('Refresh failed; falling back to a full page load.', e);
             window.location.reload();
         }
     }

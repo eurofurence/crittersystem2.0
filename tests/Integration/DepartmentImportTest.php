@@ -4,6 +4,8 @@ namespace App\Tests\Integration;
 
 use App\Department\DepartmentImporter;
 use App\Entity\Department;
+use App\Entity\Location;
+use App\Entity\VolunteerType;
 use App\Tests\DatabaseTestCase;
 
 final class DepartmentImportTest extends DatabaseTestCase
@@ -91,5 +93,92 @@ final class DepartmentImportTest extends DatabaseTestCase
         self::assertSame(1, $result['imported']);
         self::assertSame(1, $result['created']);
         self::assertNotEmpty($result['warnings']);
+    }
+
+    public function testExportOfAnEmptyDatabaseReturnsATemplateRow(): void
+    {
+        $rows = $this->importer()->export();
+
+        self::assertCount(1, $rows);
+        self::assertArrayHasKey('name', $rows[0]);
+        self::assertArrayHasKey('slug', $rows[0]);
+        self::assertArrayHasKey('locations', $rows[0]);
+        self::assertArrayHasKey('volunteerTypes', $rows[0]);
+    }
+
+    public function testExportSerialisesFieldsAndRelations(): void
+    {
+        $location = new Location('Main Hall');
+        $location->setAlias('main-hall');
+        $type = new VolunteerType('Volunteer');
+        $dept = (new Department('Logistics', 'logistics'))->setDescription('Move things.')->setStaffOnly(true);
+        $dept->addLocation($location);
+        $dept->addVolunteerType($type);
+        $this->em->persist($location);
+        $this->em->persist($type);
+        $this->em->persist($dept);
+        $this->em->flush();
+
+        $rows = $this->importer()->export();
+
+        self::assertCount(1, $rows);
+        self::assertSame('logistics', $rows[0]['slug']);
+        self::assertSame('Move things.', $rows[0]['description']);
+        self::assertTrue($rows[0]['staffonly']);
+        self::assertSame(['main-hall'], $rows[0]['locations']);
+        self::assertSame(['Volunteer'], $rows[0]['volunteerTypes']);
+    }
+
+    public function testImportLinksLocationsByAliasAndVolunteerTypesByName(): void
+    {
+        $location = new Location('Main Hall');
+        $location->setAlias('main-hall');
+        $this->em->persist($location);
+        $this->em->persist(new VolunteerType('Volunteer'));
+        $this->em->flush();
+
+        $result = $this->importer()->import([
+            ['name' => 'Logistics', 'locations' => ['main-hall'], 'volunteerTypes' => ['Volunteer']],
+        ]);
+
+        self::assertEmpty($result['warnings']);
+        $this->em->clear();
+        $dept = $this->em->getRepository(Department::class)->findOneBy(['name' => 'Logistics']);
+        self::assertCount(1, $dept->getLocations());
+        self::assertSame('main-hall', $dept->getLocations()->first()->getAlias());
+        self::assertCount(1, $dept->getVolunteerTypes());
+    }
+
+    public function testUnknownRelationReferenceIsWarnedAndLeftUnlinked(): void
+    {
+        $result = $this->importer()->import([
+            ['name' => 'Logistics', 'locations' => ['ghost'], 'volunteerTypes' => ['Nobody']],
+        ]);
+
+        self::assertSame(1, $result['imported']);
+        self::assertCount(2, $result['warnings']);
+        $this->em->clear();
+        $dept = $this->em->getRepository(Department::class)->findOneBy(['name' => 'Logistics']);
+        self::assertCount(0, $dept->getLocations());
+        self::assertCount(0, $dept->getVolunteerTypes());
+    }
+
+    public function testRelationKeysAreOnlyRewrittenWhenPresent(): void
+    {
+        $location = new Location('Main Hall');
+        $location->setAlias('main-hall');
+        $dept = new Department('Logistics', 'logistics');
+        $dept->addLocation($location);
+        $this->em->persist($location);
+        $this->em->persist($dept);
+        $this->em->flush();
+
+        // A row without the 'locations' key must leave the existing link intact.
+        $this->importer()->import([['name' => 'Logistics', 'description' => 'Updated.']]);
+
+        $this->em->clear();
+        $reloaded = $this->em->getRepository(Department::class)->findOneBy(['name' => 'Logistics']);
+        self::assertSame('Updated.', $reloaded->getDescription());
+        self::assertCount(1, $reloaded->getLocations(), 'an absent relation key leaves the links untouched');
     }
 }

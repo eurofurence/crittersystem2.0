@@ -4,13 +4,19 @@ namespace App\Controller;
 
 use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
+use App\Form\Model\RegistrationApiData;
+use App\Form\RegistrationApiType;
 use App\Sso\BannedIdentityException;
 use App\Sso\OidcDiscovery;
 use App\Sso\OidcProviderFactory;
+use App\Sso\RegistrationApiSettings;
+use App\Sso\RegistrationNumberFetcher;
 use App\Sso\SsoClaims;
 use App\Sso\SsoConfig;
 use App\Sso\SsoUserProvisioner;
+use App\Security\AccessModeGate;
 use App\TwoFactor\StepUpGuard;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -31,8 +37,12 @@ final class SsoController extends AbstractController
         private readonly OidcProviderFactory $providerFactory,
         private readonly OidcDiscovery $discovery,
         private readonly SsoUserProvisioner $provisioner,
+        private readonly LoggerInterface $logger,
         private readonly AuditLogger $audit,
         private readonly StepUpGuard $stepUp,
+        private readonly RegistrationApiSettings $registrationApi,
+        private readonly RegistrationNumberFetcher $registrationNumbers,
+        private readonly AccessModeGate $accessModeGate,
     ) {
     }
 
@@ -69,10 +79,19 @@ final class SsoController extends AbstractController
             $token = $provider->getAccessToken('authorization_code', ['code' => (string) $request->query->get('code')]);
             $claims = SsoClaims::fromArray($provider->getResourceOwner($token)->toArray());
             $user = $this->provisioner->provision($claims);
+            // The user's own access token authenticates the registration-API call; do it here where
+            // the token is in scope. It self-guards on configuration and never throws out.
+            $this->registrationNumbers->updateFor($user, $provider, $token);
         } catch (BannedIdentityException) {
             return $this->redirectToRoute('app_ban_appeal');
         } catch (\Throwable $e) {
-            $this->addFlash('danger', 'SSO login failed: '.$e->getMessage());
+            /*
+             * The exception here comes from the identity provider or the HTTP client, so its message can
+             * carry endpoint URLs, client ids and provider internals. That belongs in the log, for the
+             * operator — never on the login page, for whoever happens to be at the browser.
+             */
+            $this->logger->error('SSO login failed: {reason}', ['reason' => $e->getMessage(), 'exception' => $e]);
+            $this->addFlash('danger', 'SSO login failed. Please try again, or contact an administrator.');
 
             return $this->redirectToRoute('app_login');
         }
@@ -83,15 +102,33 @@ final class SsoController extends AbstractController
             'details' => ['method' => 'sso', 'provider' => $this->config->providerLabel()],
         ]);
 
+        // The Access mode may shut this user out; send them to the notice, keeping their session so
+        // their digital badge stays reachable, rather than a dashboard the gate would bounce them off.
+        if (!$this->accessModeGate->permits($user)) {
+            return $this->redirectToRoute('app_system_unavailable');
+        }
+
         return $this->redirectToRoute('app_dashboard');
     }
 
-    #[Route('/admin/sso', name: 'app_admin_sso', methods: ['GET'])]
+    #[Route('/admin/sso', name: 'app_admin_sso', methods: ['GET', 'POST'])]
     #[IsGranted('config:sso')]
     public function status(Request $request): Response
     {
         if ($stepUp = $this->stepUp->guard($request)) {
             return $stepUp;
+        }
+
+        $data = new RegistrationApiData();
+        $data->apiUrl = $this->registrationApi->apiUrl();
+        $form = $this->createForm(RegistrationApiType::class, $data);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $this->registrationApi->save($data->apiUrl);
+            $this->addFlash('success', 'Registration API endpoint saved.');
+
+            return $this->redirectToRoute('app_admin_sso');
         }
 
         return $this->render('admin/sso/status.html.twig', [
@@ -102,6 +139,7 @@ final class SsoController extends AbstractController
             'discovery' => $this->discovery->status(),
             'usesDiscovery' => $this->config->usesDiscovery(),
             'discoveryUrl' => $this->config->discoveryUrl(),
+            'registrationApiForm' => $form,
         ]);
     }
 }

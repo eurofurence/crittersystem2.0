@@ -45,8 +45,8 @@ export function sessionExpired() {
  *
  * The X-Requested-With header is not decoration. It is what tells the server this is not a navigation,
  * so it answers 401 rather than redirecting — and it is also what stops Symfony recording the polled URL
- * as the place to return to after signing in, which used to leave users back on a bare `/status`
- * fragment instead of the page they were reading.
+ * as the place to return to after signing in, which would strand the user on a bare `/status` fragment
+ * instead of the page they were reading.
  *
  * Returns null when the session has expired (the caller is already navigating away, so it should stop).
  */

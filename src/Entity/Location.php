@@ -15,6 +15,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: LocationRepository::class)]
 #[ORM\Table(name: 'locations')]
 #[UniqueEntity('name')]
+#[UniqueEntity('alias')]
 class Location
 {
     use HasPublicUuid;
@@ -29,6 +30,12 @@ class Location
     #[Assert\Length(max: 128)]
     private string $name;
 
+    /** Stable human-friendly key. It is the identity used by the JSON import to match and update. */
+    #[ORM\Column(length: 64, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 64)]
+    private string $alias = '';
+
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
@@ -40,9 +47,9 @@ class Location
     #[ORM\Column(name: 'embed_html', type: Types::TEXT, nullable: true)]
     private ?string $embedHtml = null;
 
-    #[ORM\Column(length: 5, nullable: true)]
-    #[Assert\Length(max: 5)]
-    private ?string $dect = null;
+    #[ORM\Column(length: 32, nullable: true)]
+    #[Assert\Length(max: 32)]
+    private ?string $phone = null;
 
     #[ORM\Column(name: 'staff_only')]
     private bool $staffOnly = false;
@@ -158,6 +165,18 @@ class Location
         return $this;
     }
 
+    public function getAlias(): string
+    {
+        return $this->alias;
+    }
+
+    public function setAlias(string $alias): static
+    {
+        $this->alias = $alias;
+
+        return $this;
+    }
+
     public function getDescription(): ?string
     {
         return $this->description;
@@ -194,14 +213,14 @@ class Location
         return $this;
     }
 
-    public function getDect(): ?string
+    public function getPhone(): ?string
     {
-        return $this->dect;
+        return $this->phone;
     }
 
-    public function setDect(?string $dect): static
+    public function setPhone(?string $phone): static
     {
-        $this->dect = $dect;
+        $this->phone = $phone;
 
         return $this;
     }

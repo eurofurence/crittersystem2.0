@@ -4,6 +4,7 @@ namespace App\Controller\Manage;
 
 use App\Entity\VolunteerType;
 use App\Form\VolunteerTypeType;
+use App\Repository\CertificationRepository;
 use App\Repository\VolunteerTypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -21,7 +22,24 @@ final class VolunteerTypeController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly VolunteerTypeRepository $volunteerTypes,
+        private readonly CertificationRepository $certifications,
     ) {
+    }
+
+    /**
+     * All certifications keyed by id, so the form can pair each checkbox
+     * (whose value is the certification id) with its entity for the card.
+     *
+     * @return array<int, \App\Entity\Certification>
+     */
+    private function certificationsById(): array
+    {
+        $byId = [];
+        foreach ($this->certifications->findAllOrdered() as $certification) {
+            $byId[$certification->getId()] = $certification;
+        }
+
+        return $byId;
     }
 
     #[Route('', name: 'app_manage_volunteer_type_index', methods: ['GET'])]
@@ -50,6 +68,7 @@ final class VolunteerTypeController extends AbstractController
         return $this->render('manage/volunteer_type/form.html.twig', [
             'form' => $form,
             'heading' => 'New volunteer type',
+            'certifications' => $this->certificationsById(),
         ]);
     }
 
@@ -69,6 +88,7 @@ final class VolunteerTypeController extends AbstractController
         return $this->render('manage/volunteer_type/form.html.twig', [
             'form' => $form,
             'heading' => 'Edit volunteer type',
+            'certifications' => $this->certificationsById(),
         ]);
     }
 

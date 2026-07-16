@@ -61,7 +61,8 @@ final class ManageLocationTest extends DatabaseWebTestCase
 
         $form = $crawler->selectButton('Save')->form([
             'location[name]' => 'Backstage',
-            'location[dect]' => '999',
+            'location[alias]' => 'backstage',
+            'location[phone]' => '999',
         ]);
         $this->client->submit($form);
         self::assertResponseRedirects('/manage/locations');
@@ -71,6 +72,6 @@ final class ManageLocationTest extends DatabaseWebTestCase
 
         $location = $this->em->getRepository(Location::class)->findOneBy(['name' => 'Backstage']);
         self::assertNotNull($location);
-        self::assertSame('999', $location->getDect());
+        self::assertSame('999', $location->getPhone());
     }
 }

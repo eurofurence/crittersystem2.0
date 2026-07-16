@@ -12,4 +12,10 @@ class SsoRoleData
 
     #[Assert\Length(max: 64)]
     public ?string $shiftManagerRole = null;
+
+    #[Assert\Length(max: 64)]
+    public ?string $globalAdminRole = null;
+
+    #[Assert\Length(max: 64)]
+    public ?string $subAdminRole = null;
 }

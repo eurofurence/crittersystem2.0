@@ -4,6 +4,7 @@ namespace App\Theme;
 
 use App\Entity\User;
 use App\Service\EventConfigStore;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\RequestStack;
 
@@ -23,6 +24,7 @@ final class ThemeResolver
         private readonly EventConfigStore $config,
         private readonly Security $security,
         private readonly RequestStack $requestStack,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -54,8 +56,16 @@ final class ThemeResolver
             if ($defaultSlug !== '' && ($theme = $this->catalog->find($defaultSlug)) !== null) {
                 return $theme;
             }
-        } catch (\Throwable) {
-            // Database not available/migrated yet — fall through to the fallback.
+        } catch (\Throwable $e) {
+            /*
+             * The database is usually just not migrated yet (install/maintenance pages render precisely
+             * then), so this must not become a 500. But anything else failing here is invisible without a
+             * log line: the only symptom a user reports is "my theme reverted to the default".
+             */
+            $this->logger->warning('Falling back to the default theme: {reason}', [
+                'reason' => $e->getMessage(),
+                'exception' => $e,
+            ]);
         }
 
         return $this->catalog->fallback();

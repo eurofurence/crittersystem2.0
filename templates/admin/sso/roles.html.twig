@@ -2,35 +2,52 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}SSO Department Roles{% endblock %}
+{% block title %}SSO Roles{% endblock %}
 
 {% block body %}
-  {{ d.page_header('SSO Department Roles', {
-    subtitle: 'Which identity-provider roles make an SSO user a manager of the departments they are mapped into.',
+  {{ d.page_header('SSO Roles', {
+    subtitle: 'Which identity-provider roles grant SSO users a department position or global admin rights.',
     actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  {{ d.card_start('How a position is decided') }}
-      <p class="mb-2 text-secondary">
-        A group mapping puts a user <em>in</em> a department. These two roles decide <em>what they are</em>
-        there — the same pair applies to every department.
-      </p>
-      <ul class="mb-0 text-secondary">
-        <li><strong>Department manager</strong> — holds the department manager role and a department role.</li>
-        <li><strong>Shift manager</strong> — holds the shift manager role and a department role.</li>
-        <li><strong>Department staff</strong> — holds a department role only.</li>
-      </ul>
-      <p class="mt-2 mb-0 text-secondary">
-        Holding both roles makes the user a department manager. Positions are re-evaluated on every
-        sign-in, so removing a role at the identity provider demotes the user on their next login.
-      </p>
-  {{ d.card_end() }}
-
   {{ form_start(form) }}
-    <div class="row">
-      {{ f.field(form.departmentManagerRole, {col: 'col-12 col-md-6'}) }}
-      {{ f.field(form.shiftManagerRole, {col: 'col-12 col-md-6'}) }}
-    </div>
+    {{ d.card_start('Department positions') }}
+        <p class="mb-2 text-secondary">
+          A group mapping puts a user <em>in</em> a department. These two roles decide <em>what they are</em>
+          there — the same pair applies to every department.
+        </p>
+        <ul class="text-secondary">
+          <li><strong>Department manager</strong> — holds the department manager role and a department role.</li>
+          <li><strong>Shift manager</strong> — holds the shift manager role and a department role.</li>
+          <li><strong>Department staff</strong> — holds a department role only.</li>
+        </ul>
+        <p class="text-secondary">
+          Holding both roles makes the user a department manager. Positions are re-evaluated on every
+          sign-in, so removing a role at the identity provider demotes the user on their next login.
+        </p>
+        <div class="row">
+          {{ f.field(form.departmentManagerRole, {col: 'col-12 col-md-6'}) }}
+          {{ f.field(form.shiftManagerRole, {col: 'col-12 col-md-6'}) }}
+        </div>
+    {{ d.card_end() }}
+
+    {{ d.card_start('Global roles') }}
+        <p class="mb-2 text-secondary">
+          These roles are app-wide, not tied to any department. A user holding the global admin role
+          becomes a global admin; the sub admin role makes them a sub admin. Holding both resolves to
+          <strong>global admin</strong> — the higher role wins.
+        </p>
+        <p class="text-secondary">
+          Each grant is re-evaluated on every sign-in, so losing a role at the identity provider strips
+          it on the next login. Leave a field blank to have the app ignore that group entirely — a
+          membership you granted by hand is then left untouched.
+        </p>
+        <div class="row">
+          {{ f.field(form.globalAdminRole, {col: 'col-12 col-md-6'}) }}
+          {{ f.field(form.subAdminRole, {col: 'col-12 col-md-6'}) }}
+        </div>
+    {{ d.card_end() }}
+
     <button class="btn btn-primary">Save</button>
   {{ form_end(form) }}
 {% endblock %}

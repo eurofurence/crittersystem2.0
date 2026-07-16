@@ -70,6 +70,8 @@ final class AdminSsoRolesTest extends DatabaseWebTestCase
         $this->client->submit($crawler->selectButton('Save')->form([
             'sso_role[departmentManagerRole]' => 'IDP-DM',
             'sso_role[shiftManagerRole]' => 'IDP-SM',
+            'sso_role[globalAdminRole]' => 'IDP-GA',
+            'sso_role[subAdminRole]' => 'IDP-SA',
         ]));
 
         self::assertResponseRedirects('/admin/sso-roles');
@@ -77,5 +79,7 @@ final class AdminSsoRolesTest extends DatabaseWebTestCase
         $store = static::getContainer()->get(EventConfigStore::class);
         self::assertSame('IDP-DM', $store->get(EventConfigStore::KEY_SSO_ROLE_DEPARTMENT_MANAGER));
         self::assertSame('IDP-SM', $store->get(EventConfigStore::KEY_SSO_ROLE_SHIFT_MANAGER));
+        self::assertSame('IDP-GA', $store->get(EventConfigStore::KEY_SSO_ROLE_GLOBAL_ADMIN));
+        self::assertSame('IDP-SA', $store->get(EventConfigStore::KEY_SSO_ROLE_SUB_ADMIN));
     }
 }

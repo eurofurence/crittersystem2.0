@@ -8,9 +8,10 @@
       <p class="text-success mb-2">Your recovery codes were regenerated. Any previous codes no longer work.</p>
     {% endif %}
     <p class="text-danger"><strong>Store these now.</strong> Each code can be used once if you lose access to your authenticator. They will not be shown again.</p>
-    <ul class="list-inline fs-5">
-      {% for c in codes %}<li class="list-inline-item me-3"><code>{{ c }}</code></li>{% endfor %}
+    <ul class="list-inline fs-1">
+      {% for c in codes %}<li class="list-item me-3"><code>{{ c }}</code></li>{% endfor %}
     </ul>
+    <br/>
     <a class="btn btn-primary" href="{{ path('app_2fa') }}">Done</a>
   {{ d.card_end() }}
 {% endblock %}

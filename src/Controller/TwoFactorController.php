@@ -26,6 +26,14 @@ final class TwoFactorController extends AbstractController
 {
     private const PENDING_SECRET = '_2fa_pending_secret';
 
+    /**
+     * One-time carrier for freshly generated recovery codes. Enabling/regenerating
+     * POSTs and then redirects (so Turbo, which discards non-redirect form responses,
+     * shows the result); the codes are handed to the show route through the session
+     * and cleared on first render so a page refresh cannot re-display them.
+     */
+    private const SHOW_CODES = '_2fa_show_codes';
+
     public function __construct(
         private readonly TwoFactorService $twoFactor,
         private readonly StepUpManager $stepUp,
@@ -65,8 +73,9 @@ final class TwoFactorController extends AbstractController
                 $this->stepUp->markVerified();
                 $this->notify($user, 'Two-factor authentication enabled', 'Two-factor authentication was just enabled on your account. If this was not you, contact an administrator immediately.');
                 $this->audit->log(AuditEvents::SECURITY, AuditEvents::UPDATE, ['details' => ['two_factor' => 'enabled']]);
+                $session->set(self::SHOW_CODES, ['codes' => $codes, 'regenerated' => false]);
 
-                return $this->render('two_factor/backup_codes.html.twig', ['codes' => $codes]);
+                return $this->redirectToRoute('app_2fa_recovery_show');
             }
         }
 
@@ -122,8 +131,23 @@ final class TwoFactorController extends AbstractController
         $this->stepUp->markVerified();
         $this->notify($user, 'Recovery codes regenerated', 'A new set of two-factor recovery codes was generated for your account and your previous codes no longer work. If this was not you, contact an administrator immediately.');
         $this->audit->log(AuditEvents::SECURITY, AuditEvents::UPDATE, ['details' => ['two_factor' => 'recovery_codes_regenerated']]);
+        $request->getSession()->set(self::SHOW_CODES, ['codes' => $codes, 'regenerated' => true]);
 
-        return $this->render('two_factor/backup_codes.html.twig', ['codes' => $codes, 'regenerated' => true]);
+        return $this->redirectToRoute('app_2fa_recovery_show');
+    }
+
+    #[Route('/recovery-codes', name: 'app_2fa_recovery_show', methods: ['GET'])]
+    public function showRecoveryCodes(Request $request): Response
+    {
+        $data = $request->getSession()->remove(self::SHOW_CODES);
+        if (!\is_array($data) || $data['codes'] === []) {
+            return $this->redirectToRoute('app_2fa');
+        }
+
+        return $this->render('two_factor/backup_codes.html.twig', [
+            'codes' => $data['codes'],
+            'regenerated' => $data['regenerated'] ?? false,
+        ]);
     }
 
     #[Route('/confirm', name: 'app_2fa_confirm', methods: ['GET', 'POST'])]

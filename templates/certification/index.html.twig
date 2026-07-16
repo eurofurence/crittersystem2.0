@@ -29,54 +29,56 @@
   {% if rows is empty %}
     {{ d.empty_state('No certifications', {message: 'There are no active certifications to apply for.'}) }}
   {% else %}
-    {{ d.table_start() }}
-      <thead><tr><th>Certification</th><th>Validity</th><th>Status</th><th class="text-end">Action</th></tr></thead>
-      <tbody>
-        {% for row in rows %}
-          {% set c = row.cert %}{% set r = row.record %}
-          <tr>
-            <td>
-              <div class="fw-semibold">{{ c.title }}</div>
-              {% if c.description %}<div class="text-muted small">{{ c.description }}</div>{% endif %}
-            </td>
-            <td class="small">
-              {% if c.perpetual %}Never expires
-              {% elseif c.validityPeriodDays %}{{ c.validityPeriodDays }} days
-              {% else %}—{% endif %}
-              {% if r and r.dateExpires %}<div class="text-muted">expires {{ r.dateExpires|app_date }}</div>{% endif %}
-            </td>
-            <td>
-              {% if r is null %}
-                <span class="text-muted">Not applied</span>
-              {% else %}
-                {% set certStatus = r.valid ? 'certified'
-                  : (r.status == 'pending' ? 'pending'
-                  : (r.status == 'self_confirmed' ? 'self_confirmed'
-                  : (r.status == 'revoked' ? 'revoked'
-                  : (r.expired ? 'expired' : 'other')))) %}
-                {{ d.status_badge(certStatus, {
-                  map: certStyles,
-                  label: certLabels[certStatus]|default(r.status|capitalize)
-                }) }}
-              {% endif %}
-            </td>
-            <td class="text-end text-nowrap">
-              {% if r is null %}
-                <form method="post" action="{{ path('app_certifications_apply', {id: c.uuid}) }}" class="d-inline">
-                  <input type="hidden" name="_token" value="{{ csrf_token('cert-apply' ~ c.id) }}">
-                  <button class="btn btn-sm btn-primary">Apply</button>
-                </form>
-              {% endif %}
-              {% if c.allowSelfConfirmation and (r is null or not r.valid) %}
-                <form method="post" action="{{ path('app_certifications_self_confirm', {id: c.uuid}) }}" class="d-inline">
-                  <input type="hidden" name="_token" value="{{ csrf_token('cert-self' ~ c.id) }}">
-                  <button class="btn btn-sm btn-outline-success">Self-confirm</button>
-                </form>
-              {% endif %}
-            </td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    {{ d.table_end() }}
+    <div class="row">
+      {% for row in rows %}
+        {% set c = row.cert %}{% set r = row.record %}
+
+        {% set bodyExtra %}
+          <div class="small text-muted mt-1">
+            {% if c.perpetual %}Never expires
+            {% elseif c.validityPeriodDays %}{{ c.validityPeriodDays }} days validity
+            {% endif %}
+            {% if r and r.dateExpires %}<div>Expires {{ r.dateExpires|app_date }}</div>{% endif %}
+          </div>
+          <div class="mt-2">
+            {% if r is null %}
+              <span class="text-muted small">Not applied</span>
+            {% else %}
+              {% set certStatus = r.valid ? 'certified'
+                : (r.status == 'pending' ? 'pending'
+                : (r.status == 'self_confirmed' ? 'self_confirmed'
+                : (r.status == 'revoked' ? 'revoked'
+                : (r.expired ? 'expired' : 'other')))) %}
+              {{ d.status_badge(certStatus, {
+                map: certStyles,
+                label: certLabels[certStatus]|default(r.status|capitalize)
+              }) }}
+            {% endif %}
+          </div>
+        {% endset %}
+
+        {% set control %}
+          {% if r is null %}
+            <form method="post" action="{{ path('app_certifications_apply', {id: c.uuid}) }}" class="d-inline">
+              <input type="hidden" name="_token" value="{{ csrf_token('cert-apply' ~ c.id) }}">
+              <button class="btn btn-sm btn-primary">Apply</button>
+            </form>
+          {% endif %}
+          {% if c.allowSelfConfirmation and (r is null or not r.valid) %}
+            <form method="post" action="{{ path('app_certifications_self_confirm', {id: c.uuid}) }}" class="d-inline">
+              <input type="hidden" name="_token" value="{{ csrf_token('cert-self' ~ c.id) }}">
+              <button class="btn btn-sm btn-outline-success">Self-confirm</button>
+            </form>
+          {% endif %}
+        {% endset %}
+
+        {{ d.certification_card(c, {
+          col: 'col-12 col-md-6 col-lg-4',
+          infoUrl: path('app_certifications_show', {id: c.uuid}),
+          bodyExtra: bodyExtra,
+          control: control,
+        }) }}
+      {% endfor %}
+    </div>
   {% endif %}
 {% endblock %}

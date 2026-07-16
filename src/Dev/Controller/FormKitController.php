@@ -91,6 +91,7 @@ final class FormKitController extends AbstractController
             ->add('budget', TextType::class, ['label' => 'Budget', 'required' => false])
             ->add('apiKey', TextType::class, ['label' => 'API key', 'required' => false, 'disabled' => true])
             ->add('newsletter', CheckboxType::class, ['label' => 'Send me the demo newsletter', 'required' => false])
+            ->add('notify', CheckboxType::class, ['label' => 'Push notifications', 'required' => false])
             ->add('department', ChoiceType::class, [
                 'label' => 'Department',
                 'required' => false,

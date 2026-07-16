@@ -50,6 +50,7 @@ export default class extends Controller {
             }
             window.dispatchEvent(new CustomEvent('planner:changed'));
         } catch (e) {
+            console.error('Save request failed.', e);
             await alertModal('Network error while saving.');
         } finally {
             if (button) {

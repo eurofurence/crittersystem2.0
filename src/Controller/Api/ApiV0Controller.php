@@ -74,6 +74,11 @@ final class ApiV0Controller extends AbstractController
     #[Route('/volunteertypes', name: 'app_api_v0_volunteertypes', methods: ['GET'])]
     public function volunteerTypeList(): JsonResponse
     {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['message' => 'API key required.'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
         $items = array_filter($this->volunteerTypes->findAllOrdered(), fn (VolunteerType $t) => !$t->isStaffOnly());
 
         return $this->json(['data' => array_map($this->volunteerType(...), array_values($items))]);
@@ -82,6 +87,11 @@ final class ApiV0Controller extends AbstractController
     #[Route('/locations', name: 'app_api_v0_locations', methods: ['GET'])]
     public function locationList(): JsonResponse
     {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['message' => 'API key required.'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
         $items = array_filter($this->locations->findAllOrdered(), fn (Location $l) => !$l->isStaffOnly());
 
         return $this->json(['data' => array_map($this->location(...), array_values($items))]);
@@ -90,12 +100,22 @@ final class ApiV0Controller extends AbstractController
     #[Route('/locations/{id}/shifts', name: 'app_api_v0_location_shifts', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function locationShifts(#[MapEntity(mapping: ['id' => 'uuid'])] Location $location): JsonResponse
     {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['message' => 'API key required.'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
         return $this->json(['data' => array_map($this->shift(...), $this->shifts->findBy(['location' => $location], ['startsAt' => 'ASC']))]);
     }
 
     #[Route('/shifttypes', name: 'app_api_v0_shifttypes', methods: ['GET'])]
     public function shiftTaskList(): JsonResponse
     {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['message' => 'API key required.'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
         $items = array_filter($this->shiftTasks->findAllOrdered(), fn (ShiftTask $t) => !$t->isStaffOnly());
 
         return $this->json(['data' => array_map($this->shiftTask(...), array_values($items))]);
@@ -104,18 +124,33 @@ final class ApiV0Controller extends AbstractController
     #[Route('/shifttypes/{id}/shifts', name: 'app_api_v0_shifttype_shifts', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function shiftTaskShifts(#[MapEntity(mapping: ['id' => 'uuid'])] ShiftTask $shiftTask): JsonResponse
     {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['message' => 'API key required.'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
         return $this->json(['data' => array_map($this->shift(...), $this->shifts->findBy(['shiftTask' => $shiftTask], ['startsAt' => 'ASC']))]);
     }
 
     #[Route('/shifts', name: 'app_api_v0_shifts', methods: ['GET'])]
     public function shiftList(): JsonResponse
     {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['message' => 'API key required.'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
         return $this->json(['data' => array_map($this->shift(...), $this->shifts->findUpcoming())]);
     }
 
     #[Route('/news', name: 'app_api_v0_news', methods: ['GET'])]
     public function newsList(): JsonResponse
     {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->json(['message' => 'API key required.'], JsonResponse::HTTP_UNAUTHORIZED);
+        }
+
         return $this->json(['data' => array_map($this->newsItem(...), $this->news->findFeed(false))]);
     }
 
@@ -150,7 +185,7 @@ final class ApiV0Controller extends AbstractController
     /** @return array<string, mixed> */
     private function location(Location $l): array
     {
-        return ['id' => $l->getId(), 'name' => $l->getName(), 'description' => $l->getDescription(), 'dect' => $l->getDect()];
+        return ['id' => $l->getId(), 'name' => $l->getName(), 'description' => $l->getDescription(), 'phone' => $l->getPhone()];
     }
 
     /** @return array<string, mixed> */

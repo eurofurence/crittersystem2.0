@@ -13,7 +13,7 @@
     titleClass: 'h3 mb-1',
     iconHtml: icon
   }) }}
-          <div class="text-muted small mb-3">User ID #{{ user.id }}</div>
+          <div class="text-muted small mb-3">User ID #{{ user.id }}{% if user.personalData and user.personalData.badgeNumber %} · Reg #{{ user.personalData.badgeNumber }}{% endif %}</div>
 
           {% if user.groups is not empty %}
             <div class="d-flex flex-wrap gap-1 justify-content-center">

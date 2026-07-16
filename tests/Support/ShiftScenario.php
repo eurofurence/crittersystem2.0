@@ -40,7 +40,7 @@ final class ShiftScenario
         $suffix = bin2hex(random_bytes(3));
 
         $this->department = new Department('Demo Dept', 'demo-'.$suffix);
-        $this->location = new Location('Demo Location');
+        $this->location = (new Location('Demo Location'))->setAlias('demo-location');
         $this->task = new ShiftTask('Demo Task');
         $this->type = new VolunteerType('Demo Crew');
 

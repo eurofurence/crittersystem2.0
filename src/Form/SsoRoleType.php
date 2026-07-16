@@ -24,6 +24,18 @@ final class SsoRoleType extends AbstractType
                 'required' => false,
                 'help' => 'As above, for shift managers. A user holding both roles becomes a '
                     . 'department manager.',
+            ])
+            ->add('globalAdminRole', TextType::class, [
+                'label' => 'Global admin role ID',
+                'required' => false,
+                'help' => 'A user holding this role becomes a global admin across the whole app. '
+                    . 'Leave empty to disable.',
+            ])
+            ->add('subAdminRole', TextType::class, [
+                'label' => 'Sub admin role ID',
+                'required' => false,
+                'help' => 'A user holding this role becomes a sub admin. A user holding both this and '
+                    . 'the global admin role becomes a global admin.',
             ]);
     }
 

@@ -21,6 +21,10 @@ final class LocationType extends AbstractType
             ->add('name', TextType::class, [
                 'label' => 'Name',
             ])
+            ->add('alias', TextType::class, [
+                'label' => 'Alias',
+                'help' => 'Stable key used to match this location on JSON import. Must be unique.',
+            ])
             ->add('parent', EntityType::class, [
                 'label' => 'Parent location',
                 'class' => Location::class,
@@ -54,8 +58,8 @@ final class LocationType extends AbstractType
                 'attr' => ['rows' => 3],
                 'help' => 'Optional <iframe> snippet; only allowed-domain https sources are rendered.',
             ])
-            ->add('dect', TextType::class, [
-                'label' => 'DECT extension',
+            ->add('phone', TextType::class, [
+                'label' => 'Phone',
                 'required' => false,
             ])
             ->add('staffOnly', CheckboxType::class, [

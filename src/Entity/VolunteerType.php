@@ -36,9 +36,9 @@ class VolunteerType
     #[Assert\Length(max: 128)]
     private ?string $contactName = null;
 
-    #[ORM\Column(name: 'contact_dect', length: 5, nullable: true)]
-    #[Assert\Length(max: 5)]
-    private ?string $contactDect = null;
+    #[ORM\Column(name: 'contact_phone', length: 32, nullable: true)]
+    #[Assert\Length(max: 32)]
+    private ?string $contactPhone = null;
 
     #[ORM\Column(name: 'contact_email', length: 254, nullable: true)]
     #[Assert\Length(max: 254)]
@@ -136,14 +136,14 @@ class VolunteerType
         return $this;
     }
 
-    public function getContactDect(): ?string
+    public function getContactPhone(): ?string
     {
-        return $this->contactDect;
+        return $this->contactPhone;
     }
 
-    public function setContactDect(?string $contactDect): static
+    public function setContactPhone(?string $contactPhone): static
     {
-        $this->contactDect = $contactDect;
+        $this->contactPhone = $contactPhone;
 
         return $this;
     }

@@ -1,0 +1,28 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% block title %}System unavailable{% endblock %}
+{% block body %}
+  {{ d.message_card_start('System access restricted', {
+    width: 'col-md-6',
+    titleTag: 'h2',
+    titleClass: 'card-title',
+    bodyClass: 'card-body'
+  }) }}
+    <p>
+      {% if mode == 'admin' %}
+        The system is currently open to administrators only.
+      {% else %}
+        The system is currently open to staff only.
+      {% endif %}
+    </p>
+    <p class="text-secondary">If you need access, please contact an administrator.</p>
+    {% if app.user %}
+      <div class="btn-list">
+        <a class="btn btn-primary" href="{{ path('app_digital_id') }}">Show my digital badge</a>
+        <a class="btn btn-link" href="{{ path('app_logout') }}">Log out</a>
+      </div>
+    {% else %}
+      <a class="btn btn-primary" href="{{ path('app_login') }}">Back to login</a>
+    {% endif %}
+  {{ d.message_card_end() }}
+{% endblock %}

@@ -61,6 +61,48 @@ final class SsoTest extends DatabaseTestCase
         self::assertCount(1, $mapping->getVolunteerTypes());
     }
 
+    public function testExportRoundTripsThroughImport(): void
+    {
+        $this->seedTargets();
+        /** @var SsoMappingImporter $importer */
+        $importer = static::getContainer()->get(SsoMappingImporter::class);
+        $importer->import([[
+            'id' => '0RV39Y2PM21J4N6L',
+            'name' => 'Art Show',
+            'slug' => 'art-show',
+            'staffonly' => 1,
+            'department' => 'art-show',
+            'badges' => ['security'],
+            'volunteertype' => ['Volunteer'],
+            'permissiongroup' => ['info-desk'],
+        ]]);
+
+        $rows = $importer->export();
+        self::assertCount(1, $rows);
+        self::assertSame('0RV39Y2PM21J4N6L', $rows[0]['id']);
+        self::assertSame('art-show', $rows[0]['department']);
+        self::assertSame(['info-desk'], $rows[0]['permissiongroup']);
+        self::assertSame(['Volunteer'], $rows[0]['volunteertype']);
+        self::assertSame(['security'], $rows[0]['badges']);
+
+        // Re-importing the exported rows updates in place rather than duplicating.
+        $result = $importer->import($rows);
+        self::assertSame(1, $result['imported']);
+        $this->em->clear();
+        self::assertCount(1, $this->em->getRepository(SsoGroupMapping::class)->findAll());
+    }
+
+    public function testExportOfAnEmptyDatabaseReturnsATemplateRow(): void
+    {
+        /** @var SsoMappingImporter $importer */
+        $importer = static::getContainer()->get(SsoMappingImporter::class);
+
+        $rows = $importer->export();
+        self::assertCount(1, $rows);
+        self::assertArrayHasKey('id', $rows[0]);
+        self::assertArrayHasKey('permissiongroup', $rows[0]);
+    }
+
     public function testImportCreatesMissingDepartmentFromSlug(): void
     {
         /** @var SsoMappingImporter $importer */

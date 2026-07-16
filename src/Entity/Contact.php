@@ -17,8 +17,8 @@ class Contact
     #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE')]
     private User $user;
 
-    #[ORM\Column(length: 5, nullable: true)]
-    private ?string $dect = null;
+    #[ORM\Column(length: 32, nullable: true)]
+    private ?string $phone = null;
 
     #[ORM\Column(length: 40, nullable: true)]
     private ?string $mobile = null;
@@ -48,14 +48,14 @@ class Contact
         return $this;
     }
 
-    public function getDect(): ?string
+    public function getPhone(): ?string
     {
-        return $this->dect;
+        return $this->phone;
     }
 
-    public function setDect(?string $dect): static
+    public function setPhone(?string $phone): static
     {
-        $this->dect = $dect;
+        $this->phone = $phone;
 
         return $this;
     }

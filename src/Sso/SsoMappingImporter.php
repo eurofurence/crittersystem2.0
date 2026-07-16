@@ -36,6 +36,22 @@ final class SsoMappingImporter
     }
 
     /**
+     * The current mappings as JSON-ready rows, or a single example row when there are none, so the
+     * export doubles as a template. The shape round-trips through {@see import()}.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function export(): array
+    {
+        $mappings = $this->mappings->findAllOrdered();
+        if ($mappings === []) {
+            return [$this->exampleRow()];
+        }
+
+        return array_map(fn (SsoGroupMapping $m): array => $this->toRow($m), $mappings);
+    }
+
+    /**
      * @param array<int, array<string, mixed>> $rows
      *
      * @return array{imported: int, warnings: string[]}
@@ -107,6 +123,36 @@ final class SsoMappingImporter
         $this->em->flush();
 
         return ['imported' => $imported, 'warnings' => $warnings];
+    }
+
+    /** @return array<string, mixed> */
+    private function toRow(SsoGroupMapping $m): array
+    {
+        return [
+            'id' => $m->getSsoGroupId(),
+            'name' => $m->getName(),
+            'slug' => $m->getSlug(),
+            'staffonly' => $m->isStaffOnly(),
+            'department' => $m->getDepartment()?->getSlug(),
+            'permissiongroup' => array_map(static fn ($g): string => $g->getSlug(), $m->getPermissionGroups()->toArray()),
+            'volunteertype' => array_map(static fn ($v): string => $v->getName(), $m->getVolunteerTypes()->toArray()),
+            'badges' => array_map(static fn ($b): string => $b->getSlug(), $m->getBadges()->toArray()),
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function exampleRow(): array
+    {
+        return [
+            'id' => '0RV39Y2PM21J4N6L',
+            'name' => 'Art Show',
+            'slug' => 'art-show',
+            'staffonly' => false,
+            'department' => 'art-show',
+            'permissiongroup' => ['info-desk'],
+            'volunteertype' => ['Volunteer'],
+            'badges' => ['security'],
+        ];
     }
 
     /** @return array<string, VolunteerType> indexed by name and slugified name */

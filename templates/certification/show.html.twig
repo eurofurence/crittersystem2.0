@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ cert.title }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(cert.title, {
+    actions: [{label: '← Certifications', href: path('app_certifications_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <div class="row g-4">
+    <div class="col-12 col-lg-7">
+      {{ d.card_start(null, {class: ''}) }}
+        {% if cert.description %}<p>{{ cert.description }}</p>{% else %}<p class="text-muted">No description provided.</p>{% endif %}
+
+        {% set rows = [] %}
+        {% set rows = rows|merge([{label: 'Validity', value: cert.perpetual ? 'Never expires' : (cert.validityPeriodDays ? cert.validityPeriodDays ~ ' days' : '—')}]) %}
+        {% if cert.location %}{% set rows = rows|merge([{label: 'Location', value: cert.location}]) %}{% endif %}
+        {% if cert.contactPerson %}{% set rows = rows|merge([{label: 'Contact', value: cert.contactPerson}]) %}{% endif %}
+        {% if cert.contactEmail %}{% set rows = rows|merge([{label: 'Contact email', value: cert.contactEmail}]) %}{% endif %}
+        {% set rows = rows|merge([{label: 'Self-confirmation', value: cert.allowSelfConfirmation ? 'Allowed' : 'Not allowed'}]) %}
+
+        {{ d.definition_list(rows) }}
+      {{ d.card_end() }}
+    </div>
+  </div>
+{% endblock %}

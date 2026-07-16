@@ -13,8 +13,14 @@
             {% block importmap %}{{ importmap('app') }}{% endblock %}
         {% endblock %}
 
-        {# Theme stylesheet — loaded LAST so its `--tblr-*` / `--bs-*` overrides win the cascade. #}
-        <link rel="stylesheet" href="{{ asset(active_theme.assetPath) }}">
+        {# Theme stylesheet — loaded LAST so its `--tblr-*` / `--bs-*` overrides win the cascade.
+
+           `data-turbo-track="reload"` is load-bearing, not decoration. Every theme scopes its rules under
+           `[data-bs-theme=...]`, which lives on <html> — and Turbo replaces <body> and merges <head> but
+           never touches attributes on <html>, nor removes a stylesheet it has already added. Without this,
+           changing your theme leaves the previous one still winning until a full page load. Tracking the
+           link makes Turbo do that full load exactly when the theme changes, and never otherwise. #}
+        <link rel="stylesheet" href="{{ asset(active_theme.assetPath) }}" data-turbo-track="reload">
     </head>
 
     <body>

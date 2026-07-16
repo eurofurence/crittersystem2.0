@@ -1,24 +1,26 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Distribute Goodies{% endblock %}
+{% block title %}Locate User{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Distribute Goodies', {
-    subtitle: 'Find a volunteer to review their hours and hand out goodies.',
+  {{ d.page_header('Locate User', {
+    subtitle: 'Find a volunteer by exact email, registration number, or a scanned badge.',
     actions: [{label: '← Backstage', href: path('app_backstage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   <form method="get" action="{{ path('app_backstage_distribute') }}" class="row g-2 mb-3">
     <div class="col-12 col-md-8">
-      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Search by name, email, or ID…" autofocus>
+      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Exact email, registration number, name, or scan a badge…" autofocus>
     </div>
     <div class="col-12 col-md-4"><button class="btn btn-primary w-100">Search</button></div>
   </form>
 
-  {% if q != '' %}
+  {% if badgeNotResolved %}
+    {{ d.empty_state('Badge not recognised', {message: 'That badge code is no longer valid — badges rotate and expire quickly. Ask the volunteer to reopen their Digital ID and scan again.'}) }}
+  {% elseif q != '' %}
     {% if results is empty %}
-      {{ d.empty_state('No matches', {message: 'No volunteers match "' ~ q ~ '".'}) }}
+      {{ d.empty_state('No matches', {message: 'No volunteer matches that email, registration number, or name. Emails must be entered in full.'}) }}
     {% else %}
       {{ d.table_start() }}
         <thead><tr><th>Name</th><th>Email</th><th class="text-end"></th></tr></thead>
@@ -26,7 +28,8 @@
           {% for u in results %}
             <tr>
               <td class="fw-semibold">{{ u.name }}</td>
-              <td class="small">{{ u.email }}</td>
+              {# Email is a mining vector: only admins see the raw address as an identity column. #}
+              <td class="small">{{ is_granted('ROLE_ADMIN') ? u.email : '—' }}</td>
               <td class="text-end">
                 <a class="btn btn-sm btn-primary" href="{{ path('app_backstage_distribute_user', {id: u.uuid}) }}">Open</a>
               </td>

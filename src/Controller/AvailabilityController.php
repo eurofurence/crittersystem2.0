@@ -8,6 +8,7 @@ use App\Service\Availability\AvailabilityService;
 use App\Service\DisplaySettings;
 use App\Service\EventConfigStore;
 use App\Service\Shift\PlannerPresenter;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,6 +27,7 @@ final class AvailabilityController extends AbstractController
 {
     public function __construct(
         private readonly AvailabilityService $availability,
+        private readonly LoggerInterface $logger,
         private readonly PlannerPresenter $presenter,
         private readonly DisplaySettings $display,
         private readonly EventConfigStore $config,
@@ -73,9 +75,11 @@ final class AvailabilityController extends AbstractController
         $tz = $this->display->timezone();
         $payload = json_decode((string) $request->request->get('ranges', '[]'), true);
         $ranges = [];
+        $rejected = 0;
         foreach (\is_array($payload) ? $payload : [] as $raw) {
             $value = AvailabilityValue::tryFrom((string) ($raw['value'] ?? ''));
             if ($value === null) {
+                ++$rejected;
                 continue;
             }
             try {
@@ -84,13 +88,31 @@ final class AvailabilityController extends AbstractController
                     'end' => new \DateTimeImmutable((string) $raw['end'], $tz),
                     'value' => $value,
                 ];
-            } catch (\Exception) {
-                continue;
+            } catch (\Exception $e) {
+                ++$rejected;
+                $this->logger->warning('Dropped an unparseable availability range: {reason}', [
+                    'reason' => $e->getMessage(),
+                    'exception' => $e,
+                ]);
             }
         }
 
         $this->availability->submit($user, $ranges, (string) $request->request->get('comment') ?: null);
-        $this->addFlash('success', 'Your availability was saved.');
+
+        /*
+         * The grid builds this payload itself, so a rejected entry means a client bug — and telling the
+         * user "saved" while quietly discarding part of what they drew loses their work without a trace.
+         */
+        if ($rejected > 0) {
+            $this->addFlash('warning', sprintf(
+                'Your availability was saved, but %d entr%s could not be read and %s not stored. Please check the grid.',
+                $rejected,
+                $rejected === 1 ? 'y' : 'ies',
+                $rejected === 1 ? 'was' : 'were',
+            ));
+        } else {
+            $this->addFlash('success', 'Your availability was saved.');
+        }
 
         return $this->redirectToRoute('app_availability');
     }

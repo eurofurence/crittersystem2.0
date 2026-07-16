@@ -4,13 +4,51 @@
 {% block title %}Locations{% endblock %}
 
 {% block body %}
+  {% set porter %}
+    <a href="{{ path('app_manage_location_export') }}" class="btn btn-outline-secondary">Export JSON</a>
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#location-import-modal">Import</button>
+  {% endset %}
   {{ d.page_header('Locations', {
     subtitle: 'Physical areas where shifts take place.',
     actions: [
       {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
       {label: '+ New location', href: path('app_manage_location_new'), class: 'btn btn-primary'}
-    ]
+    ],
+    actionsHtml: porter
   }) }}
+
+  <div class="modal fade" id="location-import-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" method="post" action="{{ path('app_manage_location_import') }}" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Import locations (JSON)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="_token" value="{{ csrf_token('location_import') }}">
+          <p class="text-muted small mb-3">
+            An array of locations. <code>name</code> and <code>alias</code> are required; a location whose
+            <code>alias</code> already exists is updated, otherwise it is created. <code>parent</code> is
+            another location's <code>alias</code> (or <code>null</code>). Download the current locations with
+            <strong>Export JSON</strong> to use as a template.
+          </p>
+          <div class="mb-3">
+            <label class="form-label" for="location-import-file">Upload a file</label>
+            <input class="form-control" id="location-import-file" type="file" name="file" accept=".json,application/json">
+          </div>
+          <div class="mb-1">
+            <label class="form-label" for="location-import-json">…or paste JSON</label>
+            <textarea class="form-control font-monospace" id="location-import-json" name="json" rows="8"
+              placeholder='[{"name":"Main Hall","alias":"main-hall","phone":"100","staffOnly":false,"parent":null}]'></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Import locations</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   {% if locations is empty %}
     {{ d.empty_state('No locations yet', {
@@ -23,7 +61,7 @@
       <thead>
         <tr>
           <th>Name</th>
-          <th>DECT</th>
+          <th>Phone</th>
           <th>Visibility</th>
           <th class="text-end">Actions</th>
         </tr>
@@ -33,9 +71,10 @@
           <tr>
             <td>
               <div class="fw-semibold">{{ location.name }}</div>
+              <code class="small text-muted">{{ location.alias }}</code>
               {% if location.description %}<div class="text-muted small">{{ location.description }}</div>{% endif %}
             </td>
-            <td>{{ location.dect ?: '—' }}</td>
+            <td>{{ location.phone ?: '—' }}</td>
             <td>
               {% if location.staffOnly %}{{ d.badge('Staff only', 'text-bg-warning') }}
               {% else %}{{ d.badge('Public', 'text-bg-success') }}{% endif %}

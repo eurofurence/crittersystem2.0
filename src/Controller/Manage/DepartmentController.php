@@ -10,6 +10,7 @@ use App\Repository\ShiftRepository;
 use App\Repository\SsoGroupMappingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
@@ -26,6 +27,7 @@ final class DepartmentController extends AbstractController
         private readonly DepartmentRepository $departments,
         private readonly ShiftRepository $shifts,
         private readonly SsoGroupMappingRepository $ssoMappings,
+        private readonly DepartmentImporter $importer,
     ) {
     }
 
@@ -38,21 +40,47 @@ final class DepartmentController extends AbstractController
         ]);
     }
 
+    #[Route('/export', name: 'app_manage_department_export', methods: ['GET'])]
+    public function export(): Response
+    {
+        $json = json_encode($this->importer->export(), \JSON_PRETTY_PRINT | \JSON_UNESCAPED_SLASHES | \JSON_UNESCAPED_UNICODE);
+
+        $response = new Response($json, Response::HTTP_OK, ['Content-Type' => 'application/json']);
+        $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
+            HeaderUtils::DISPOSITION_ATTACHMENT,
+            'departments.json',
+        ));
+
+        return $response;
+    }
+
     #[Route('/import', name: 'app_manage_department_import', methods: ['POST'])]
-    public function import(Request $request, DepartmentImporter $importer): Response
+    public function import(Request $request): Response
     {
         if (!$this->isCsrfTokenValid('department_import', (string) $request->request->get('_token'))) {
             return $this->redirectToRoute('app_manage_department_index');
         }
 
-        $rows = json_decode((string) $request->request->get('json', ''), true);
-        if (!\is_array($rows)) {
+        // An uploaded file wins over the textarea; fall back to the pasted contents. The modal always
+        // submits both fields, so an empty (no-file) upload must fall through, not be read.
+        $upload = $request->files->get('file');
+        $payload = $upload !== null && $upload->isValid()
+            ? (string) $upload->getContent()
+            : (string) $request->request->get('json', '');
+        if (trim($payload) === '') {
+            $this->addFlash('danger', 'Provide JSON to import, either pasted or as a file.');
+
+            return $this->redirectToRoute('app_manage_department_index');
+        }
+
+        $rows = json_decode($payload, true);
+        if (!\is_array($rows) || array_is_list($rows) === false) {
             $this->addFlash('danger', 'Invalid JSON: expected an array of departments.');
 
             return $this->redirectToRoute('app_manage_department_index');
         }
 
-        $result = $importer->import($rows);
+        $result = $this->importer->import($rows);
         $this->addFlash('success', \sprintf(
             'Imported %d department(s): %d created, %d updated.',
             $result['imported'],

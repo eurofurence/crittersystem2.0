@@ -13,7 +13,7 @@
 
   {# Each card is gated by the privilege that guards its controller. #}
   {% set cards = [
-    {priv: 'goodie:distribute', route: 'app_backstage_distribute',            icon: '🎁', title: 'Distribute Goodies', text: 'Find a volunteer and hand out goodies.'},
+    {priv: 'user:locate', route: 'app_backstage_distribute',            icon: '🔎', title: 'Locate User', text: 'Find a volunteer by email, registration number or badge scan.'},
     {priv: 'goodie:manage', route: 'app_backstage_goodie_category_index', icon: '🗂️', title: 'Goodie Categories', text: 'Manage categories.'},
     {priv: 'goodie:manage', route: 'app_backstage_goodie_item_index',     icon: '🎽', title: 'Goodie Items',      text: 'Manage items and thresholds.'}
   ] %}

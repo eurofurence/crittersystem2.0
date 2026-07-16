@@ -31,6 +31,9 @@
           </div>
 
           <div class="d-flex flex-wrap gap-3 text-secondary">
+            {% if u.personalData and u.personalData.badgeNumber %}
+              <div><span class="text-muted">Registration number:</span> {{ u.personalData.badgeNumber }}</div>
+            {% endif %}
             <div><span class="text-muted">Status:</span> {{ header.status }}</div>
             <div><span class="text-muted">Planned arrival:</span> {{ header.plannedArrival ? header.plannedArrival|app_date : '—' }}</div>
             <div><span class="text-muted">Checked in:</span>

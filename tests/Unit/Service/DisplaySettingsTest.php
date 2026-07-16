@@ -3,6 +3,7 @@
 namespace App\Tests\Unit\Service;
 
 use App\Service\DisplaySettings;
+use Psr\Log\NullLogger;
 use App\Service\EventConfigStore;
 use PHPUnit\Framework\TestCase;
 
@@ -18,7 +19,7 @@ final class DisplaySettingsTest extends TestCase
             fn (string $key, mixed $default = null) => $config[$key] ?? $default,
         );
 
-        return new DisplaySettings($store);
+        return new DisplaySettings($store, new NullLogger());
     }
 
     public function testConvertsStoredUtcToConfiguredTimezone(): void

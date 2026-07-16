@@ -41,6 +41,7 @@ export default class extends Controller {
             }
             this.singleTarget.innerHTML = await response.text();
         } catch (e) {
+            console.error('Could not load the shift panel.', e);
             this.singleTarget.innerHTML = '<div class="text-danger p-3">Could not load the shift.</div>';
         }
     }

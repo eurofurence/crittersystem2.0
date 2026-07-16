@@ -2,6 +2,8 @@
 
 namespace App\Service;
 
+use Psr\Log\LoggerInterface;
+
 /**
  * Resolves the global display settings (timezone + date/time formats) and uses
  * them to render dates and times consistently for every viewer.
@@ -17,8 +19,10 @@ class DisplaySettings
 {
     private ?\DateTimeZone $timezone = null;
 
-    public function __construct(private readonly EventConfigStore $store)
-    {
+    public function __construct(
+        private readonly EventConfigStore $store,
+        private readonly LoggerInterface $logger,
+    ) {
     }
 
     public function timezone(): \DateTimeZone
@@ -27,7 +31,14 @@ class DisplaySettings
             $name = (string) $this->store->get(EventConfigStore::KEY_TIMEZONE, EventConfigStore::DEFAULT_TIMEZONE);
             try {
                 $this->timezone = new \DateTimeZone($name !== '' ? $name : EventConfigStore::DEFAULT_TIMEZONE);
-            } catch (\Exception) {
+            } catch (\Exception $e) {
+                // Every date in the application is now rendered in a zone the administrator did not choose.
+                $this->logger->error('Configured timezone "{name}" is not usable; falling back to {fallback}: {reason}', [
+                    'name' => $name,
+                    'fallback' => EventConfigStore::DEFAULT_TIMEZONE,
+                    'reason' => $e->getMessage(),
+                    'exception' => $e,
+                ]);
                 $this->timezone = new \DateTimeZone(EventConfigStore::DEFAULT_TIMEZONE);
             }
         }

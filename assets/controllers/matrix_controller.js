@@ -180,6 +180,7 @@ export default class extends Controller {
             this.modal().hide();
             window.dispatchEvent(new CustomEvent('planner:changed'));
         } catch (e) {
+            console.error('Save request failed.', e);
             await alertModal('Network error while saving.');
         }
     }
@@ -201,6 +202,9 @@ export default class extends Controller {
             }
             window.location.reload();
         } catch (e) {
+            // A bug in the swap above would otherwise surface only as the page mysteriously reloading —
+            // and, if it throws again on the way back, as a reload loop with an empty console.
+            console.error('Refresh failed; falling back to a full page load.', e);
             window.location.reload();
         }
     }

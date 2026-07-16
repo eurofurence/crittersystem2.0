@@ -4,26 +4,52 @@
 {% block title %}SSO group mappings{% endblock %}
 
 {% block body %}
+  {% set porter %}
+    <a href="{{ path('app_manage_sso_mapping_export') }}" class="btn btn-outline-secondary">Export JSON</a>
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sso-mapping-import-modal">Import</button>
+  {% endset %}
   {{ d.page_header('SSO group mappings', {
     subtitle: 'Map SSO groups to departments, permission groups, volunteer types and badges.',
     actions: [
       {label: 'New mapping', href: path('app_manage_sso_mapping_new'), class: 'btn btn-primary'},
       {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}
-    ]
+    ],
+    actionsHtml: porter
   }) }}
 
-  {{ d.card_start('Bulk import (JSON)', {class: 'mb-4', titleTag: 'strong'}) }}
-      <p class="text-muted small mb-2">
-        <code>department</code> is a department <em>slug</em>; if no department with that slug
-        exists it is created automatically (named after the mapping). <code>badges</code>,
-        <code>volunteertype</code> and <code>permissiongroup</code> must reference existing records.
-      </p>
-      <form method="post" action="{{ path('app_manage_sso_mapping_import') }}">
-        <input type="hidden" name="_token" value="{{ csrf_token('sso_import') }}">
-        <textarea name="json" class="form-control font-monospace" rows="8" placeholder='[{"id":"0RV39Y2PM21J4N6L","name":"Art Show","slug":"art-show","staffonly":1,"department":"art-show","badges":["security"],"volunteertype":["Volunteer"],"permissiongroup":["info-desk"]}]'></textarea>
-        <button class="btn btn-primary mt-2">Import</button>
+  <div class="modal fade" id="sso-mapping-import-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <form class="modal-content" method="post" action="{{ path('app_manage_sso_mapping_import') }}" enctype="multipart/form-data">
+        <div class="modal-header">
+          <h5 class="modal-title">Import SSO mappings (JSON)</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="_token" value="{{ csrf_token('sso_import') }}">
+          <p class="text-muted small mb-3">
+            An array of mappings keyed by the SSO group <code>id</code>. <code>department</code> is a
+            department <em>slug</em>; if none with that slug exists it is created automatically (named
+            after the mapping). <code>badges</code>, <code>volunteertype</code> and
+            <code>permissiongroup</code> must reference existing records. Download the current mappings
+            with <strong>Export JSON</strong> to use as a template.
+          </p>
+          <div class="mb-3">
+            <label class="form-label" for="sso-mapping-import-file">Upload a file</label>
+            <input class="form-control" id="sso-mapping-import-file" type="file" name="file" accept=".json,application/json">
+          </div>
+          <div class="mb-1">
+            <label class="form-label" for="sso-mapping-import-json">…or paste JSON</label>
+            <textarea class="form-control font-monospace" id="sso-mapping-import-json" name="json" rows="8"
+              placeholder='[{"id":"0RV39Y2PM21J4N6L","name":"Art Show","slug":"art-show","staffonly":1,"department":"art-show","badges":["security"],"volunteertype":["Volunteer"],"permissiongroup":["info-desk"]}]'></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Import mappings</button>
+        </div>
       </form>
-  {{ d.card_end() }}
+    </div>
+  </div>
 
   {% if mappings is empty %}
     {{ d.empty_state('No mappings yet', {message: 'Import SSO group mappings to provision users automatically.'}) }}

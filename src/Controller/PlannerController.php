@@ -18,6 +18,7 @@ use App\Service\DisplaySettings;
 use App\Service\EventConfigStore;
 use App\Service\Shift\PlannerDraftStore;
 use App\Service\Shift\PlannerPresenter;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -43,6 +44,7 @@ final class PlannerController extends AbstractController
         private readonly PlannerDraftStore $drafts,
         private readonly PlannerPresenter $presenter,
         private readonly DisplaySettings $display,
+        private readonly LoggerInterface $logger,
         private readonly EventConfigStore $config,
         private readonly ShiftTaskRepository $tasks,
         private readonly \App\Service\Shift\ShiftTaskAccess $taskAccess,
@@ -94,10 +96,9 @@ final class PlannerController extends AbstractController
     /**
      * Create a shift task for the department being planned.
      *
-     * Shift tasks used to be creatable only from the management screen, so planning a shift for a
-     * task that did not exist yet meant leaving the planner and finding an admin. A manager with
-     * `shift:manage` on the department owns its tasks, so they can add one here. The task belongs to
-     * that department — the global pool stays an admin's to change.
+     * A manager with `shift:manage` on the department owns its tasks, so they may add one without
+     * leaving the planner. The task belongs to that department; the global pool stays an admin's to
+     * change.
      */
     #[Route('/task', name: 'app_manage_shifts_planner_task_create', methods: ['POST'])]
     public function createTask(Request $request): Response
@@ -363,8 +364,19 @@ final class PlannerController extends AbstractController
                 new \DateTimeImmutable((string) ($data['end'] ?? ''), $tz),
                 $this->user(),
             );
-        } catch (\Exception $e) {
+        } catch (\InvalidArgumentException $e) {
             return $this->fail($e->getMessage());
+        } catch (\Exception $e) {
+            /*
+             * Only a rejected value is the caller's fault. Echoing any other failure back as if it were
+             * one tells a manager their drag was invalid when the database is down, and leaves no trace.
+             */
+            $this->logger->error('Rescheduling a draft shift failed: {reason}', [
+                'reason' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return $this->fail('The shift could not be moved. Please try again.', 500);
         }
 
         return new JsonResponse(['ok' => true]);

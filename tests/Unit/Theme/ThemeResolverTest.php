@@ -5,6 +5,7 @@ namespace App\Tests\Unit\Theme;
 use App\Entity\Settings;
 use App\Entity\User;
 use App\Service\EventConfigStore;
+use Psr\Log\NullLogger;
 use App\Theme\ThemeCatalog;
 use App\Theme\ThemeResolver;
 use PHPUnit\Framework\TestCase;
@@ -41,7 +42,7 @@ final class ThemeResolverTest extends TestCase
             fn (string $key, mixed $default = null) => $key === EventConfigStore::KEY_DEFAULT_THEME ? ($adminDefault ?? $default) : $default,
         );
 
-        return new ThemeResolver(new ThemeCatalog(), $config, $security, $stack);
+        return new ThemeResolver(new ThemeCatalog(), $config, $security, $stack, new NullLogger());
     }
 
     public function testFallsBackToFirstCatalogEntryWhenNothingIsSet(): void
@@ -93,7 +94,7 @@ final class ThemeResolverTest extends TestCase
         $config = $this->createStub(EventConfigStore::class);
         $config->method('get')->willThrowException(new \RuntimeException('database is down'));
 
-        $resolver = new ThemeResolver(new ThemeCatalog(), $config, $security, $stack);
+        $resolver = new ThemeResolver(new ThemeCatalog(), $config, $security, $stack, new NullLogger());
 
         self::assertSame('default', $resolver->resolve()->slug);
     }
