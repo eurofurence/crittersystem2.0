@@ -25,9 +25,17 @@ final readonly class SsoClaims
         return new self(
             sub: (string) ($data['sub'] ?? ''),
             email: (string) ($data['email'] ?? ''),
-            preferredUsername: isset($data['preferred_username']) ? (string) $data['preferred_username'] : null,
-            name: isset($data['name']) ? (string) $data['name'] : null,
+            preferredUsername: isset($data['name']) ? (string) $data['name'] : null,
+            name: isset($data['first-name']) ? (string) $data['first-name'] . (isset($data['last-name']) ? ' ' . (string) $data['last-name'] : null ) : null,
             groups: array_values(array_map('strval', (array) $groups)),
         );
+        // Works well with KEYCLOAK
+        // return new self(
+        //     sub: (string) ($data['sub'] ?? ''),
+        //     email: (string) ($data['email'] ?? ''),
+        //     preferredUsername: isset($data['preferred_username']) ? (string) $data['preferred_username'] : null,
+        //     name: isset($data['name']) ? (string) $data['name'] : null,
+        //     groups: array_values(array_map('strval', (array) $groups)),
+        // );
     }
 }
