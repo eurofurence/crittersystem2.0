@@ -1,11 +1,11 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Certification scan{% endblock %}
+{% block title %}{{ 'certification.scan.title'|trans }}{% endblock %}
 
 {% block body %}
   {% set icon %}<div class="display-6 mb-2">⚠️</div>{% endset %}
-  {{ d.message_card_start(certification is defined ? certification.title : 'Certification scan', {
+  {{ d.message_card_start(certification is defined ? certification.title : 'certification.scan.title'|trans, {
     width: 'col-12 col-md-7 col-lg-5',
     class: 'text-center',
     bodyClass: 'card-body',
@@ -13,7 +13,7 @@
     titleClass: 'h4 mb-2',
     iconHtml: icon
   }) }}
-          <p class="text-muted">{{ message }}</p>
-          <a class="btn btn-outline-primary mt-2" href="{{ path('app_certifications_index') }}">Go to my certifications</a>
+          <p class="text-muted">{{ message|trans }}</p>
+          <a class="btn btn-outline-primary mt-2" href="{{ path('app_certifications_index') }}">{{ 'certification.scan.go_to_certifications'|trans }}</a>
   {{ d.message_card_end() }}
 {% endblock %}

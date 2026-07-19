@@ -1,7 +1,7 @@
 {% extends 'install/_layout.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Welcome · Setup · VMS{% endblock %}
+{% block title %}{{ 'install.welcome.title'|trans }}{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
@@ -23,25 +23,23 @@
                     </svg>
                 </span>
             </div>
-            <h1 class="mt-3">Welcome to the VMS setup</h1>
+            <h1 class="mt-3">{{ 'install.welcome.heading'|trans }}</h1>
             <p class="text-secondary">
-                This guided wizard checks your environment, brings the database up to date and helps you create
-                the first administrator. To continue, enter the installation password
-                (the <code>INSTALL_PASSWORD</code> environment variable set for this deployment).
+                {{ 'install.welcome.intro'|trans({'%code%': '<code>INSTALL_PASSWORD</code>'})|raw }}
             </p>
         </div>
 
-        <div class="hr-text hr-text-center hr-text-spaceless">unlock setup</div>
+        <div class="hr-text hr-text-center hr-text-spaceless">{{ 'install.welcome.unlock_divider'|trans }}</div>
 
         <div class="card-body">
             {% include 'install/_flashes.html.twig' %}
             <input type="hidden" name="_token" value="{{ csrf_token('install_authenticate') }}">
             <div class="mb-3">
-                <label class="form-label">Installation password</label>
+                <label class="form-label">{{ 'install.welcome.password_label'|trans }}</label>
                 <input type="password" name="password" class="form-control" autocomplete="off" autofocus required>
             </div>
             <div class="form-footer">
-                <button type="submit" class="btn btn-primary w-100">Unlock &amp; continue</button>
+                <button type="submit" class="btn btn-primary w-100">{{ 'install.welcome.submit'|trans }}</button>
             </div>
         </div>
     {{ d.card_end({tag: 'form', bodyClass: ''}) }}

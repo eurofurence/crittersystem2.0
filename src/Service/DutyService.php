@@ -27,7 +27,7 @@ final class DutyService
 
     /**
      * Start a duty in the given area. Returns the open record (existing one if
-     * the user is already on duty — callers should check getCurrentDuty first).
+     * the user is already on duty - callers should check getCurrentDuty first).
      */
     public function startDuty(User $user, ?Department $department): DutyRecord
     {

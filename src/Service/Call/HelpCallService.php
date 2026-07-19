@@ -27,8 +27,8 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * Global Call for Help. A caller opens a call requesting open slots;
  * eligible recipients (Free to help, eligible, not already assigned, not having
- * refused, permitted to see the audience) may accept — transactionally, so the
- * requested target is never exceeded — or refuse, which suppresses further
+ * refused, permitted to see the audience) may accept - transactionally, so the
+ * requested target is never exceeded - or refuse, which suppresses further
  * involvement. Filling the target, the shift ending, or a cancel closes it.
  */
 final class HelpCallService
@@ -111,7 +111,7 @@ final class HelpCallService
         return $this->responses->findOneBy(['call' => $call, 'user' => $user, 'type' => HelpResponseType::REFUSE->value]) !== null;
     }
 
-    /** Refuse a call — suppresses further notifications for it. */
+    /** Refuse a call - suppresses further notifications for it. */
     public function refuse(HelpCall $call, User $user): void
     {
         if ($this->responses->findOneBy(['call' => $call, 'user' => $user]) !== null) {

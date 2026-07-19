@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-bs-theme="{{ active_theme.type }}">
+<html lang="{{ app.request.locale|default('en') }}" data-bs-theme="{{ active_theme.type }}">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-        <title>{% block title %}VMS{% endblock %}</title>
+        <title>{% block title %}{{ 'ui.app.brand'|trans }}{% endblock %}</title>
 
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
         {% block stylesheets %}
@@ -13,10 +13,10 @@
             {% block importmap %}{{ importmap('app') }}{% endblock %}
         {% endblock %}
 
-        {# Theme stylesheet — loaded LAST so its `--tblr-*` / `--bs-*` overrides win the cascade.
+        {# Theme stylesheet - loaded LAST so its `--tblr-*` / `--bs-*` overrides win the cascade.
 
            `data-turbo-track="reload"` is load-bearing, not decoration. Every theme scopes its rules under
-           `[data-bs-theme=...]`, which lives on <html> — and Turbo replaces <body> and merges <head> but
+           `[data-bs-theme=...]`, which lives on <html> - and Turbo replaces <body> and merges <head> but
            never touches attributes on <html>, nor removes a stylesheet it has already added. Without this,
            changing your theme leaves the previous one still winning until a full page load. Tracking the
            link makes Turbo do that full load exactly when the theme changes, and never otherwise. #}
@@ -34,13 +34,13 @@
                 <div class="container-xl">
                     <button class="navbar-toggler" type="button"
                             data-bs-toggle="collapse" data-bs-target="#navbar-menu"
-                            aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+                            aria-controls="navbar-menu" aria-expanded="false" aria-label="{{ 'ui.aria.toggle_navigation'|trans }}">
                         <span class="navbar-toggler-icon"></span>
                     </button>
 
                     <a href="{{ path('app_home') }}"
                        class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3 fw-bold fs-3">
-                        VMS
+                        {{ 'ui.app.brand'|trans }}
                     </a>
 
                     <div class="navbar-nav flex-row order-md-last">
@@ -51,39 +51,39 @@
 
                             <div class="nav-item dropdown">
                                 <a href="#" class="nav-link d-flex lh-1 p-0 px-2" data-bs-toggle="dropdown"
-                                   aria-label="Open user menu" aria-expanded="false">
+                                   aria-label="{{ 'ui.aria.open_user_menu'|trans }}" aria-expanded="false">
                                     <span class="avatar avatar-sm">{{ app.user.userIdentifier|slice(0, 2)|upper }}</span>
                                     <div class="d-none d-xl-block ps-2">
                                         <div>{{ app.user.userIdentifier }}</div>
-                                        <div class="mt-1 small text-secondary">Signed in</div>
+                                        <div class="mt-1 small text-secondary">{{ 'ui.user_menu.signed_in'|trans }}</div>
                                     </div>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                                     <a href="{{ path('app_settings') }}" class="dropdown-item">
-                                        {{ i.icon('settings', {class: 'icon-1 me-2 text-muted'}) }}Settings
+                                        {{ i.icon('settings', {class: 'icon-1 me-2 text-muted'}) }}{{ 'ui.user_menu.settings'|trans }}
                                     </a>
                                     <a href="{{ path('app_digital_id') }}" class="dropdown-item">
-                                        {{ i.icon('id', {class: 'icon-1 me-2 text-muted'}) }}Digital ID
+                                        {{ i.icon('id', {class: 'icon-1 me-2 text-muted'}) }}{{ 'ui.user_menu.digital_id'|trans }}
                                     </a>
                                     <a href="{{ path('app_2fa') }}" class="dropdown-item">
-                                        {{ i.icon('lock', {class: 'icon-1 me-2 text-muted'}) }}Two-factor auth
+                                        {{ i.icon('lock', {class: 'icon-1 me-2 text-muted'}) }}{{ 'ui.user_menu.two_factor'|trans }}
                                     </a>
                                     <a href="{{ path('app_profile_telegram') }}" class="dropdown-item">
-                                        {{ i.icon('send', {class: 'icon-1 me-2 text-muted'}) }}Telegram
+                                        {{ i.icon('send', {class: 'icon-1 me-2 text-muted'}) }}{{ 'ui.user_menu.telegram'|trans }}
                                     </a>
                                     <a href="{{ path('app_profile_privacy') }}" class="dropdown-item">
-                                        {{ i.icon('shield', {class: 'icon-1 me-2 text-muted'}) }}Privacy &amp; my data
+                                        {{ i.icon('shield', {class: 'icon-1 me-2 text-muted'}) }}{{ 'ui.user_menu.privacy'|trans }}
                                     </a>
                                     <div class="dropdown-divider"></div>
                                     <a href="{{ path('app_logout') }}" class="dropdown-item">
-                                        {{ i.icon('logout', {class: 'icon-1 me-2 text-muted'}) }}Logout
+                                        {{ i.icon('logout', {class: 'icon-1 me-2 text-muted'}) }}{{ 'ui.user_menu.logout'|trans }}
                                     </a>
                                 </div>
                             </div>
                         {% else %}
                             <div class="nav-item">
                                 <a href="{{ path('app_login') }}" class="btn btn-primary">
-                                    {{ i.icon('login', {class: 'icon-2'}) }}Login
+                                    {{ i.icon('login', {class: 'icon-2'}) }}{{ 'ui.user_menu.login'|trans }}
                                 </a>
                             </div>
                         {% endif %}
@@ -99,25 +99,25 @@
                             {# Permission-gated items are hidden when not granted; the backend
                                still enforces access on every route. #}
                             <ul class="navbar-nav">
-                                {% if is_granted('news:view') %}{{ nav.nav_item('News', 'app_news_index', {icon: 'news', exact: false}) }}{% endif %}
-                                {% if is_granted('shift:self') %}{{ nav.nav_item('My Shifts', 'app_my_shifts', {icon: 'checklist'}) }}{% endif %}
-                                {% if is_granted('shift:view') %}{{ nav.nav_item('Shifts', 'app_shift_index', {icon: 'clock', exact: false}) }}{% endif %}
-                                {% if is_granted('manageshifts:view') %}{{ nav.nav_item('Shift Manager', 'app_manage_shifts', {icon: 'calendar', exact: false}) }}{% endif %}
-                                {% if is_granted('volunteertype:view') %}{{ nav.nav_item('Volunteer Types', 'app_membership_index', {icon: 'puzzle'}) }}{% endif %}
-                                {% if is_granted('location:view') %}{{ nav.nav_item('Locations', 'app_locations', {icon: 'map-pin', exact: false}) }}{% endif %}
-                                {% if is_granted('call:respond') %}{{ nav.nav_item('Bounty Board', 'app_bounty_board', {icon: 'award', exact: false}) }}{% endif %}
+                                {% if is_granted('news:view') %}{{ nav.nav_item('ui.nav.news'|trans, 'app_news_index', {icon: 'news', exact: false}) }}{% endif %}
+                                {% if is_granted('shift:self') %}{{ nav.nav_item('ui.nav.my_shifts'|trans, 'app_my_shifts', {icon: 'checklist'}) }}{% endif %}
+                                {% if is_granted('shift:view') %}{{ nav.nav_item('ui.nav.shifts'|trans, 'app_shift_index', {icon: 'clock', exact: false}) }}{% endif %}
+                                {% if is_granted('manageshifts:view') %}{{ nav.nav_item('ui.nav.shift_manager'|trans, 'app_manage_shifts', {icon: 'calendar', exact: false}) }}{% endif %}
+                                {% if is_granted('volunteertype:view') %}{{ nav.nav_item('ui.nav.volunteer_types'|trans, 'app_membership_index', {icon: 'puzzle'}) }}{% endif %}
+                                {% if is_granted('location:view') %}{{ nav.nav_item('ui.nav.locations'|trans, 'app_locations', {icon: 'map-pin', exact: false}) }}{% endif %}
+                                {% if is_granted('call:respond') %}{{ nav.nav_item('ui.nav.bounty_board'|trans, 'app_bounty_board', {icon: 'award', exact: false}) }}{% endif %}
                                 {% if is_granted('message:use') %}
                                     {% if is_granted('ROLE_STAFF') %}
-                                        {{ nav.nav_item('Messages', 'app_messages_index', {icon: 'mail', exact: false}) }}
+                                        {{ nav.nav_item('ui.nav.messages'|trans, 'app_messages_index', {icon: 'mail', exact: false}) }}
                                     {% else %}
-                                        {{ nav.nav_item('Ask Info Desk', 'app_messages_infodesk', {icon: 'mail', exact: false}) }}
+                                        {{ nav.nav_item('ui.nav.ask_info_desk'|trans, 'app_messages_infodesk', {icon: 'mail', exact: false}) }}
                                     {% endif %}
                                 {% endif %}
-                                {% if is_granted('certification:view') %}{{ nav.nav_item('Certifications', 'app_certifications_index', {icon: 'award'}) }}{% endif %}
-                                {% if is_granted('ROLE_STAFF') %}{{ nav.nav_item('Departments', 'app_departments', {icon: 'building', exact: false}) }}{% endif %}
-                                {% if is_granted('backstage:view') %}{{ nav.nav_item('Backstage', 'app_backstage', {icon: 'gift', exact: false}) }}{% endif %}
-                                {% if is_granted('faq:view') %}{{ nav.nav_item('FAQ', 'app_faq_index', {icon: 'help'}) }}{% endif %}
-                                {% if is_granted('ROLE_ADMIN') %}{{ nav.nav_item('Dashboard', 'app_dashboard', {icon: 'dashboard'}) }}{% endif %}
+                                {% if is_granted('certification:view') %}{{ nav.nav_item('ui.nav.certifications'|trans, 'app_certifications_index', {icon: 'award'}) }}{% endif %}
+                                {% if is_granted('ROLE_STAFF') %}{{ nav.nav_item('ui.nav.departments'|trans, 'app_departments', {icon: 'building', exact: false}) }}{% endif %}
+                                {% if is_granted('backstage:view') %}{{ nav.nav_item('ui.nav.backstage'|trans, 'app_backstage', {icon: 'gift', exact: false}) }}{% endif %}
+                                {% if is_granted('faq:view') %}{{ nav.nav_item('ui.nav.faq'|trans, 'app_faq_index', {icon: 'help'}) }}{% endif %}
+                                {% if is_granted('ROLE_ADMIN') %}{{ nav.nav_item('ui.nav.dashboard'|trans, 'app_dashboard', {icon: 'dashboard'}) }}{% endif %}
 
                                 {# Development submenu. The kit routes only exist outside prod
                                    (see config/services.yaml), so path() would throw there. #}
@@ -126,17 +126,17 @@
                                     <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"
                                        role="button" aria-expanded="false">
                                         <span class="nav-link-icon d-md-none d-lg-inline-block">{{ i.icon('code') }}</span>
-                                        <span class="nav-link-title">Development</span>
+                                        <span class="nav-link-title">{{ 'ui.nav.dev.menu'|trans }}</span>
                                     </a>
                                     <div class="dropdown-menu">
-                                        <a class="dropdown-item" href="{{ path('app_navigation_kit') }}">Navigation Kit</a>
-                                        <a class="dropdown-item" href="{{ path('app_theme_kit') }}">Theme Kit</a>
+                                        <a class="dropdown-item" href="{{ path('app_navigation_kit') }}">{{ 'ui.nav.dev.navigation_kit'|trans }}</a>
+                                        <a class="dropdown-item" href="{{ path('app_theme_kit') }}">{{ 'ui.nav.dev.theme_kit'|trans }}</a>
                                     </div>
                                 </li>
                                 {% endif %}
 
                                 {% if is_granted('location:manage') or is_granted('volunteertype:manage') or is_granted('shift:manage') or is_granted('global:admin') or is_granted('config:event') or is_granted('audit:view') %}
-                                    {{ nav.nav_item('Manage', 'app_manage', {icon: 'tools', exact: false}) }}
+                                    {{ nav.nav_item('ui.nav.manage'|trans, 'app_manage', {icon: 'tools', exact: false}) }}
                                 {% endif %}
                             </ul>
                         </div>

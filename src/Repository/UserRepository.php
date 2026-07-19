@@ -26,7 +26,28 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Partial, case-insensitive username search — no email/id matching. Used by the
+     * Queue a re-run of onboarding for every user who has completed it. The reset
+     * itself happens at each user's next sign-in (OnboardingResetSubscriber), so
+     * signed-in sessions are not disturbed.
+     *
+     * Users who have not finished onboarding are skipped: they will see the wizard
+     * anyway, and flagging them would misreport how many people this affects.
+     *
+     * @return int users flagged
+     */
+    public function requestOnboardingResetForAll(): int
+    {
+        return $this->createQueryBuilder('u')
+            ->update()
+            ->set('u.onboardingResetRequestedAt', ':now')
+            ->andWhere('u.onboardingCompleted = true')
+            ->setParameter('now', new \DateTimeImmutable())
+            ->getQuery()
+            ->execute();
+    }
+
+    /**
+     * Partial, case-insensitive username search - no email/id matching. Used by the
      * type-ahead user pickers, where only the username should be searchable.
      *
      * @return User[]
@@ -147,7 +168,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             return [];
         }
 
-        // Exact email — an '@' means the operator has a full address, so never widen it to a LIKE.
+        // Exact email - an '@' means the operator has a full address, so never widen it to a LIKE.
         if (str_contains($query, '@')) {
             return $this->createQueryBuilder('u')
                 ->andWhere('LOWER(u.email) = :email')
@@ -156,7 +177,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 ->getResult();
         }
 
-        // All digits — a registration (badge) number, matched exactly. Never the database id.
+        // All digits - a registration (badge) number, matched exactly. Never the database id.
         if (ctype_digit($query)) {
             return $this->createQueryBuilder('u')
                 ->join('u.personalData', 'p')

@@ -1,8 +1,8 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Appeal{% endblock %}
+{% block title %}{{ 'ban.appeal.title'|trans }}{% endblock %}
 {% block body %}
-  {{ d.message_card_start('The Ledger-Keeper', {
+  {{ d.message_card_start('ban.appeal.heading'|trans, {
     width: 'col-md-6',
     titleTag: 'h2',
     titleClass: 'card-title',
@@ -11,12 +11,12 @@
     <p>{{ message }}</p>
     {% if extraMessage %}<div class="alert alert-info">{{ extraMessage }}</div>{% endif %}
     {% if done %}
-      <p class="text-success">If an account matches, your appeal has been forwarded for review.</p>
+      <p class="text-success">{{ 'ban.appeal.forwarded'|trans }}</p>
     {% else %}
-      <p>If you believe this is a mistake, leave your email and we'll ask The Ledger-Keeper to take a look when he's back.</p>
+      <p>{{ 'ban.appeal.instructions'|trans }}</p>
       <form method="post">
-        <div class="mb-3"><input type="email" name="email" class="form-control" placeholder="your email" required></div>
-        <button class="btn btn-primary">Submit appeal</button>
+        <div class="mb-3"><input type="email" name="email" class="form-control" placeholder="{{ 'ban.appeal.email_placeholder'|trans }}" required></div>
+        <button class="btn btn-primary">{{ 'ban.appeal.submit'|trans }}</button>
       </form>
     {% endif %}
   {{ d.message_card_end() }}

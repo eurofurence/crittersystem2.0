@@ -1,8 +1,8 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Invitation{% endblock %}
+{% block title %}{{ 'invite.invalid.title'|trans }}{% endblock %}
 {% block body %}
-  {{ d.message_card_start('Invitation no longer valid', {width: 'col-md-6', titleTag: 'h2'}) }}
-    <p>This invitation link has expired or has already been used. Please ask an administrator to send a new one.</p>
+  {{ d.message_card_start('invite.invalid.heading'|trans, {width: 'col-md-6', titleTag: 'h2'}) }}
+    <p>{{ 'invite.invalid.body'|trans }}</p>
   {{ d.message_card_end() }}
 {% endblock %}

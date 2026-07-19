@@ -1,17 +1,17 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Recovery codes{% endblock %}
+{% block title %}{{ 'two_factor.recovery_codes'|trans }}{% endblock %}
 {% block body %}
-  {{ d.page_header('Save your recovery codes') }}
+  {{ d.page_header('two_factor.backup_codes.heading'|trans) }}
   {{ d.card_start(null, {class: ''}) }}
     {% if regenerated|default(false) %}
-      <p class="text-success mb-2">Your recovery codes were regenerated. Any previous codes no longer work.</p>
+      <p class="text-success mb-2">{{ 'two_factor.backup_codes.regenerated'|trans }}</p>
     {% endif %}
-    <p class="text-danger"><strong>Store these now.</strong> Each code can be used once if you lose access to your authenticator. They will not be shown again.</p>
+    <p class="text-danger"><strong>{{ 'two_factor.backup_codes.store_now'|trans }}</strong> {{ 'two_factor.backup_codes.store_hint'|trans }}</p>
     <ul class="list-inline fs-1">
       {% for c in codes %}<li class="list-item me-3"><code>{{ c }}</code></li>{% endfor %}
     </ul>
     <br/>
-    <a class="btn btn-primary" href="{{ path('app_2fa') }}">Done</a>
+    <a class="btn btn-primary" href="{{ path('app_2fa') }}">{{ 'two_factor.backup_codes.done'|trans }}</a>
   {{ d.card_end() }}
 {% endblock %}

@@ -15,16 +15,18 @@ final class BadgeType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('name', TextType::class)
+            ->add('name', TextType::class, ['label' => 'common.label.name'])
             ->add('type', ChoiceType::class, [
-                'choices' => ['Position (ranked)' => Badge::TYPE_POSITION, 'Standard (tag)' => Badge::TYPE_STANDARD],
-                'help' => 'Position badges are mutually ranked; the highest-priority one is shown.',
+                'label' => 'common.label.type',
+                'choices' => ['manage.badge.type.position' => Badge::TYPE_POSITION, 'manage.badge.type.standard' => Badge::TYPE_STANDARD],
+                'help' => 'manage.badge.field.type.help',
             ])
             ->add('priority', IntegerType::class, [
+                'label' => 'manage.label.priority',
                 'required' => false,
-                'help' => 'Only used for position badges. Higher wins (BoD 40 > Director 30 > Staff 20 > Volunteer 10).',
+                'help' => 'manage.badge.field.priority.help',
             ])
-            ->add('color', TextType::class, ['help' => 'Tabler colour token, e.g. red, azure, green, purple.']);
+            ->add('color', TextType::class, ['label' => 'manage.badge.field.color.label', 'help' => 'manage.badge.field.color.help']);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

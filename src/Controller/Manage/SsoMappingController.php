@@ -16,6 +16,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Administration of SSO group mappings, primarily via JSON bulk upload.
@@ -65,20 +66,20 @@ final class SsoMappingController extends AbstractController
             ? (string) $upload->getContent()
             : (string) $request->request->get('json', '');
         if (trim($payload) === '') {
-            $this->addFlash('danger', 'Provide JSON to import, either pasted or as a file.');
+            $this->addFlash('danger', new TranslatableMessage('manage.import.flash.no_json'));
 
             return $this->redirectToRoute('app_manage_sso_mapping_index');
         }
 
         $rows = json_decode($payload, true);
         if (!\is_array($rows) || array_is_list($rows) === false) {
-            $this->addFlash('danger', 'Invalid JSON: expected an array of mappings.');
+            $this->addFlash('danger', new TranslatableMessage('manage.sso_mapping.flash.invalid_json'));
 
             return $this->redirectToRoute('app_manage_sso_mapping_index');
         }
 
         $result = $this->importer->import($rows);
-        $this->addFlash('success', \sprintf('Imported %d mapping(s).', $result['imported']));
+        $this->addFlash('success', new TranslatableMessage('manage.sso_mapping.flash.imported', ['%count%' => $result['imported']]));
         foreach (\array_slice($result['warnings'], 0, 20) as $warning) {
             $this->addFlash('warning', $warning);
         }
@@ -104,7 +105,7 @@ final class SsoMappingController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$mapping->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($mapping);
             $this->em->flush();
-            $this->addFlash('success', 'Mapping deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.sso_mapping.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_sso_mapping_index');
@@ -124,7 +125,7 @@ final class SsoMappingController extends AbstractController
                     $this->em->persist($mapping);
                 }
                 $this->em->flush();
-                $this->addFlash('success', \sprintf('Mapping "%s" saved.', $mapping->getName()));
+                $this->addFlash('success', new TranslatableMessage('manage.sso_mapping.flash.saved', ['%name%' => $mapping->getName()]));
 
                 return $this->redirectToRoute('app_manage_sso_mapping_index');
             }
@@ -132,7 +133,7 @@ final class SsoMappingController extends AbstractController
 
         return $this->render('manage/sso_mapping/form.html.twig', [
             'form' => $form,
-            'heading' => $isNew ? 'New SSO group mapping' : 'Edit SSO group mapping',
+            'heading' => $isNew ? 'manage.sso_mapping.form.heading_new' : 'manage.sso_mapping.form.heading_edit',
         ]);
     }
 }

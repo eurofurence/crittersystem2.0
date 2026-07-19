@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Digital ID — {{ user.name }}{% endblock %}
+{% block title %}{{ 'digital_id.verify.title'|trans({'%name%': user.name}) }}{% endblock %}
 
 {% block body %}
   {% set icon %}<div class="display-6 mb-2">✅</div>{% endset %}
@@ -13,7 +13,13 @@
     titleClass: 'h3 mb-1',
     iconHtml: icon
   }) }}
-          <div class="text-muted small mb-3">User ID #{{ user.id }}{% if user.personalData and user.personalData.badgeNumber %} · Reg #{{ user.personalData.badgeNumber }}{% endif %}</div>
+          {# This page is public: anyone holding a verify URL sees it. The registration
+             number is the point of a door check, but the internal user id is not -
+             printing the sequential primary key would tell a scanner how many accounts
+             exist and in what order they were created. #}
+          {% if user.personalData and user.personalData.badgeNumber %}
+            <div class="text-muted small mb-3">{{ 'digital_id.field.reg'|trans({'%number%': user.personalData.badgeNumber}) }}</div>
+          {% endif %}
 
           {% if user.groups is not empty %}
             <div class="d-flex flex-wrap gap-1 justify-content-center">
@@ -22,6 +28,6 @@
           {% endif %}
 
           <hr>
-          <div class="small text-muted">Verified at {{ "now"|app_datetime }}</div>
+          <div class="small text-muted">{{ 'digital_id.verify.verified_at'|trans({'%datetime%': "now"|app_datetime}) }}</div>
   {{ d.message_card_end() }}
 {% endblock %}

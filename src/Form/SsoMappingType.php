@@ -24,44 +24,44 @@ final class SsoMappingType extends AbstractType
     {
         $builder
             ->add('ssoGroupId', TextType::class, [
-                'label' => 'SSO group id',
-                'help' => 'The provider\'s structured group id, e.g. 0RV39Y2PLMX1J4N6.',
+                'label' => 'manage.sso_mapping.field.sso_group_id.label',
+                'help' => 'manage.sso_mapping.field.sso_group_id.help',
             ])
             ->add('name', TextType::class, [
-                'label' => 'Name',
+                'label' => 'common.label.name',
             ])
             ->add('slug', TextType::class, [
-                'label' => 'Slug',
-                'help' => 'The provider group slug/alias.',
+                'label' => 'manage.label.slug',
+                'help' => 'manage.sso_mapping.field.slug.help',
             ])
             ->add('staffOnly', CheckboxType::class, [
-                'label' => 'Staff only',
+                'label' => 'common.state.staff_only',
                 'required' => false,
-                'help' => 'Members of this group are treated as staff.',
+                'help' => 'manage.sso_mapping.field.staff_only.help',
             ])
             ->add('department', EntityType::class, [
-                'label' => 'Department',
+                'label' => 'common.label.department',
                 'class' => Department::class,
                 'choice_label' => 'name',
                 'required' => false,
-                'placeholder' => '— None —',
+                'placeholder' => 'manage.sso_mapping.field.department.placeholder',
             ])
             ->add('permissionGroups', EntityType::class, [
-                'label' => 'Permission groups',
+                'label' => 'manage.sso_mapping.field.permission_groups.label',
                 'class' => Group::class,
                 'choice_label' => 'name',
                 'multiple' => true,
                 'required' => false,
             ])
             ->add('volunteerTypes', EntityType::class, [
-                'label' => 'Volunteer types',
+                'label' => 'manage.label.volunteer_types',
                 'class' => VolunteerType::class,
                 'choice_label' => 'name',
                 'multiple' => true,
                 'required' => false,
             ])
             ->add('badges', EntityType::class, [
-                'label' => 'Badges',
+                'label' => 'manage.label.badges',
                 'class' => Badge::class,
                 'choice_label' => 'name',
                 'multiple' => true,

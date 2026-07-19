@@ -46,7 +46,7 @@ final class InstallationGateListener implements EventSubscriberInterface
 
     public static function getSubscribedEvents(): array
     {
-        // Run early — before the firewall — so the gate also seals the login
+        // Run early - before the firewall - so the gate also seals the login
         // page while a migration is pending.
         return [KernelEvents::REQUEST => ['onKernelRequest', 256]];
     }

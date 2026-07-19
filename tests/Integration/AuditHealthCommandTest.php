@@ -11,7 +11,7 @@ use Symfony\Component\Console\Tester\CommandTester;
  * app:audit:health is the alarm for a stalled audit queue: the application keeps serving and keeps
  * dispatching audit events even when nothing consumes them, so the failure is otherwise invisible.
  *
- * A non-zero exit must therefore stay reachable — an alarm that cannot fire is not an alarm.
+ * A non-zero exit must therefore stay reachable - an alarm that cannot fire is not an alarm.
  */
 final class AuditHealthCommandTest extends DatabaseTestCase
 {

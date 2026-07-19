@@ -17,6 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/certifications')]
 #[IsGranted('global:admin')]
@@ -51,7 +52,7 @@ final class CertificationController extends AbstractController
     {
         if ($this->isCsrfTokenValid('cert-qr-refresh'.$certification->getId(), (string) $request->request->get('_token'))) {
             $this->service->refreshToken($certification);
-            $this->addFlash('success', 'A fresh QR has been issued.');
+            $this->addFlash('success', new TranslatableMessage('manage.certification.flash.qr_reissued'));
         }
 
         return $this->redirectToRoute('app_manage_certification_qr', ['id' => $certification->getUuid()]);
@@ -75,14 +76,14 @@ final class CertificationController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->persist($certification);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Certification "%s" created.', $certification->getTitle()));
+            $this->addFlash('success', new TranslatableMessage('manage.certification.flash.created', ['%name%' => $certification->getTitle()]));
 
             return $this->redirectToRoute('app_manage_certification_index');
         }
 
         return $this->render('manage/certification/form.html.twig', [
             'form' => $form,
-            'heading' => 'New certification',
+            'heading' => 'manage.certification.form.heading_new',
         ]);
     }
 
@@ -94,14 +95,14 @@ final class CertificationController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Certification "%s" updated.', $certification->getTitle()));
+            $this->addFlash('success', new TranslatableMessage('manage.certification.flash.updated', ['%name%' => $certification->getTitle()]));
 
             return $this->redirectToRoute('app_manage_certification_index');
         }
 
         return $this->render('manage/certification/form.html.twig', [
             'form' => $form,
-            'heading' => 'Edit certification',
+            'heading' => 'manage.certification.form.heading_edit',
         ]);
     }
 
@@ -111,7 +112,7 @@ final class CertificationController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$certification->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($certification);
             $this->em->flush();
-            $this->addFlash('success', 'Certification deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.certification.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_certification_index');

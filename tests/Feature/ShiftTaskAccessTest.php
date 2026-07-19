@@ -17,7 +17,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  *
  * A task belongs to a department, or is global (no department) and shared by all of them.
  * `shift:manage` is department-scoped, but the class-level check on the management screen passes for
- * anyone holding it anywhere — so each action must re-check the task's own department. Without that,
+ * anyone holding it anywhere - so each action must re-check the task's own department. Without that,
  * a manager delegated to one department can edit and delete another department's tasks and the
  * global ones.
  */
@@ -135,7 +135,7 @@ final class ShiftTaskAccessTest extends DatabaseWebTestCase
     {
         $this->login(['shift:manage'], $this->alpha);
 
-        // The choice list omits Bravo, so post its id directly — a submitted id is user input.
+        // The choice list omits Bravo, so post its id directly - a submitted id is user input.
         $this->client->request('POST', '/manage/shift-tasks/new', [
             'shift_task' => ['name' => 'Smuggled', 'department' => (string) $this->bravo->getId()],
         ]);

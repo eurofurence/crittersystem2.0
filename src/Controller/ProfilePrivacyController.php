@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Self-service GDPR controls on the user's profile: export your data (queued,
@@ -58,7 +59,7 @@ final class ProfilePrivacyController extends AbstractController
         $this->em->flush();
 
         $this->bus->dispatch(new GenerateDataExport($export->getId()));
-        $this->addFlash('success', 'Your data export is being prepared. You will receive an email with a download link.');
+        $this->addFlash('success', new TranslatableMessage('profile.privacy.flash.export_queued'));
 
         return $this->redirectToRoute('app_profile_privacy');
     }
@@ -71,14 +72,14 @@ final class ProfilePrivacyController extends AbstractController
             throw $this->createNotFoundException();
         }
         if (!$export->isDownloadable()) {
-            $this->addFlash('danger', 'That export has expired or is not ready.');
+            $this->addFlash('danger', new TranslatableMessage('profile.privacy.flash.export_unavailable'));
 
             return $this->redirectToRoute('app_profile_privacy');
         }
 
         $key = (string) $export->getStorageKey();
         if (!$this->storage->exists($key)) {
-            $this->addFlash('danger', 'That export has expired or is not ready.');
+            $this->addFlash('danger', new TranslatableMessage('profile.privacy.flash.export_unavailable'));
 
             return $this->redirectToRoute('app_profile_privacy');
         }
@@ -100,7 +101,7 @@ final class ProfilePrivacyController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
         $this->erasure->request($user);
-        $this->addFlash('warning', 'A confirmation email has been sent. The deletion link is valid for 6 hours and is irreversible.');
+        $this->addFlash('warning', new TranslatableMessage('profile.privacy.flash.erase_requested'));
 
         return $this->redirectToRoute('app_profile_privacy');
     }

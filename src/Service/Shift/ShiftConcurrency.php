@@ -11,7 +11,7 @@ use Doctrine\ORM\OptimisticLockException;
 /**
  * Backend concurrency primitives for the shift model: a pessimistic
  * write lock to serialize capacity-sensitive changes, and optimistic version
- * checks to reject stale publications. These are transport-independent — the
+ * checks to reject stale publications. These are transport-independent - the
  * frontend refresh convention complements them but is not relied upon.
  */
 final class ShiftConcurrency
@@ -23,7 +23,7 @@ final class ShiftConcurrency
     /**
      * Take a row-level write lock on an entity, serializing concurrent decisions
      * (last-slot races, exclusive positions, conversation claims). Must run
-     * inside a transaction — see {@see transactional()}.
+     * inside a transaction - see {@see transactional()}.
      */
     public function lockForUpdate(object $entity): void
     {

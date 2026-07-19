@@ -5,8 +5,8 @@
 
 {% block body %}
   {{ d.page_header(shift.title, {
-    subtitle: shift.startsAt|app_datetime ~ ' – ' ~ shift.endsAt|app_time ~ ' (' ~ shift.durationHours ~ 'h)',
-    actions: [{label: '← All shifts', href: path('app_shift_index'), class: 'btn btn-outline-secondary'}]
+    subtitle: 'shift.show.subtitle'|trans({'%start%': shift.startsAt|app_datetime, '%end%': shift.endsAt|app_time, '%hours%': shift.durationHours}),
+    actions: [{label: 'shift.action.all_shifts'|trans, href: path('app_shift_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   <div class="row g-3">
@@ -14,25 +14,25 @@
       {{ d.card_start() }}
           {# Not definition_list(): the optional "Link" value is an <a>, not a scalar. #}
           <dl class="row mb-0">
-            <dt class="col-4">Type</dt><dd class="col-8">{{ shift.shiftTask ? shift.shiftTask.name : '—' }}</dd>
-            <dt class="col-4">Location</dt><dd class="col-8">{{ shift.location ? shift.location.name : '—' }}</dd>
-            {% if shift.url %}<dt class="col-4">Link</dt><dd class="col-8"><a href="{{ shift.url }}">{{ shift.url }}</a></dd>{% endif %}
+            <dt class="col-4">{{ 'common.label.type'|trans }}</dt><dd class="col-8">{{ shift.shiftTask ? shift.shiftTask.name : '-' }}</dd>
+            <dt class="col-4">{{ 'common.label.location'|trans }}</dt><dd class="col-8">{{ shift.location ? shift.location.name : '-' }}</dd>
+            {% if shift.url %}<dt class="col-4">{{ 'shift.show.link'|trans }}</dt><dd class="col-8"><a href="{{ shift.url }}">{{ shift.url }}</a></dd>{% endif %}
           </dl>
           {% if shift.description %}<hr><p class="mb-0">{{ shift.description|nl2br }}</p>{% endif %}
       {{ d.card_end() }}
 
-      <h2 class="h5">Staffing</h2>
+      <h2 class="h5">{{ 'shift.show.staffing'|trans }}</h2>
       {% if availability is empty %}
-        {{ d.empty_inline('No roles are requested for this shift yet.', {class: 'text-muted'}) }}
+        {{ d.empty_inline('shift.show.no_roles'|trans, {class: 'text-muted'}) }}
       {% else %}
         {{ d.table_start({hover: false}) }}
-          <thead><tr><th>Role</th><th>Filled</th><th>Status</th></tr></thead>
+          <thead><tr><th>{{ 'common.label.role'|trans }}</th><th>{{ 'shift.show.filled'|trans }}</th><th>{{ 'common.label.status'|trans }}</th></tr></thead>
           <tbody>
             {% for row in availability %}
               <tr>
                 <td>{{ row.type.name }}</td>
                 <td>{{ row.assigned }} / {{ row.needed }}</td>
-                <td>{% if row.assigned >= row.needed %}{{ d.badge('Full', 'text-bg-success') }}{% else %}{{ d.badge((row.needed - row.assigned) ~ ' open', 'text-bg-warning') }}{% endif %}</td>
+                <td>{% if row.assigned >= row.needed %}{{ d.badge('common.state.full'|trans, 'text-bg-success') }}{% else %}{{ d.badge('shift.show.open_count'|trans({'%count%': row.needed - row.assigned}), 'text-bg-warning') }}{% endif %}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -41,36 +41,34 @@
     </div>
 
     <div class="col-12 col-lg-5">
-      {{ d.card_start('Your sign-up', {class: '', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
+      {{ d.card_start('shift.show.your_signup'|trans, {class: '', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
           {% if myEntry %}
-            <p>You are signed up as <strong>{{ myEntry.volunteerType.name }}</strong>.</p>
+            <p>{{ 'shift.show.signed_up_as'|trans({'%type%': '<strong>' ~ (myEntry.volunteerType.name|e) ~ '</strong>'})|raw }}</p>
             <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.uuid}) }}"
-                  data-controller="confirm" data-confirm-message-value="Cancel your sign-up?">
+                  data-controller="confirm" data-confirm-message-value="{{ 'shift.confirm.cancel_signup'|trans }}">
               <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ myEntry.id) }}">
-              <button class="btn btn-outline-danger">Cancel sign-up</button>
+              <button class="btn btn-outline-danger">{{ 'shift.action.cancel_signup'|trans }}</button>
             </form>
           {% elseif shift.past %}
-            <p class="text-muted mb-0">This shift has already ended.</p>
+            <p class="text-muted mb-0">{{ 'shift.show.ended'|trans }}</p>
           {% elseif signupOptions is empty %}
             <p class="text-muted mb-0">
-              You can't sign up for this shift. You must be a confirmed member of a
-              requested role with open capacity. Manage your roles under
-              <a href="{{ path('app_membership_index') }}">Volunteer Types</a>.
+              {{ 'shift.show.cannot_signup'|trans({'%link%': '<a href="' ~ path('app_membership_index') ~ '">' ~ 'ui.nav.volunteer_types'|trans ~ '</a>'})|raw }}
             </p>
           {% else %}
             <form method="post" action="{{ path('app_shift_signup', {id: shift.uuid}) }}">
               <input type="hidden" name="_token" value="{{ csrf_token('signup' ~ shift.id) }}">
               <div class="mb-3">
-                <label class="form-label" for="volunteer_type">Sign up as</label>
+                <label class="form-label" for="volunteer_type">{{ 'shift.show.signup_as_label'|trans }}</label>
                 <select id="volunteer_type" name="volunteer_type" class="form-select" required>
                   {% for id, type in signupOptions %}<option value="{{ id }}">{{ type.name }}</option>{% endfor %}
                 </select>
               </div>
               <div class="mb-3">
-                <label class="form-label" for="comment">Comment (optional)</label>
+                <label class="form-label" for="comment">{{ 'shift.show.comment_label'|trans }}</label>
                 <textarea id="comment" name="comment" class="form-control" rows="2"></textarea>
               </div>
-              <button class="btn btn-primary w-100">Sign up</button>
+              <button class="btn btn-primary w-100">{{ 'shift.action.signup'|trans }}</button>
             </form>
           {% endif %}
       {{ d.card_end() }}

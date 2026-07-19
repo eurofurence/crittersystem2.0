@@ -184,7 +184,7 @@ final class Installer
             ->setHeaderTitle('Data Protection & Privacy')
             ->setHeaderBody(
                 'To take part as a volunteer at %event_name we need to process some personal data about '
-                .'you — such as your name, contact details, availability and role preferences. We use it '
+                .'you - such as your name, contact details, availability and role preferences. We use it '
                 .'only to organise volunteer shifts and to keep in touch with you about them.'
             )
             ->setCheckboxLabel(

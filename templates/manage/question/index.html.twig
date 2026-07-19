@@ -1,32 +1,32 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Answer Questions{% endblock %}
+{% block title %}{{ 'manage.question.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Questions', {
-    subtitle: 'Answer questions submitted by volunteers.',
-    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('manage.question.page.heading'|trans, {
+    subtitle: 'manage.question.page.subtitle'|trans,
+    actions: [{label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if questions is empty %}
-    {{ d.empty_state('No questions', {message: 'Nobody has asked anything yet.'}) }}
+    {{ d.empty_state('manage.question.empty.title'|trans, {message: 'manage.question.empty.message'|trans}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>Question</th><th>From</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+      <thead><tr><th>{{ 'manage.question.table.question'|trans }}</th><th>{{ 'manage.question.table.from'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th class="text-end">{{ 'manage.question.table.action'|trans }}</th></tr></thead>
       <tbody>
         {% for q in questions %}
           <tr>
             <td>{{ q.text }}</td>
-            <td class="small">{{ q.user ? q.user.name : 'Unknown' }}</td>
+            <td class="small">{{ q.user ? q.user.name : 'manage.question.unknown'|trans }}</td>
             <td>
-              {% if q.answered %}{{ d.badge('Answered', 'text-bg-success') }}
-              {% elseif q.lockedBy %}{{ d.badge('In progress', 'text-bg-warning') }}
-              {% else %}{{ d.badge('Open', 'text-bg-secondary') }}{% endif %}
+              {% if q.answered %}{{ d.badge('manage.question.status.answered'|trans, 'text-bg-success') }}
+              {% elseif q.lockedBy %}{{ d.badge('manage.question.status.in_progress'|trans, 'text-bg-warning') }}
+              {% else %}{{ d.badge('manage.question.status.open'|trans, 'text-bg-secondary') }}{% endif %}
             </td>
             <td class="text-end">
               <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_questions_answer', {id: q.uuid}) }}">
-                {{ q.answered ? 'Edit answer' : 'Answer' }}
+                {{ q.answered ? 'manage.question.action.edit_answer'|trans : 'manage.question.action.answer'|trans }}
               </a>
             </td>
           </tr>

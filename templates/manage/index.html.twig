@@ -1,44 +1,44 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Management{% endblock %}
+{% block title %}{{ 'manage.index.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Management', {subtitle: 'Configure the core event data.'}) }}
+  {{ d.page_header('manage.index.page.title'|trans, {subtitle: 'manage.index.page.subtitle'|trans}) }}
 
   {# Each card is gated by the privilege that guards its controller. #}
   {% set cards = [
-    {priv: 'user:view',             route: 'app_manage_user_index',            icon: '👤', title: 'Users',           text: 'Manage volunteer and staff accounts.'},
-    {priv: 'badge:manage',          route: 'app_manage_badge_index',           icon: '🎫', title: 'Badges',          text: 'Identification badges and batch assignment.'},
-    {priv: 'user:delete',           route: 'app_manage_ban_index',             icon: '🚫', title: 'Ban Appeals',     text: 'Review and lift bans after appeals.'},
-    {priv: 'location:manage',       route: 'app_manage_location_index',        icon: '📍', title: 'Locations',       text: 'Physical areas where shifts take place.'},
-    {priv: 'volunteertype:manage',  route: 'app_manage_volunteer_type_index',  icon: '🧩', title: 'Volunteer Types', text: 'Role categories volunteers can join.'},
-    {priv: 'volunteertype:manage',  route: 'app_manage_applications',          icon: '📨', title: 'Applications',    text: 'Confirm pending membership requests.'},
-    {priv: 'shift:manage',          route: 'app_manage_shift_index',           icon: '🕒', title: 'Shifts',          text: 'Scheduled work and staffing needs.'},
-    {priv: 'shift:manage',          route: 'app_manage_shift_task_index',      icon: '🗂️', title: 'Shift Tasks',     text: 'Categories and templates for shifts.'},
-    {priv: 'department:manage',     route: 'app_manage_department_index',      icon: '🏢', title: 'Departments',     text: 'Teams that organise shifts and volunteers.'},
-    {priv: 'certification:manage',  route: 'app_manage_certification_index',   icon: '🎖️', title: 'Certifications',  text: 'Skills and qualifications volunteers can hold.'},
-    {priv: 'user:worklog:edit',     route: 'app_manage_worklog_index',         icon: '⏱️', title: 'Worklogs',        text: 'Manual hour entries for volunteers.'},
-    {priv: 'news:manage',           route: 'app_manage_news_index',            icon: '📰', title: 'News',            text: 'Publish and edit announcements.'},
-    {priv: 'question:answer',       route: 'app_manage_questions_index',       icon: '❓', title: 'Questions',       text: 'Answer volunteer questions.'},
-    {priv: 'faq:manage',            route: 'app_manage_faq_index',             icon: '📚', title: 'FAQ',             text: 'Curate frequently asked questions.'},
-    {priv: 'rbac:group:view',       route: 'app_manage_group_index',           icon: '🔑', title: 'Groups & Permissions', text: 'Permission groups and the access each grants.'},
-    {priv: 'config:privacy',        route: 'app_manage_privacy_notice',        icon: '🔏', title: 'Privacy Notice',    text: 'GDPR privacy notice shown to volunteers.'},
-    {priv: 'config:consent',        route: 'app_manage_consent_text_index',    icon: '✅', title: 'Consent Texts',     text: 'Onboarding consent disclaimer, per language.'},
-    {priv: 'rbac:ssomap:manage',    route: 'app_manage_sso_mapping_index',     icon: '🔗', title: 'SSO Mappings',    text: 'Map SSO groups to departments, groups, types and badges.'},
-    {priv: 'config:sso',            route: 'app_admin_sso',                    icon: '🛂', title: 'SSO Status',       text: 'OpenID Connect connection status and redirect URI.'},
-    {priv: 'config:sso',            route: 'app_admin_sso_roles',              icon: '🏅', title: 'SSO Roles',        text: 'IdP roles that grant department positions or global admin rights.'},
-    {priv: 'config:telegram',       route: 'app_manage_telegram',              icon: '📨', title: 'Telegram',         text: 'Bot endpoint, API key and enablement.'},
-    {priv: 'config:event',          route: 'app_manage_event_config',          icon: '⚙️', title: 'Event Configuration', text: 'Global event settings and timeline.'},
-    {priv: 'config:event',          route: 'app_manage_operations_config',     icon: '🎚️', title: 'Operational Configuration', text: 'Bans, messaging, calls, reminders and reward-hour tuning.'},
-    {priv: 'config:display',        route: 'app_manage_configuration',         icon: '🕰️', title: 'Configuration',   text: 'Timezone and date/time display formats.'},
-    {priv: 'audit:view',            route: 'app_manage_audit',                 icon: '🛡️', title: 'Audit Log',       text: 'Security and administrative audit trail with legal export.'}
+    {priv: 'user:view',             route: 'app_manage_user_index',            icon: '👤', title: 'manage.index.card.users.title'|trans,           text: 'manage.index.card.users.desc'|trans},
+    {priv: 'badge:manage',          route: 'app_manage_badge_index',           icon: '🎫', title: 'manage.index.card.badges.title'|trans,          text: 'manage.index.card.badges.desc'|trans},
+    {priv: 'user:delete',           route: 'app_manage_ban_index',             icon: '🚫', title: 'manage.index.card.ban_appeals.title'|trans,     text: 'manage.index.card.ban_appeals.desc'|trans},
+    {priv: 'location:manage',       route: 'app_manage_location_index',        icon: '📍', title: 'manage.index.card.locations.title'|trans,       text: 'manage.index.card.locations.desc'|trans},
+    {priv: 'volunteertype:manage',  route: 'app_manage_volunteer_type_index',  icon: '🧩', title: 'manage.index.card.volunteer_types.title'|trans, text: 'manage.index.card.volunteer_types.desc'|trans},
+    {priv: 'volunteertype:manage',  route: 'app_manage_applications',          icon: '📨', title: 'manage.index.card.applications.title'|trans,    text: 'manage.index.card.applications.desc'|trans},
+    {priv: 'shift:manage',          route: 'app_manage_shift_index',           icon: '🕒', title: 'manage.index.card.shifts.title'|trans,          text: 'manage.index.card.shifts.desc'|trans},
+    {priv: 'shift:manage',          route: 'app_manage_shift_task_index',      icon: '🗂️', title: 'manage.index.card.shift_tasks.title'|trans,     text: 'manage.index.card.shift_tasks.desc'|trans},
+    {priv: 'department:manage',     route: 'app_manage_department_index',      icon: '🏢', title: 'manage.index.card.departments.title'|trans,     text: 'manage.index.card.departments.desc'|trans},
+    {priv: 'certification:manage',  route: 'app_manage_certification_index',   icon: '🎖️', title: 'manage.index.card.certifications.title'|trans,  text: 'manage.index.card.certifications.desc'|trans},
+    {priv: 'user:worklog:edit',     route: 'app_manage_worklog_index',         icon: '⏱️', title: 'manage.index.card.worklogs.title'|trans,        text: 'manage.index.card.worklogs.desc'|trans},
+    {priv: 'news:manage',           route: 'app_manage_news_index',            icon: '📰', title: 'manage.index.card.news.title'|trans,            text: 'manage.index.card.news.desc'|trans},
+    {priv: 'question:answer',       route: 'app_manage_questions_index',       icon: '❓', title: 'manage.index.card.questions.title'|trans,       text: 'manage.index.card.questions.desc'|trans},
+    {priv: 'faq:manage',            route: 'app_manage_faq_index',             icon: '📚', title: 'manage.index.card.faq.title'|trans,             text: 'manage.index.card.faq.desc'|trans},
+    {priv: 'rbac:group:view',       route: 'app_manage_group_index',           icon: '🔑', title: 'manage.index.card.groups.title'|trans, text: 'manage.index.card.groups.desc'|trans},
+    {priv: 'config:privacy',        route: 'app_manage_privacy_notice',        icon: '🔏', title: 'manage.index.card.privacy_notice.title'|trans,    text: 'manage.index.card.privacy_notice.desc'|trans},
+    {priv: 'config:consent',        route: 'app_manage_consent_text_index',    icon: '✅', title: 'manage.index.card.consent_texts.title'|trans,     text: 'manage.index.card.consent_texts.desc'|trans},
+    {priv: 'rbac:ssomap:manage',    route: 'app_manage_sso_mapping_index',     icon: '🔗', title: 'manage.index.card.sso_mappings.title'|trans,    text: 'manage.index.card.sso_mappings.desc'|trans},
+    {priv: 'config:sso',            route: 'app_admin_sso',                    icon: '🛂', title: 'manage.index.card.sso_status.title'|trans,       text: 'manage.index.card.sso_status.desc'|trans},
+    {priv: 'config:sso',            route: 'app_admin_sso_roles',              icon: '🏅', title: 'manage.index.card.sso_roles.title'|trans,        text: 'manage.index.card.sso_roles.desc'|trans},
+    {priv: 'config:telegram',       route: 'app_manage_telegram',              icon: '📨', title: 'manage.index.card.telegram.title'|trans,         text: 'manage.index.card.telegram.desc'|trans},
+    {priv: 'config:event',          route: 'app_manage_event_config',          icon: '⚙️', title: 'manage.index.card.event_config.title'|trans, text: 'manage.index.card.event_config.desc'|trans},
+    {priv: 'config:event',          route: 'app_manage_operations_config',     icon: '🎚️', title: 'manage.index.card.operations_config.title'|trans, text: 'manage.index.card.operations_config.desc'|trans},
+    {priv: 'config:display',        route: 'app_manage_configuration',         icon: '🕰️', title: 'manage.index.card.configuration.title'|trans,   text: 'manage.index.card.configuration.desc'|trans},
+    {priv: 'audit:view',            route: 'app_manage_audit',                 icon: '🛡️', title: 'manage.index.card.audit_log.title'|trans,       text: 'manage.index.card.audit_log.desc'|trans}
   ] %}
 
   {% set canManageAny = is_granted('user:view') or is_granted('badge:manage') or is_granted('location:manage') or is_granted('volunteertype:manage') or is_granted('shift:manage') or is_granted('global:admin') or is_granted('config:event') or is_granted('config:display') or is_granted('config:privacy') or is_granted('config:consent') or is_granted('user:worklog:edit') or is_granted('news:manage') or is_granted('question:answer') or is_granted('faq:manage') or is_granted('rbac:group:view') or is_granted('certification:manage') or is_granted('department:manage') or is_granted('rbac:ssomap:manage') or is_granted('config:sso') or is_granted('config:telegram') or is_granted('audit:view') %}
 
   {% if not canManageAny %}
-    {{ d.empty_state('No management access', {message: 'You do not have permission to manage any resources.'}) }}
+    {{ d.empty_state('manage.index.empty.title'|trans, {message: 'manage.index.empty.message'|trans}) }}
   {% else %}
     <div class="row g-3">
       {% for c in cards %}

@@ -1,8 +1,8 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Link expired{% endblock %}
+{% block title %}{{ 'erase.invalid.title'|trans }}{% endblock %}
 {% block body %}
-  {{ d.message_card_start('This link is no longer valid', {width: 'col-md-6', titleTag: 'h2'}) }}
-    <p>The deletion confirmation link has expired or was already used.</p>
+  {{ d.message_card_start('erase.invalid.heading'|trans, {width: 'col-md-6', titleTag: 'h2'}) }}
+    <p>{{ 'erase.invalid.body'|trans }}</p>
   {{ d.message_card_end() }}
 {% endblock %}

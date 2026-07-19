@@ -10,8 +10,8 @@
         data-planner-form-close-modal-value="planner-add-modal"
       >
         <div class="modal-header">
-          <h5 class="modal-title">Add shift — {{ department.name }}</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">{{ 'planner.modal_add.title'|trans({'%name%': department.name}) }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'ui.aria.close'|trans }}"></button>
         </div>
         <div class="modal-body">
           <input type="hidden" name="_token" value="{{ csrf_token('planner_edit') }}">
@@ -19,28 +19,28 @@
 
           <div class="row g-3">
             <div class="col-12">
-              <label class="form-label" for="add-title">Title</label>
-              <input type="text" class="form-control" id="add-title" name="title" placeholder="Defaults to the task name">
+              <label class="form-label" for="add-title">{{ 'common.label.title'|trans }}</label>
+              <input type="text" class="form-control" id="add-title" name="title" placeholder="{{ 'planner.modal_add.title_placeholder'|trans }}">
             </div>
             <div class="col-6">
-              <label class="form-label" for="add-start">Starts at</label>
+              <label class="form-label" for="add-start">{{ 'planner.field.starts_at'|trans }}</label>
               <input type="datetime-local" class="form-control" id="add-start" name="start" required>
             </div>
             <div class="col-6">
-              <label class="form-label" for="add-end">Ends at</label>
+              <label class="form-label" for="add-end">{{ 'planner.field.ends_at'|trans }}</label>
               <input type="datetime-local" class="form-control" id="add-end" name="end" required>
             </div>
             <div class="col-6">
-              <label class="form-label" for="add-task">Shift Task</label>
+              <label class="form-label" for="add-task">{{ 'planner.field.shift_task'|trans }}</label>
               <select class="form-select" id="add-task" name="task">
-                <option value="0">— None —</option>
+                <option value="0">{{ 'planner.option.none'|trans }}</option>
                 {% for task in shiftTasks %}
                   <option value="{{ task.id }}">{{ task.displayName }}</option>
                 {% endfor %}
               </select>
             </div>
             <div class="col-6">
-              <label class="form-label" for="add-audience">Audience</label>
+              <label class="form-label" for="add-audience">{{ 'planner.field.audience'|trans }}</label>
               <select class="form-select" id="add-audience" name="audience">
                 {% for a in audiences %}
                   <option value="{{ a.value }}" {{ a.value == 'department_staff' ? 'selected' : '' }}>{{ a.label }}</option>
@@ -48,9 +48,9 @@
               </select>
             </div>
             <div class="col-6">
-              <label class="form-label" for="add-location">Location</label>
+              <label class="form-label" for="add-location">{{ 'common.label.location'|trans }}</label>
               <select class="form-select" id="add-location" name="location">
-                <option value="0">— None —</option>
+                <option value="0">{{ 'planner.option.none'|trans }}</option>
                 {% for loc in locations %}
                   <option value="{{ loc.id }}">{{ loc.name }}</option>
                 {% endfor %}
@@ -59,12 +59,12 @@
             <div class="col-6 d-flex align-items-end">
               <label class="form-check">
                 <input type="checkbox" class="form-check-input" name="require_checkin" value="1">
-                <span class="form-check-label">Require check-in</span>
+                <span class="form-check-label">{{ 'planner.field.require_checkin'|trans }}</span>
               </label>
             </div>
 
             <div class="col-12">
-              <label class="form-label">Required volunteer types &amp; quantities</label>
+              <label class="form-label">{{ 'planner.modal_add.needed'|trans }}</label>
               <div class="row g-2">
                 {% for vt in volunteerTypes %}
                   <div class="col-6 col-md-4 d-flex align-items-center gap-2">
@@ -73,15 +73,15 @@
                            name="needed[{{ vt.id }}]" placeholder="0">
                   </div>
                 {% else %}
-                  {{ d.empty_inline('No volunteer types configured.', {tag: 'div', class: 'col-12 text-secondary small'}) }}
+                  {{ d.empty_inline('planner.empty.no_volunteer_types'|trans, {tag: 'div', class: 'col-12 text-secondary small'}) }}
                 {% endfor %}
               </div>
             </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary" data-action="planner-form#submit">Create draft</button>
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ 'common.action.cancel'|trans }}</button>
+          <button type="submit" class="btn btn-primary" data-action="planner-form#submit">{{ 'planner.modal_add.submit'|trans }}</button>
         </div>
       </form>
     </div>

@@ -73,7 +73,7 @@ final class DataKitController extends AbstractController
     }
 
     /**
-     * The target of the demo delete_form(). It deletes nothing — it only proves the CSRF
+     * The target of the demo delete_form(). It deletes nothing - it only proves the CSRF
      * token and the `confirm` Stimulus controller are wired up correctly.
      */
     #[Route('/dev/ui/data-kit/delete', name: 'app_data_kit_delete', methods: ['POST'])]
@@ -84,7 +84,7 @@ final class DataKitController extends AbstractController
         $this->addFlash(
             $this->isCsrfTokenValid('data_kit_demo', $token) ? 'success' : 'danger',
             $this->isCsrfTokenValid('data_kit_demo', $token)
-                ? 'Demo delete submitted (CSRF token valid). Nothing was deleted — this is a gallery.'
+                ? 'Demo delete submitted (CSRF token valid). Nothing was deleted - this is a gallery.'
                 : 'Demo delete rejected: invalid CSRF token.',
         );
 

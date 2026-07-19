@@ -14,12 +14,13 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Managing shift tasks.
  *
  * `shift:manage` is department-scoped, and the class-level check below passes for anyone holding it
- * in ANY department — so it only gets the user through the door. Every action re-checks the task's
+ * in ANY department - so it only gets the user through the door. Every action re-checks the task's
  * own department through {@see ShiftTaskAccess}: a manager delegated to one department must not be
  * able to change another department's tasks, nor the global ones every department shares.
  */
@@ -59,14 +60,14 @@ final class ShiftTaskController extends AbstractController
 
             $this->em->persist($shiftTask);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Shift task "%s" created.', $shiftTask->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.shift_task.flash.created', ['%name%' => $shiftTask->getName()]));
 
             return $this->redirectToRoute('app_manage_shift_task_index');
         }
 
         return $this->render('manage/shift_task/form.html.twig', [
             'form' => $form,
-            'heading' => 'New shift task',
+            'heading' => 'manage.shift_task.form.heading_new',
         ]);
     }
 
@@ -87,14 +88,14 @@ final class ShiftTaskController extends AbstractController
             }
 
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Shift task "%s" updated.', $shiftTask->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.shift_task.flash.updated', ['%name%' => $shiftTask->getName()]));
 
             return $this->redirectToRoute('app_manage_shift_task_index');
         }
 
         return $this->render('manage/shift_task/form.html.twig', [
             'form' => $form,
-            'heading' => 'Edit shift task',
+            'heading' => 'manage.shift_task.form.heading_edit',
         ]);
     }
 
@@ -108,7 +109,7 @@ final class ShiftTaskController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$shiftTask->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($shiftTask);
             $this->em->flush();
-            $this->addFlash('success', 'Shift task deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.shift_task.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_shift_task_index');

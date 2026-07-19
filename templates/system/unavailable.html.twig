@@ -1,8 +1,8 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}System unavailable{% endblock %}
+{% block title %}{{ 'system.unavailable.page.title'|trans }}{% endblock %}
 {% block body %}
-  {{ d.message_card_start('System access restricted', {
+  {{ d.message_card_start('system.unavailable.heading'|trans, {
     width: 'col-md-6',
     titleTag: 'h2',
     titleClass: 'card-title',
@@ -10,19 +10,19 @@
   }) }}
     <p>
       {% if mode == 'admin' %}
-        The system is currently open to administrators only.
+        {{ 'system.unavailable.admin_only'|trans }}
       {% else %}
-        The system is currently open to staff only.
+        {{ 'system.unavailable.staff_only'|trans }}
       {% endif %}
     </p>
-    <p class="text-secondary">If you need access, please contact an administrator.</p>
+    <p class="text-secondary">{{ 'system.unavailable.contact'|trans }}</p>
     {% if app.user %}
       <div class="btn-list">
-        <a class="btn btn-primary" href="{{ path('app_digital_id') }}">Show my digital badge</a>
-        <a class="btn btn-link" href="{{ path('app_logout') }}">Log out</a>
+        <a class="btn btn-primary" href="{{ path('app_digital_id') }}">{{ 'system.unavailable.show_badge'|trans }}</a>
+        <a class="btn btn-link" href="{{ path('app_logout') }}">{{ 'system.unavailable.logout'|trans }}</a>
       </div>
     {% else %}
-      <a class="btn btn-primary" href="{{ path('app_login') }}">Back to login</a>
+      <a class="btn btn-primary" href="{{ path('app_login') }}">{{ 'system.unavailable.back_to_login'|trans }}</a>
     {% endif %}
   {{ d.message_card_end() }}
 {% endblock %}

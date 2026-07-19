@@ -53,7 +53,7 @@ class DepartmentService
 
     /**
      * Classified members of a department. A user holding several positional groups is listed once,
-     * under the highest one — department manager outranks shift manager outranks staff.
+     * under the highest one - department manager outranks shift manager outranks staff.
      *
      * @return array{managers: User[], shiftManagers: User[], staff: User[], nonStaff: User[], positions: array<int, DepartmentPosition>}
      */

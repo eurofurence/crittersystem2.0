@@ -100,7 +100,10 @@ class PrivilegeVoter extends Voter
         return match (true) {
             $subject instanceof Department => [$subject],
             $subject instanceof ShiftTask => array_filter([$subject->getDepartment()]),
-            $subject instanceof Shift => array_filter([$subject->getShiftTask()?->getDepartment()]),
+            // A shift's own department is authoritative and always set; its shift
+            // task is optional, so scoping through the task would leave task-less
+            // shifts unscoped and grant every holder of the privilege.
+            $subject instanceof Shift => array_filter([$subject->getDepartment()]),
             $subject instanceof VolunteerType => $subject->getDepartments()->toArray(),
             default => [],
         };

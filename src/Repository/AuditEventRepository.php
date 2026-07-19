@@ -18,7 +18,7 @@ class AuditEventRepository extends ServiceEntityRepository
 
     /**
      * Events for a legal export: everything in the time window, optionally
-     * narrowed to a focus user — but system and internal actions are always
+     * narrowed to a focus user - but system and internal actions are always
      * included even when a user is the focus, so the export stays complete.
      *
      * @return iterable<AuditEvent>

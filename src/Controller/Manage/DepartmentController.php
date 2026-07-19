@@ -17,6 +17,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/departments')]
 #[IsGranted('shift:manage')]
@@ -68,25 +69,24 @@ final class DepartmentController extends AbstractController
             ? (string) $upload->getContent()
             : (string) $request->request->get('json', '');
         if (trim($payload) === '') {
-            $this->addFlash('danger', 'Provide JSON to import, either pasted or as a file.');
+            $this->addFlash('danger', new TranslatableMessage('manage.import.flash.no_json'));
 
             return $this->redirectToRoute('app_manage_department_index');
         }
 
         $rows = json_decode($payload, true);
         if (!\is_array($rows) || array_is_list($rows) === false) {
-            $this->addFlash('danger', 'Invalid JSON: expected an array of departments.');
+            $this->addFlash('danger', new TranslatableMessage('manage.department.flash.invalid_json'));
 
             return $this->redirectToRoute('app_manage_department_index');
         }
 
         $result = $this->importer->import($rows);
-        $this->addFlash('success', \sprintf(
-            'Imported %d department(s): %d created, %d updated.',
-            $result['imported'],
-            $result['created'],
-            $result['updated'],
-        ));
+        $this->addFlash('success', new TranslatableMessage('manage.department.flash.imported', [
+            '%imported%' => $result['imported'],
+            '%created%' => $result['created'],
+            '%updated%' => $result['updated'],
+        ]));
         foreach (\array_slice($result['warnings'], 0, 20) as $warning) {
             $this->addFlash('warning', $warning);
         }
@@ -104,14 +104,14 @@ final class DepartmentController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->persist($department);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Department "%s" created.', $department->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.department.flash.created', ['%name%' => $department->getName()]));
 
             return $this->redirectToRoute('app_manage_department_index');
         }
 
         return $this->render('manage/department/form.html.twig', [
             'form' => $form,
-            'heading' => 'New department',
+            'heading' => 'manage.department.form.heading_new',
         ]);
     }
 
@@ -125,14 +125,14 @@ final class DepartmentController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Department "%s" updated.', $department->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.department.flash.updated', ['%name%' => $department->getName()]));
 
             return $this->redirectToRoute('app_manage_department_index');
         }
 
         return $this->render('manage/department/form.html.twig', [
             'form' => $form,
-            'heading' => 'Edit department',
+            'heading' => 'manage.department.form.heading_edit',
         ]);
     }
 
@@ -142,7 +142,7 @@ final class DepartmentController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$department->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($department);
             $this->em->flush();
-            $this->addFlash('success', 'Department deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.department.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_department_index');

@@ -13,6 +13,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/faq')]
 #[IsGranted('faq:manage')]
@@ -42,12 +43,12 @@ final class FaqController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->persist($faq);
             $this->em->flush();
-            $this->addFlash('success', 'FAQ entry created.');
+            $this->addFlash('success', new TranslatableMessage('manage.faq.flash.created'));
 
             return $this->redirectToRoute('app_manage_faq_index');
         }
 
-        return $this->render('manage/faq/form.html.twig', ['form' => $form, 'heading' => 'New FAQ entry']);
+        return $this->render('manage/faq/form.html.twig', ['form' => $form, 'heading' => 'manage.faq.form.heading_new']);
     }
 
     #[Route('/{id}/edit', name: 'app_manage_faq_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
@@ -58,12 +59,12 @@ final class FaqController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->flush();
-            $this->addFlash('success', 'FAQ entry updated.');
+            $this->addFlash('success', new TranslatableMessage('manage.faq.flash.updated'));
 
             return $this->redirectToRoute('app_manage_faq_index');
         }
 
-        return $this->render('manage/faq/form.html.twig', ['form' => $form, 'heading' => 'Edit FAQ entry']);
+        return $this->render('manage/faq/form.html.twig', ['form' => $form, 'heading' => 'manage.faq.form.heading_edit']);
     }
 
     #[Route('/{id}/delete', name: 'app_manage_faq_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
@@ -72,7 +73,7 @@ final class FaqController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$faq->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($faq);
             $this->em->flush();
-            $this->addFlash('success', 'FAQ entry deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.faq.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_faq_index');

@@ -13,6 +13,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/consent-texts')]
 #[IsGranted('config:consent')]
@@ -52,7 +53,7 @@ final class ConsentTextController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$text->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($text);
             $this->em->flush();
-            $this->addFlash('success', 'Consent text deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.consent_text.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_consent_text_index');
@@ -68,14 +69,14 @@ final class ConsentTextController extends AbstractController
                 $this->em->persist($text);
             }
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Consent text for "%s" saved.', $text->getLocale()));
+            $this->addFlash('success', new TranslatableMessage('manage.consent_text.flash.saved', ['%locale%' => $text->getLocale()]));
 
             return $this->redirectToRoute('app_manage_consent_text_index');
         }
 
         return $this->render('manage/consent_text/form.html.twig', [
             'form' => $form,
-            'heading' => $isNew ? 'New consent text' : 'Edit consent text',
+            'heading' => $isNew ? 'manage.consent_text.form.heading_new' : 'manage.consent_text.form.heading_edit',
         ]);
     }
 }

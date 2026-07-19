@@ -1,26 +1,26 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Goodie Categories{% endblock %}
+{% block title %}{{ 'backstage.goodie.category.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Goodie Categories', {
-    subtitle: 'Groups of goodie items.',
+  {{ d.page_header('backstage.goodie.category.title'|trans, {
+    subtitle: 'backstage.goodie.category.subtitle'|trans,
     actions: [
-      {label: '← Backstage', href: path('app_backstage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New category', href: path('app_backstage_goodie_category_new'), class: 'btn btn-primary'}
+      {label: 'backstage.action.back_to_backstage'|trans, href: path('app_backstage'), class: 'btn btn-outline-secondary'},
+      {label: 'backstage.goodie.category.action.new'|trans, href: path('app_backstage_goodie_category_new'), class: 'btn btn-primary'}
     ]
   }) }}
 
   {% if categories is empty %}
-    {{ d.empty_state('No categories yet', {
-      message: 'Create a category before adding goodie items.',
-      actionLabel: '+ New category',
+    {{ d.empty_state('backstage.goodie.category.empty.title'|trans, {
+      message: 'backstage.goodie.category.empty.message'|trans,
+      actionLabel: 'backstage.goodie.category.action.new'|trans,
       actionHref: path('app_backstage_goodie_category_new')
     }) }}
   {% else %}
     {{ d.table_start() }}
-      <thead><tr><th>Name</th><th>Order</th><th>Items</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>{{ 'common.label.name'|trans }}</th><th>{{ 'backstage.goodie.table.order'|trans }}</th><th>{{ 'backstage.goodie.table.items'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
       <tbody>
         {% for c in categories %}
           <tr class="{{ c.active ? '' : 'opacity-75' }}">
@@ -30,14 +30,14 @@
             </td>
             <td>{{ c.displayOrder }}</td>
             <td>{{ c.items|length }}</td>
-            <td>{% if c.active %}{{ d.badge('Active', 'text-bg-success') }}{% else %}{{ d.badge('Inactive', 'text-bg-secondary') }}{% endif %}</td>
+            <td>{% if c.active %}{{ d.badge('common.state.active'|trans, 'text-bg-success') }}{% else %}{{ d.badge('common.state.inactive'|trans, 'text-bg-secondary') }}{% endif %}</td>
             {% set del %}
               {{ d.delete_form(path('app_backstage_goodie_category_delete', {id: c.uuid}), csrf_token('delete' ~ c.id), {
-                message: 'Delete "' ~ c.name ~ '" and its items?'
+                message: 'backstage.goodie.category.confirm.delete'|trans({'%name%': c.name})
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'Edit', href: path('app_backstage_goodie_category_edit', {id: c.uuid})}
+              {label: 'common.action.edit'|trans, href: path('app_backstage_goodie_category_edit', {id: c.uuid})}
             ], {extraHtml: del}) }}
           </tr>
         {% endfor %}

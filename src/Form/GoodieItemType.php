@@ -20,27 +20,27 @@ final class GoodieItemType extends AbstractType
     {
         $builder
             ->add('category', EntityType::class, [
-                'label' => 'Category',
+                'label' => 'backstage.goodie.label.category',
                 'class' => GoodieCategory::class,
                 'choice_label' => 'name',
             ])
-            ->add('name', TextType::class, ['label' => 'Name'])
+            ->add('name', TextType::class, ['label' => 'common.label.name'])
             ->add('description', TextareaType::class, [
-                'label' => 'Description',
+                'label' => 'common.label.description',
                 'required' => false,
                 'attr' => ['rows' => 3],
             ])
             ->add('requiredHours', NumberType::class, [
-                'label' => 'Required hours',
+                'label' => 'backstage.goodie.label.required_hours',
                 'scale' => 2,
             ])
             ->add('maxPerPerson', IntegerType::class, [
-                'label' => 'Max per person',
+                'label' => 'backstage.goodie.label.max_per_person',
                 'required' => false,
-                'help' => 'Leave blank for unlimited.',
+                'help' => 'backstage.goodie.item.field.max_per_person.help',
             ])
-            ->add('displayOrder', IntegerType::class, ['label' => 'Display order'])
-            ->add('isActive', CheckboxType::class, ['label' => 'Active', 'required' => false]);
+            ->add('displayOrder', IntegerType::class, ['label' => 'backstage.goodie.label.display_order'])
+            ->add('isActive', CheckboxType::class, ['label' => 'common.state.active', 'required' => false]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

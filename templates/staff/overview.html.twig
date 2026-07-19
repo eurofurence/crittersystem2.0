@@ -1,72 +1,72 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Staff Overview{% endblock %}
+{% block title %}{{ 'staff.overview.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Staff Overview', {
+  {{ d.page_header('staff.overview.page.title'|trans, {
     subtitle: app.user.name,
     actions: [
-      {label: 'Live status', href: path('app_staff_live'), class: 'btn btn-outline-secondary'},
-      {label: 'My stats', href: path('app_staff_stats'), class: 'btn btn-outline-primary'}
+      {label: 'staff.overview.action.live'|trans, href: path('app_staff_live'), class: 'btn btn-outline-secondary'},
+      {label: 'staff.overview.action.stats'|trans, href: path('app_staff_stats'), class: 'btn btn-outline-primary'}
     ]
   }) }}
 
   <div class="row g-3">
     <div class="col-12 col-lg-6">
-      {{ d.card_start('Duty status', {class: 'h-100', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
+      {{ d.card_start('staff.overview.card.duty_status'|trans, {class: 'h-100', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
           {% if currentDuty %}
             <p class="mb-1">
-              {{ d.badge('On duty', 'text-bg-success') }}
-              {% if currentDuty.department %}in <strong>{{ currentDuty.department.name }}</strong>{% endif %}
+              {{ d.badge('staff.label.on_duty'|trans, 'text-bg-success') }}
+              {% if currentDuty.department %}{{ 'staff.overview.in'|trans }} <strong>{{ currentDuty.department.name }}</strong>{% endif %}
             </p>
-            <p class="text-muted small">Since {{ currentDuty.startedAt|app_datetime }}
+            <p class="text-muted small">{{ 'staff.overview.since'|trans }} {{ currentDuty.startedAt|app_datetime }}
               ({{ currentDuty.durationHours|round(1) }}h)</p>
             <form method="post" action="{{ path('app_staff_duty_end') }}">
               <input type="hidden" name="_token" value="{{ csrf_token('duty-end') }}">
-              <button class="btn btn-outline-danger">End duty</button>
+              <button class="btn btn-outline-danger">{{ 'staff.overview.action.end_duty'|trans }}</button>
             </form>
           {% else %}
-            <p class="text-muted">You are off duty.</p>
+            <p class="text-muted">{{ 'staff.overview.off_duty'|trans }}</p>
             <form method="post" action="{{ path('app_staff_duty_start') }}" class="row g-2 align-items-end">
               <input type="hidden" name="_token" value="{{ csrf_token('duty-start') }}">
               <div class="col-8">
-                <label class="form-label small mb-0" for="duty-dep">Duty area</label>
+                <label class="form-label small mb-0" for="duty-dep">{{ 'staff.overview.field.duty_area'|trans }}</label>
                 <select id="duty-dep" name="department" class="form-select form-select-sm">
-                  <option value="">— No specific area —</option>
+                  <option value="">{{ 'staff.overview.no_specific_area_option'|trans }}</option>
                   {% for dep in departments %}<option value="{{ dep.uuid }}">{{ dep.name }}</option>{% endfor %}
                 </select>
               </div>
-              <div class="col-4"><button class="btn btn-success w-100">Start duty</button></div>
+              <div class="col-4"><button class="btn btn-success w-100">{{ 'staff.overview.action.start_duty'|trans }}</button></div>
             </form>
           {% endif %}
       {{ d.card_end() }}
     </div>
 
     <div class="col-12 col-lg-6">
-      {{ d.card_start('At a glance', {class: 'h-100', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
+      {{ d.card_start('staff.overview.card.at_a_glance'|trans, {class: 'h-100', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
           {# Not definition_list(): the "Next shift" value is a link, not a scalar. #}
           <dl class="row mb-0">
-            <dt class="col-7">Next shift</dt>
+            <dt class="col-7">{{ 'staff.overview.next_shift'|trans }}</dt>
             <dd class="col-5 text-end">
               {% if nextShift %}<a href="{{ path('app_shift_show', {id: nextShift.shift.uuid}) }}">{{ nextShift.shift.startsAt|app_datetime }}</a>
-              {% else %}—{% endif %}
+              {% else %}-{% endif %}
             </dd>
-            <dt class="col-7">Shift hours</dt><dd class="col-5 text-end">{{ stats.shiftHours|round(2) }}</dd>
-            <dt class="col-7">Duty hours</dt><dd class="col-5 text-end">{{ stats.dutyHours|round(2) }}</dd>
-            <dt class="col-7">Goodies received</dt><dd class="col-5 text-end">{{ stats.goodies }}</dd>
+            <dt class="col-7">{{ 'staff.label.shift_hours'|trans }}</dt><dd class="col-5 text-end">{{ stats.shiftHours|round(2) }}</dd>
+            <dt class="col-7">{{ 'staff.label.duty_hours'|trans }}</dt><dd class="col-5 text-end">{{ stats.dutyHours|round(2) }}</dd>
+            <dt class="col-7">{{ 'staff.overview.goodies_received'|trans }}</dt><dd class="col-5 text-end">{{ stats.goodies }}</dd>
           </dl>
-          <a class="small" href="{{ path('app_my_shifts') }}">View my shifts →</a>
+          <a class="small" href="{{ path('app_my_shifts') }}">{{ 'staff.overview.view_my_shifts'|trans }}</a>
       {{ d.card_end() }}
     </div>
   </div>
 
-  <h2 class="h5 mt-4">Received goodies</h2>
+  <h2 class="h5 mt-4">{{ 'staff.overview.received_goodies'|trans }}</h2>
   {% if goodies is empty %}
-    {{ d.empty_inline('No goodies received yet.', {class: 'text-muted'}) }}
+    {{ d.empty_inline('staff.overview.no_goodies'|trans, {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>Item</th><th>Qty</th><th>When</th></tr></thead>
+      <thead><tr><th>{{ 'staff.overview.col.item'|trans }}</th><th>{{ 'staff.overview.col.qty'|trans }}</th><th>{{ 'common.label.when'|trans }}</th></tr></thead>
       <tbody>
         {% for g in goodies %}
           <tr><td>{{ g.itemName }}</td><td>{{ g.quantity }}</td><td class="small text-muted">{{ g.distributedAt|app_datetime }}</td></tr>

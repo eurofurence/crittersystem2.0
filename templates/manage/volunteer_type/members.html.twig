@@ -1,43 +1,43 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Members · {{ type.name }}{% endblock %}
+{% block title %}{{ 'manage.volunteer_type.members.page_title'|trans({'%name%': type.name}) }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Members — ' ~ type.name, {
-    subtitle: 'Confirm pending requests, promote supporters, or remove members.',
-    actions: [{label: '← Volunteer types', href: path('app_manage_volunteer_type_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('manage.volunteer_type.members.heading'|trans({'%name%': type.name}), {
+    subtitle: 'manage.volunteer_type.members.subtitle'|trans,
+    actions: [{label: 'manage.volunteer_type.members.back'|trans, href: path('app_manage_volunteer_type_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if members is empty %}
-    {{ d.empty_state('No members yet', {message: 'Nobody has joined this volunteer type.'}) }}
+    {{ d.empty_state('manage.volunteer_type.members.empty_title'|trans, {message: 'manage.volunteer_type.members.empty_message'|trans}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>Volunteer</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>{{ 'manage.label.volunteer'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
       <tbody>
         {% for m in members %}
           <tr>
             <td>{{ m.user.name }}</td>
             <td>
-              {% if m.supporter %}{{ d.badge('Supporter', 'text-bg-primary') }}
-              {% elseif m.confirmed %}{{ d.badge('Member', 'text-bg-success') }}
-              {% else %}{{ d.badge('Pending', 'text-bg-warning') }}{% endif %}
+              {% if m.supporter %}{{ d.badge('manage.volunteer_type.badge.supporter'|trans, 'text-bg-primary') }}
+              {% elseif m.confirmed %}{{ d.badge('manage.volunteer_type.badge.member'|trans, 'text-bg-success') }}
+              {% else %}{{ d.badge('common.state.pending'|trans, 'text-bg-warning') }}{% endif %}
             </td>
             <td class="text-end text-nowrap">
               {% if not m.confirmed %}
                 <form method="post" action="{{ path('app_manage_vt_member_confirm', {id: type.uuid, membershipId: m.uuid}) }}" class="d-inline">
                   <input type="hidden" name="_token" value="{{ csrf_token('confirm' ~ m.uuid) }}">
-                  <button class="btn btn-sm btn-outline-success">Confirm</button>
+                  <button class="btn btn-sm btn-outline-success">{{ 'common.action.confirm'|trans }}</button>
                 </form>
               {% endif %}
               <form method="post" action="{{ path('app_manage_vt_member_supporter', {id: type.uuid, membershipId: m.uuid}) }}" class="d-inline">
                 <input type="hidden" name="_token" value="{{ csrf_token('supporter' ~ m.uuid) }}">
-                <button class="btn btn-sm btn-outline-primary">{{ m.supporter ? 'Demote' : 'Make supporter' }}</button>
+                <button class="btn btn-sm btn-outline-primary">{{ m.supporter ? 'manage.volunteer_type.members.demote'|trans : 'manage.volunteer_type.members.make_supporter'|trans }}</button>
               </form>
               <form method="post" action="{{ path('app_manage_vt_member_remove', {id: type.uuid, membershipId: m.uuid}) }}" class="d-inline"
-                    data-controller="confirm" data-confirm-message-value="Remove {{ m.user.name }}?">
+                    data-controller="confirm" data-confirm-message-value="{{ 'manage.volunteer_type.members.confirm_remove'|trans({'%name%': m.user.name}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('remove' ~ m.uuid) }}">
-                <button class="btn btn-sm btn-outline-danger">Remove</button>
+                <button class="btn btn-sm btn-outline-danger">{{ 'common.action.remove'|trans }}</button>
               </form>
             </td>
           </tr>

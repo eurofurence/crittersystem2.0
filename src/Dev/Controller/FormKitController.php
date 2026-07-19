@@ -35,7 +35,7 @@ final class FormKitController extends AbstractController
         $submitted = $form->isSubmitted() && $form->isValid();
 
         return $this->render('form_kit/index.html.twig', [
-            'pageTitle' => 'UI Kit — Forms',
+            'pageTitle' => 'UI Kit - Forms',
             'form' => $form,
             'submitted' => $submitted,
             'data' => $data,
@@ -50,7 +50,7 @@ final class FormKitController extends AbstractController
     {
         $q = trim((string) $request->query->get('q', ''));
 
-        // Obviously fake data — this page must never show real departments.
+        // Obviously fake data - this page must never show real departments.
         $items = [
             'Demo Department',
             'Demo Registration',

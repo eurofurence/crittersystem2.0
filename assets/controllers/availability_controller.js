@@ -5,7 +5,7 @@ import { Controller } from '@hotwired/stimulus';
  * Pick a value (Preferred/Available/Avoid/Unavailable) or Erase,
  * then drag to paint. Painting reconciles overlaps so each cell holds one value;
  * confirmed-assignment overlays are shown and cannot be painted over. On submit
- * the whole schedule is serialized to a hidden field — one global submission.
+ * the whole schedule is serialized to a hidden field - one global submission.
  */
 export default class extends Controller {
     static targets = ['dayBody', 'payload', 'grid'];

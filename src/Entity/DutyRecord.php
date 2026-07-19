@@ -22,7 +22,7 @@ class DutyRecord
     #[ORM\JoinColumn(name: 'user_id', nullable: false, onDelete: 'CASCADE')]
     private User $user;
 
-    /** Duty area — derived from existing Departments. */
+    /** Duty area - derived from existing Departments. */
     #[ORM\ManyToOne(targetEntity: Department::class)]
     #[ORM\JoinColumn(name: 'department_id', nullable: true, onDelete: 'SET NULL')]
     private ?Department $department = null;

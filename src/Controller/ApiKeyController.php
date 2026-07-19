@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Lets a user view and regenerate their personal API key (used for the JSON
@@ -36,7 +37,7 @@ final class ApiKeyController extends AbstractController
             $user = $this->getUser();
             $user->setApiKey(bin2hex(random_bytes(16)));
             $this->em->flush();
-            $this->addFlash('success', 'Your API key has been regenerated. Update any clients using the old key.');
+            $this->addFlash('success', new TranslatableMessage('api_key.flash.regenerated'));
         }
 
         return $this->redirectToRoute('app_api_key');

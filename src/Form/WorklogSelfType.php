@@ -19,13 +19,13 @@ final class WorklogSelfType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('hours', NumberType::class, ['scale' => 2, 'label' => 'Hours', 'attr' => ['min' => 0, 'step' => 0.25]])
+            ->add('hours', NumberType::class, ['scale' => 2, 'label' => 'manage.worklog.field.hours.label', 'attr' => ['min' => 0, 'step' => 0.25]])
             ->add('workedAt', DateTimeType::class, [
                 'widget' => 'single_text',
                 'input' => 'datetime_immutable',
-                'label' => 'Worked at',
+                'label' => 'manage.worklog.field.worked_at.label',
             ])
-            ->add('comment', TextareaType::class, ['required' => false, 'label' => 'Comment', 'attr' => ['rows' => 2]]);
+            ->add('comment', TextareaType::class, ['required' => false, 'label' => 'manage.worklog.field.comment.label', 'attr' => ['rows' => 2]]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

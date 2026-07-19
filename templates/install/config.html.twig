@@ -1,15 +1,15 @@
 {% extends 'install/_layout.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Configuration · Setup · VMS{% endblock %}
+{% block title %}{{ 'install.config.title'|trans }}{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
 
     {% set configFooter %}
         <div class="btn-list justify-content-end">
-            <button type="submit" name="action" value="skip" class="btn btn-link link-secondary">Skip for now</button>
-            <button type="submit" name="action" value="save" class="btn btn-primary">Save &amp; continue</button>
+            <button type="submit" name="action" value="skip" class="btn btn-link link-secondary">{{ 'common.action.skip'|trans }}</button>
+            <button type="submit" name="action" value="save" class="btn btn-primary">{{ 'install.config.save_continue'|trans }}</button>
         </div>
     {% endset %}
     {{ d.card_start(null, {
@@ -17,38 +17,37 @@
         class: 'card-md',
         attrs: {method: 'post', action: path('app_install_config'), 'data-turbo': 'false'}
     }) }}
-            <h2 class="mb-1">Optional configuration</h2>
+            <h2 class="mb-1">{{ 'install.config.heading'|trans }}</h2>
             <p class="text-secondary">
-                You can set a few basics now, or skip and configure everything later from
-                <em>Manage → Configuration</em>.
+                {{ 'install.config.intro'|trans({'%location%': '<em>Manage → Configuration</em>'})|raw }}
             </p>
 
             {% include 'install/_flashes.html.twig' %}
             <input type="hidden" name="_token" value="{{ csrf_token('install_config') }}">
 
             <div class="mb-3">
-                <label class="form-label">Event name</label>
-                <input type="text" name="event_name" class="form-control" value="{{ eventName }}" placeholder="e.g. Eurofurence 28">
+                <label class="form-label">{{ 'install.field.event_name.label'|trans }}</label>
+                <input type="text" name="event_name" class="form-control" value="{{ eventName }}" placeholder="{{ 'install.field.event_name.placeholder'|trans }}">
             </div>
             <div class="mb-3">
-                <label class="form-label">Timezone</label>
+                <label class="form-label">{{ 'install.config.timezone_label'|trans }}</label>
                 <select name="timezone" class="form-select">
                     {% for tz in timezones %}
                         <option value="{{ tz }}" {{ tz == timezone ? 'selected' : '' }}>{{ tz }}</option>
                     {% endfor %}
                 </select>
-                <small class="form-hint">Used to display dates/times. Data is always stored in UTC.</small>
+                <small class="form-hint">{{ 'install.config.timezone_hint'|trans }}</small>
             </div>
             <div class="row">
                 <div class="col-md-6 mb-3">
-                    <label class="form-label">Date format</label>
+                    <label class="form-label">{{ 'install.config.date_format_label'|trans }}</label>
                     <input type="text" name="date_format" class="form-control" value="{{ dateFormat }}">
-                    <small class="form-hint">PHP date() format, e.g. <code>D, d M Y</code>.</small>
+                    <small class="form-hint">{{ 'install.config.php_date_hint'|trans({'%code%': '<code>D, d M Y</code>'})|raw }}</small>
                 </div>
                 <div class="col-md-6 mb-3">
-                    <label class="form-label">Time format</label>
+                    <label class="form-label">{{ 'install.config.time_format_label'|trans }}</label>
                     <input type="text" name="time_format" class="form-control" value="{{ timeFormat }}">
-                    <small class="form-hint">PHP date() format, e.g. <code>H:i</code>.</small>
+                    <small class="form-hint">{{ 'install.config.php_date_hint'|trans({'%code%': '<code>H:i</code>'})|raw }}</small>
                 </div>
             </div>
     {{ d.card_end({tag: 'form', footer: configFooter}) }}

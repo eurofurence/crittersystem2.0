@@ -14,7 +14,7 @@ use App\Service\EventConfigStore;
  * - Setup and teardown public shifts do not require event check-in by default,
  *   because normal check-in may be unavailable during those periods.
  * - A shift may enable `Require Check-in`, which forces the requirement in every
- *   phase — setup and teardown included — for identity/security-sensitive work.
+ *   phase - setup and teardown included - for identity/security-sensitive work.
  *
  * When the event phase cannot be determined (event dates unconfigured) only the
  * per-shift override applies, so nothing is gated purely by an unknown phase.

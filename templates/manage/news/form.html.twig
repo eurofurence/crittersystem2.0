@@ -2,11 +2,11 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ heading }}{% endblock %}
+{% block title %}{{ heading|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header(heading, {
-    actions: [{label: '← Back to news', href: path('app_manage_news_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.news.action.back'|trans, href: path('app_manage_news_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
@@ -23,9 +23,9 @@
     {% if showNotify %}
       <div class="form-check mt-2">
         <input class="form-check-input" type="checkbox" name="notify" value="1" id="notify">
-        <label class="form-check-label" for="notify">Email subscribers about this post</label>
+        <label class="form-check-label" for="notify">{{ 'manage.news.field.notify.label'|trans }}</label>
       </div>
     {% endif %}
-    <button class="btn btn-primary mt-3">Save</button>
+    <button class="btn btn-primary mt-3">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

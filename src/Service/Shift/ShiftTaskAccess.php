@@ -68,7 +68,7 @@ final class ShiftTaskAccess
 
     /**
      * The tasks a user may pick when planning for a department: that department's own tasks plus
-     * the global ones. Admins planning for a department see the same list — the point is relevance,
+     * the global ones. Admins planning for a department see the same list - the point is relevance,
      * not secrecy.
      *
      * @param ShiftTask[] $all

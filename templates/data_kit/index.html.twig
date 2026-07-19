@@ -8,7 +8,7 @@
   The component gallery for templates/components/data/_macros.twig.
 
   Every example below is rendered live AND shown as copy-pasteable Twig source. All demo
-  data is obviously fake (Demo Department …, Sample Volunteer, @demo.invalid) — never put
+  data is obviously fake (Demo Department …, Sample Volunteer, @demo.invalid) - never put
   real volunteer, user or event data on this page.
 
   Local helper macros (ui.*) exist only to lay out this gallery; they are NOT components.
@@ -16,7 +16,7 @@
 
 {% macro snippet(code) %}
   {# `code` is captured Twig source. |trim casts the Markup to a plain string so |e really
-     escapes it — otherwise the snippet would be rendered as HTML instead of shown. #}
+     escapes it - otherwise the snippet would be rendered as HTML instead of shown. #}
   <pre class="mt-2 mb-0 p-2 bg-body-tertiary border rounded small" style="overflow-x: auto;"><code>{{ code|trim|e }}</code></pre>
 {% endmacro %}
 
@@ -61,7 +61,7 @@
 
   {{ ui.demo_start('page_header(title, {subtitle, actions})',
      'the single <h1> of a page, plus its top-right primary actions.',
-     'you need a second heading on the same page — that is section_header().') }}
+     'you need a second heading on the same page - that is section_header().') }}
 
     {{ d.page_header('Demo Departments', {
       subtitle: 'With subtitle and two actions.',
@@ -100,7 +100,7 @@
   {{ ui.demo_end() }}
 
   {{ ui.demo_start('section_header(title, {level, size, subtitle, class})',
-     'a heading inside a page — the section dividers on this very page.',
+     'a heading inside a page - the section dividers on this very page.',
      'it is the page title (page_header) or a card title (card_start).') }}
 
     {{ d.section_header('Level 2, default size (h5)') }}
@@ -131,7 +131,7 @@
       <a href="{{ path('app_data_kit') }}" class="btn btn-sm btn-outline-primary">Edit</a>
       {{ d.badge('3 open', 'text-bg-secondary') }}
     {% endset %}
-    {{ d.card_start('Card with header actions', {subtitle: 'headerActions is captured markup — never user input.', headerActions: headerActions}) }}
+    {{ d.card_start('Card with header actions', {subtitle: 'headerActions is captured markup - never user input.', headerActions: headerActions}) }}
       <p class="mb-0">The header becomes a flex row: title/subtitle left, actions right.</p>
     {{ d.card_end() }}
 
@@ -211,7 +211,7 @@
 
   {{ ui.demo_start('message_card_start(title, options) / message_card_end()',
      'a centred single-message page: confirm, done, invalid, scanned.',
-     'the page has more than one thing on it — that is a normal card.') }}
+     'the page has more than one thing on it - that is a normal card.') }}
 
     {% set iconHtml %}<div class="display-6 mb-2">{{ i.icon('shield') }}</div>{% endset %}
     {{ d.message_card_start('Demo pass scanned', {iconHtml: iconHtml, width: 'col-md-8 col-lg-6'}) }}
@@ -234,11 +234,11 @@
 
   {# ============================================================ 3. Stat + action cards #}
 
-  {{ d.section_header('3. Stat cards & action cards', {size: 'h3', subtitle: 'Both render their own grid column — always wrap a set of them in a row.'}) }}
+  {{ d.section_header('3. Stat cards & action cards', {size: 'h3', subtitle: 'Both render their own grid column - always wrap a set of them in a row.'}) }}
 
   {{ ui.demo_start('stat_card(value, label, {col, size, class})',
      'a KPI strip at the top of a dashboard: one big number, one caption.',
-     'the number needs context (a chart, a trend, a link) — build a normal card.') }}
+     'the number needs context (a chart, a trend, a link) - build a normal card.') }}
 
     <div class="row mb-3">
       {{ d.stat_card(42, 'Demo volunteers') }}
@@ -263,7 +263,7 @@
 
   {{ ui.demo_start('action_card(title, {text, href, iconHtml, col, class})',
      'a clickable tile in an index/dashboard grid (icon + title + description).',
-     'the tile has several links or a form inside — stretched-link would swallow them.') }}
+     'the tile has several links or a form inside - stretched-link would swallow them.') }}
 
     <div class="row row-cards">
       {% set usersIcon %}{{ i.icon('users') }}{% endset %}
@@ -272,7 +272,7 @@
       {{ d.action_card('Demo Shifts', {text: 'Nothing behind this link either.', href: path('app_data_kit'), iconHtml: calIcon}) }}
       {{ d.action_card('No link, no icon', {text: 'A tile can be inert; then it is not clickable.'}) }}
       {{ d.action_card('Full-width tile with a very long description', {
-        text: 'This description is long on purpose so the tile has to grow — the sibling tiles keep the same height because action_card() is always h-100.',
+        text: 'This description is long on purpose so the tile has to grow - the sibling tiles keep the same height because action_card() is always h-100.',
         href: path('app_data_kit'),
         col: 'col-12'
       }) }}
@@ -298,7 +298,7 @@
 
   {{ ui.demo_start('table_start(options) / table_end(options)',
      'any tabular list. Striped + hover + responsive by default.',
-     'the data is a set of key/value pairs about ONE thing — that is definition_list().') }}
+     'the data is a set of key/value pairs about ONE thing - that is definition_list().') }}
 
     {{ d.section_header('Default', {level: 3, size: 'h6'}) }}
     {{ d.table_start() }}
@@ -328,7 +328,7 @@
       </tbody>
     {{ d.table_end() }}
 
-    {{ d.section_header('Many columns — horizontal scroll check', {level: 3, size: 'h6', subtitle: 'The .table-responsive wrapper from table_start() scrolls; the page must not.'}) }}
+    {{ d.section_header('Many columns - horizontal scroll check', {level: 3, size: 'h6', subtitle: 'The .table-responsive wrapper from table_start() scrolls; the page must not.'}) }}
     {{ d.table_start({compact: true, class: 'text-nowrap'}) }}
       <thead>
         <tr>{% for c in wideColumns %}<th>{{ c }}</th>{% endfor %}</tr>
@@ -362,7 +362,7 @@
 
   {{ ui.demo_start('row_actions(actions, {extraHtml, cell, class}) + delete_form(action, token, options)',
      'the trailing action cell of a CRUD row. delete_form() is a POST form with a CSRF token and the `confirm` modal controller.',
-     'you are tempted to mint the CSRF token or to check permissions inside the macro — both belong to the caller.') }}
+     'you are tempted to mint the CSRF token or to check permissions inside the macro - both belong to the caller.') }}
 
     {{ d.card_start('Demo departments (row_actions + delete_form)', {bodyClass: ''}) }}
       {% include 'data_kit/_table.html.twig' with {rows: rows} only %}
@@ -404,7 +404,7 @@
 
   {{ ui.demo_start('badge(text, style, {class, attrs})',
      'a small inline label whose colour YOU choose.',
-     'the text is a status word from a known vocabulary — use status_badge() so the colours stay consistent.') }}
+     'the text is a status word from a known vocabulary - use status_badge() so the colours stay consistent.') }}
 
     <div class="d-flex flex-wrap gap-2 mb-3">
       {{ d.badge('Default (text-bg-secondary)') }}
@@ -437,7 +437,7 @@
 {{ d.badge('Soft green', 'bg-green-lt') }}            {# Tabler's soft palette #}
 {{ d.badge('Beta', 'text-bg-dark', {
   class: 'me-1 text-uppercase',
-  attrs: {title: 'Not final', 'data-demo': 'yes'}     {# attrs keys are written verbatim — dev-authored only #}
+  attrs: {title: 'Not final', 'data-demo': 'yes'}     {# attrs keys are written verbatim - dev-authored only #}
 }) }}
 {% endverbatim %}{% endset %}
     {{ ui.snippet(code) }}
@@ -445,7 +445,7 @@
 
   {{ ui.demo_start('status_badge(status, {map, label, class, attrs})',
      'a status word (active / pending / disabled / error …). Unknown words fall back to bg-blue-lt.',
-     'the colour has nothing to do with a status — that is a plain badge().') }}
+     'the colour has nothing to do with a status - that is a plain badge().') }}
 
     <div class="d-flex flex-wrap gap-2 mb-3">
       {{ d.status_badge('Active') }}
@@ -494,7 +494,7 @@
 
   {{ ui.demo_start('empty_state(title, {message, iconHtml, actionLabel, actionHref, actionClass})',
      'a whole page or a whole section with no content at all.',
-     'you are inside a card or a small panel — it is far too heavy there (use empty_inline).') }}
+     'you are inside a card or a small panel - it is far too heavy there (use empty_inline).') }}
 
     {% set emptyIcon %}<span class="display-6">{{ i.icon('users') }}</span>{% endset %}
     {{ d.empty_state('No demo departments yet', {
@@ -505,7 +505,7 @@
     }) }}
 
     <hr>
-    {{ d.empty_state('No results', {message: 'No icon, no action — just the message.'}) }}
+    {{ d.empty_state('No results', {message: 'No icon, no action - just the message.'}) }}
 
     <hr>
     {{ d.empty_state('Title only') }}
@@ -526,7 +526,7 @@
 
   {{ ui.demo_start('empty_inline(message, {tag, class}) and empty_row(colspan, message, {class})',
      'empty_inline: "this small list is empty" inside a card. empty_row: the same, inside a <tbody>.',
-     'the whole page is empty — then the big empty_state earns its space.') }}
+     'the whole page is empty - then the big empty_state earns its space.') }}
 
     <div class="row">
       <div class="col-md-6">
@@ -567,7 +567,7 @@
 
   {{ ui.demo_start('definition_list(items, {labelCol, valueCol, labelClass, valueClass, class})',
      'the key/value facts about ONE record: a show page, a summary card.',
-     'you have many records — that is a table.') }}
+     'you have many records - that is a table.') }}
 
     {% set facts = [
       {label: 'Name', value: 'Demo Department Alpha'},
@@ -619,7 +619,7 @@
 
   {{ d.section_header('8. Turbo Frame: debounced search + table frame', {size: 'h3', subtitle: 'The frame id and the route must match: data_table_frame / app_data_kit_table_frame.'}) }}
 
-  {{ d.card_start('Live demo', {subtitle: 'Type "alpha", "demo" or "zzz" — only the frame reloads.'}) }}
+  {{ d.card_start('Live demo', {subtitle: 'Type "alpha", "demo" or "zzz" - only the frame reloads.'}) }}
     {{ f.search_input('q', {
       label: 'Search demo departments',
       placeholder: 'Try "alpha", "bravo" or "zzz"…',
@@ -633,7 +633,7 @@
 
   {% set code %}{% verbatim %}
 {# page #}
-{# The frame's src does the fetching — search_input only debounces and targets the frame. #}
+{# The frame's src does the fetching - search_input only debounces and targets the frame. #}
 {{ f.search_input('q', {
   label: 'Search departments',
   debounceMs: 250,
@@ -641,7 +641,7 @@
 }) }}
 <turbo-frame id="data_table_frame" src="{{ path('app_data_kit_table_frame') }}" loading="lazy"></turbo-frame>
 
-{# _table_frame.html.twig — the SAME id must wrap the response #}
+{# _table_frame.html.twig - the SAME id must wrap the response #}
 <turbo-frame id="data_table_frame">
   {% if rows is empty %}
     {{ d.empty_state('No matches', {message: 'Try a different search term.'}) }}

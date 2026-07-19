@@ -1,17 +1,18 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
 
-{% block title %}Matrix Planner — {{ department.name }}{% endblock %}
+{% block title %}{{ 'planner.matrix.title_department'|trans({'%name%': department.name}) }}{% endblock %}
 
 {% block body %}
   {% set canAssign = is_granted('shift:assign', department) %}
 
-  {{ d.page_header('Advanced Matrix Planner', {
-    subtitle: 'Shifts as rows against configurable position columns. Click a cell to staff it.',
+  {{ d.page_header('planner.matrix.title'|trans, {
+    subtitle: 'planner.matrix.subtitle'|trans,
     actions: [
-      {label: 'Download PDF', href: path('app_manage_shifts_matrix_pdf', {department: department.uuid}), class: 'btn btn-outline-primary'},
-      {label: 'Timeline view', href: path('app_manage_shifts_planner', {department: department.uuid}), class: 'btn btn-outline-primary'},
-      {label: '← Shift Manager', href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}
+      {label: 'planner.matrix.action.download_pdf'|trans, href: path('app_manage_shifts_matrix_pdf', {department: department.uuid}), class: 'btn btn-outline-primary'},
+      {label: 'planner.matrix.action.timeline'|trans, href: path('app_manage_shifts_planner', {department: department.uuid}), class: 'btn btn-outline-primary'},
+      {label: 'planner.action.shift_manager'|trans, href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}
     ]
   }) }}
 
@@ -30,7 +31,7 @@
     {{ d.card_start(null, {bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
         <form method="get" class="d-flex align-items-end gap-2">
           <div>
-            <label class="form-label mb-1" for="matrix-department">Department</label>
+            <label class="form-label mb-1" for="matrix-department">{{ 'common.label.department'|trans }}</label>
             <select id="matrix-department" name="department" class="form-select" onchange="this.form.submit()">
               {% for dept in departments %}
                 <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
@@ -39,10 +40,10 @@
           </div>
         </form>
         <div class="ms-auto text-secondary small">
-          {{ d.badge('Name', 'bg-blue-lt') }} assigned
-          {{ d.badge('?', 'bg-yellow-lt', {class: 'ms-1'}) }} open/required
-          <span class="text-secondary ms-1">–</span> not required
-          <span class="text-secondary ms-1">·</span> click a cell to edit
+          {{ d.badge('common.label.name'|trans, 'bg-blue-lt') }} {{ 'planner.matrix.legend.assigned'|trans }}
+          {{ d.badge('?', 'bg-yellow-lt', {class: 'ms-1'}) }} {{ 'planner.matrix.legend.open_required'|trans }}
+          <span class="text-secondary ms-1">–</span> {{ 'planner.matrix.legend.not_required'|trans }}
+          <span class="text-secondary ms-1">·</span> {{ 'planner.matrix.legend.click_edit'|trans }}
         </div>
     {{ d.card_end({bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
 
@@ -50,8 +51,8 @@
        region, which the controller swaps in place after each mutation. #}
     <div data-matrix-target="content">
       {% if matrix.columns is empty %}
-        {{ d.empty_state('No positions configured', {
-          message: 'Configure Position Groups and Named Positions for this department to use the matrix planner.'
+        {{ d.empty_state('planner.matrix.empty.title'|trans, {
+          message: 'planner.matrix.empty.message'|trans
         }) }}
       {% else %}
         {{ d.card_start(null, {class: '', bodyClass: ''}) }}
@@ -59,10 +60,10 @@
             <table class="table table-bordered table-sm matrix-table mb-0">
               <thead>
                 <tr>
-                  <th class="matrix-sticky-col" rowspan="2">When</th>
-                  <th rowspan="2">Location</th>
-                  <th rowspan="2">Task</th>
-                  <th rowspan="2">Shift</th>
+                  <th class="matrix-sticky-col" rowspan="2">{{ 'common.label.when'|trans }}</th>
+                  <th rowspan="2">{{ 'common.label.location'|trans }}</th>
+                  <th rowspan="2">{{ 'planner.label.task'|trans }}</th>
+                  <th rowspan="2">{{ 'planner.table.shift'|trans }}</th>
                   {% for group in matrix.groups %}
                     <th class="text-center matrix-group" colspan="{{ group.positions|length }}">{{ group.name }}</th>
                   {% endfor %}
@@ -75,20 +76,20 @@
               </thead>
               <tbody>
                 {% if matrix.rows is empty %}
-                  {{ d.empty_row(4 + matrix.columns|length, 'No shifts in range. Create shifts in the timeline view first.') }}
+                  {{ d.empty_row(4 + matrix.columns|length, 'planner.matrix.empty_row'|trans) }}
                 {% endif %}
                 {% for row in matrix.rows %}
                   {% set shift = row.shift %}
                   <tr>
                     <td class="matrix-sticky-col text-nowrap">
                       {{ shift.startsAt|app_datetime }}<br>
-                      <span class="text-secondary">– {{ shift.endsAt|app_time }}{% if row.overnight %} <span title="Overnight">▾</span>{% endif %}</span>
+                      <span class="text-secondary">– {{ shift.endsAt|app_time }}{% if row.overnight %} <span title="{{ 'planner.matrix.overnight'|trans }}">▾</span>{% endif %}</span>
                     </td>
-                    <td>{{ shift.location ? shift.location.name : '—' }}</td>
-                    <td>{{ shift.shiftTask ? shift.shiftTask.name : '—' }}</td>
+                    <td>{{ shift.location ? shift.location.name : '-' }}</td>
+                    <td>{{ shift.shiftTask ? shift.shiftTask.name : '-' }}</td>
                     <td>
                       {{ shift.title }}
-                      {% if shift.draft %}{{ d.badge('draft', 'bg-yellow-lt') }}{% endif %}
+                      {% if shift.draft %}{{ d.badge('planner.badge.draft'|trans, 'bg-yellow-lt') }}{% endif %}
                     </td>
                     {% for column in matrix.columns %}
                       {% set cell = row.cells[column.positionId] %}
@@ -106,7 +107,7 @@
                                 data-capacity="{{ cell.capacity }}"
                                 data-note="{{ cell.note ?? '' }}"
                                 data-assignments="{{ cell.assignments|json_encode }}"
-                                aria-label="{{ column.name }} on {{ shift.title }} — {{ cell.state == 'filled' ? cell.occupants|join(', ') : (cell.state == 'open' ? 'open' : (cell.state == 'not_required' ? 'not required' : 'not enabled')) }}">
+                                aria-label="{{ 'planner.matrix.cell.aria'|trans({'%position%': column.name, '%shift%': shift.title, '%state%': (cell.state == 'filled' ? cell.occupants|join(', ') : (cell.state == 'open' ? 'planner.matrix.cell.open'|trans : (cell.state == 'not_required' ? 'planner.matrix.cell.not_required'|trans : 'planner.matrix.cell.not_enabled'|trans)))}) }}">
                           {% if cell.state == 'filled' %}
                             {% for name in cell.occupants %}
                               {{ d.badge(name, 'bg-blue-lt', {class: 'd-block'}) }}
@@ -134,22 +135,22 @@
 
       <div class="row g-3 mt-1">
         <div class="col-12 col-lg-4">
-          {{ d.card_start('Add Position Group', {class: ''}) }}
+          {{ d.card_start('planner.matrix.card.add_group'|trans, {class: ''}) }}
               <form method="post" action="{{ path('app_matrix_group_create') }}" data-controller="planner-form">
                 <input type="hidden" name="_token" value="{{ csrf_token('matrix_edit') }}">
                 <input type="hidden" name="department" value="{{ department.uuid }}">
                 <div class="input-group">
-                  <input type="text" class="form-control" name="name" placeholder="e.g. Light" required>
-                  <button class="btn btn-primary" type="submit" data-action="planner-form#submit">Add</button>
+                  <input type="text" class="form-control" name="name" placeholder="{{ 'planner.matrix.field.group.placeholder'|trans }}" required>
+                  <button class="btn btn-primary" type="submit" data-action="planner-form#submit">{{ 'common.action.add'|trans }}</button>
                 </div>
               </form>
           {{ d.card_end() }}
         </div>
 
         <div class="col-12 col-lg-4">
-          {{ d.card_start('Add Named Position', {class: ''}) }}
+          {{ d.card_start('planner.matrix.card.add_position'|trans, {class: ''}) }}
               {% if matrix.groups is empty %}
-                <p class="text-secondary mb-0">Add a Position Group first.</p>
+                <p class="text-secondary mb-0">{{ 'planner.matrix.add_group_first'|trans }}</p>
               {% else %}
                 <form method="post" action="{{ path('app_matrix_position_create') }}" data-controller="planner-form">
                   <input type="hidden" name="_token" value="{{ csrf_token('matrix_edit') }}">
@@ -161,9 +162,9 @@
                     </select>
                   </div>
                   <div class="input-group">
-                    <input type="text" class="form-control" name="name" placeholder="e.g. FOH" required>
-                    <input type="number" class="form-control" name="capacity" value="1" min="1" style="max-width: 5rem;" title="Capacity">
-                    <button class="btn btn-primary" type="submit" data-action="planner-form#submit">Add</button>
+                    <input type="text" class="form-control" name="name" placeholder="{{ 'planner.matrix.field.position.placeholder'|trans }}" required>
+                    <input type="number" class="form-control" name="capacity" value="1" min="1" style="max-width: 5rem;" title="{{ 'planner.matrix.field.capacity'|trans }}">
+                    <button class="btn btn-primary" type="submit" data-action="planner-form#submit">{{ 'common.action.add'|trans }}</button>
                   </div>
                 </form>
               {% endif %}
@@ -171,30 +172,30 @@
         </div>
 
         <div class="col-12 col-lg-4">
-          {{ d.card_start('Copy structure', {class: ''}) }}
+          {{ d.card_start('planner.matrix.card.copy'|trans, {class: ''}) }}
               {% if shifts|length < 2 %}
-                <p class="text-secondary mb-0">Need at least two shifts to copy structure.</p>
+                <p class="text-secondary mb-0">{{ 'planner.matrix.copy.need_two'|trans }}</p>
               {% else %}
                 <form method="post" action="{{ path('app_matrix_copy_structure') }}" data-controller="planner-form">
                   <input type="hidden" name="_token" value="{{ csrf_token('matrix_edit') }}">
                   <div class="mb-2">
-                    <label class="form-label">From shift</label>
+                    <label class="form-label">{{ 'planner.matrix.copy.from'|trans }}</label>
                     <select class="form-select" name="from" required>
                       {% for shift in shifts %}
-                        <option value="{{ shift.id }}">{{ shift.title }} — {{ shift.startsAt|app_datetime }}</option>
+                        <option value="{{ shift.id }}">{{ shift.title }} - {{ shift.startsAt|app_datetime }}</option>
                       {% endfor %}
                     </select>
                   </div>
                   <div class="mb-2">
-                    <label class="form-label">To shifts</label>
+                    <label class="form-label">{{ 'planner.matrix.copy.to'|trans }}</label>
                     {% for shift in shifts %}
                       <label class="form-check">
                         <input type="checkbox" class="form-check-input" name="to[]" value="{{ shift.id }}">
-                        <span class="form-check-label">{{ shift.title }} — {{ shift.startsAt|app_datetime }}</span>
+                        <span class="form-check-label">{{ shift.title }} - {{ shift.startsAt|app_datetime }}</span>
                       </label>
                     {% endfor %}
                   </div>
-                  <button class="btn btn-primary" type="submit" data-action="planner-form#submit">Copy structure</button>
+                  <button class="btn btn-primary" type="submit" data-action="planner-form#submit">{{ 'planner.matrix.card.copy'|trans }}</button>
                 </form>
               {% endif %}
           {{ d.card_end() }}
@@ -202,21 +203,24 @@
       </div>
     </div>
 
-    {# The editor reads its volunteer options from here, so the list is rendered (and escaped) by
-       Twig rather than built in JavaScript. #}
-    <select id="matrix-candidates" class="d-none" aria-hidden="true" tabindex="-1">
-      {% for candidate in candidates %}
-        <option value="{{ candidate.id }}">{{ candidate.name }}</option>
-      {% endfor %}
-    </select>
+    {# The cell editor clones this type-ahead picker into its modal. A template (not a live widget) so
+       the user-select controller connects only once cloned, and only one instance is ever active. #}
+    <template id="matrix-user-picker">
+      {{ f.user_select('matrix_user', {
+        url: path('app_matrix_user_search', {department: department.uuid}),
+        label: false,
+        placeholder: 'planner.matrix.picker.placeholder'|trans,
+        help: 'planner.matrix.picker.help'|trans,
+      }) }}
+    </template>
 
     {# Outside the reloaded region: replacing the content must not tear down an open modal. #}
     <div class="modal" tabindex="-1" data-matrix-target="editor" aria-labelledby="matrix-editor-title">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="matrix-editor-title" data-matrix-target="editorTitle">Position</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 class="modal-title" id="matrix-editor-title" data-matrix-target="editorTitle">{{ 'planner.matrix.editor.title'|trans }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'ui.aria.close'|trans }}"></button>
           </div>
           <div class="modal-body" data-matrix-target="editorBody"></div>
         </div>

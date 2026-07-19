@@ -1,20 +1,20 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Set up 2FA{% endblock %}
+{% block title %}{{ 'two_factor.setup.title'|trans }}{% endblock %}
 {% block body %}
-  {{ d.page_header('Set up two-factor authentication') }}
+  {{ d.page_header('two_factor.setup_action'|trans) }}
   <div class="row g-4">
     <div class="col-md-6">
-      <p>1. Scan this QR code with your authenticator app (or enter the secret manually).</p>
-      <img src="{{ qr }}" alt="2FA QR code" class="border rounded mb-2">
-      <p class="small">Secret: <code>{{ secret }}</code></p>
+      <p>{{ 'two_factor.setup.step1'|trans }}</p>
+      <img src="{{ qr }}" alt="{{ 'two_factor.setup.qr_alt'|trans }}" class="border rounded mb-2">
+      <p class="small">{{ 'two_factor.setup.secret_label'|trans }} <code>{{ secret }}</code></p>
     </div>
     <div class="col-md-6">
-      <p>2. Enter the 6-digit code from your app to confirm.</p>
+      <p>{{ 'two_factor.setup.step2'|trans }}</p>
       <form method="post">
         <div class="mb-3"><input name="code" class="form-control" autocomplete="one-time-code" inputmode="numeric" placeholder="123456" required></div>
-        <button class="btn btn-primary">Enable</button>
-        <a class="btn btn-link" href="{{ path('app_2fa') }}">Cancel</a>
+        <button class="btn btn-primary">{{ 'two_factor.setup.enable'|trans }}</button>
+        <a class="btn btn-link" href="{{ path('app_2fa') }}">{{ 'common.action.cancel'|trans }}</a>
       </form>
     </div>
   </div>

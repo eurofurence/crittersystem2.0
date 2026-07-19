@@ -33,10 +33,10 @@ final class SecurityController extends AbstractController
             'eventName' => $config->get(EventConfigStore::KEY_NAME),
             'welcomeMessage' => $config->get(EventConfigStore::KEY_WELCOME_MESSAGE),
             'timeline' => [
-                'Buildup starts' => $config->getDate(EventConfigStore::KEY_BUILDUP_START),
-                'Event starts' => $config->getDate(EventConfigStore::KEY_EVENT_START),
-                'Event ends' => $config->getDate(EventConfigStore::KEY_EVENT_END),
-                'Teardown ends' => $config->getDate(EventConfigStore::KEY_TEARDOWN_END),
+                'login.timeline.buildup_start' => $config->getDate(EventConfigStore::KEY_BUILDUP_START),
+                'login.timeline.event_start' => $config->getDate(EventConfigStore::KEY_EVENT_START),
+                'login.timeline.event_end' => $config->getDate(EventConfigStore::KEY_EVENT_END),
+                'login.timeline.teardown_end' => $config->getDate(EventConfigStore::KEY_TEARDOWN_END),
             ],
         ]);
     }
@@ -46,7 +46,7 @@ final class SecurityController extends AbstractController
      * were on in `?return=`. Symfony cannot have saved it itself: it never records a target path for an
      * XHR, and the request that failed was a poll, not the page.
      *
-     * Only a path on this site is accepted — an absolute URL, a protocol-relative `//host` or a
+     * Only a path on this site is accepted - an absolute URL, a protocol-relative `//host` or a
      * backslash (which some browsers normalise to `/`) would turn the login page into an open redirect.
      */
     private function rememberReturnPath(Request $request): void

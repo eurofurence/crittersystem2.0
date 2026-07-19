@@ -2,11 +2,11 @@
 {% import 'components/data/_macros.twig' as d %}
 {% import 'components/forms/_macros.twig' as f %}
 
-{% block title %}{{ heading }}{% endblock %}
+{% block title %}{{ heading|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header(heading, {
-    actions: [{label: '← Back', href: path('app_manage_group_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.action.back_arrow'|trans, href: path('app_manage_group_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
@@ -17,12 +17,12 @@
 
     {% set cats = {} %}
     {% for child in form.privileges %}
-      {% set cat = permissionMeta[child.vars.value].category|default('Other') %}
+      {% set cat = permissionMeta[child.vars.value].category|default('manage.group.category.other'|trans) %}
       {% set cats = cats|merge({ (cat): (cats[cat]|default([]))|merge([child]) }) %}
     {% endfor %}
 
     <div class="mt-3">
-      <div class="form-label">Permissions</div>
+      <div class="form-label">{{ 'manage.label.permissions'|trans }}</div>
       <div class="row g-3">
         {% for cat, children in cats %}
           <div class="col-12 col-lg-6">
@@ -34,7 +34,7 @@
                     <span class="form-check-label">
                       <code>{{ child.vars.label }}</code>
                       {% if permissionMeta[name].twoFactor %}
-                        {{ d.badge('2FA', 'text-bg-purple', {class: 'ms-1', attrs: {title: 'Requires step-up authentication'}}) }}
+                        {{ d.badge('manage.group.badge.two_factor'|trans, 'text-bg-purple', {class: 'ms-1', attrs: {title: 'manage.group.badge.two_factor_title'|trans}}) }}
                       {% endif %}
                       <span class="d-block text-muted small">{{ permissionMeta[name].description }}</span>
                     </span>
@@ -48,8 +48,8 @@
     </div>
 
     <div class="mt-3">
-      <button class="btn btn-primary">Save</button>
-      <a class="btn btn-link" href="{{ path('app_manage_group_index') }}">Cancel</a>
+      <button class="btn btn-primary">{{ 'common.action.save'|trans }}</button>
+      <a class="btn btn-link" href="{{ path('app_manage_group_index') }}">{{ 'common.action.cancel'|trans }}</a>
     </div>
   {{ form_end(form) }}
 {% endblock %}

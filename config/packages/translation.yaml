@@ -1,5 +1,10 @@
 framework:
     default_locale: en
+    enabled_locales: ['en', 'de']
     translator:
         default_path: '%kernel.project_dir%/translations'
+        # A partial or empty German catalog resolves missing keys to their English text,
+        # never to the raw translation key.
+        fallbacks:
+            - en
         providers:

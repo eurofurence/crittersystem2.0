@@ -41,7 +41,7 @@ final class ThemeResolver
         // The remaining lookups touch the database (current user, event config).
         // This global runs on *every* template render, including the maintenance
         // and install pages that are shown precisely when the database may be
-        // unreachable or unmigrated — so a failure here must degrade to the
+        // unreachable or unmigrated - so a failure here must degrade to the
         // fallback theme rather than turning every page into a 500.
         try {
             $user = $this->security->getUser();

@@ -13,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * Unlike a department position, these grants are unscoped: holding the configured global-admin role
  * ID makes the user a global admin everywhere, and the sub-admin role ID a sub admin. Holding both
- * resolves to global admin — the higher role wins.
+ * resolves to global admin - the higher role wins.
  *
  * Each of the two groups is only managed when its role ID is configured. That gate matters: with a
  * role ID set, the group is owned by the identity provider and reconciled on every sign-in (added

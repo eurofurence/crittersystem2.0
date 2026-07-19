@@ -25,29 +25,29 @@ final class DepartmentType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('name', TextType::class, ['label' => 'Name'])
+            ->add('name', TextType::class, ['label' => 'common.label.name'])
             ->add('slug', TextType::class, [
-                'label' => 'Slug',
+                'label' => 'manage.label.slug',
                 'required' => false,
-                'help' => 'Leave blank to generate from the name.',
+                'help' => 'manage.department.field.slug.help',
             ])
             ->add('description', TextareaType::class, [
-                'label' => 'Description',
+                'label' => 'common.label.description',
                 'required' => false,
                 'attr' => ['rows' => 3],
             ])
             ->add('staffOnly', CheckboxType::class, [
-                'label' => 'Staff only',
+                'label' => 'common.state.staff_only',
                 'required' => false,
             ])
             ->add('organizational', CheckboxType::class, [
-                'label' => 'Organizational (cannot own shifts)',
+                'label' => 'manage.department.field.organizational.label',
                 'required' => false,
                 'disabled' => (bool) $options['lock_organizational'],
-                'help' => 'Can only be changed while the department has no shifts.',
+                'help' => 'manage.department.field.organizational.help',
             ])
             ->add('locations', EntityType::class, [
-                'label' => 'Locations',
+                'label' => 'manage.label.locations',
                 'class' => Location::class,
                 'choice_label' => 'name',
                 'multiple' => true,
@@ -57,7 +57,7 @@ final class DepartmentType extends AbstractType
                 'attr' => ['size' => 6],
             ])
             ->add('volunteerTypes', EntityType::class, [
-                'label' => 'Volunteer types',
+                'label' => 'manage.label.volunteer_types',
                 'class' => VolunteerType::class,
                 'choice_label' => 'name',
                 'multiple' => true,

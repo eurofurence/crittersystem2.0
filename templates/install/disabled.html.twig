@@ -1,7 +1,7 @@
 {% extends 'install/_layout.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Installer disabled · VMS{% endblock %}
+{% block title %}{{ 'install.disabled.title'|trans }}{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
@@ -15,18 +15,17 @@
                     </svg>
                 </span>
             </div>
-            <h1 class="mt-3">The web installer is disabled</h1>
+            <h1 class="mt-3">{{ 'install.disabled.heading'|trans }}</h1>
             <p class="text-secondary">
-                This deployment has no <code>INSTALL_PASSWORD</code> set, so the browser-based wizard is turned off.
-                A migration or first-time setup is still required.
+                {{ 'install.disabled.intro'|trans({'%code%': '<code>INSTALL_PASSWORD</code>'})|raw }}
             </p>
             <p class="text-secondary">
-                Complete the setup from the console instead:
+                {{ 'install.disabled.console_instead'|trans }}
             </p>
             <pre class="text-start"><code>php bin/console app:migrate          # apply pending migrations
 php bin/console app:install          # seed roles and the first admin</code></pre>
             <p class="text-secondary">
-                Or set <code>INSTALL_PASSWORD</code> in the environment and reload this page to use the wizard.
+                {{ 'install.disabled.or_set_env'|trans({'%code%': '<code>INSTALL_PASSWORD</code>'})|raw }}
             </p>
     {{ d.card_end({bodyClass: 'card-body text-center py-4 p-sm-5'}) }}
 {% endblock %}

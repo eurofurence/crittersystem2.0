@@ -67,7 +67,10 @@ export default class extends Controller {
         this.abortController?.abort();
         this.abortController = new AbortController();
         try {
-            const url = `${this.urlValue}?q=${encodeURIComponent(q)}`;
+            // The base URL may already carry a query string (e.g. a department scope), so pick the
+            // right separator rather than always appending "?q=".
+            const separator = this.urlValue.includes('?') ? '&' : '?';
+            const url = `${this.urlValue}${separator}q=${encodeURIComponent(q)}`;
             const response = await backgroundFetch(url, { signal: this.abortController.signal });
             if (response === null || !response.ok) {
                 return;

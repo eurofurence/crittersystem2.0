@@ -6,30 +6,30 @@
 {% block body %}
   {{ d.page_header(news.title, {
     subtitle: news.createdAt|app_datetime ~ (news.author ? ' · ' ~ news.author.name : ''),
-    actions: [{label: '← All news', href: path('app_news_index'), class: 'btn btn-outline-secondary'}]
+    actions: [{label: 'news.action.all'|trans, href: path('app_news_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ d.card_start(null, {class: 'mb-3 ' ~ (news.highlighted ? 'border-warning' : '')}) }}
-      {% if news.staffOnly %}{{ d.badge('Staff only', 'text-bg-secondary') }}{% endif %}
+      {% if news.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'text-bg-secondary') }}{% endif %}
       <p class="mb-0 mt-2">{{ news.fullText|nl2br }}</p>
   {{ d.card_end() }}
 
-  <h2 class="h5">Comments ({{ news.comments|length }})</h2>
+  <h2 class="h5">{{ 'news.comments.heading'|trans({'%count%': news.comments|length}) }}</h2>
   {% for comment in news.comments %}
     {{ d.card_start(null, {class: 'mb-2', bodyClass: 'card-body py-2'}) }}
-      <div class="small text-muted">{{ comment.author ? comment.author.name : 'Unknown' }} · {{ comment.createdAt|app_datetime }}</div>
+      <div class="small text-muted">{{ comment.author ? comment.author.name : 'news.comment.unknown_author'|trans }} · {{ comment.createdAt|app_datetime }}</div>
       <div>{{ comment.text|nl2br }}</div>
     {{ d.card_end({bodyClass: 'card-body py-2'}) }}
   {% else %}
-    {{ d.empty_inline('No comments yet.', {class: 'text-muted'}) }}
+    {{ d.empty_inline('news.comment.empty'|trans, {class: 'text-muted'}) }}
   {% endfor %}
 
   <form method="post" action="{{ path('app_news_comment', {id: news.uuid}) }}" class="mt-3">
     <input type="hidden" name="_token" value="{{ csrf_token('comment' ~ news.id) }}">
     <div class="mb-2">
-      <label class="form-label" for="comment-text">Add a comment</label>
+      <label class="form-label" for="comment-text">{{ 'news.comment.add_label'|trans }}</label>
       <textarea id="comment-text" name="text" class="form-control" rows="2" required></textarea>
     </div>
-    <button class="btn btn-primary btn-sm">Post comment</button>
+    <button class="btn btn-primary btn-sm">{{ 'news.comment.post'|trans }}</button>
   </form>
 {% endblock %}

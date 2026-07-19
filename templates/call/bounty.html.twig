@@ -1,8 +1,8 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Bounty Board{% endblock %}
+{% block title %}{{ 'ui.nav.bounty_board'|trans }}{% endblock %}
 {% block body %}
-  {{ d.page_header('Bounty Board', {subtitle: 'Shifts calling for help you can jump on right now.'}) }}
+  {{ d.page_header('ui.nav.bounty_board'|trans, {subtitle: 'call.page.subtitle'|trans}) }}
   <div data-controller="live-refresh"
        data-live-refresh-url-value="{{ path('app_bounty_frame') }}"
        data-live-refresh-interval-value="15000">

@@ -16,6 +16,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Administration of permission groups: which permissions and coarse role each
@@ -65,7 +66,7 @@ final class GroupController extends AbstractController
                 'resourceId' => $group->getId(),
                 'details' => ['name' => $group->getName(), 'role' => $group->getRole(), 'permissions' => $this->permissionNames($group)],
             ]);
-            $this->addFlash('success', \sprintf('Group "%s" created.', $group->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.group.flash.created', ['%name%' => $group->getName()]));
 
             return $this->redirectToRoute('app_manage_group_index');
         }
@@ -73,7 +74,7 @@ final class GroupController extends AbstractController
         return $this->render('manage/group/form.html.twig', [
             'form' => $form,
             'group' => $group,
-            'heading' => 'New group',
+            'heading' => 'manage.group.form.heading_new',
             'permissionMeta' => $this->permissionMeta(),
         ]);
     }
@@ -92,7 +93,7 @@ final class GroupController extends AbstractController
                 'resourceId' => $group->getId(),
                 'details' => ['name' => $group->getName(), 'role' => $group->getRole(), 'permissions' => $this->permissionNames($group)],
             ]);
-            $this->addFlash('success', \sprintf('Group "%s" updated.', $group->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.group.flash.updated', ['%name%' => $group->getName()]));
 
             return $this->redirectToRoute('app_manage_group_index');
         }
@@ -100,7 +101,7 @@ final class GroupController extends AbstractController
         return $this->render('manage/group/form.html.twig', [
             'form' => $form,
             'group' => $group,
-            'heading' => 'Edit group',
+            'heading' => 'manage.group.form.heading_edit',
             'permissionMeta' => $this->permissionMeta(),
         ]);
     }
@@ -114,13 +115,13 @@ final class GroupController extends AbstractController
         }
 
         if (\array_key_exists($group->getSlug(), PrivilegeCatalog::GROUPS)) {
-            $this->addFlash('danger', 'Core groups cannot be deleted.');
+            $this->addFlash('danger', new TranslatableMessage('manage.group.flash.core_delete_denied'));
 
             return $this->redirectToRoute('app_manage_group_index');
         }
 
         if (!$group->getAssignments()->isEmpty()) {
-            $this->addFlash('danger', 'This group still has members. Remove them before deleting it.');
+            $this->addFlash('danger', new TranslatableMessage('manage.group.flash.has_members'));
 
             return $this->redirectToRoute('app_manage_group_index');
         }
@@ -134,7 +135,7 @@ final class GroupController extends AbstractController
             'resourceId' => $id,
             'details' => ['name' => $name],
         ]);
-        $this->addFlash('success', 'Group deleted.');
+        $this->addFlash('success', new TranslatableMessage('manage.group.flash.deleted'));
 
         return $this->redirectToRoute('app_manage_group_index');
     }

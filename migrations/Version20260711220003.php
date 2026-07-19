@@ -11,7 +11,7 @@ final class Version20260711220003 extends AbstractMigration
 {
     public function getDescription(): string
     {
-        return 'No-show bans — ban reason/automatic/user link, no-show baseline';
+        return 'No-show bans - ban reason/automatic/user link, no-show baseline';
     }
 
     public function up(Schema $schema): void

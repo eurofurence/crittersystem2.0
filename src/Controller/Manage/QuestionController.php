@@ -13,6 +13,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/questions')]
 #[IsGranted('question:answer')]
@@ -39,7 +40,7 @@ final class QuestionController extends AbstractController
         $me = $this->getUser();
 
         if ($question->isLockedByOther($me)) {
-            $this->addFlash('warning', \sprintf('This question is being answered by %s.', $question->getLockedBy()?->getName()));
+            $this->addFlash('warning', new TranslatableMessage('manage.question.flash.locked', ['%name%' => $question->getLockedBy()?->getName()]));
 
             return $this->redirectToRoute('app_manage_questions_index');
         }
@@ -52,7 +53,7 @@ final class QuestionController extends AbstractController
                     ->setLockedBy(null)
                     ->setLockedAt(null);
                 $this->em->flush();
-                $this->addFlash('success', 'Answer saved.');
+                $this->addFlash('success', new TranslatableMessage('manage.question.flash.answer_saved'));
             }
 
             return $this->redirectToRoute('app_manage_questions_index');

@@ -1,12 +1,12 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Shift Wizard — {{ department.name }}{% endblock %}
+{% block title %}{{ 'planner.wizard.title_department'|trans({'%name%': department.name}) }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Shift Wizard', {
-    subtitle: 'Generate repeated draft shifts across several days.',
-    actions: [{label: '← Planner', href: path('app_manage_shifts_planner', {department: department.uuid}), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('planner.wizard.title'|trans, {
+    subtitle: 'planner.wizard.subtitle'|trans,
+    actions: [{label: 'planner.action.planner'|trans, href: path('app_manage_shifts_planner', {department: department.uuid}), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ d.card_start(null, {
@@ -18,7 +18,7 @@
       <input type="hidden" name="department" value="{{ department.uuid }}">
 
       <div class="mb-3">
-        <label class="form-label">Days</label>
+        <label class="form-label">{{ 'planner.wizard.field.days'|trans }}</label>
         <div class="row g-2">
           {% for day in days %}
             <div class="col-6 col-md-3">
@@ -33,26 +33,26 @@
           {% endfor %}
         </div>
         <div class="mt-2">
-          <label class="form-label" for="wiz-custom">Custom dates (comma-separated, YYYY-MM-DD)</label>
+          <label class="form-label" for="wiz-custom">{{ 'planner.wizard.field.custom_dates'|trans }}</label>
           <input type="text" class="form-control" id="wiz-custom" name="custom_dates" placeholder="2026-06-02, 2026-06-03">
         </div>
       </div>
 
       <div class="row g-3">
         <div class="col-6 col-md-3">
-          <label class="form-label" for="wiz-start">Daily start</label>
+          <label class="form-label" for="wiz-start">{{ 'planner.wizard.field.daily_start'|trans }}</label>
           <input type="time" class="form-control" id="wiz-start" name="start_time" value="10:00" required>
         </div>
         <div class="col-6 col-md-3">
-          <label class="form-label" for="wiz-end">Daily end</label>
+          <label class="form-label" for="wiz-end">{{ 'planner.wizard.field.daily_end'|trans }}</label>
           <input type="time" class="form-control" id="wiz-end" name="end_time" value="18:00" required>
         </div>
         <div class="col-6 col-md-3">
-          <label class="form-label" for="wiz-slot">Slot duration (min)</label>
+          <label class="form-label" for="wiz-slot">{{ 'planner.wizard.field.slot_minutes'|trans }}</label>
           <input type="number" class="form-control" id="wiz-slot" name="slot_minutes" min="30" step="30" value="120" required>
         </div>
         <div class="col-6 col-md-3">
-          <label class="form-label" for="wiz-audience">Audience</label>
+          <label class="form-label" for="wiz-audience">{{ 'planner.field.audience'|trans }}</label>
           <select class="form-select" id="wiz-audience" name="audience">
             {% for a in audiences %}
               <option value="{{ a.value }}" {{ a.value == 'department_staff' ? 'selected' : '' }}>{{ a.label }}</option>
@@ -60,18 +60,18 @@
           </select>
         </div>
         <div class="col-6 col-md-4">
-          <label class="form-label" for="wiz-task">Shift Task</label>
+          <label class="form-label" for="wiz-task">{{ 'planner.field.shift_task'|trans }}</label>
           <select class="form-select" id="wiz-task" name="task">
-            <option value="0">— None —</option>
+            <option value="0">{{ 'planner.option.none'|trans }}</option>
             {% for task in shiftTasks %}
               <option value="{{ task.id }}">{{ task.displayName }}</option>
             {% endfor %}
           </select>
         </div>
         <div class="col-6 col-md-4">
-          <label class="form-label" for="wiz-location">Location</label>
+          <label class="form-label" for="wiz-location">{{ 'common.label.location'|trans }}</label>
           <select class="form-select" id="wiz-location" name="location">
-            <option value="0">— None —</option>
+            <option value="0">{{ 'planner.option.none'|trans }}</option>
             {% for loc in locations %}
               <option value="{{ loc.id }}">{{ loc.name }}</option>
             {% endfor %}
@@ -80,7 +80,7 @@
       </div>
 
       <div class="mt-3">
-        <label class="form-label">Required volunteer types &amp; quantities (per slot)</label>
+        <label class="form-label">{{ 'planner.wizard.field.needed'|trans }}</label>
         <div class="row g-2">
           {% for vt in volunteerTypes %}
             <div class="col-6 col-md-3 d-flex align-items-center gap-2">
@@ -89,13 +89,13 @@
                      name="needed[{{ vt.id }}]" placeholder="0">
             </div>
           {% else %}
-            {{ d.empty_inline('No volunteer types configured.', {tag: 'div', class: 'col-12 text-secondary small'}) }}
+            {{ d.empty_inline('planner.empty.no_volunteer_types'|trans, {tag: 'div', class: 'col-12 text-secondary small'}) }}
           {% endfor %}
         </div>
       </div>
     {% set wizardFooter %}
-      <a href="{{ path('app_manage_shifts_planner', {department: department.uuid}) }}" class="btn btn-outline-secondary">Cancel</a>
-      <button type="submit" class="btn btn-primary">Generate draft shifts</button>
+      <a href="{{ path('app_manage_shifts_planner', {department: department.uuid}) }}" class="btn btn-outline-secondary">{{ 'common.action.cancel'|trans }}</a>
+      <button type="submit" class="btn btn-primary">{{ 'planner.wizard.action.generate'|trans }}</button>
     {% endset %}
   {{ d.card_end({tag: 'form', footer: wizardFooter, footerClass: 'card-footer d-flex justify-content-end gap-2'}) }}
 {% endblock %}

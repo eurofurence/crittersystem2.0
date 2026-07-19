@@ -24,7 +24,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  *
  * When the matched controller declares one of these permissions via #[IsGranted]
  * and the current user actually holds it, they must have 2FA enabled and a fresh
- * step-up before the controller runs — otherwise they are redirected to enrol or
+ * step-up before the controller runs - otherwise they are redirected to enrol or
  * re-confirm. Users who do not hold the permission are left to the normal
  * #[IsGranted] denial (403).
  *
@@ -82,7 +82,7 @@ final class TwoFactorStepUpSubscriber implements EventSubscriberInterface
                 return;
             }
 
-            return; // holds the permission and step-up is fresh — allow through
+            return; // holds the permission and step-up is fresh - allow through
         }
     }
 
@@ -106,8 +106,8 @@ final class TwoFactorStepUpSubscriber implements EventSubscriberInterface
         } catch (\ReflectionException $e) {
             /*
              * Returning [] means "this controller needs no step-up", so a reflection failure here fails
-             * *open* on a security gate. It should be impossible — Symfony has already resolved the
-             * controller — but if it ever happens it must not happen quietly.
+             * *open* on a security gate. It should be impossible - Symfony has already resolved the
+             * controller - but if it ever happens it must not happen quietly.
              */
             $this->logger->error('Could not read step-up attributes; treating the controller as unprotected: {reason}', [
                 'reason' => $e->getMessage(),

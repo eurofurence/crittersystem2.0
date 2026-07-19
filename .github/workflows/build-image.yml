@@ -1,7 +1,7 @@
 name: Build production image
 
 # Builds the `prod` target from the Dockerfile and pushes it to the GitHub
-# Container Registry (ghcr.io). Authentication uses the built-in GITHUB_TOKEN —
+# Container Registry (ghcr.io). Authentication uses the built-in GITHUB_TOKEN -
 # no secrets to configure.
 on:
   push:

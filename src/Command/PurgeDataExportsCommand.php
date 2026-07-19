@@ -19,11 +19,11 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Deletes GDPR data-export archives once their download window has closed.
  *
  * The archive is a complete copy of one user's personal data. The record declares a 24-hour TTL and
- * stops offering the download, but that alone leaves the file in storage indefinitely — data
+ * stops offering the download, but that alone leaves the file in storage indefinitely - data
  * minimisation requires it to actually be deleted. The export record itself is kept (the request and
  * its expiry are auditable); only the archive goes.
  *
- * Must run on a schedule — cron, or the CronJob in deploy/k8s/app.yaml.
+ * Must run on a schedule - cron, or the CronJob in deploy/k8s/app.yaml.
  */
 #[AsCommand(
     name: 'app:gdpr:purge-exports',

@@ -1,41 +1,41 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Volunteer Types{% endblock %}
+{% block title %}{{ 'membership.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Volunteer Types', {
-    actions: [{label: 'Card view', href: path('app_membership_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('membership.page.title'|trans, {
+    actions: [{label: 'membership.table.card_view'|trans, href: path('app_membership_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if rows is empty %}
-    {{ d.empty_state('No volunteer types', {message: 'There are no volunteer types to join yet.'}) }}
+    {{ d.empty_state('membership.empty.title'|trans, {message: 'membership.empty.message'|trans}) }}
   {% else %}
     {{ d.table_start() }}
-      <thead><tr><th>Type</th><th>Visibility</th><th>Status</th><th class="text-end">Action</th></tr></thead>
+      <thead><tr><th>{{ 'common.label.type'|trans }}</th><th>{{ 'membership.table.visibility'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th class="text-end">{{ 'membership.table.action'|trans }}</th></tr></thead>
       <tbody>
         {% for row in rows %}
           <tr>
             <td><a href="{{ path('app_membership_show', {id: row.type.uuid}) }}">{{ row.type.name }}</a>
-              {% if row.type.requiresIntroduction %}{{ d.badge('Requires introduction', 'text-bg-warning') }}{% endif %}
+              {% if row.type.requiresIntroduction %}{{ d.badge('membership.badge_requires_intro'|trans, 'text-bg-warning') }}{% endif %}
             </td>
-            <td>{{ row.type.staffOnly ? 'Staff' : 'Public' }}{% if row.type.departmentOnly %} · Department{% endif %}</td>
+            <td>{{ row.type.staffOnly ? 'membership.badge_staff'|trans : 'common.state.public'|trans }}{% if row.type.departmentOnly %} · {{ 'common.label.department'|trans }}{% endif %}</td>
             <td>
-              {% if row.membership is null %}<span class="text-muted">Not a member</span>
-              {% elseif row.membership.confirmed %}{{ d.badge('Member', 'text-bg-success') }}
-              {% else %}{{ d.badge('Pending', 'text-bg-warning') }}{% endif %}
+              {% if row.membership is null %}<span class="text-muted">{{ 'membership.table.not_member'|trans }}</span>
+              {% elseif row.membership.confirmed %}{{ d.badge('membership.badge_member'|trans, 'text-bg-success') }}
+              {% else %}{{ d.badge('common.state.pending'|trans, 'text-bg-warning') }}{% endif %}
             </td>
             <td class="text-end">
               {% if row.membership is null %}
                 <form method="post" action="{{ path('app_membership_join', {id: row.type.uuid}) }}" class="d-inline">
                   <input type="hidden" name="_token" value="{{ csrf_token('join' ~ row.type.id) }}">
-                  <button class="btn btn-sm btn-primary">{{ row.type.requiresIntroduction ? 'Apply' : 'Join' }}</button>
+                  <button class="btn btn-sm btn-primary">{{ row.type.requiresIntroduction ? 'membership.action_apply'|trans : 'membership.action_join'|trans }}</button>
                 </form>
               {% else %}
                 <form method="post" action="{{ path('app_membership_leave', {id: row.type.uuid}) }}" class="d-inline"
-                      data-controller="confirm" data-confirm-message-value="Leave this volunteer type?">
+                      data-controller="confirm" data-confirm-message-value="{{ 'membership.confirm_leave'|trans }}">
                   <input type="hidden" name="_token" value="{{ csrf_token('leave' ~ row.type.id) }}">
-                  <button class="btn btn-sm btn-outline-danger">Leave</button>
+                  <button class="btn btn-sm btn-outline-danger">{{ 'membership.action_leave'|trans }}</button>
                 </form>
               {% endif %}
             </td>

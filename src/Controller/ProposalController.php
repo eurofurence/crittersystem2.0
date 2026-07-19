@@ -14,11 +14,12 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Automatic assignment proposals: generate a draft proposal for a
  * department, review it, then apply (publish) or discard. Generation never
- * publishes — applying is the manager's explicit action.
+ * publishes - applying is the manager's explicit action.
  */
 #[Route('/manage-shifts/proposals')]
 #[IsGranted('assignment:manage')]
@@ -44,7 +45,7 @@ final class ProposalController extends AbstractController
 
         $actor = $this->getUser();
         $proposal = $this->planner->propose($department, $actor instanceof User ? $actor : null);
-        $this->addFlash('info', \sprintf('Generated %d suggestion(s) — review before applying.', $proposal->getAssignments()->count()));
+        $this->addFlash('info', new TranslatableMessage('assignment.proposal.flash.generated', ['%count%' => $proposal->getAssignments()->count()]));
 
         return $this->redirectToRoute('app_proposal_review', ['id' => $proposal->getUuid()]);
     }
@@ -64,7 +65,7 @@ final class ProposalController extends AbstractController
         if ($this->isCsrfTokenValid('proposal_apply'.$proposal->getId(), (string) $request->request->get('_token'))) {
             $actor = $this->getUser();
             $applied = $this->planner->apply($proposal, $actor instanceof User ? $actor : null);
-            $this->addFlash('success', \sprintf('%d assignment(s) applied.', $applied));
+            $this->addFlash('success', new TranslatableMessage('assignment.proposal.flash.applied', ['%count%' => $applied]));
         }
 
         return $this->redirectToRoute('app_manage_shifts_planner', ['department' => $proposal->getDepartment()->getUuid()]);
@@ -76,7 +77,7 @@ final class ProposalController extends AbstractController
         $this->denyAccessUnlessGranted('assignment:manage', $proposal->getDepartment());
         if ($this->isCsrfTokenValid('proposal_discard'.$proposal->getId(), (string) $request->request->get('_token'))) {
             $this->planner->discard($proposal);
-            $this->addFlash('success', 'Proposal discarded.');
+            $this->addFlash('success', new TranslatableMessage('assignment.proposal.flash.discarded'));
         }
 
         return $this->redirectToRoute('app_manage_shifts_planner', ['department' => $proposal->getDepartment()->getUuid()]);

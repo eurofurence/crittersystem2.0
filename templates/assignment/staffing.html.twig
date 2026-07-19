@@ -2,17 +2,17 @@
 {% import 'components/data/_macros.twig' as d %}
 {% import 'components/forms/_macros.twig' as f %}
 
-{% block title %}Staffing — {{ shift.title }}{% endblock %}
+{% block title %}{{ 'assignment.staffing.page.title'|trans({'%title%': shift.title}) }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Staffing: ' ~ shift.title, {
-    subtitle: shift.startsAt|app_datetime ~ ' – ' ~ shift.endsAt|app_time,
-    actions: [{label: '← Planner', href: path('app_manage_shifts_planner', {department: shift.department.uuid}), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('assignment.staffing.header'|trans({'%title%': shift.title}), {
+    subtitle: 'assignment.staffing.subtitle'|trans({'%start%': shift.startsAt|app_datetime, '%end%': shift.endsAt|app_time}),
+    actions: [{label: 'assignment.action.back_to_planner'|trans, href: path('app_manage_shifts_planner', {department: shift.department.uuid}), class: 'btn btn-outline-secondary'}]
   }) }}
 
   <div class="row g-3">
     <div class="col-12 col-lg-7">
-      {{ d.card_start('Assigned (' ~ rows|length ~ ')', {class: '', bodyClass: ''}) }}
+      {{ d.card_start('assignment.staffing.assigned_count'|trans({'%count%': rows|length}), {class: '', bodyClass: ''}) }}
         <div class="list-group list-group-flush">
           {% for row in rows %}
             <div class="list-group-item d-flex align-items-center justify-content-between">
@@ -20,56 +20,56 @@
                 <span class="fw-bold">{{ row.entry.user.name }}</span>
                 <span class="text-secondary small">· {{ row.entry.volunteerType.name }}</span>
                 {% if row.entry.overridden %}
-                  {{ d.badge('Override', 'bg-red-lt') }}
+                  {{ d.badge('assignment.staffing.override'|trans, 'bg-red-lt') }}
                   <span class="text-secondary small">({{ row.entry.overrideReason }})</span>
                 {% endif %}
-                {% if row.overThreshold %}{{ d.badge('Over hours', 'bg-orange-lt') }}{% endif %}
+                {% if row.overThreshold %}{{ d.badge('assignment.staffing.over_hours'|trans, 'bg-orange-lt') }}{% endif %}
               </div>
               <form method="post" action="{{ path('app_shift_staffing_remove', {id: shift.uuid, entryId: row.entry.uuid}) }}"
-                    data-controller="confirm" data-confirm-message-value="Remove this assignment?">
+                    data-controller="confirm" data-confirm-message-value="{{ 'assignment.staffing.confirm_remove'|trans }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('staffing_remove' ~ row.entry.uuid) }}">
-                <button class="btn btn-sm btn-outline-danger">Remove</button>
+                <button class="btn btn-sm btn-outline-danger">{{ 'common.action.remove'|trans }}</button>
               </form>
             </div>
           {% else %}
-            {{ d.empty_inline('No one is assigned yet.', {tag: 'div', class: 'list-group-item text-secondary'}) }}
+            {{ d.empty_inline('assignment.staffing.empty'|trans, {tag: 'div', class: 'list-group-item text-secondary'}) }}
           {% endfor %}
         </div>
       {{ d.card_end({bodyClass: ''}) }}
     </div>
 
     <div class="col-12 col-lg-5">
-      {{ d.card_start('Add users', {class: ''}) }}
+      {{ d.card_start('common.user_select.label'|trans, {class: ''}) }}
           <form method="post" action="{{ path('app_shift_staffing_assign', {id: shift.uuid}) }}">
             <input type="hidden" name="_token" value="{{ csrf_token('staffing_assign' ~ shift.id) }}">
             {{ f.user_select('users', {
               url: path('app_shift_staffing_search', {id: shift.uuid}),
               label: false,
-              placeholder: 'Type a username…',
-              help: 'Search by username. Picked users are added when you press Assign; click a name to remove it first.',
+              placeholder: 'common.user_select.placeholder'|trans,
+              help: 'assignment.staffing.assign_help'|trans,
             }) }}
             {% if is_granted('assignment:override', shift.department) %}
               <label class="form-check mb-2">
                 <input type="checkbox" class="form-check-input" name="override" value="1">
-                <span class="form-check-label">Override availability / hour warnings</span>
+                <span class="form-check-label">{{ 'assignment.staffing.override_warnings'|trans }}</span>
               </label>
             {% endif %}
-            <button class="btn btn-primary w-100">Assign</button>
+            <button class="btn btn-primary w-100">{{ 'assignment.action.assign'|trans }}</button>
           </form>
       {{ d.card_end() }}
 
       {% if is_granted('call:trigger') %}
-        {{ d.card_start('Call for help', {class: 'mt-3'}) }}
+        {{ d.card_start('assignment.staffing.call.title'|trans, {class: 'mt-3'}) }}
             <form method="post" action="{{ path('app_call_trigger') }}" class="d-flex gap-2 align-items-end">
               <input type="hidden" name="_token" value="{{ csrf_token('call_trigger') }}">
               <input type="hidden" name="shift" value="{{ shift.id }}">
               <div>
-                <label class="form-label" for="call-slots">Slots</label>
+                <label class="form-label" for="call-slots">{{ 'assignment.staffing.call.slots'|trans }}</label>
                 <input type="number" id="call-slots" name="slots" value="1" min="1" class="form-control" style="max-width: 6rem;">
               </div>
-              <button class="btn btn-warning">Send call for help</button>
+              <button class="btn btn-warning">{{ 'assignment.staffing.call.send'|trans }}</button>
             </form>
-            <small class="text-secondary">Notifies eligible Free-to-help volunteers.</small>
+            <small class="text-secondary">{{ 'assignment.staffing.call.hint'|trans }}</small>
         {{ d.card_end() }}
       {% endif %}
     </div>

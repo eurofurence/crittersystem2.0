@@ -13,6 +13,7 @@ use App\Service\Invite\RequestLinkService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
@@ -78,7 +79,7 @@ final class RequestLinkController extends AbstractController
             try {
                 $expiresAt = new \DateTimeImmutable($raw, $this->display->timezone());
             } catch (\Exception) {
-                $this->addFlash('danger', 'Invalid deadline.');
+                $this->addFlash('danger', new TranslatableMessage('request_link.flash.invalid_deadline'));
 
                 return $this->redirectToRoute('app_request_links', ['department' => $department->getUuid()]);
             }
@@ -86,7 +87,7 @@ final class RequestLinkController extends AbstractController
 
         $user = $this->getUser();
         $this->service->create($type, $department, $user instanceof User ? $user : null, $expiresAt);
-        $this->addFlash('success', 'Link created.');
+        $this->addFlash('success', new TranslatableMessage('request_link.flash.created'));
 
         return $this->redirectToRoute('app_request_links', ['department' => $department->getUuid()]);
     }
@@ -97,7 +98,7 @@ final class RequestLinkController extends AbstractController
         $this->denyAccessUnlessGranted('shift:manage', $link->getDepartment());
         if ($this->isCsrfTokenValid('request_link_revoke'.$link->getId(), (string) $request->request->get('_token'))) {
             $this->service->revoke($link);
-            $this->addFlash('success', 'Link revoked.');
+            $this->addFlash('success', new TranslatableMessage('request_link.flash.revoked'));
         }
 
         return $this->redirectToRoute('app_request_links', ['department' => $link->getDepartment()->getUuid()]);

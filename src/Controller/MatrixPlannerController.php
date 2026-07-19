@@ -33,7 +33,6 @@ final class MatrixPlannerController extends AbstractController
         private readonly DisplaySettings $display,
         private readonly EventConfigStore $config,
         private readonly PdfRenderer $pdf,
-        private readonly \App\Service\DepartmentService $members,
     ) {
     }
 
@@ -63,44 +62,7 @@ final class MatrixPlannerController extends AbstractController
             'matrix' => $this->presenter->buildMatrix($department, $shifts, $tz),
             'shifts' => $shifts,
             'timezone' => $tz->getName(),
-            'candidates' => $this->candidates($department, $shifts),
         ]);
-    }
-
-    /**
-     * Volunteers who can be put into a position: the department's members (the source the staffing
-     * screen uses), plus anyone already signed up to a shift in view — they are committed to this
-     * department's work, so a manager must be able to place them without leaving the grid.
-     *
-     * Assignment is additionally gated by `shift:assign` on the server.
-     *
-     * @param Shift[] $shifts
-     *
-     * @return list<\App\Entity\User>
-     */
-    private function candidates(Department $department, array $shifts): array
-    {
-        $members = $this->members->members($department);
-        $candidates = array_merge(
-            $members['staff'] ?? [],
-            $members['nonStaff'] ?? [],
-            $members['managers'] ?? [],
-            $members['shiftManagers'] ?? [],
-        );
-
-        foreach ($shifts as $shift) {
-            foreach ($shift->getEntries() as $entry) {
-                $candidates[] = $entry->getUser();
-            }
-        }
-
-        $unique = [];
-        foreach ($candidates as $user) {
-            $unique[$user->getId()] = $user;
-        }
-        usort($unique, static fn ($a, $b) => strcasecmp($a->getName(), $b->getName()));
-
-        return array_values($unique);
     }
 
     #[Route('.pdf', name: 'app_manage_shifts_matrix_pdf', methods: ['GET'])]

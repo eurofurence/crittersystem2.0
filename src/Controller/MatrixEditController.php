@@ -130,6 +130,42 @@ final class MatrixEditController extends AbstractController
         return new JsonResponse(['ok' => true]);
     }
 
+    /**
+     * Type-ahead source for the cell editor's volunteer picker: any user matching the query, not just
+     * the department's members - a manager staffing the grid routinely places someone from outside the
+     * department, and {@see PositionService::assignUser()} resolves their volunteer type on assign.
+     * Assignment itself stays gated by `shift:assign` on the department.
+     */
+    #[Route('/users', name: 'app_matrix_user_search', methods: ['GET'])]
+    #[IsGranted('shift:assign')]
+    public function searchUsers(Request $request, UserRepository $users): JsonResponse
+    {
+        $department = $this->departments->findOneByUuid((string) $request->query->get('department'));
+        if ($department === null) {
+            return new JsonResponse(['results' => []]);
+        }
+        $this->denyAccessUnlessGranted('shift:assign', $department);
+
+        $q = trim((string) $request->query->get('q', ''));
+        if ($q === '') {
+            return new JsonResponse(['results' => []]);
+        }
+
+        $results = [];
+        foreach ($users->searchByName($q) as $user) {
+            $results[] = [
+                'id' => $user->getId(),
+                'name' => $user->getName(),
+                'staff' => $user->isStaff(),
+                'avatar' => $user->getPersonalData()?->getAvatarPath() !== null
+                    ? $this->generateUrl('app_media_avatar', ['id' => $user->getUuid()])
+                    : null,
+            ];
+        }
+
+        return new JsonResponse(['results' => $results]);
+    }
+
     #[Route('/shift-position/{id}/assign', name: 'app_matrix_position_assign', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('shift:assign')]
     public function assign(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftPosition $shiftPosition, UserRepository $users): Response

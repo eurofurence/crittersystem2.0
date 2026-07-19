@@ -67,7 +67,7 @@ final class MigrateCommand extends Command
             return Command::FAILURE;
         }
 
-        // Already up to date? Nothing to do — this is the common steady-state
+        // Already up to date? Nothing to do - this is the common steady-state
         // call from a restarting replica.
         if ($this->inspector->pendingMigrationCount() === 0) {
             $io->success('Database schema is already up to date.');

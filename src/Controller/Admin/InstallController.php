@@ -16,14 +16,15 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Process\PhpExecutableFinder;
 use Symfony\Component\Process\Process;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * The guided installation / upgrade wizard at /admin/install.
  *
  * It is reachable without any logged-in user (it has to work before an admin
  * exists) and is instead protected by the INSTALL_PASSWORD environment variable
- * plus a session flag. When nothing needs doing — schema current and an admin
- * already exists — every entry redirects back to the site, so the wizard is
+ * plus a session flag. When nothing needs doing - schema current and an admin
+ * already exists - every entry redirects back to the site, so the wizard is
  * invisible in normal operation.
  *
  * Steps (each its own page, Tabler "wizard" layout):
@@ -91,14 +92,14 @@ final class InstallController extends AbstractController
         // A stale/invalid token is a session problem, not a wrong password; say so
         // rather than sending the operator to double-check a password that is correct.
         if (!$this->isCsrfTokenValid('install_authenticate', (string) $request->request->get('_token'))) {
-            $this->addFlash('install_error', 'Your setup session expired. Please try again.');
+            $this->addFlash('install_error', new TranslatableMessage('install.flash.session_expired'));
 
             return $this->redirectToRoute('app_install');
         }
 
         $submitted = (string) $request->request->get('password', '');
         if (!hash_equals($this->installPassword, $submitted)) {
-            $this->addFlash('install_error', 'Incorrect installation password.');
+            $this->addFlash('install_error', new TranslatableMessage('install.flash.incorrect_password'));
 
             return $this->redirectToRoute('app_install');
         }
@@ -145,7 +146,7 @@ final class InstallController extends AbstractController
         // The encryption key must exist before any secret can be stored; setup
         // cannot proceed without it.
         if (!$this->cipher->isConfigured()) {
-            $this->addFlash('install_error', 'Set APP_ENCRYPTION_KEY before continuing (php bin/console app:encryption:generate-key).');
+            $this->addFlash('install_error', new TranslatableMessage('install.flash.encryption_key_required'));
 
             return $this->redirectToRoute('app_install_overview');
         }
@@ -168,13 +169,13 @@ final class InstallController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('install_migrate', (string) $request->request->get('_token'))) {
-            $this->addFlash('install_error', 'Invalid request token, please try again.');
+            $this->addFlash('install_error', new TranslatableMessage('common.flash.invalid_token'));
 
             return $this->redirectToRoute('app_install_database');
         }
 
         if (!$this->inspector->isDatabaseReachable()) {
-            $this->addFlash('install_error', 'Cannot start: the database is not reachable.');
+            $this->addFlash('install_error', new TranslatableMessage('install.flash.db_unreachable'));
 
             return $this->redirectToRoute('app_install_database');
         }
@@ -221,7 +222,7 @@ final class InstallController extends AbstractController
             return $this->redirectToRoute('app_install_database');
         }
 
-        // Not a fresh install — an admin already exists; skip ahead.
+        // Not a fresh install - an admin already exists; skip ahead.
         if ($this->installer->userCount() > 0) {
             return $this->render('install/admin.html.twig', $this->view(4, ['alreadyExists' => true]));
         }
@@ -251,7 +252,7 @@ final class InstallController extends AbstractController
 
             if ($errors === []) {
                 $this->installer->createAdmin($username, $email, $password);
-                $this->addFlash('install_success', 'Administrator account created.');
+                $this->addFlash('install_success', new TranslatableMessage('install.flash.admin_created'));
 
                 return $this->redirectToRoute('app_install_config');
             }
@@ -282,12 +283,12 @@ final class InstallController extends AbstractController
 
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('install_config', (string) $request->request->get('_token'))) {
-                $this->addFlash('install_error', 'Invalid request token, please try again.');
+                $this->addFlash('install_error', new TranslatableMessage('common.flash.invalid_token'));
 
                 return $this->redirectToRoute('app_install_config');
             }
 
-            // Skipping is allowed — only persist when the user submitted "save".
+            // Skipping is allowed - only persist when the user submitted "save".
             if ($request->request->get('action') === 'save') {
                 $eventName = trim((string) $request->request->get('event_name'));
                 $timezone = trim((string) $request->request->get('timezone'));
@@ -310,7 +311,7 @@ final class InstallController extends AbstractController
                     $this->config->set(EventConfigStore::KEY_DATETIME_FORMAT, $dateFormat . ' ' . $timeFormat);
                 }
                 $this->config->flush();
-                $this->addFlash('install_success', 'Configuration saved.');
+                $this->addFlash('install_success', new TranslatableMessage('install.flash.config_saved'));
             }
 
             return $this->redirectToRoute('app_install_privacy');
@@ -336,12 +337,12 @@ final class InstallController extends AbstractController
 
         if ($request->isMethod('POST')) {
             if (!$this->isCsrfTokenValid('install_privacy', (string) $request->request->get('_token'))) {
-                $this->addFlash('install_error', 'Invalid request token, please try again.');
+                $this->addFlash('install_error', new TranslatableMessage('common.flash.invalid_token'));
 
                 return $this->redirectToRoute('app_install_privacy');
             }
 
-            // Skipping is allowed — only persist when the user submitted "save".
+            // Skipping is allowed - only persist when the user submitted "save".
             if ($request->request->get('action') === 'save') {
                 $this->installer->savePrivacyNotice(
                     trim((string) $request->request->get('event_name')),
@@ -349,7 +350,7 @@ final class InstallController extends AbstractController
                     trim((string) $request->request->get('contact_email')),
                     (int) $request->request->get('deletion_days'),
                 );
-                $this->addFlash('install_success', 'Privacy notice saved.');
+                $this->addFlash('install_success', new TranslatableMessage('install.flash.privacy_saved'));
             }
 
             return $this->redirectToRoute('app_install_finish');
@@ -383,7 +384,7 @@ final class InstallController extends AbstractController
         $this->state->resetStatus();
         $request->getSession()->remove(self::SESSION_AUTH);
 
-        $this->addFlash('success', 'Setup complete. You can now sign in.');
+        $this->addFlash('success', new TranslatableMessage('install.flash.complete'));
 
         return $this->redirectToRoute('app_login');
     }

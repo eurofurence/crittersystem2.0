@@ -18,16 +18,18 @@ final class GroupType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, [
-                'help' => 'Display name of the group.',
+                'label' => 'common.label.name',
+                'help' => 'manage.group.field.name.help',
             ])
             ->add('role', ChoiceType::class, [
+                'label' => 'common.label.role',
                 'required' => false,
-                'placeholder' => 'No elevated role (regular users)',
-                'help' => 'Coarse role this group grants for firewall access.',
+                'placeholder' => 'manage.group.field.role.placeholder',
+                'help' => 'manage.group.field.role.help',
                 'choices' => [
-                    'Staff' => 'ROLE_STAFF',
-                    'Sub admin' => 'ROLE_SUBADMIN',
-                    'Global admin' => 'ROLE_ADMIN',
+                    'manage.group.role.staff' => 'ROLE_STAFF',
+                    'manage.group.role.sub_admin' => 'ROLE_SUBADMIN',
+                    'manage.group.role.global_admin' => 'ROLE_ADMIN',
                 ],
             ])
             ->add('privileges', EntityType::class, [

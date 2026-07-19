@@ -2,8 +2,8 @@
 {% import 'components/data/_macros.twig' as d %}
 <div class="card-body">
   <h3 class="card-title d-flex align-items-center justify-content-between">
-    Edit shift
-    {% if shift.draft %}{{ d.badge('draft', 'bg-yellow-lt') }}{% else %}{{ d.badge('published', 'bg-green-lt') }}{% endif %}
+    {{ 'planner.panel.single.title'|trans }}
+    {% if shift.draft %}{{ d.badge('planner.badge.draft'|trans, 'bg-yellow-lt') }}{% else %}{{ d.badge('planner.badge.published'|trans, 'bg-green-lt') }}{% endif %}
   </h3>
 
   <form
@@ -11,38 +11,38 @@
     action="{{ path('app_manage_shifts_planner_edit', {id: shift.uuid}) }}"
     data-controller="planner-form"
     {% if not shift.draft and shift.entries|length > 0 %}
-      data-planner-form-confirm-value="This shift is published and has {{ shift.entries|length }} assignment(s). Save changes?"
+      data-planner-form-confirm-value="{{ 'planner.confirm.published_save'|trans({'%count%': shift.entries|length}) }}"
     {% endif %}
   >
     <input type="hidden" name="_token" value="{{ csrf_token('planner_edit') }}">
 
     <div class="mb-2">
-      <label class="form-label" for="edit-title-{{ shift.id }}">Title</label>
+      <label class="form-label" for="edit-title-{{ shift.id }}">{{ 'common.label.title'|trans }}</label>
       <input type="text" class="form-control" id="edit-title-{{ shift.id }}" name="title" value="{{ shift.title }}">
     </div>
     <div class="row g-2 mb-2">
       <div class="col-6">
-        <label class="form-label" for="edit-start-{{ shift.id }}">Starts</label>
+        <label class="form-label" for="edit-start-{{ shift.id }}">{{ 'planner.field.starts'|trans }}</label>
         <input type="datetime-local" class="form-control" id="edit-start-{{ shift.id }}" name="start"
                value="{{ shift.startsAt|date('Y-m-d\\TH:i', timezone) }}">
       </div>
       <div class="col-6">
-        <label class="form-label" for="edit-end-{{ shift.id }}">Ends</label>
+        <label class="form-label" for="edit-end-{{ shift.id }}">{{ 'planner.field.ends'|trans }}</label>
         <input type="datetime-local" class="form-control" id="edit-end-{{ shift.id }}" name="end"
                value="{{ shift.endsAt|date('Y-m-d\\TH:i', timezone) }}">
       </div>
     </div>
     <div class="mb-2">
-      <label class="form-label" for="edit-task-{{ shift.id }}">Shift Task</label>
+      <label class="form-label" for="edit-task-{{ shift.id }}">{{ 'planner.field.shift_task'|trans }}</label>
       <select class="form-select" id="edit-task-{{ shift.id }}" name="task">
-        <option value="0">— None —</option>
+        <option value="0">{{ 'planner.option.none'|trans }}</option>
         {% for task in shiftTasks %}
           <option value="{{ task.id }}" {{ shift.shiftTask and shift.shiftTask.id == task.id ? 'selected' : '' }}>{{ task.displayName }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="mb-2">
-      <label class="form-label" for="edit-audience-{{ shift.id }}">Audience</label>
+      <label class="form-label" for="edit-audience-{{ shift.id }}">{{ 'planner.field.audience'|trans }}</label>
       <select class="form-select" id="edit-audience-{{ shift.id }}" name="audience">
         {% for a in audiences %}
           <option value="{{ a.value }}" {{ a.value == shift.audience.value ? 'selected' : '' }}>{{ a.label }}</option>
@@ -50,9 +50,9 @@
       </select>
     </div>
     <div class="mb-2">
-      <label class="form-label" for="edit-location-{{ shift.id }}">Location</label>
+      <label class="form-label" for="edit-location-{{ shift.id }}">{{ 'common.label.location'|trans }}</label>
       <select class="form-select" id="edit-location-{{ shift.id }}" name="location">
-        <option value="0">— None —</option>
+        <option value="0">{{ 'planner.option.none'|trans }}</option>
         {% for loc in locations %}
           <option value="{{ loc.id }}" {{ shift.location and shift.location.id == loc.id ? 'selected' : '' }}>{{ loc.name }}</option>
         {% endfor %}
@@ -60,11 +60,11 @@
     </div>
     <label class="form-check mb-3">
       <input type="checkbox" class="form-check-input" name="require_checkin" value="1" {{ shift.requireCheckin ? 'checked' : '' }}>
-      <span class="form-check-label">Require check-in</span>
+      <span class="form-check-label">{{ 'planner.field.require_checkin'|trans }}</span>
     </label>
 
     <fieldset class="mb-3">
-      <legend class="form-label">Required volunteer types</legend>
+      <legend class="form-label">{{ 'planner.field.needed_multi'|trans }}</legend>
       {# Keys are prefixed because Twig's merge filter renumbers integer keys (array_merge
          semantics), which would drop the volunteer-type id and lose the saved count. #}
       {% set neededByType = {} %}
@@ -79,23 +79,23 @@
                    name="needed[{{ vt.id }}]" value="{{ neededByType['vt' ~ vt.id] ?? 0 }}">
           </div>
         {% else %}
-          {{ d.empty_inline('No volunteer types configured.', {tag: 'div', class: 'col-12 text-secondary small'}) }}
+          {{ d.empty_inline('planner.empty.no_volunteer_types'|trans, {tag: 'div', class: 'col-12 text-secondary small'}) }}
         {% endfor %}
       </div>
     </fieldset>
 
-    <button type="submit" class="btn btn-primary w-100" data-action="planner-form#submit">Save</button>
+    <button type="submit" class="btn btn-primary w-100" data-action="planner-form#submit">{{ 'common.action.save'|trans }}</button>
   </form>
 
   {% if is_granted('assignment:manage', shift.department) %}
     <a href="{{ path('app_shift_staffing', {id: shift.uuid}) }}" class="btn btn-outline-primary w-100 mt-2" data-turbo="false">
-      Manage staffing ({{ shift.entries|length }})
+      {{ 'planner.action.manage_staffing'|trans({'%count%': shift.entries|length}) }}
     </a>
   {% endif %}
 
   <form method="post" action="{{ path('app_manage_shifts_planner_delete', {id: shift.uuid}) }}"
-        class="mt-2" data-controller="planner-form" data-planner-form-confirm-value="Delete this shift?">
+        class="mt-2" data-controller="planner-form" data-planner-form-confirm-value="{{ 'planner.confirm.delete_shift'|trans }}">
     <input type="hidden" name="_token" value="{{ csrf_token('planner_edit') }}">
-    <button type="submit" class="btn btn-outline-danger w-100" data-action="planner-form#submit">Delete shift</button>
+    <button type="submit" class="btn btn-outline-danger w-100" data-action="planner-form#submit">{{ 'planner.action.delete_shift'|trans }}</button>
   </form>
 </div>

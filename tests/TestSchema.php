@@ -10,7 +10,7 @@ use Doctrine\ORM\Tools\SchemaTool;
  *
  * The schema is built exactly once; every test after that starts from a single
  * TRUNCATE of every table instead of a full drop/create. The isolation is the
- * same — each test still begins with an empty database — but re-running the DDL
+ * same - each test still begins with an empty database - but re-running the DDL
  * for ~70 entities costs several seconds per test, and truncating costs
  * milliseconds.
  */

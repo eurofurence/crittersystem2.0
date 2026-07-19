@@ -14,6 +14,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Public news feed, article view and commenting.
@@ -59,7 +60,7 @@ final class NewsController extends AbstractController
             $user = $this->getUser();
             $this->em->persist(new NewsComment($news, $user, $text));
             $this->em->flush();
-            $this->addFlash('success', 'Comment posted.');
+            $this->addFlash('success', new TranslatableMessage('news.flash.comment_posted'));
         }
 
         return $this->redirectToRoute('app_news_show', ['id' => $news->getUuid()]);

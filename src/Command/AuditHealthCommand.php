@@ -15,12 +15,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * Is the audit trail actually being written?
  *
  * Audit events are dispatched to the async Messenger transport and written by a worker
- * (`messenger:consume async`). That is deliberate — the write stays off the request path — and the
+ * (`messenger:consume async`). That is deliberate - the write stays off the request path - and the
  * doctrine transport is a durable buffer, so a worker restart loses nothing.
  *
  * The danger is not the queue breaking. It is the queue quietly ceasing to drain: with no worker
  * deployed the application keeps serving, every action still dispatches, and nothing is ever
- * recorded — without a single symptom.
+ * recorded - without a single symptom.
  *
  * So: run this on a schedule and alert on a non-zero exit.
  *
@@ -73,19 +73,19 @@ final class AuditHealthCommand extends Command
 
         $problems = [];
         if ($queued > $maxBacklog) {
-            $problems[] = \sprintf('%d messages queued (limit %d) — the worker is not keeping up, or is not running.', $queued, $maxBacklog);
+            $problems[] = \sprintf('%d messages queued (limit %d) - the worker is not keeping up, or is not running.', $queued, $maxBacklog);
         }
         if ($oldestAgeMinutes !== null && $oldestAgeMinutes > $maxAgeMinutes) {
-            $problems[] = \sprintf('the oldest unconsumed message is %d minutes old (limit %d) — the queue is not draining. Is `messenger:consume async` running?', $oldestAgeMinutes, $maxAgeMinutes);
+            $problems[] = \sprintf('the oldest unconsumed message is %d minutes old (limit %d) - the queue is not draining. Is `messenger:consume async` running?', $oldestAgeMinutes, $maxAgeMinutes);
         }
         if ($failed > 0) {
-            $problems[] = \sprintf('%d message(s) in the failed transport — inspect with `messenger:failed:show`, retry with `messenger:failed:retry`.', $failed);
+            $problems[] = \sprintf('%d message(s) in the failed transport - inspect with `messenger:failed:show`, retry with `messenger:failed:retry`.', $failed);
         }
 
         $io->definitionList(
             ['audit_events rows' => (string) $auditRows],
             ['queued (unconsumed)' => (string) $queued],
-            ['oldest unconsumed' => $oldestAgeMinutes === null ? '—' : $oldestAgeMinutes.' min'],
+            ['oldest unconsumed' => $oldestAgeMinutes === null ? '-' : $oldestAgeMinutes.' min'],
             ['failed transport' => (string) $failed],
         );
 

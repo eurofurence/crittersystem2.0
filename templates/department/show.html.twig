@@ -7,7 +7,7 @@
 {% block body %}
   {{ d.page_header(department.name, {
     subtitle: department.description,
-    actions: [{label: '← Departments', href: path('app_departments'), class: 'btn btn-outline-secondary'}]
+    actions: [{label: 'department.show.action.back'|trans, href: path('app_departments'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% set canManage = is_granted('department:member:manage') %}
@@ -15,9 +15,9 @@
   {% set canRequest = is_granted('shift:manage') %}
 
   {% if canApprove and pending is not empty %}
-    {{ d.card_start('Pending delegated shift-manager approvals', {class: 'mb-3 border-warning', bodyClass: ''}) }}
+    {{ d.card_start('department.show.card.pending'|trans, {class: 'mb-3 border-warning', bodyClass: ''}) }}
       {{ d.table_start() }}
-        <thead><tr><th>User</th><th>Requested</th><th class="text-end">Decision</th></tr></thead>
+        <thead><tr><th>{{ 'common.label.user'|trans }}</th><th>{{ 'department.show.col.requested'|trans }}</th><th class="text-end">{{ 'department.show.col.decision'|trans }}</th></tr></thead>
         <tbody>
           {% for r in pending %}
             <tr>
@@ -38,26 +38,26 @@
     {{ d.card_end({bodyClass: ''}) }}
   {% endif %}
 
-  {{ d.card_start('Staffing') }}
-      <span class="me-3">Shifts owned: <strong>{{ staffing.shiftCount }}</strong></span>
-      <span class="text-secondary small">Recommended max event hours: {{ staffing.recommendedMaxHours }}h</span>
+  {{ d.card_start('department.show.card.staffing'|trans) }}
+      <span class="me-3">{{ 'department.show.shifts_owned'|trans }} <strong>{{ staffing.shiftCount }}</strong></span>
+      <span class="text-secondary small">{{ 'department.show.recommended_max'|trans({'%hours%': staffing.recommendedMaxHours}) }}</span>
   {{ d.card_end() }}
 
   {% if canManage %}
-    {{ d.card_start('Add a member') }}
+    {{ d.card_start('department.show.card.add_member'|trans) }}
         <form method="post" action="{{ path('app_department_add_member', {id: department.uuid}) }}" class="row g-2 align-items-end">
           <input type="hidden" name="_token" value="{{ csrf_token('addmember' ~ department.id) }}">
           <div class="col-12 col-md-6">
-            <label class="form-label" for="add-member-user">User</label>
+            <label class="form-label" for="add-member-user">{{ 'common.label.user'|trans }}</label>
             <select class="form-select" id="add-member-user" name="user" required>
-              <option value="">Choose a user…</option>
+              <option value="">{{ 'department.show.choose_user'|trans }}</option>
               {% for u in assignable %}
                 <option value="{{ u.uuid }}">{{ u|display_name }}</option>
               {% endfor %}
             </select>
           </div>
           <div class="col-12 col-md-4">
-            <label class="form-label" for="add-member-position">Position</label>
+            <label class="form-label" for="add-member-position">{{ 'department.show.position'|trans }}</label>
             <select class="form-select" id="add-member-position" name="position" required>
               {% for p in positions %}
                 <option value="{{ p.value }}" {{ p.value == 'staff' ? 'selected' : '' }}>{{ p.label }}</option>
@@ -65,44 +65,44 @@
             </select>
           </div>
           <div class="col-12 col-md-2">
-            <button class="btn btn-primary w-100" {{ assignable is empty ? 'disabled' : '' }}>Add</button>
+            <button class="btn btn-primary w-100" {{ assignable is empty ? 'disabled' : '' }}>{{ 'common.action.add'|trans }}</button>
           </div>
         </form>
         {% if assignable is empty %}
-          <p class="text-secondary small mb-0 mt-2">Every user is already a member, or is provisioned through SSO.</p>
+          <p class="text-secondary small mb-0 mt-2">{{ 'department.show.all_members'|trans }}</p>
         {% endif %}
     {{ d.card_end() }}
   {% endif %}
 
   {% for section in [
-    {title: 'Department & Shift Managers', users: members.managers|merge(members.shiftManagers)},
-    {title: 'Staff members', users: members.staff},
-    {title: 'Non-staff members', users: members.nonStaff}
+    {title: 'department.show.section.managers'|trans, users: members.managers|merge(members.shiftManagers)},
+    {title: 'department.show.section.staff'|trans, users: members.staff},
+    {title: 'department.show.section.non_staff'|trans, users: members.nonStaff}
   ] %}
     <div class="card mb-3">
       <div class="card-header"><h3 class="card-title">{{ section.title }} <span class="text-secondary">({{ section.users|length }})</span></h3></div>
       {% if section.users is empty %}
-        {{ d.empty_inline('None.', {tag: 'div', class: 'card-body text-secondary'}) }}
+        {{ d.empty_inline('department.show.none'|trans, {tag: 'div', class: 'card-body text-secondary'}) }}
       {% else %}
         {{ d.table_start() }}
-          <thead><tr><th>User</th><th>Position</th><th class="text-end">Planned hours</th><th class="text-end">Actions</th></tr></thead>
+          <thead><tr><th>{{ 'common.label.user'|trans }}</th><th>{{ 'department.show.position'|trans }}</th><th class="text-end">{{ 'department.show.col.planned_hours'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
           <tbody>
             {% for u in section.users %}
               <tr>
                 <td>
                   <a href="{{ path('app_profile_show', {id: u.uuid}) }}">{{ u|display_name }}</a>
-                  {% if u.ssoManaged %}<span class="badge bg-blue-lt ms-1" title="Provisioned through SSO">SSO</span>{% endif %}
+                  {% if u.ssoManaged %}<span class="badge bg-blue-lt ms-1" title="{{ 'department.show.sso_title'|trans }}">SSO</span>{% endif %}
                 </td>
                 <td class="text-secondary small">
-                  {{ members.positions[u.id] is defined ? members.positions[u.id].label : 'Member' }}
+                  {{ members.positions[u.id] is defined ? members.positions[u.id].label : 'department.label.member'|trans }}
                 </td>
                 <td class="text-end">
                   {{ stats[u.id].hours|round(1) }}h
-                  {% if stats[u.id].over %}<span class="text-danger ms-1" title="Over recommended event hours">{{ i.icon('activity', {class: 'icon-1'}) }}</span>{% endif %}
+                  {% if stats[u.id].over %}<span class="text-danger ms-1" title="{{ 'department.show.over_hours_title'|trans }}">{{ i.icon('activity', {class: 'icon-1'}) }}</span>{% endif %}
                 </td>
                 <td class="text-end">
                   <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Actions</button>
+                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">{{ 'common.label.actions'|trans }}</button>
                     <div class="dropdown-menu dropdown-menu-end">
                       {% for m in contactMethods[u.id] %}
                         {% if m.href %}
@@ -119,7 +119,7 @@
                             <form method="post" action="{{ path('app_department_set_position', {id: department.uuid, userId: u.uuid}) }}">
                               <input type="hidden" name="_token" value="{{ csrf_token('position' ~ department.id ~ '-' ~ u.id) }}">
                               <input type="hidden" name="position" value="{{ p.value }}">
-                              <button class="dropdown-item" type="submit">Make {{ p.label|lower }}</button>
+                              <button class="dropdown-item" type="submit">{{ 'department.show.make_position'|trans({'%position%': p.label|lower}) }}</button>
                             </form>
                           {% endif %}
                         {% endfor %}
@@ -127,14 +127,14 @@
                       {% if canRequest %}
                         <form method="post" action="{{ path('app_department_request_delegated', {id: department.uuid, userId: u.uuid}) }}">
                           <input type="hidden" name="_token" value="{{ csrf_token('reqdel' ~ department.id ~ '-' ~ u.id) }}">
-                          <button class="dropdown-item" type="submit">Request delegated promotion</button>
+                          <button class="dropdown-item" type="submit">{{ 'department.show.action.request_delegated'|trans }}</button>
                         </form>
                       {% endif %}
                       {% if canManage and not u.ssoManaged %}
                         <form method="post" action="{{ path('app_department_remove_member', {id: department.uuid, userId: u.uuid}) }}"
-                              data-controller="confirm" data-confirm-message-value="Remove this member from the department?">
+                              data-controller="confirm" data-confirm-message-value="{{ 'department.show.confirm.remove'|trans }}">
                           <input type="hidden" name="_token" value="{{ csrf_token('remove' ~ department.id ~ '-' ~ u.id) }}">
-                          <button class="dropdown-item text-danger" type="submit">Remove from department</button>
+                          <button class="dropdown-item text-danger" type="submit">{{ 'department.show.action.remove'|trans }}</button>
                         </form>
                       {% endif %}
                     </div>

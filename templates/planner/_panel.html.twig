@@ -7,14 +7,13 @@
   data-action="planner:selection@window->planner-panel#update"
 >
   <div class="card-body" data-planner-panel-target="overview">
-    <h3 class="card-title">Planning overview</h3>
+    <h3 class="card-title">{{ 'planner.panel.overview.title'|trans }}</h3>
     <p class="text-secondary">
-      Drag on the grid to paint a shift, or click a shift to edit it. Hold
-      Shift/Ctrl (or tap several) to select multiple shifts for batch changes.
+      {{ 'planner.panel.overview.help'|trans }}
     </p>
     {{ d.definition_list([
-      {label: 'Department',   value: department.name},
-      {label: 'Shifts shown', value: grid.blocks|length}
+      {label: 'common.label.department'|trans,   value: department.name},
+      {label: 'planner.panel.shifts_shown'|trans, value: grid.blocks|length}
     ], {class: 'mb-0 small', labelCol: 'col-6', valueCol: 'col-6', labelClass: '', valueClass: ''}) }}
   </div>
 
@@ -23,7 +22,7 @@
 
   {# Batch edit exposes only the fields that are compatible across the selection. #}
   <div class="card-body" data-planner-panel-target="batch" hidden>
-    <h3 class="card-title">Batch edit {{ d.badge(0, 'bg-blue-lt', {attrs: {'data-planner-panel-target': 'count'}}) }} shifts</h3>
+    <h3 class="card-title">{{ 'planner.panel.batch.edit'|trans }} {{ d.badge(0, 'bg-blue-lt', {attrs: {'data-planner-panel-target': 'count'}}) }} {{ 'planner.panel.batch.shifts'|trans }}</h3>
     <form
       method="post"
       action="{{ path('app_manage_shifts_planner_batch') }}"
@@ -33,25 +32,25 @@
       <span data-planner-panel-target="ids"></span>
 
       <div class="mb-2">
-        <label class="form-label" for="batch-duration">Duration (minutes)</label>
-        <input type="number" min="30" step="30" class="form-control" id="batch-duration" name="duration_minutes" placeholder="Leave blank to keep">
+        <label class="form-label" for="batch-duration">{{ 'planner.field.duration'|trans }}</label>
+        <input type="number" min="30" step="30" class="form-control" id="batch-duration" name="duration_minutes" placeholder="{{ 'planner.field.duration_placeholder'|trans }}">
       </div>
 
       <fieldset class="mb-2">
-        <legend class="form-label">Required volunteer type &amp; quantity</legend>
+        <legend class="form-label">{{ 'planner.field.needed_single'|trans }}</legend>
         <div class="d-flex gap-2">
           <select class="form-select" name="needed_type">
-            <option value="0">— None —</option>
+            <option value="0">{{ 'planner.option.none'|trans }}</option>
             {% for vt in volunteerTypes ?? [] %}
               <option value="{{ vt.id }}">{{ vt.name }}</option>
             {% endfor %}
           </select>
-          <input type="number" min="0" class="form-control" name="needed_count" placeholder="Qty" style="max-width: 6rem;">
+          <input type="number" min="0" class="form-control" name="needed_count" placeholder="{{ 'planner.field.qty_placeholder'|trans }}" style="max-width: 6rem;">
         </div>
-        <small class="text-secondary">Applied to every selected shift. Quantity 0 removes the requirement.</small>
+        <small class="text-secondary">{{ 'planner.panel.batch.help'|trans }}</small>
       </fieldset>
 
-      <button type="submit" class="btn btn-primary w-100" data-action="planner-form#submit">Apply to selection</button>
+      <button type="submit" class="btn btn-primary w-100" data-action="planner-form#submit">{{ 'planner.panel.batch.apply'|trans }}</button>
     </form>
   </div>
 </div>

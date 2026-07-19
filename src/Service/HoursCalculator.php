@@ -16,7 +16,7 @@ use App\Repository\WorklogRepository;
  * the sum. On top of the deduplicated base the existing reward rules still apply:
  *
  * - night multiplier (default x2) for shifts touching the configured night
- *   window — applied per shift over its whole extent, and it governs any instant
+ *   window - applied per shift over its whole extent, and it governs any instant
  *   where an overlapping day and night shift coincide;
  * - no-show penalty (default x-2) as a separate additive term per no-show entry.
  *

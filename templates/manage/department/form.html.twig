@@ -2,27 +2,27 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ heading }}{% endblock %}
+{% block title %}{{ heading|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header(heading, {
-    actions: [{label: '← Back to departments', href: path('app_manage_department_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.department.action.back_to_index'|trans, href: path('app_manage_department_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
     <div class="row">
       {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
-      {{ f.field(form.slug, {col: 'col-12 col-md-6', help: 'Leave blank to generate from the name.'}) }}
+      {{ f.field(form.slug, {col: 'col-12 col-md-6', help: 'manage.department.field.slug.help'|trans}) }}
       {{ f.field(form.description, {col: 'col-12'}) }}
       {{ f.check(form.staffOnly, {col: 'col-12 col-md-6'}) }}
       {{ f.check(form.organizational, {col: 'col-12 col-md-6'}) }}
     </div>
 
     <div class="row">
-      {{ f.choice_multiple(form.locations, {col: 'col-12 col-md-6', help: 'Areas this department operates in'}) }}
-      {{ f.choice_multiple(form.volunteerTypes, {col: 'col-12 col-md-6', help: 'Role categories this department uses'}) }}
+      {{ f.choice_multiple(form.locations, {col: 'col-12 col-md-6', help: 'manage.department.field.locations.help'|trans}) }}
+      {{ f.choice_multiple(form.volunteerTypes, {col: 'col-12 col-md-6', help: 'manage.department.field.volunteer_types.help'|trans}) }}
     </div>
 
-    <button class="btn btn-primary mt-2">Save</button>
+    <button class="btn btn-primary mt-2">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

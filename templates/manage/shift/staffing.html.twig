@@ -1,20 +1,20 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Staffing · {{ shift.title }}{% endblock %}
+{% block title %}{{ 'manage.shift.staffing.page_title'|trans({'%name%': shift.title}) }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Staffing — ' ~ shift.title, {
+  {{ d.page_header('manage.shift.staffing.heading'|trans({'%name%': shift.title}), {
     subtitle: shift.startsAt|app_datetime ~ ' – ' ~ shift.endsAt|app_time ~ (shift.location ? ' · ' ~ shift.location.name : ''),
-    actions: [{label: '← Back to shifts', href: path('app_manage_shift_index'), class: 'btn btn-outline-secondary'}]
+    actions: [{label: 'manage.shift.action.back'|trans, href: path('app_manage_shift_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  <h2 class="h5">Coverage</h2>
+  <h2 class="h5">{{ 'manage.shift.staffing.coverage'|trans }}</h2>
   {% if availability is empty %}
-    {{ d.empty_inline('No staffing requirements apply to this shift yet.', {class: 'text-muted'}) }}
+    {{ d.empty_inline('manage.shift.staffing.no_requirements'|trans, {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>Volunteer type</th><th>Assigned</th><th>Needed</th><th>Status</th></tr></thead>
+      <thead><tr><th>{{ 'manage.shift.staffing.volunteer_type'|trans }}</th><th>{{ 'manage.shift.staffing.col.assigned'|trans }}</th><th>{{ 'manage.shift.staffing.col.needed'|trans }}</th><th>{{ 'common.label.status'|trans }}</th></tr></thead>
       <tbody>
         {% for row in availability %}
           <tr>
@@ -22,8 +22,8 @@
             <td>{{ row.assigned }}</td>
             <td>{{ row.needed }}</td>
             <td>
-              {% if row.assigned >= row.needed %}{{ d.badge('Full', 'text-bg-success') }}
-              {% else %}{{ d.badge((row.needed - row.assigned) ~ ' open', 'text-bg-warning') }}{% endif %}
+              {% if row.assigned >= row.needed %}{{ d.badge('common.state.full'|trans, 'text-bg-success') }}
+              {% else %}{{ d.badge('manage.shift.staffing.open'|trans({'%count%': row.needed - row.assigned}), 'text-bg-warning') }}{% endif %}
             </td>
           </tr>
         {% endfor %}
@@ -31,7 +31,7 @@
     {{ d.table_end() }}
   {% endif %}
 
-  <h2 class="h5 mt-4">Shift-level requirements</h2>
+  <h2 class="h5 mt-4">{{ 'manage.shift.staffing.shift_level'|trans }}</h2>
   <div class="table-responsive">
     <table class="table align-middle">
       <tbody>
@@ -41,12 +41,12 @@
             <td class="text-end">
               <form method="post" action="{{ path('app_manage_shift_need_delete', {id: shift.uuid, needId: need.uuid}) }}" class="d-inline">
                 <input type="hidden" name="_token" value="{{ csrf_token('need-del' ~ need.uuid) }}">
-                <button class="btn btn-sm btn-outline-danger">Remove</button>
+                <button class="btn btn-sm btn-outline-danger">{{ 'common.action.remove'|trans }}</button>
               </form>
             </td>
           </tr>
         {% else %}
-          {{ d.empty_row(1, 'No shift-level requirements (location/shift-task needs may still apply above).', {class: 'text-muted'}) }}
+          {{ d.empty_row(1, 'manage.shift.staffing.no_shift_level'|trans, {class: 'text-muted'}) }}
         {% endfor %}
       </tbody>
     </table>
@@ -55,44 +55,44 @@
   <form method="post" action="{{ path('app_manage_shift_need_add', {id: shift.uuid}) }}" class="row g-2 align-items-end">
     <input type="hidden" name="_token" value="{{ csrf_token('need-add' ~ shift.id) }}">
     <div class="col-12 col-md-6">
-      <label class="form-label" for="volunteer_type">Volunteer type</label>
+      <label class="form-label" for="volunteer_type">{{ 'manage.shift.staffing.volunteer_type'|trans }}</label>
       <select id="volunteer_type" name="volunteer_type" class="form-select" required>
-        <option value="">— Choose —</option>
+        <option value="">{{ 'manage.shift.staffing.choose'|trans }}</option>
         {% for vt in volunteerTypes %}<option value="{{ vt.id }}">{{ vt.name }}</option>{% endfor %}
       </select>
     </div>
     <div class="col-6 col-md-3">
-      <label class="form-label" for="count">Count</label>
+      <label class="form-label" for="count">{{ 'manage.shift.staffing.count'|trans }}</label>
       <input id="count" name="count" type="number" min="1" value="1" class="form-control">
     </div>
     <div class="col-6 col-md-3">
-      <button class="btn btn-primary w-100">Add requirement</button>
+      <button class="btn btn-primary w-100">{{ 'manage.shift.staffing.add_requirement'|trans }}</button>
     </div>
   </form>
 
-  <h2 class="h5 mt-4">Sign-ups ({{ entries|length }})</h2>
+  <h2 class="h5 mt-4">{{ 'manage.shift.staffing.signups'|trans({'%count%': entries|length}) }}</h2>
   {% if entries is empty %}
-    {{ d.empty_inline('No one has signed up yet.', {class: 'text-muted'}) }}
+    {{ d.empty_inline('manage.shift.staffing.no_signups'|trans, {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>Volunteer</th><th>Type</th><th>No-show</th><th class="text-end">Action</th></tr></thead>
+      <thead><tr><th>{{ 'manage.label.volunteer'|trans }}</th><th>{{ 'common.label.type'|trans }}</th><th>{{ 'common.state.no_show'|trans }}</th><th class="text-end">{{ 'manage.shift.staffing.col.action'|trans }}</th></tr></thead>
       <tbody>
         {% for entry in entries %}
           <tr class="{{ entry.noshow ? 'table-danger' : '' }}">
             <td>{{ entry.user.name }}</td>
             <td>{{ entry.volunteerType.name }}</td>
-            <td>{% if entry.noshow %}{{ d.badge('No-show', 'text-bg-danger') }}{% else %}—{% endif %}</td>
+            <td>{% if entry.noshow %}{{ d.badge('common.state.no_show'|trans, 'text-bg-danger') }}{% else %}-{% endif %}</td>
             <td class="text-end text-nowrap">
               <form method="post" action="{{ path('app_manage_shift_entry_noshow', {id: entry.uuid}) }}" class="d-inline">
                 <input type="hidden" name="_token" value="{{ csrf_token('noshow' ~ entry.id) }}">
                 <button class="btn btn-sm {{ entry.noshow ? 'btn-outline-success' : 'btn-outline-danger' }}">
-                  {{ entry.noshow ? 'Clear no-show' : 'Mark no-show' }}
+                  {{ entry.noshow ? 'manage.shift.staffing.clear_noshow'|trans : 'manage.shift.staffing.mark_noshow'|trans }}
                 </button>
               </form>
               <form method="post" action="{{ path('app_manage_shift_entry_unassign', {id: entry.uuid}) }}" class="d-inline"
-                    data-controller="confirm" data-confirm-message-value="Remove {{ entry.user.name }} from this shift?">
+                    data-controller="confirm" data-confirm-message-value="{{ 'manage.shift.staffing.confirm_unassign'|trans({'%name%': entry.user.name}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('unassign' ~ entry.id) }}">
-                <button class="btn btn-sm btn-outline-secondary">Unassign</button>
+                <button class="btn btn-sm btn-outline-secondary">{{ 'manage.shift.staffing.unassign'|trans }}</button>
               </form>
             </td>
           </tr>
@@ -101,20 +101,20 @@
     {{ d.table_end() }}
   {% endif %}
 
-  <h2 class="h5 mt-4">Assign a volunteer</h2>
+  <h2 class="h5 mt-4">{{ 'manage.shift.staffing.assign_heading'|trans }}</h2>
   <form method="get" action="{{ path('app_manage_shift_needs', {id: shift.uuid}) }}" class="row g-2 mb-2">
     <div class="col-12 col-md-8">
-      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Search volunteers by name, email, or ID…">
+      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="{{ 'manage.shift.staffing.search_placeholder'|trans }}">
     </div>
-    <div class="col-12 col-md-4"><button class="btn btn-outline-primary w-100">Search</button></div>
+    <div class="col-12 col-md-4"><button class="btn btn-outline-primary w-100">{{ 'common.action.search'|trans }}</button></div>
   </form>
 
   {% if q != '' %}
     {% if searchResults is empty %}
-      {{ d.empty_inline('No volunteers match "' ~ q ~ '".', {class: 'text-muted'}) }}
+      {{ d.empty_inline('manage.shift.staffing.no_matches'|trans({'%query%': q}), {class: 'text-muted'}) }}
     {% else %}
       {{ d.table_start({hover: false}) }}
-        <thead><tr><th>Volunteer</th><th>Email</th><th class="text-end">Assign as</th></tr></thead>
+        <thead><tr><th>{{ 'manage.label.volunteer'|trans }}</th><th>{{ 'common.label.email'|trans }}</th><th class="text-end">{{ 'manage.shift.staffing.assign_as'|trans }}</th></tr></thead>
         <tbody>
           {% for u in searchResults %}
             <tr>
@@ -125,10 +125,10 @@
                   <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ shift.id) }}">
                   <input type="hidden" name="user" value="{{ u.id }}">
                   <select name="volunteer_type" class="form-select form-select-sm" style="width:auto" required>
-                    <option value="">— Role —</option>
+                    <option value="">{{ 'manage.shift.staffing.role_placeholder'|trans }}</option>
                     {% for vt in volunteerTypes %}<option value="{{ vt.id }}">{{ vt.name }}</option>{% endfor %}
                   </select>
-                  <button class="btn btn-sm btn-primary">Assign</button>
+                  <button class="btn btn-sm btn-primary">{{ 'manage.shift.staffing.assign'|trans }}</button>
                 </form>
               </td>
             </tr>

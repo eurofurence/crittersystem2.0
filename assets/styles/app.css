@@ -1,7 +1,7 @@
 /*
  * App-level CSS tweaks layered on top of Tabler.
  *
- * Keep this file minimal — brand/theme colours live in `assets/themes/*.css`
+ * Keep this file minimal - brand/theme colours live in `assets/themes/*.css`
  * (loaded last so they win the cascade). This file is for structural fixes
  * that apply across every theme, independent of the active brand colours.
  */

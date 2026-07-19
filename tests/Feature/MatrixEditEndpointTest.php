@@ -63,6 +63,29 @@ final class MatrixEditEndpointTest extends DatabaseWebTestCase
         self::assertNotNull($this->em->getRepository(PositionGroup::class)->findOneBy(['name' => 'Light']));
     }
 
+    public function testUserSearchSurfacesUsersOutsideTheDepartment(): void
+    {
+        // The cell editor must be able to place any volunteer, not only department members - the
+        // whole point of the search box that replaced the members-only dropdown.
+        $dept = $this->login();
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $outsider = new User();
+        $outsider->setName('Zoe Outsider')->setEmail('zoe@example.com')->setApiKey(bin2hex(random_bytes(16)));
+        $outsider->setPassword($hasher->hashPassword($outsider, 'secret123'));
+        $outsider->completeOnboarding();
+        $this->em->persist($outsider);
+        $this->em->flush();
+
+        $this->client->request('GET', '/manage-shifts/matrix/users', [
+            'department' => (string) $dept->getUuid(),
+            'q' => 'Zoe',
+        ]);
+
+        self::assertResponseIsSuccessful();
+        $data = json_decode((string) $this->client->getResponse()->getContent(), true);
+        self::assertContains('Zoe Outsider', array_column($data['results'], 'name'));
+    }
+
     public function testCopyStructureEndpoint(): void
     {
         $dept = $this->login();

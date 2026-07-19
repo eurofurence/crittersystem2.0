@@ -14,10 +14,10 @@ final class VolunteerTypeContactType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('name', TextType::class, ['label' => 'Name', 'required' => false])
-            ->add('phone', TextType::class, ['label' => 'Phone', 'required' => false])
-            ->add('telegram', TextType::class, ['label' => 'Telegram (@handle)', 'required' => false])
-            ->add('email', EmailType::class, ['label' => 'Email', 'required' => false]);
+            ->add('name', TextType::class, ['label' => 'common.label.name', 'required' => false])
+            ->add('phone', TextType::class, ['label' => 'manage.volunteer_type.field.phone.label', 'required' => false])
+            ->add('telegram', TextType::class, ['label' => 'manage.volunteer_type.field.telegram.label', 'required' => false])
+            ->add('email', EmailType::class, ['label' => 'common.label.email', 'required' => false]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

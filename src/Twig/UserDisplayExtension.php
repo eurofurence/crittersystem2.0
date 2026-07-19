@@ -8,7 +8,7 @@ use Twig\TwigFilter;
 
 /**
  * Renders a username with pronouns appended for normal UI contexts.
- * Search matching must not use this — it is presentation only.
+ * Search matching must not use this - it is presentation only.
  */
 final class UserDisplayExtension extends AbstractExtension
 {

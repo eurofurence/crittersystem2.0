@@ -163,7 +163,7 @@ final class ApiV0Controller extends AbstractController
         }
 
         return $this->json([
-            'id' => $user->getId(),
+            'id' => (string) $user->getUuid(),
             'name' => $user->getName(),
             'email' => $user->getEmail(),
             'roles' => $user->getRoles(),
@@ -179,26 +179,26 @@ final class ApiV0Controller extends AbstractController
     /** @return array<string, mixed> */
     private function volunteerType(VolunteerType $t): array
     {
-        return ['id' => $t->getId(), 'name' => $t->getName(), 'description' => $t->getDescription(), 'restricted' => $t->isRestricted()];
+        return ['id' => (string) $t->getUuid(), 'name' => $t->getName(), 'description' => $t->getDescription(), 'restricted' => $t->isRestricted()];
     }
 
     /** @return array<string, mixed> */
     private function location(Location $l): array
     {
-        return ['id' => $l->getId(), 'name' => $l->getName(), 'description' => $l->getDescription(), 'phone' => $l->getPhone()];
+        return ['id' => (string) $l->getUuid(), 'name' => $l->getName(), 'description' => $l->getDescription(), 'phone' => $l->getPhone()];
     }
 
     /** @return array<string, mixed> */
     private function shiftTask(ShiftTask $t): array
     {
-        return ['id' => $t->getId(), 'name' => $t->getName(), 'description' => $t->getDescription()];
+        return ['id' => (string) $t->getUuid(), 'name' => $t->getName(), 'description' => $t->getDescription()];
     }
 
     /** @return array<string, mixed> */
     private function shift(Shift $s): array
     {
         return [
-            'id' => $s->getId(),
+            'id' => (string) $s->getUuid(),
             'title' => $s->getTitle(),
             'start' => $s->getStartsAt()->format(\DATE_ATOM),
             'end' => $s->getEndsAt()->format(\DATE_ATOM),
@@ -212,7 +212,7 @@ final class ApiV0Controller extends AbstractController
     private function newsItem(News $n): array
     {
         return [
-            'id' => $n->getId(),
+            'id' => (string) $n->getUuid(),
             'title' => $n->getTitle(),
             'text' => $n->getFullText(),
             'pinned' => $n->isPinned(),

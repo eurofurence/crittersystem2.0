@@ -34,33 +34,33 @@ final class ShiftFormType extends AbstractType
         $tz = $this->display->timezone()->getName();
 
         $builder
-            ->add('title', TextType::class, ['label' => 'Title'])
+            ->add('title', TextType::class, ['label' => 'common.label.title'])
             ->add('description', TextareaType::class, [
-                'label' => 'Description',
+                'label' => 'common.label.description',
                 'required' => false,
                 'attr' => ['rows' => 3],
             ])
             ->add('url', UrlType::class, [
-                'label' => 'URL',
+                'label' => 'manage.shift.field.url.label',
                 'required' => false,
                 'default_protocol' => null,
             ])
             ->add('startsAt', DateTimeType::class, [
-                'label' => 'Starts at',
+                'label' => 'manage.shift.field.starts_at.label',
                 'widget' => 'single_text',
                 'input' => 'datetime_immutable',
                 'view_timezone' => $tz,
                 'model_timezone' => 'UTC',
             ])
             ->add('endsAt', DateTimeType::class, [
-                'label' => 'Ends at',
+                'label' => 'manage.shift.field.ends_at.label',
                 'widget' => 'single_text',
                 'input' => 'datetime_immutable',
                 'view_timezone' => $tz,
                 'model_timezone' => 'UTC',
             ])
             ->add('department', EntityType::class, [
-                'label' => 'Department',
+                'label' => 'common.label.department',
                 'class' => Department::class,
                 'choice_label' => 'name',
                 // Organizational departments cannot own shifts.
@@ -69,29 +69,29 @@ final class ShiftFormType extends AbstractType
                     ->orderBy('d.name', 'ASC'),
             ])
             ->add('shiftTask', EntityType::class, [
-                'label' => 'Shift Task',
+                'label' => 'manage.shift.field.shift_task.label',
                 'class' => ShiftTask::class,
                 'choice_label' => 'displayName',
                 'required' => false,
-                'placeholder' => '— None —',
+                'placeholder' => 'manage.shift.placeholder.none',
             ])
             ->add('location', EntityType::class, [
-                'label' => 'Location',
+                'label' => 'common.label.location',
                 'class' => Location::class,
                 'choice_label' => 'name',
                 'required' => false,
-                'placeholder' => '— None —',
+                'placeholder' => 'manage.shift.placeholder.none',
             ])
             ->add('audience', EnumType::class, [
-                'label' => 'Audience',
+                'label' => 'manage.shift.field.audience.label',
                 'class' => ShiftAudience::class,
                 'choice_label' => fn (ShiftAudience $a) => $a->label(),
-                'help' => 'Staff-only shifts are never shown to volunteers.',
+                'help' => 'manage.shift.field.audience.help',
             ])
             ->add('requireCheckin', CheckboxType::class, [
-                'label' => 'Require check-in',
+                'label' => 'manage.shift.field.require_checkin.label',
                 'required' => false,
-                'help' => 'Volunteers must be checked in before applying — even during setup and teardown.',
+                'help' => 'manage.shift.field.require_checkin.help',
             ]);
     }
 

@@ -8,7 +8,7 @@ use App\Service\EventConfigStore;
 use App\Tests\DatabaseTestCase;
 
 /**
- * Every change to site-wide configuration — event dates, timezone, access mode, ban thresholds —
+ * Every change to site-wide configuration - event dates, timezone, access mode, ban thresholds -
  * must leave a record of who changed it.
  *
  * The audit is emitted by EventConfigStore itself rather than by the individual config screens
@@ -46,7 +46,7 @@ final class ConfigurationAuditTest extends DatabaseTestCase
 
         $details = $latest->getDetails();
         self::assertSame('Europe/Berlin', $details['new_value']);
-        self::assertSame('UTC', $details['old_value'], 'the previous value must be recorded — "from what, to what" is the question asked of an audit log');
+        self::assertSame('UTC', $details['old_value'], 'the previous value must be recorded - "from what, to what" is the question asked of an audit log');
     }
 
     public function testASaveThatChangesNothingIsNotRecordedAsAChange(): void
@@ -63,7 +63,7 @@ final class ConfigurationAuditTest extends DatabaseTestCase
         self::assertCount(
             $before,
             $this->events()->findRecent(AuditEvents::CONFIGURATION, null),
-            'a no-op save must not manufacture audit noise — it would bury the real changes',
+            'a no-op save must not manufacture audit noise - it would bury the real changes',
         );
     }
 }

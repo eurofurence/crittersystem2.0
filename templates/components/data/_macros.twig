@@ -4,7 +4,7 @@
      the caller decides whether the user may see it (`{% if is_granted(...) %}`).
    - No CSRF tokens are minted here. `delete_form()` takes a token; it never creates one.
    - Values are escaped by default. The only parameters that accept trusted HTML are the
-     ones named `...Html` or documented as "captured markup" — pass a `{% set x %}…{% endset %}`
+     ones named `...Html` or documented as "captured markup" - pass a `{% set x %}…{% endset %}`
      block, never user input.
    - `attrs` maps render as literal HTML attributes: keys are written verbatim (so they must
      be developer-authored, not user input), values are escaped.
@@ -54,7 +54,7 @@
 {# ------------------------------------------------------------------------------------------------------------------ #}
 
 {% macro section_header(title, options = {}) %}
-  {# A heading *inside* a page (not the page title — that is page_header).
+  {# A heading *inside* a page (not the page title - that is page_header).
      options:
      - level: int (2..6, default 2)     -- semantic heading level
      - size: string (default 'h5')      -- visual size class
@@ -134,7 +134,7 @@
 
 {% macro message_card_start(title, options = {}) %}
   {# The centred single-message page (confirm / done / invalid / scanned). Content between
-     start and end goes inside the card body, under the title — typically a <p> and an
+     start and end goes inside the card body, under the title - typically a <p> and an
      optional form.
 
      options:
@@ -264,7 +264,7 @@
 {# ------------------------------------------------------------------------------------------------------------------ #}
 
 {% macro empty_state(title, options = {}) %}
-  {# The full-height Tabler .empty block — for a whole page/section with no content.
+  {# The full-height Tabler .empty block - for a whole page/section with no content.
      For "this small list is empty", use empty_inline(); inside a table, empty_row().
      options:
      - message: string
@@ -344,7 +344,7 @@
      token and the `confirm` Stimulus controller (never window.confirm()).
 
      The CSRF token is ALWAYS supplied by the caller: `csrf_token('delete' ~ x.id)`. This
-     macro must not mint one — a generic UI component makes no security decisions.
+     macro must not mint one - a generic UI component makes no security decisions.
 
      options:
      - label: string   -- button text, default 'Delete'
@@ -357,19 +357,19 @@
      - attrs: map      -- extra attributes on the <form>
   #}
   <form method="post" action="{{ action }}" class="d-inline"
-        data-controller="confirm" data-confirm-message-value="{{ options.message|default('Are you sure?') }}"
+        data-controller="confirm" data-confirm-message-value="{{ options.message|default('common.confirm.generic'|trans) }}"
         {%- if options.confirmTitle is defined %} data-confirm-title-value="{{ options.confirmTitle }}"{% endif %}
         {%- if options.confirmLabel is defined %} data-confirm-confirm-label-value="{{ options.confirmLabel }}"{% endif %}
         {%- if options.variant is defined %} data-confirm-variant-value="{{ options.variant }}"{% endif %}
         {{- _self.attrs(options.attrs|default({})) }}>
     <input type="hidden" name="{{ options.tokenName|default('_token') }}" value="{{ token }}">
-    <button class="{{ options.class|default('btn btn-sm btn-outline-danger') }}">{{ options.label|default('Delete') }}</button>
+    <button class="{{ options.class|default('btn btn-sm btn-outline-danger') }}">{{ options.label|default('common.action.delete'|trans) }}</button>
   </form>
 {% endmacro %}
 
 {% macro row_actions(actions = [], options = {}) %}
   {# The trailing action cell of a CRUD table row.
-     actions: array of {label, href, class}. Permission checks belong in the CALLER — build
+     actions: array of {label, href, class}. Permission checks belong in the CALLER - build
      the array conditionally; this macro renders whatever it is handed.
      For a destructive action, render delete_form() inside `extraHtml`.
 
@@ -417,7 +417,7 @@
         <div class="card-footer mt-auto">
           <div class="row align-items-center">
             <div class="col-auto">
-              {% if options.infoUrl is defined and options.infoUrl %}<a href="{{ options.infoUrl }}">More information</a>{% endif %}
+              {% if options.infoUrl is defined and options.infoUrl %}<a href="{{ options.infoUrl }}">{{ 'common.action.more_info'|trans }}</a>{% endif %}
             </div>
             <div class="col-auto ms-auto">
               {% if options.control is defined %}{{ options.control|raw }}{% endif %}

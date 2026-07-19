@@ -9,7 +9,7 @@ use Twig\Environment;
 /**
  * Contract tests for the reusable UI macros (templates/components/**).
  *
- * Twig's `|default` filter fires on ANY empty value — including '' and false — not only on
+ * Twig's `|default` filter fires on ANY empty value - including '' and false - not only on
  * undefined. An option whose empty value is meaningful (`class: ''`, `exact: false`) must therefore
  * be read with `is defined ?` rather than `|default`. Functional tests cannot see a mistake here,
  * because the page still renders, so the behaviour is pinned in this file instead.

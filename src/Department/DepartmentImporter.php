@@ -122,7 +122,7 @@ final class DepartmentImporter
                 // The organizational flag can only change while the
                 // department owns no shifts.
                 if ($wanted !== $dept->isOrganizational() && !$isNew && $this->shifts->countForDepartment($dept) > 0) {
-                    $warnings[] = "Row $i: cannot change organizational flag for '$name' — it already has shifts.";
+                    $warnings[] = "Row $i: cannot change organizational flag for '$name' - it already has shifts.";
                 } else {
                     $dept->setOrganizational($wanted);
                 }

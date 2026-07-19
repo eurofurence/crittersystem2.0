@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/configuration')]
 #[IsGranted('config:display')]
@@ -37,7 +38,7 @@ final class ConfigurationController extends AbstractController
             $this->store->set(EventConfigStore::KEY_DATETIME_FORMAT, $data->dateTimeFormat);
             $this->store->flush();
 
-            $this->addFlash('success', 'Configuration saved.');
+            $this->addFlash('success', new TranslatableMessage('manage.configuration.flash.saved'));
 
             return $this->redirectToRoute('app_manage_configuration');
         }

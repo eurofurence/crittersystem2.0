@@ -5,6 +5,7 @@ namespace App\Tests\Unit\Security;
 use App\Entity\Department;
 use App\Entity\Group;
 use App\Entity\Privilege;
+use App\Entity\Shift;
 use App\Entity\User;
 use App\Security\PrivilegeVoter;
 use PHPUnit\Framework\TestCase;
@@ -140,6 +141,38 @@ final class PrivilegeVoterTest extends TestCase
         $user->addGroup($this->group('shift-manager', ['department:manage']));
 
         self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'department:manage', $deptB));
+    }
+
+    public function testShiftScopeUsesTheShiftsOwnDepartment(): void
+    {
+        $user = new User();
+        $deptA = new Department('Art Show', 'art-show');
+        $deptB = new Department('Security', 'security');
+        $user->assignGroup($this->group('shift-manager', ['assignment:manage']), $deptA);
+
+        $ownShift = (new Shift())->setDepartment($deptA);
+        $otherShift = (new Shift())->setDepartment($deptB);
+
+        self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'assignment:manage', $ownShift));
+        self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote($user, 'assignment:manage', $otherShift));
+    }
+
+    /**
+     * A shift's task is optional, so scope must not be resolved through it: a
+     * task-less shift in another department would otherwise resolve to no
+     * department at all and be granted to every holder of the privilege.
+     */
+    public function testTaskLessShiftInAnotherDepartmentIsStillScoped(): void
+    {
+        $user = new User();
+        $deptA = new Department('Art Show', 'art-show');
+        $deptB = new Department('Security', 'security');
+        $user->assignGroup($this->group('shift-manager', ['assignment:manage']), $deptA);
+
+        $shift = (new Shift())->setDepartment($deptB);
+        self::assertNull($shift->getShiftTask());
+
+        self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote($user, 'assignment:manage', $shift));
     }
 
     public function testExpiredAssignmentIsIgnored(): void

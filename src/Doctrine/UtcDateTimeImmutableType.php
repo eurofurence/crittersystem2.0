@@ -13,7 +13,7 @@ use Doctrine\DBAL\Types\DateTimeTzImmutableType;
  * before it is written and again after it is read.
  *
  * This guarantees a single, unambiguous instant for every timestamp in the
- * database regardless of the PHP timezone of the value handed to Doctrine —
+ * database regardless of the PHP timezone of the value handed to Doctrine -
  * important for audit and compliance. The application converts to/from the
  * configured display timezone only at the edges (see {@see \App\Service\DisplaySettings}).
  *

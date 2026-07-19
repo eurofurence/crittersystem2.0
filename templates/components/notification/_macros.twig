@@ -13,7 +13,7 @@
     {% if options.icon is defined %}
       <span class="me-2" aria-hidden="true">{{ options.icon }}</span>
     {% endif %}
-    {% if options.messageHtml is defined %}{{ options.messageHtml|raw }}{% else %}{{ message }}{% endif %}
+    {% if options.messageHtml is defined %}{{ options.messageHtml|raw }}{% else %}{{ message|trans }}{% endif %}
 
     {% if dismissible %}
       <button type="button" class="btn-close" data-bs-dismiss="alert"></button>

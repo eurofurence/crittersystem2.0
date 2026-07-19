@@ -23,13 +23,13 @@ use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInt
  *
  * Because the mode is read from the database on each request, tightening it (e.g. to
  * "staff only") takes effect for every signed-in user on their very next request: a user who
- * no longer qualifies is signed out and their session invalidated — the mode change expires
+ * no longer qualifies is signed out and their session invalidated - the mode change expires
  * their session without any need to reach into the session store.
  *
  * Deliberately NOT gated, so the system can still be entered and a badge still shown while it
  * is restricted:
  *  - authentication and the restricted-access notice itself (/login, /logout, /unavailable);
- *  - the whole /digital-id namespace — a volunteer must be able to display their digital badge
+ *  - the whole /digital-id namespace - a volunteer must be able to display their digital badge
  *    for the security team even during a lockdown, and its public verify URL is scanned by them;
  *  - public, pre-authentication utility links (ban appeal, install, health, unsubscribe, erasure,
  *    invitation acceptance, the dev Telegram callback) and framework/asset routes;
@@ -79,7 +79,7 @@ final class AccessModeGateSubscriber implements EventSubscriberInterface
         $request = $event->getRequest();
         $path = $request->getPathInfo();
 
-        // The API firewall is stateless — deny with JSON, never touch a session.
+        // The API firewall is stateless - deny with JSON, never touch a session.
         if (str_starts_with($path, '/api')) {
             if (!str_starts_with($path, self::API_ALLOWLIST)) {
                 $event->setResponse(new JsonResponse(

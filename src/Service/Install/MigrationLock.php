@@ -13,7 +13,7 @@ use Doctrine\DBAL\Platforms\PostgreSQLPlatform;
  *
  *  - They are held for the lifetime of the database *session* (connection). If
  *    the migrating pod/container is killed mid-run, its connection drops and
- *    PostgreSQL releases the lock automatically — no stale lock file to clear,
+ *    PostgreSQL releases the lock automatically - no stale lock file to clear,
  *    no manual `--force` to remember. The next pod simply acquires it and
  *    proceeds.
  *  - When many replicas boot at once, exactly one wins the lock and migrates;
@@ -88,7 +88,7 @@ final class MigrationLock
         try {
             $this->connection->executeQuery('SELECT pg_advisory_unlock(?)', [self::LOCK_KEY]);
         } catch (\Throwable) {
-            // Connection already gone — PostgreSQL has released the lock for us.
+            // Connection already gone - PostgreSQL has released the lock for us.
         }
     }
 

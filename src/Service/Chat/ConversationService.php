@@ -46,7 +46,7 @@ final class ConversationService
 
     /**
      * Reason the message may not be sent, or null. Only Info Desk / Admins may
-     * send links (and images) — a link from anyone else is rejected.
+     * send links (and images) - a link from anyone else is rejected.
      */
     public function restrictedContentError(?string $body, bool $maySendRestricted): ?string
     {

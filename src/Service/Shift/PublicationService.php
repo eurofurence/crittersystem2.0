@@ -17,7 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Publishes a department's draft shifts. Publication validates
  * required fields, rejects stale writes, flips the drafts to published
  * atomically, audits each PUBLISH, and only then triggers notifications to
- * anyone already assigned — so a failed publish never leaks notifications.
+ * anyone already assigned - so a failed publish never leaks notifications.
  */
 final class PublicationService
 {

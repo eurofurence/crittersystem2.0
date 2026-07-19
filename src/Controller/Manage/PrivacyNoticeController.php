@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/privacy-notice')]
 #[IsGranted('config:privacy')]
@@ -52,7 +53,7 @@ final class PrivacyNoticeController extends AbstractController
                 'resourceType' => 'PrivacyNotice',
                 'resourceId' => $notice->getId(),
             ]);
-            $this->addFlash('success', 'Privacy notice saved.');
+            $this->addFlash('success', new TranslatableMessage('manage.privacy_notice.flash.saved'));
 
             return $this->redirectToRoute('app_manage_privacy_notice');
         }
@@ -76,7 +77,7 @@ final class PrivacyNoticeController extends AbstractController
             $this->em->persist($notice);
         }
         $this->em->flush();
-        $this->addFlash('success', 'Default privacy notice restored.');
+        $this->addFlash('success', new TranslatableMessage('manage.privacy_notice.flash.reset'));
 
         return $this->redirectToRoute('app_manage_privacy_notice');
     }

@@ -7,7 +7,7 @@ resources:
   - postgres.yaml        # remove when using an external/managed database
   - app.yaml
   - ingress.yaml
-  # secret.example.yaml is intentionally NOT listed — provide the real Secret
+  # secret.example.yaml is intentionally NOT listed - provide the real Secret
   # out-of-band (kubectl create secret / Sealed Secrets / External Secrets).
 
 # Pin the image in one place; override per environment with `kustomize edit set

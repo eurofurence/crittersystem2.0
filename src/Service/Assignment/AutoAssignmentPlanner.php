@@ -21,7 +21,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Automatic assignment proposal engine. It only ever produces a draft
- * {@see AssignmentProposal} — it never creates published assignments. Suggestions
+ * {@see AssignmentProposal} - it never creates published assignments. Suggestions
  * respect the hard constraints (membership, capacity, confirmed existing
  * assignments, overlap prohibition, explicit Unavailable) and are ranked by soft
  * constraints (Preferred before Available before Avoid, then fair distribution of

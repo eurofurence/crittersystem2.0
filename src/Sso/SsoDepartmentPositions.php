@@ -20,7 +20,7 @@ use Doctrine\ORM\EntityManagerInterface;
  *
  * The resolved position is reconciled, not merely added: the positional group that no longer applies
  * is removed, so a demotion at the identity provider takes effect on the next login. Only the two
- * positional groups on the departments mapped in this login are touched — a delegated shift manager
+ * positional groups on the departments mapped in this login are touched - a delegated shift manager
  * is an approval-backed, time-boxed grant and is never rewritten here.
  */
 final class SsoDepartmentPositions

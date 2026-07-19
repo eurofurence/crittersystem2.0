@@ -8,7 +8,7 @@ namespace App\Enum;
  * A user's position inside a department.
  *
  * A position is stored as a department-scoped {@see \App\Entity\UserGroupAssignment} whose group
- * carries the matching slug — there is no position column. This enum is the single place that maps
+ * carries the matching slug - there is no position column. This enum is the single place that maps
  * the two directions, so the slugs are not spelled out at call sites.
  *
  * `rank()` is the precedence used when several positions could apply at once (a user holding both
@@ -76,7 +76,7 @@ enum DepartmentPosition: string
 
     /**
      * Group slugs that encode a position and may therefore be swapped when the position changes.
-     * The delegated slug is excluded on purpose — see the constant above.
+     * The delegated slug is excluded on purpose - see the constant above.
      *
      * @return string[]
      */

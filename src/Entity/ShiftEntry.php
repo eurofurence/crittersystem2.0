@@ -49,7 +49,7 @@ class ShiftEntry
 
     /**
      * True when a manager assigned this over an Avoid/Unavailable availability or
-     * beyond the recommended event hours — visibly marked and audited.
+     * beyond the recommended event hours - visibly marked and audited.
      */
     #[ORM\Column]
     private bool $overridden = false;
@@ -62,6 +62,12 @@ class ShiftEntry
 
     #[ORM\Column(name: 'noshow_comment', type: Types::TEXT, nullable: true)]
     private ?string $noshowComment = null;
+
+    #[ORM\Column(name: 'checked_in_at', nullable: true)]
+    private ?\DateTimeImmutable $checkedInAt = null;
+
+    #[ORM\Column(name: 'checked_out_at', nullable: true)]
+    private ?\DateTimeImmutable $checkedOutAt = null;
 
     #[ORM\Column(name: 'created_at')]
     private \DateTimeImmutable $createdAt;
@@ -184,6 +190,56 @@ class ShiftEntry
     public function setNoshowComment(?string $noshowComment): static
     {
         $this->noshowComment = $noshowComment;
+
+        return $this;
+    }
+
+    public function getCheckedInAt(): ?\DateTimeImmutable
+    {
+        return $this->checkedInAt;
+    }
+
+    public function getCheckedOutAt(): ?\DateTimeImmutable
+    {
+        return $this->checkedOutAt;
+    }
+
+    public function isCheckedIn(): bool
+    {
+        return $this->checkedInAt !== null;
+    }
+
+    public function isCheckedOut(): bool
+    {
+        return $this->checkedOutAt !== null;
+    }
+
+    /**
+     * Turning up contradicts a no-show, so checking in clears the no-show flag -
+     * otherwise a volunteer marked absent and then checked in stays on course for
+     * the automatic no-show ban.
+     */
+    public function checkIn(\DateTimeImmutable $at): static
+    {
+        $this->checkedInAt = $at;
+        $this->checkedOutAt = null;
+        $this->noshow = false;
+        $this->noshowComment = null;
+
+        return $this;
+    }
+
+    public function checkOut(\DateTimeImmutable $at): static
+    {
+        $this->checkedOutAt = $at;
+
+        return $this;
+    }
+
+    public function undoCheckIn(): static
+    {
+        $this->checkedInAt = null;
+        $this->checkedOutAt = null;
 
         return $this;
     }

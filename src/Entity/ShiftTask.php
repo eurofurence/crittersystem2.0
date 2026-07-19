@@ -15,8 +15,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\UniqueConstraint(name: 'uniq_shift_task_department_name', columns: ['department_id', 'name'])]
 // Names are unique WITHIN a department, not globally: two departments may each run a "Briefing".
 // The global pool (department_id IS NULL) keeps unique names of its own, enforced by a partial
-// index the ORM cannot express — see the migration.
-#[UniqueEntity(fields: ['name', 'department'], message: 'This department already has a shift task with that name.', errorPath: 'name')]
+// index the ORM cannot express - see the migration.
+#[UniqueEntity(fields: ['name', 'department'], message: 'validation.shift_task.name_unique', errorPath: 'name')]
 class ShiftTask
 {
     use HasPublicUuid;

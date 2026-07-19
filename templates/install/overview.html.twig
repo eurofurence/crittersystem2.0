@@ -1,16 +1,15 @@
 {% extends 'install/_layout.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}System overview · Setup · VMS{% endblock %}
+{% block title %}{{ 'install.overview.title'|trans }}{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
 
     {{ d.card_start(null, {class: 'card-md'}) }}
-            <h2 class="mb-1">System overview</h2>
+            <h2 class="mb-1">{{ 'install.overview.heading'|trans }}</h2>
             <p class="text-secondary">
-                Detected deployment: <strong>{{ deployment }}</strong>. The checks below must all pass before you
-                continue. Required dependency: a reachable <strong>PostgreSQL</strong> database.
+                {{ 'install.overview.intro'|trans({'%deployment%': '<strong>' ~ deployment ~ '</strong>', '%postgresql%': '<strong>PostgreSQL</strong>'})|raw }}
             </p>
 
             <div class="list-group list-group-flush">
@@ -19,9 +18,9 @@
                         <div class="row align-items-center">
                             <div class="col-auto">
                                 {% if check.ok %}
-                                    {{ d.badge('OK', 'bg-success text-white') }}
+                                    {{ d.badge('install.overview.check_ok'|trans, 'bg-success text-white') }}
                                 {% else %}
-                                    {{ d.badge('Fix', 'bg-danger text-white') }}
+                                    {{ d.badge('install.overview.check_fix'|trans, 'bg-danger text-white') }}
                                 {% endif %}
                             </div>
                             <div class="col text-truncate">
@@ -39,7 +38,7 @@
 
     {% embed 'install/_progress.html.twig' %}
         {% block buttons %}
-            <a href="{{ path('app_install_database') }}" class="btn btn-primary">Continue</a>
+            <a href="{{ path('app_install_database') }}" class="btn btn-primary">{{ 'common.action.continue'|trans }}</a>
         {% endblock %}
     {% endembed %}
 {% endblock %}

@@ -1,10 +1,10 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}My Digital ID{% endblock %}
+{% block title %}{{ 'digital_id.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Digital ID', {subtitle: 'Show this QR to verify your identity. It rotates automatically.'}) }}
+  {{ d.page_header('digital_id.page.heading'|trans, {subtitle: 'digital_id.page.subtitle'|trans}) }}
 
   <div class="row g-3 justify-content-center">
     {#

@@ -11,7 +11,7 @@ use Psr\Log\LoggerInterface;
  *
  * The single source of truth for "is a migration pending" is Doctrine's own
  * comparison of the available migration classes against the
- * `doctrine_migration_versions` bookkeeping table — NOT a marker file. That is
+ * `doctrine_migration_versions` bookkeeping table - NOT a marker file. That is
  * the self-healing property we want: there is no `.ok` flag that can drift out
  * of sync with reality after a crashed or interrupted deploy. State is always
  * recomputed from the database + the shipped migration set.
@@ -38,8 +38,8 @@ final class MigrationInspector
             return true;
         } catch (\Throwable $e) {
             /*
-             * A false here seals the whole site behind the maintenance page, and every cause — server
-             * down, wrong password, wrong database name, TLS refused — produces that same blank wall.
+             * A false here seals the whole site behind the maintenance page, and every cause - server
+             * down, wrong password, wrong database name, TLS refused - produces that same blank wall.
              * The reason exists only in this exception.
              */
             $this->logger->error('Database is unreachable: {reason}', [
@@ -56,7 +56,7 @@ final class MigrationInspector
      *
      * Returns the full available count when the bookkeeping table does not yet
      * exist (a brand-new database), which is exactly the "first install"
-     * situation. Throws nothing — callers gate on {@see isDatabaseReachable()}
+     * situation. Throws nothing - callers gate on {@see isDatabaseReachable()}
      * first to distinguish "DB down" from "DB empty".
      */
     public function pendingMigrationCount(): int
@@ -66,7 +66,7 @@ final class MigrationInspector
         } catch (\Throwable $e) {
             /*
              * Usually the doctrine_migration_versions table simply does not exist yet, so every shipped
-             * migration is pending — the normal first-install path. A misconfigured migrations setup also
+             * migration is pending - the normal first-install path. A misconfigured migrations setup also
              * lands here and is indistinguishable from a fresh database, so record which one it was.
              */
             $this->logger->info('Migration status unavailable, treating every migration as pending: {reason}', [
@@ -80,7 +80,7 @@ final class MigrationInspector
 
     /**
      * The highest available migration version shipped with this code (filesystem
-     * only — no database access), or null when there are no migrations.
+     * only - no database access), or null when there are no migrations.
      */
     public function latestAvailableVersion(): ?string
     {
@@ -117,7 +117,7 @@ final class MigrationInspector
     }
 
     /**
-     * A migrated, reachable database that has no users yet — the "first run"
+     * A migrated, reachable database that has no users yet - the "first run"
      * where an admin account still has to be created.
      */
     public function isFreshInstall(): bool

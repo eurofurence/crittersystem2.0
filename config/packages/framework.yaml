@@ -7,6 +7,16 @@ framework:
     #esi: true
     #fragments: true
 
+when@prod:
+    framework:
+        # TLS is terminated at the reverse proxy, so the app is reached over plain HTTP
+        # internally. Trust the proxy's X-Forwarded-* headers so generated absolute URLs
+        # carry the real public scheme/host - the OIDC redirect_uri must be https to match
+        # what is registered at the identity provider. TRUSTED_PROXIES scopes which upstreams
+        # may set these headers; narrow it from the private-range default if the proxy IP is known.
+        trusted_proxies: '%env(TRUSTED_PROXIES)%'
+        trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port']
+
 when@test:
     framework:
         test: true

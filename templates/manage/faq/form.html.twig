@@ -2,11 +2,11 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ heading }}{% endblock %}
+{% block title %}{{ heading|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header(heading, {
-    actions: [{label: '← Back to FAQ', href: path('app_manage_faq_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.faq.action.back'|trans, href: path('app_manage_faq_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
@@ -16,6 +16,6 @@
       {{ f.field(form.question, {col: 'col-12'}) }}
       {{ f.field(form.answer, {col: 'col-12'}) }}
     </div>
-    <button class="btn btn-primary mt-2">Save</button>
+    <button class="btn btn-primary mt-2">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

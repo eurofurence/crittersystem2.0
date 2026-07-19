@@ -9,7 +9,7 @@ use Endroid\QrCode\Writer\Result\ResultInterface;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Central QR code module — reusable wrapper around endroid/qr-code. Used by
+ * Central QR code module - reusable wrapper around endroid/qr-code. Used by
  * the digital ID feature, certification check-in QRs, and anything else that
  * needs a server-rendered QR code (PNG or inline data URI).
  */
@@ -26,7 +26,7 @@ final class QrCodeGenerator
         ))->build();
     }
 
-    /** A `Response` serving the QR as a PNG (with no-store cache headers — tokens rotate). */
+    /** A `Response` serving the QR as a PNG (with no-store cache headers - tokens rotate). */
     public function pngResponse(string $data, int $size = 280, int $margin = 10): Response
     {
         $result = $this->build($data, $size, $margin);

@@ -1,22 +1,22 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Manage FAQ{% endblock %}
+{% block title %}{{ 'manage.faq.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('FAQ', {
-    subtitle: 'Curated answers to common questions.',
+  {{ d.page_header('manage.faq.page.heading'|trans, {
+    subtitle: 'manage.faq.page.subtitle'|trans,
     actions: [
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New entry', href: path('app_manage_faq_new'), class: 'btn btn-primary'}
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.faq.action.new'|trans, href: path('app_manage_faq_new'), class: 'btn btn-primary'}
     ]
   }) }}
 
   {% if faqs is empty %}
-    {{ d.empty_state('No FAQ entries', {actionLabel: '+ New entry', actionHref: path('app_manage_faq_new')}) }}
+    {{ d.empty_state('manage.faq.empty.title'|trans, {actionLabel: 'manage.faq.action.new'|trans, actionHref: path('app_manage_faq_new')}) }}
   {% else %}
     {{ d.table_start() }}
-      <thead><tr><th>Category</th><th>Question</th><th>Order</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>{{ 'manage.faq.table.category'|trans }}</th><th>{{ 'manage.faq.table.question'|trans }}</th><th>{{ 'manage.faq.table.order'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
       <tbody>
         {% for faq in faqs %}
           <tr>
@@ -25,11 +25,11 @@
             <td>{{ faq.displayOrder }}</td>
             {% set del %}
               {{ d.delete_form(path('app_manage_faq_delete', {id: faq.uuid}), csrf_token('delete' ~ faq.id), {
-                message: 'Delete this FAQ entry?'
+                message: 'manage.faq.confirm.delete'|trans
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'Edit', href: path('app_manage_faq_edit', {id: faq.uuid})}
+              {label: 'common.action.edit'|trans, href: path('app_manage_faq_edit', {id: faq.uuid})}
             ], {extraHtml: del}) }}
           </tr>
         {% endfor %}

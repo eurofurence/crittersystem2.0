@@ -32,6 +32,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * User administration: list (with PII masked for sub-admins), invite, edit
@@ -80,9 +81,75 @@ final class UserController extends AbstractController
                 ->subject('Your two-factor authentication was reset')
                 ->text('An administrator reset the two-factor authentication on your account. Please set it up again. If you did not expect this, contact us immediately.'),
         );
-        $this->addFlash('success', "Two-factor authentication reset for {$user->getName()}.");
+        $this->addFlash('success', new TranslatableMessage('manage.user.flash.two_factor_reset', ['%name%' => $user->getName()]));
 
         return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getUuid()]);
+    }
+
+    /**
+     * Queue a re-run of onboarding for one user, applied at their next sign-in.
+     *
+     * Deliberately not applied here: the onboarding gate reads the completed flag
+     * on every request and the user provider reloads the user from the database,
+     * so clearing it now would drop anyone already signed in into the wizard
+     * mid-session. See OnboardingResetSubscriber.
+     */
+    #[Route('/{id}/reset-onboarding', name: 'app_manage_user_reset_onboarding', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    #[IsGranted('global:admin')]
+    public function resetOnboarding(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): Response
+    {
+        if (!$this->isCsrfTokenValid('reset-onboarding'.$user->getId(), (string) $request->request->get('_token'))) {
+            return $this->redirectToRoute('app_manage_user_index');
+        }
+
+        if ($user->isOnboardingResetPending()) {
+            $user->cancelOnboardingReset();
+            $this->em->flush();
+            $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, [
+                'resourceType' => 'User',
+                'resourceId' => $user->getId(),
+                'details' => ['onboarding' => 'reset_cancelled'],
+            ]);
+            $this->addFlash('success', new TranslatableMessage('manage.user.flash.onboarding_cancelled', ['%name%' => $user->getName()]));
+
+            return $this->redirectToRoute('app_manage_user_index');
+        }
+
+        $user->requestOnboardingReset();
+        $this->em->flush();
+        $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, [
+            'resourceType' => 'User',
+            'resourceId' => $user->getId(),
+            'details' => ['onboarding' => 'reset_requested'],
+        ]);
+        $this->addFlash('success', new TranslatableMessage('manage.user.flash.onboarding_forced', ['%name%' => $user->getName()]));
+
+        return $this->redirectToRoute('app_manage_user_index');
+    }
+
+    /**
+     * Queue a re-run of onboarding for every user - e.g. after the privacy notice
+     * or consent text changes and everyone must see it again.
+     */
+    #[Route('/reset-onboarding-all', name: 'app_manage_user_reset_onboarding_all', methods: ['POST'])]
+    #[IsGranted('global:admin')]
+    public function resetOnboardingForAll(Request $request): Response
+    {
+        // No 2FA step-up: this exposes nothing and changes no credential - it only
+        // makes people answer the wizard again. Step-up is reserved for credential
+        // and security-config actions (resetting someone's 2FA, SSO settings).
+        if (!$this->isCsrfTokenValid('reset-onboarding-all', (string) $request->request->get('_token'))) {
+            return $this->redirectToRoute('app_manage_user_index');
+        }
+
+        $count = $this->users->requestOnboardingResetForAll();
+        $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, [
+            'resourceType' => 'User',
+            'details' => ['onboarding' => 'reset_requested_for_all', 'users' => $count, 'critical' => true],
+        ]);
+        $this->addFlash('success', new TranslatableMessage('manage.user.flash.onboarding_forced_all', ['%count%' => $count]));
+
+        return $this->redirectToRoute('app_manage_user_index');
     }
 
     #[Route('', name: 'app_manage_user_index', methods: ['GET'])]
@@ -134,7 +201,7 @@ final class UserController extends AbstractController
                 'resourceId' => $user->getId(),
                 'details' => ['username' => $user->getName(), 'invited' => true],
             ]);
-            $this->addFlash('success', \sprintf('Invitation sent to "%s".', $user->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.user.flash.invitation_sent', ['%name%' => $user->getName()]));
 
             return $this->redirectToRoute('app_manage_user_index');
         }
@@ -167,7 +234,7 @@ final class UserController extends AbstractController
                         return $stepUp;
                     }
                     if (!$user->isStaff() && !$this->isGranted('global:admin')) {
-                        $this->addFlash('danger', 'A non-staff user can only be promoted to an elevated role by a global admin.');
+                        $this->addFlash('danger', new TranslatableMessage('manage.user.flash.promote_denied'));
 
                         return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getUuid()]);
                     }
@@ -187,7 +254,7 @@ final class UserController extends AbstractController
                 'resourceType' => 'User',
                 'resourceId' => $user->getId(),
             ]);
-            $this->addFlash('success', 'User updated.');
+            $this->addFlash('success', new TranslatableMessage('manage.user.flash.updated'));
 
             return $this->redirectToRoute('app_manage_user_index');
         }
@@ -205,7 +272,7 @@ final class UserController extends AbstractController
     {
         if ($this->canManage($user) && $this->isCsrfTokenValid('untg'.$user->getId(), (string) $request->request->get('_token'))) {
             $links->unlink($user, $this->getUser() instanceof User ? $this->getUser() : null);
-            $this->addFlash('success', 'Telegram account unlinked.');
+            $this->addFlash('success', new TranslatableMessage('manage.user.flash.telegram_unlinked'));
         }
 
         return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getUuid()]);
@@ -223,7 +290,7 @@ final class UserController extends AbstractController
             $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, [
                 'resourceType' => 'User', 'resourceId' => $user->getId(), 'details' => ['active' => false],
             ]);
-            $this->addFlash('success', 'User deactivated.');
+            $this->addFlash('success', new TranslatableMessage('manage.user.flash.deactivated'));
         }
 
         return $this->redirectToRoute('app_manage_user_index');

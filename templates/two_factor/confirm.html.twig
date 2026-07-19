@@ -1,18 +1,18 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Confirm it's you{% endblock %}
+{% block title %}{{ 'two_factor.confirm.title'|trans }}{% endblock %}
 {% block body %}
-  {{ d.message_card_start("Confirm it's you", {
+  {{ d.message_card_start('two_factor.confirm.title'|trans, {
     width: 'col-md-5',
     titleTag: 'h2',
     titleClass: 'card-title',
     bodyClass: 'card-body'
   }) }}
-    <p>This action needs a fresh two-factor verification. Enter a current code (or a recovery code).</p>
+    <p>{{ 'two_factor.confirm.body'|trans }}</p>
     <form method="post">
       <input type="hidden" name="return" value="{{ return }}">
       <div class="mb-3"><input name="code" class="form-control" autocomplete="one-time-code" inputmode="numeric" required autofocus></div>
-      <button class="btn btn-primary">Verify</button>
+      <button class="btn btn-primary">{{ 'two_factor.confirm.verify'|trans }}</button>
     </form>
   {{ d.message_card_end() }}
 {% endblock %}

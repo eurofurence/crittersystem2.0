@@ -37,7 +37,7 @@ final class MatrixPresenterTest extends DatabaseTestCase
     public function testColumnsComeFromDepartmentDataNotHardCoded(): void
     {
         $dept = $this->dept();
-        // Labels chosen freely by the department — the presenter must echo them.
+        // Labels chosen freely by the department - the presenter must echo them.
         $group = new PositionGroup($dept, 'Catering');
         $this->em->persist($group);
         $pos = new NamedPosition($group, 'Head Chef');

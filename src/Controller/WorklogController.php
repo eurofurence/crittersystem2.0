@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Staff self-service worklog. Staff may record hours for themselves
@@ -43,9 +44,9 @@ final class WorklogController extends AbstractController
             $this->em->persist($worklog);
             $this->em->flush();
             $this->audit($worklog, AuditEvents::CREATE);
-            $this->addFlash('success', 'Worklog entry added.');
+            $this->addFlash('success', new TranslatableMessage('worklog.flash.added'));
         } else {
-            $this->addFlash('danger', 'Could not add the worklog entry.');
+            $this->addFlash('danger', new TranslatableMessage('worklog.flash.add_failed'));
         }
 
         return $this->redirectToRoute('app_profile');
@@ -62,7 +63,7 @@ final class WorklogController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->flush();
             $this->audit($worklog, AuditEvents::UPDATE);
-            $this->addFlash('success', 'Worklog entry updated.');
+            $this->addFlash('success', new TranslatableMessage('worklog.flash.updated'));
 
             return $this->redirectToRoute('app_profile');
         }
@@ -80,7 +81,7 @@ final class WorklogController extends AbstractController
             $this->em->remove($worklog);
             $this->em->flush();
             $this->audit($worklog, AuditEvents::DELETE);
-            $this->addFlash('success', 'Worklog entry deleted.');
+            $this->addFlash('success', new TranslatableMessage('worklog.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_profile');

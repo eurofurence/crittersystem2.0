@@ -16,13 +16,14 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Department member actions: placing members and setting their position, delegated shift-manager
  * requests/approvals, and member removal.
  *
- * An SSO-managed user's membership belongs to the identity provider — their position is recomputed
- * from the claimed roles on every sign-in — so the write actions here refuse them rather than make a
+ * An SSO-managed user's membership belongs to the identity provider - their position is recomputed
+ * from the claimed roles on every sign-in - so the write actions here refuse them rather than make a
  * change that silently reverts on the next login.
  */
 #[IsGranted('ROLE_STAFF')]
@@ -47,12 +48,12 @@ final class DepartmentMemberController extends AbstractController
         $position = DepartmentPosition::tryFrom($request->request->getString('position'));
 
         if (!$user instanceof User || $position === null) {
-            $this->addFlash('danger', 'Pick a user and a position.');
+            $this->addFlash('danger', new TranslatableMessage('department.flash.pick_user_position'));
         } elseif ($user->isSsoManaged()) {
-            $this->addFlash('danger', 'SSO-provisioned users are placed by the identity provider.');
+            $this->addFlash('danger', new TranslatableMessage('department.flash.sso_add'));
         } else {
             $this->members->setPosition($department, $user, $position);
-            $this->addFlash('success', sprintf('%s added as %s.', $user->getName(), lcfirst($position->label())));
+            $this->addFlash('success', new TranslatableMessage('department.flash.added', ['%name%' => $user->getName(), '%position%' => lcfirst($position->label())]));
         }
 
         return $this->back($department);
@@ -66,10 +67,10 @@ final class DepartmentMemberController extends AbstractController
 
         if ($this->valid($request, 'position', $department, $userId) && $position !== null) {
             if ($userId->isSsoManaged()) {
-                $this->addFlash('danger', 'SSO-provisioned positions are set by the identity provider.');
+                $this->addFlash('danger', new TranslatableMessage('department.flash.sso_position'));
             } else {
                 $this->members->setPosition($department, $userId, $position);
-                $this->addFlash('success', sprintf('%s is now %s.', $userId->getName(), lcfirst($position->label())));
+                $this->addFlash('success', new TranslatableMessage('department.flash.now_position', ['%name%' => $userId->getName(), '%position%' => lcfirst($position->label())]));
             }
         }
 
@@ -82,7 +83,7 @@ final class DepartmentMemberController extends AbstractController
     {
         if ($this->valid($request, 'reqdel', $department, $userId)) {
             $this->delegated->request($department, $userId, $this->getUser());
-            $this->addFlash('success', 'Delegated shift-manager promotion requested.');
+            $this->addFlash('success', new TranslatableMessage('department.flash.delegated_requested'));
         }
 
         return $this->back($department);
@@ -94,10 +95,10 @@ final class DepartmentMemberController extends AbstractController
     {
         if ($this->valid($request, 'remove', $department, $userId)) {
             if ($userId->isSsoManaged()) {
-                $this->addFlash('danger', 'SSO-provisioned memberships cannot be removed here.');
+                $this->addFlash('danger', new TranslatableMessage('department.flash.sso_remove'));
             } else {
                 $this->members->remove($department, $userId);
-                $this->addFlash('success', sprintf('%s removed from the department.', $userId->getName()));
+                $this->addFlash('success', new TranslatableMessage('department.flash.removed', ['%name%' => $userId->getName()]));
             }
         }
 
@@ -115,7 +116,7 @@ final class DepartmentMemberController extends AbstractController
             } else {
                 $this->delegated->reject($reqId, $this->getUser());
             }
-            $this->addFlash('success', 'Delegated request '.$decision.'d.');
+            $this->addFlash('success', new TranslatableMessage('department.flash.delegated_decided', ['%decision%' => $decision]));
         }
 
         return $this->back($department);

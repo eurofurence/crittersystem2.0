@@ -2,20 +2,20 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ heading }}{% endblock %}
+{% block title %}{{ heading|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header(heading, {
-    actions: [{label: '← Back to shift types', href: path('app_manage_shift_task_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.shift_task.action.back'|trans, href: path('app_manage_shift_task_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
     <div class="row">
       {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
-      {{ f.choice(form.department, {col: 'col-12 col-md-6', help: 'Optional owning department'}) }}
+      {{ f.choice(form.department, {col: 'col-12 col-md-6', help: 'manage.shift_task.field.department.help'|trans}) }}
       {{ f.field(form.description, {col: 'col-12'}) }}
       {{ f.check(form.staffOnly, {col: 'col-12'}) }}
     </div>
-    <button class="btn btn-primary mt-2">Save</button>
+    <button class="btn btn-primary mt-2">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

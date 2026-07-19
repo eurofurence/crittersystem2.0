@@ -17,6 +17,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Staff Shift Manager module. A permission-scoped landing plus
@@ -93,13 +94,13 @@ final class ShiftManagerController extends AbstractController
             $options = $this->signup->signupOptions($shift, $user);
             $type = $options[$request->request->getInt('volunteer_type')] ?? (\count($options) === 1 ? reset($options) : null);
             if ($type === null) {
-                $this->addFlash('danger', 'Choose a role you are eligible to apply as.');
+                $this->addFlash('danger', new TranslatableMessage('shift_manager.flash.choose_role'));
             } elseif ($this->hoursGuard->wouldExceed($user, $shift) && !$request->request->getBoolean('acknowledge_hours')) {
                 // Self-application beyond the recommended hours needs explicit
                 // acknowledgement.
-                $this->addFlash('warning', \sprintf(
-                    'This shift would take you past the recommended %d planned hours. Tick "I understand" to apply anyway.',
-                    $this->hoursGuard->recommendedMax(),
+                $this->addFlash('warning', new TranslatableMessage(
+                    'shift_manager.flash.over_hours',
+                    ['%count%' => $this->hoursGuard->recommendedMax()],
                 ));
             } else {
                 try {
@@ -107,7 +108,7 @@ final class ShiftManagerController extends AbstractController
                         $this->hoursGuard->acknowledgeSelfApplication($user, $shift);
                     }
                     $this->signup->signUp($user, $shift, $type, (string) $request->request->get('comment') ?: null);
-                    $this->addFlash('success', \sprintf('Applied to "%s".', $shift->getTitle()));
+                    $this->addFlash('success', new TranslatableMessage('shift_manager.flash.applied', ['%name%' => $shift->getTitle()]));
                 } catch (CapacityConflictException $e) {
                     // Stale UI: capacity changed underneath. Report and let the
                     // polling frame refresh the live state.
@@ -133,7 +134,7 @@ final class ShiftManagerController extends AbstractController
                 $this->addFlash('danger', $error);
             } else {
                 $this->signup->cancel($entry);
-                $this->addFlash('success', 'Application cancelled.');
+                $this->addFlash('success', new TranslatableMessage('shift_manager.flash.application_cancelled'));
             }
         }
 

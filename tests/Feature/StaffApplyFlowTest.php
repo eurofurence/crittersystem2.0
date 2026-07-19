@@ -111,7 +111,7 @@ final class StaffApplyFlowTest extends DatabaseWebTestCase
         // First applies and wins the slot.
         $this->client->loginUser($first);
         $this->client->request('POST', '/manage-shifts/apply/'.$shift->getUuid(), ['_token' => $tokenFirst]);
-        // Second applies from a now-stale view — the backend refuses the last slot.
+        // Second applies from a now-stale view - the backend refuses the last slot.
         $this->client->loginUser($second);
         $this->client->request('POST', '/manage-shifts/apply/'.$shift->getUuid(), ['_token' => $tokenSecond]);
 

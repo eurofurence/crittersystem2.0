@@ -17,6 +17,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Audit log viewer and legal export. Access is admin-only; the underlying
@@ -63,7 +64,7 @@ final class AuditController extends AbstractController
             return $stepUp;
         }
         if (!$this->isCsrfTokenValid('audit_export', (string) $request->request->get('_token'))) {
-            $this->addFlash('danger', 'Invalid request token.');
+            $this->addFlash('danger', new TranslatableMessage('admin.audit.flash.invalid_token'));
 
             return $this->redirectToRoute('app_manage_audit');
         }
@@ -71,7 +72,7 @@ final class AuditController extends AbstractController
         $from = $this->parseDate((string) $request->request->get('from'), false);
         $to = $this->parseDate((string) $request->request->get('to'), true);
         if ($from === null || $to === null || $from > $to) {
-            $this->addFlash('danger', 'Provide a valid start and end date.');
+            $this->addFlash('danger', new TranslatableMessage('admin.audit.flash.invalid_dates'));
 
             return $this->redirectToRoute('app_manage_audit');
         }
@@ -101,7 +102,7 @@ final class AuditController extends AbstractController
             ],
         ]);
 
-        $this->addFlash('success', \sprintf('Export ready (%d events). Download it within %d days.', $export->getEventCount(), \App\Entity\AuditExport::RETENTION_DAYS));
+        $this->addFlash('success', new TranslatableMessage('admin.audit.flash.export_ready', ['%count%' => $export->getEventCount(), '%days%' => \App\Entity\AuditExport::RETENTION_DAYS]));
 
         return $this->redirectToRoute('app_manage_audit');
     }
@@ -122,7 +123,7 @@ final class AuditController extends AbstractController
                 'resourceId' => $uuid,
                 'errorMessage' => 'Export expired or file missing.',
             ]);
-            $this->addFlash('danger', 'That export has expired and is no longer available.');
+            $this->addFlash('danger', new TranslatableMessage('admin.audit.flash.export_expired'));
 
             return $this->redirectToRoute('app_manage_audit');
         }

@@ -143,7 +143,7 @@ final class AuditExporter
     private function renderPdf(array $manifest, array $events): string
     {
         $pdf = new PdfDocument();
-        $pdf->addLine('CRITTER — AUDIT LOG EXPORT');
+        $pdf->addLine('CRITTER - AUDIT LOG EXPORT');
         $pdf->addLine(str_repeat('=', 100));
         $pdf->addLine('Exported at:      '.$manifest['export_timestamp']);
         $pdf->addLine('Exported by:      '.$manifest['export_by_username'].' (id '.($manifest['export_by_user_id'] ?? 'n/a').')');
@@ -151,14 +151,14 @@ final class AuditExporter
         $pdf->addLine('Focus user:       '.($manifest['focus_user_id'] ?? 'all'));
         $pdf->addLine('System:           '.$manifest['system_identifier']);
         $pdf->addLine('Events:           '.\count($events));
-        $pdf->addLine('Legal hold ref:   '.($manifest['legal_hold_reference'] ?? '—'));
+        $pdf->addLine('Legal hold ref:   '.($manifest['legal_hold_reference'] ?? '-'));
         $pdf->addLine(str_repeat('=', 100));
         $pdf->addLine('');
 
         foreach ($events as $e) {
             $actor = $e['actor'];
             $pdf->addLine($e['timestamp'].'  ['.$e['event_type'].'/'.$e['action'].']  '.$e['outcome']['status']);
-            $pdf->addLine('   actor: '.$actor['type'].' '.($actor['username'] ?? '—').' (id '.($actor['user_id'] ?? '—').', ip '.($actor['source_ip'] ?? '—').')');
+            $pdf->addLine('   actor: '.$actor['type'].' '.($actor['username'] ?? '-').' (id '.($actor['user_id'] ?? '-').', ip '.($actor['source_ip'] ?? '-').')');
             if ($e['resource']['type'] !== null) {
                 $pdf->addLine('   resource: '.$e['resource']['type'].' '.($e['resource']['id'] ?? ''));
             }
@@ -175,7 +175,7 @@ final class AuditExporter
     private function manifestText(array $manifest, string $sha256, string $signature, string $certificatePem, int $eventCount): string
     {
         return implode("\n", [
-            'CRITTER AUDIT EXPORT — MANIFEST',
+            'CRITTER AUDIT EXPORT - MANIFEST',
             '================================',
             'File:                 events.json',
             'Export timestamp:     '.$manifest['export_timestamp'],

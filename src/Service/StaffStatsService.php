@@ -9,7 +9,7 @@ use App\Repository\UserRepository;
 
 /**
  * Aggregates per-user and team statistics for the staff suite, reusing the
- * existing hours/goodies services. Computed live — there is no cache table.
+ * existing hours/goodies services. Computed live - there is no cache table.
  */
 final class StaffStatsService
 {

@@ -1,19 +1,19 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Unsubscribe{% endblock %}
+{% block title %}{{ 'unsubscribe.title'|trans }}{% endblock %}
 {% block body %}
-  {{ d.message_card_start(done ? "You're unsubscribed" : 'Unsubscribe', {
+  {{ d.message_card_start(done ? 'unsubscribe.done_heading'|trans : 'unsubscribe.title'|trans, {
     width: 'col-12 col-md-6',
     titleTag: 'h2'
   }) }}
     {% if done %}
-      <p>You will no longer receive <strong>{{ label }}</strong> by email.</p>
-      <p class="text-muted small">Critical notifications (password reset, security, support) are still sent.</p>
+      <p>{{ 'unsubscribe.no_longer_prefix'|trans }} <strong>{{ label }}</strong> {{ 'unsubscribe.no_longer_suffix'|trans }}</p>
+      <p class="text-muted small">{{ 'unsubscribe.critical_note'|trans }}</p>
     {% else %}
-      <p>Stop receiving <strong>{{ label }}</strong> by email?</p>
+      <p>{{ 'unsubscribe.stop_prefix'|trans }} <strong>{{ label }}</strong> {{ 'unsubscribe.stop_suffix'|trans }}</p>
       <form method="post">
         <input type="hidden" name="type" value="{{ type }}">
-        <button class="btn btn-primary">Yes, unsubscribe</button>
+        <button class="btn btn-primary">{{ 'unsubscribe.submit'|trans }}</button>
       </form>
     {% endif %}
   {{ d.message_card_end() }}

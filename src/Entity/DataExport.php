@@ -136,7 +136,7 @@ class DataExport
 
     /**
      * Whether the record permits a download. The archive itself lives in the export storage, which
-     * the entity cannot reach — the caller confirms the key is still there.
+     * the entity cannot reach - the caller confirms the key is still there.
      */
     public function isDownloadable(?\DateTimeImmutable $now = null): bool
     {

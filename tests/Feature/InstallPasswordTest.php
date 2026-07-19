@@ -6,7 +6,7 @@ use App\Tests\DatabaseWebTestCase;
 
 /**
  * The install wizard unlock step. A fresh database (no users) makes the wizard reachable, and the
- * password is compared against INSTALL_PASSWORD — which deployment tooling routinely delivers with a
+ * password is compared against INSTALL_PASSWORD - which deployment tooling routinely delivers with a
  * trailing newline that must not cause a correct password to be rejected.
  */
 final class InstallPasswordTest extends DatabaseWebTestCase

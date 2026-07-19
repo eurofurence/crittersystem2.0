@@ -22,10 +22,11 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Info-desk "Locate user" workflow: find a volunteer by exact email, registration
- * number, or a scanned badge, then act on them — review hours and hand out goodies,
+ * number, or a scanned badge, then act on them - review hours and hand out goodies,
  * check them in, look at their shifts, and reach them like a department manager can.
  */
 #[Route('/backstage/distribute')]
@@ -108,7 +109,9 @@ final class DistributionController extends AbstractController
             $user->setState($state);
             $this->em->persist($state);
             $this->em->flush();
-            $this->addFlash('success', $arrive ? $user->getName().' checked in.' : 'Check-in removed for '.$user->getName().'.');
+            $this->addFlash('success', $arrive
+                ? new TranslatableMessage('backstage.flash.checked_in', ['%name%' => $user->getName()])
+                : new TranslatableMessage('backstage.flash.checkin_removed', ['%name%' => $user->getName()]));
         }
 
         return $this->redirectToRoute('app_backstage_distribute_user', ['id' => $user->getUuid()]);
@@ -120,7 +123,7 @@ final class DistributionController extends AbstractController
     {
         if ($this->isCsrfTokenValid('refresh'.$user->getId(), (string) $request->request->get('_token'))) {
             $this->hoursCache->recalculate($user);
-            $this->addFlash('success', 'Hours recalculated.');
+            $this->addFlash('success', new TranslatableMessage('backstage.flash.hours_recalculated'));
         }
 
         return $this->redirectToRoute('app_backstage_distribute_user', ['id' => $user->getUuid()]);
@@ -135,7 +138,7 @@ final class DistributionController extends AbstractController
             $quantity = max(1, (int) $request->request->get('quantity', 1));
 
             if ($item === null) {
-                $this->addFlash('danger', 'Unknown item.');
+                $this->addFlash('danger', new TranslatableMessage('backstage.flash.unknown_item'));
             } else {
                 $error = $this->eligibility->distributionError($user, $item, $quantity);
                 if ($error !== null) {
@@ -149,7 +152,11 @@ final class DistributionController extends AbstractController
                         ->setNotes((string) $request->request->get('notes') ?: null);
                     $this->em->persist($distribution);
                     $this->em->flush();
-                    $this->addFlash('success', \sprintf('Gave %d × %s to %s.', $quantity, $item->getName(), $user->getName()));
+                    $this->addFlash('success', new TranslatableMessage('backstage.flash.gave', [
+                        '%count%' => $quantity,
+                        '%item%' => $item->getName(),
+                        '%name%' => $user->getName(),
+                    ]));
                 }
             }
         }

@@ -3,7 +3,7 @@
 namespace App\Exception;
 
 /**
- * Raised when a slot or position could not be taken because it filled first —
+ * Raised when a slot or position could not be taken because it filled first -
  * two users racing for the same final slot, or an exclusive position claimed
  * concurrently.
  */

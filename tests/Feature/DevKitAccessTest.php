@@ -12,7 +12,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * The UI kit pages are developer tools, so they are gated twice: they are not routable in
- * prod at all (App\Dev\ is excluded from the container there — see config/services.yaml),
+ * prod at all (App\Dev\ is excluded from the container there - see config/services.yaml),
  * and they require the `global:admin` super-privilege where they do exist.
  */
 final class DevKitAccessTest extends DatabaseWebTestCase

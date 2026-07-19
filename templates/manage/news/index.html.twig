@@ -1,46 +1,46 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Manage News{% endblock %}
+{% block title %}{{ 'manage.news.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('News', {
-    subtitle: 'Announcements shown to volunteers.',
+  {{ d.page_header('manage.news.page.heading'|trans, {
+    subtitle: 'manage.news.page.subtitle'|trans,
     actions: [
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New post', href: path('app_manage_news_new'), class: 'btn btn-primary'}
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.news.action.new'|trans, href: path('app_manage_news_new'), class: 'btn btn-primary'}
     ]
   }) }}
 
   {% if news is empty %}
-    {{ d.empty_state('No news yet', {
-      message: 'Publish the first announcement.',
-      actionLabel: '+ New post',
+    {{ d.empty_state('manage.news.empty.title'|trans, {
+      message: 'manage.news.empty.message'|trans,
+      actionLabel: 'manage.news.action.new'|trans,
       actionHref: path('app_manage_news_new')
     }) }}
   {% else %}
     {{ d.table_start() }}
-      <thead><tr><th>Title</th><th>Flags</th><th>Published</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>{{ 'common.label.title'|trans }}</th><th>{{ 'manage.news.table.flags'|trans }}</th><th>{{ 'manage.news.table.published'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
       <tbody>
         {% for n in news %}
           <tr>
             <td><a href="{{ path('app_news_show', {id: n.uuid}) }}" class="fw-semibold text-decoration-none">{{ n.title }}</a></td>
             <td>
               <div class="d-flex flex-wrap gap-1">
-                {% if n.pinned %}{{ d.badge('Pinned', 'text-bg-primary') }}{% endif %}
-                {% if n.highlighted %}{{ d.badge('Highlight', 'text-bg-warning') }}{% endif %}
-                {% if n.meeting %}{{ d.badge('Meeting', 'text-bg-info') }}{% endif %}
-                {% if n.staffOnly %}{{ d.badge('Staff only', 'text-bg-secondary') }}{% endif %}
+                {% if n.pinned %}{{ d.badge('manage.news.badge.pinned'|trans, 'text-bg-primary') }}{% endif %}
+                {% if n.highlighted %}{{ d.badge('manage.news.badge.highlight'|trans, 'text-bg-warning') }}{% endif %}
+                {% if n.meeting %}{{ d.badge('manage.news.badge.meeting'|trans, 'text-bg-info') }}{% endif %}
+                {% if n.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'text-bg-secondary') }}{% endif %}
               </div>
             </td>
             <td class="small text-muted">{{ n.createdAt|app_datetime }}</td>
             {% set del %}
               {{ d.delete_form(path('app_manage_news_delete', {id: n.uuid}), csrf_token('delete' ~ n.id), {
-                message: 'Delete "' ~ n.title ~ '"?'
+                message: 'manage.news.confirm.delete'|trans({'%name%': n.title})
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'Edit', href: path('app_manage_news_edit', {id: n.uuid})}
+              {label: 'common.action.edit'|trans, href: path('app_manage_news_edit', {id: n.uuid})}
             ], {extraHtml: del}) }}
           </tr>
         {% endfor %}

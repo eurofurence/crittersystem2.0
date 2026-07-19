@@ -38,7 +38,14 @@ class ShiftRepository extends ServiceEntityRepository
         return $this->findBy([], ['startsAt' => 'ASC']);
     }
 
-    /** @return Shift[] Shifts that have not yet ended, soonest first. */
+    /**
+     * @return Shift[] Shifts that have not yet ended, soonest first.
+     *
+     * Applies no visibility filter - drafts and staff-only audiences are
+     * included. Only for callers that have already established the viewer may
+     * see them; anything reachable without a login wants
+     * {@see findUpcomingPublic()}.
+     */
     public function findUpcoming(?\DateTimeImmutable $from = null): array
     {
         return $this->createQueryBuilder('s')
@@ -47,6 +54,42 @@ class ShiftRepository extends ServiceEntityRepository
             ->orderBy('s.startsAt', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /** @return Shift[] published public shifts that have not yet ended, soonest first */
+    public function findUpcomingPublic(?\DateTimeImmutable $from = null): array
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->andWhere('s.endsAt >= :now')
+            ->setParameter('now', $from ?? new \DateTimeImmutable())
+            ->orderBy('s.startsAt', 'ASC');
+        $this->applyPublicVisibility($qb);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /** @return Shift[] published public shifts at a location, soonest first */
+    public function findPublicForLocation(Location $location): array
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->andWhere('s.location = :location')
+            ->setParameter('location', $location)
+            ->orderBy('s.startsAt', 'ASC');
+        $this->applyPublicVisibility($qb);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /** @return Shift[] published public shifts for a shift task, soonest first */
+    public function findPublicForShiftTask(ShiftTask $shiftTask): array
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->andWhere('s.shiftTask = :shiftTask')
+            ->setParameter('shiftTask', $shiftTask)
+            ->orderBy('s.startsAt', 'ASC');
+        $this->applyPublicVisibility($qb);
+
+        return $qb->getQuery()->getResult();
     }
 
     /**

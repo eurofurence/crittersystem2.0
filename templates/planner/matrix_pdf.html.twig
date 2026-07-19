@@ -20,19 +20,19 @@
   </style>
 </head>
 <body>
-  <h1>Staffing matrix — {{ department.name }}</h1>
-  <p class="sub">Advanced Matrix Planner export. Generated for posting.</p>
+  <h1>{{ 'planner.pdf.title'|trans({'%name%': department.name}) }}</h1>
+  <p class="sub">{{ 'planner.pdf.subtitle'|trans }}</p>
 
   {% if matrix.columns is empty %}
-    <p>No positions configured for this department.</p>
+    <p>{{ 'planner.pdf.no_positions'|trans }}</p>
   {% else %}
     <table>
       <thead>
         <tr>
-          <th class="left" rowspan="2">When</th>
-          <th class="left" rowspan="2">Location</th>
-          <th class="left" rowspan="2">Task</th>
-          <th class="left" rowspan="2">Shift</th>
+          <th class="left" rowspan="2">{{ 'common.label.when'|trans }}</th>
+          <th class="left" rowspan="2">{{ 'common.label.location'|trans }}</th>
+          <th class="left" rowspan="2">{{ 'planner.label.task'|trans }}</th>
+          <th class="left" rowspan="2">{{ 'planner.table.shift'|trans }}</th>
           {% for group in matrix.groups %}
             <th class="group" colspan="{{ group.positions|length }}">{{ group.name }}</th>
           {% endfor %}
@@ -49,8 +49,8 @@
               {{ shift.startsAt|app_datetime }}<br>
               – {{ shift.endsAt|app_time }}{% if row.overnight %} (+1){% endif %}
             </td>
-            <td class="left">{{ shift.location ? shift.location.name : '—' }}</td>
-            <td class="left">{{ shift.shiftTask ? shift.shiftTask.name : '—' }}</td>
+            <td class="left">{{ shift.location ? shift.location.name : '-' }}</td>
+            <td class="left">{{ shift.shiftTask ? shift.shiftTask.name : '-' }}</td>
             <td class="left">{{ shift.title }}</td>
             {% for column in matrix.columns %}
               {% set cell = row.cells[column.positionId] %}
@@ -65,7 +65,7 @@
             {% endfor %}
           </tr>
         {% else %}
-          <tr><td class="left" colspan="{{ 4 + matrix.columns|length }}">No shifts in range.</td></tr>
+          <tr><td class="left" colspan="{{ 4 + matrix.columns|length }}">{{ 'planner.pdf.no_shifts'|trans }}</td></tr>
         {% endfor %}
       </tbody>
     </table>

@@ -15,7 +15,7 @@ use App\Tests\DatabaseTestCase;
 /**
  * The identity provider names two global roles and a department; the combination decides the user's
  * position in that department. Protects the precedence rule (department manager beats shift manager
- * beats staff) and the demotion path — a role withdrawn at the provider must take effect on the next
+ * beats staff) and the demotion path - a role withdrawn at the provider must take effect on the next
  * sign-in, not linger.
  */
 final class SsoDepartmentPositionsTest extends DatabaseTestCase

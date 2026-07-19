@@ -1,12 +1,12 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Statistics{% endblock %}
+{% block title %}{{ 'staff.stats.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Statistics' ~ (isOther ? ' — ' ~ target.name : ''), {
-    subtitle: isOther ? 'Viewing another volunteer (admin).' : 'Your hours and history.',
-    actions: [{label: '← Staff overview', href: path('app_staff_overview'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(isOther ? 'staff.stats.page.title_other'|trans({'%name%': target.name}) : 'staff.stats.page.title'|trans, {
+    subtitle: isOther ? 'staff.stats.subtitle_other'|trans : 'staff.stats.subtitle_self'|trans,
+    actions: [{label: 'staff.action.back_overview'|trans, href: path('app_staff_overview'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if canSwitch %}
@@ -16,30 +16,30 @@
           {% for u in allUsers %}<option value="{{ u.uuid }}" {{ u.uuid == target.uuid ? 'selected' }}>{{ u.name }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-auto"><noscript><button class="btn btn-primary">View</button></noscript></div>
+      <div class="col-auto"><noscript><button class="btn btn-primary">{{ 'common.action.view'|trans }}</button></noscript></div>
     </form>
   {% endif %}
 
   {% set statOptions = {col: 'col-6 col-md-3', size: 'fs-4'} %}
   <div class="row g-3 mb-3">
-    {{ d.stat_card(stats.shiftHours|round(2), 'Shift hours', statOptions) }}
-    {{ d.stat_card(stats.dutyHours|round(2), 'Duty hours', statOptions) }}
-    {{ d.stat_card(stats.shiftEntries, 'Shift sign-ups', statOptions) }}
-    {{ d.stat_card(stats.goodies, 'Goodies', statOptions) }}
+    {{ d.stat_card(stats.shiftHours|round(2), 'staff.label.shift_hours'|trans, statOptions) }}
+    {{ d.stat_card(stats.dutyHours|round(2), 'staff.label.duty_hours'|trans, statOptions) }}
+    {{ d.stat_card(stats.shiftEntries, 'staff.stats.stat.shift_signups'|trans, statOptions) }}
+    {{ d.stat_card(stats.goodies, 'staff.label.goodies'|trans, statOptions) }}
   </div>
 
-  <h2 class="h5">Duty history</h2>
+  <h2 class="h5">{{ 'staff.stats.duty_history'|trans }}</h2>
   {% if dutyHistory is empty %}
-    {{ d.empty_inline('No duty sessions yet.', {class: 'text-muted'}) }}
+    {{ d.empty_inline('staff.stats.no_duty'|trans, {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>Area</th><th>Started</th><th>Ended</th><th>Hours</th></tr></thead>
+      <thead><tr><th>{{ 'staff.label.area'|trans }}</th><th>{{ 'staff.stats.col.started'|trans }}</th><th>{{ 'staff.stats.col.ended'|trans }}</th><th>{{ 'staff.stats.col.hours'|trans }}</th></tr></thead>
       <tbody>
         {% for r in dutyHistory %}
           <tr>
-            <td>{{ r.department ? r.department.name : '—' }}</td>
+            <td>{{ r.department ? r.department.name : '-' }}</td>
             <td class="small">{{ r.startedAt|app_datetime }}</td>
-            <td class="small">{{ r.endedAt ? r.endedAt|app_datetime : d.badge('Active', 'text-bg-success') }}</td>
+            <td class="small">{{ r.endedAt ? r.endedAt|app_datetime : d.badge('common.state.active'|trans, 'text-bg-success') }}</td>
             <td>{{ r.durationHours|round(2) }}</td>
           </tr>
         {% endfor %}
@@ -47,19 +47,19 @@
     {{ d.table_end() }}
   {% endif %}
 
-  <h2 class="h5 mt-3">Shift history</h2>
+  <h2 class="h5 mt-3">{{ 'staff.stats.shift_history'|trans }}</h2>
   {% if shiftEntries is empty %}
-    {{ d.empty_inline('No shift sign-ups.', {class: 'text-muted'}) }}
+    {{ d.empty_inline('staff.stats.no_shifts'|trans, {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>Shift</th><th>When</th><th>Role</th><th>No-show</th></tr></thead>
+      <thead><tr><th>{{ 'staff.stats.col.shift'|trans }}</th><th>{{ 'common.label.when'|trans }}</th><th>{{ 'common.label.role'|trans }}</th><th>{{ 'common.state.no_show'|trans }}</th></tr></thead>
       <tbody>
         {% for e in shiftEntries %}
           <tr>
             <td>{{ e.shift.title }}</td>
             <td class="small">{{ e.shift.startsAt|app_datetime }}</td>
             <td>{{ e.volunteerType.name }}</td>
-            <td>{% if e.noshow %}{{ d.badge('No-show', 'text-bg-danger') }}{% else %}—{% endif %}</td>
+            <td>{% if e.noshow %}{{ d.badge('common.state.no_show'|trans, 'text-bg-danger') }}{% else %}-{% endif %}</td>
           </tr>
         {% endfor %}
       </tbody>

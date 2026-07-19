@@ -57,6 +57,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'onboarding_completed_at', nullable: true)]
     private ?\DateTimeImmutable $onboardingCompletedAt = null;
 
+    /**
+     * Set when an administrator wants the user to run through onboarding again.
+     * The reset is applied at their next sign-in, not here: OnboardingGateSubscriber
+     * reads the completed flag on every request, so clearing it directly would throw
+     * anyone already signed in into the wizard mid-session.
+     */
+    #[ORM\Column(name: 'onboarding_reset_requested_at', nullable: true)]
+    private ?\DateTimeImmutable $onboardingResetRequestedAt = null;
+
     /** Opaque token for one-click, unauthenticated unsubscribe links. */
     #[ORM\Column(name: 'unsubscribe_token', length: 32, unique: true, nullable: true)]
     private ?string $unsubscribeToken = null;
@@ -82,7 +91,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'backup_codes', type: 'encrypted_string', nullable: true)]
     private ?string $backupCodes = null;
 
-    /** Telegram numeric chat/user id (PII — masked from sub-admins). */
+    /** Telegram numeric chat/user id (PII - masked from sub-admins). */
     #[ORM\Column(name: 'telegram_id', length: 64, nullable: true)]
     private ?string $telegramId = null;
 
@@ -281,6 +290,32 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->onboardingCompleted = false;
         $this->onboardingCompletedAt = null;
+        $this->onboardingResetRequestedAt = null;
+
+        return $this;
+    }
+
+    public function getOnboardingResetRequestedAt(): ?\DateTimeImmutable
+    {
+        return $this->onboardingResetRequestedAt;
+    }
+
+    public function isOnboardingResetPending(): bool
+    {
+        return $this->onboardingResetRequestedAt !== null;
+    }
+
+    /** Queue a re-run of onboarding, applied at the user's next sign-in. */
+    public function requestOnboardingReset(): static
+    {
+        $this->onboardingResetRequestedAt = new \DateTimeImmutable();
+
+        return $this;
+    }
+
+    public function cancelOnboardingReset(): static
+    {
+        $this->onboardingResetRequestedAt = null;
 
         return $this;
     }

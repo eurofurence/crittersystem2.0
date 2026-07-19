@@ -14,28 +14,24 @@ final class SsoRoleType extends AbstractType
     {
         $builder
             ->add('departmentManagerRole', TextType::class, [
-                'label' => 'Department manager role ID',
+                'label' => 'admin.sso.roles.field.department_manager.label',
                 'required' => false,
-                'help' => 'A user holding this role is a department manager of every department their '
-                    . 'group mappings place them in. Leave empty to disable.',
+                'help' => 'admin.sso.roles.field.department_manager.help',
             ])
             ->add('shiftManagerRole', TextType::class, [
-                'label' => 'Shift manager role ID',
+                'label' => 'admin.sso.roles.field.shift_manager.label',
                 'required' => false,
-                'help' => 'As above, for shift managers. A user holding both roles becomes a '
-                    . 'department manager.',
+                'help' => 'admin.sso.roles.field.shift_manager.help',
             ])
             ->add('globalAdminRole', TextType::class, [
-                'label' => 'Global admin role ID',
+                'label' => 'admin.sso.roles.field.global_admin.label',
                 'required' => false,
-                'help' => 'A user holding this role becomes a global admin across the whole app. '
-                    . 'Leave empty to disable.',
+                'help' => 'admin.sso.roles.field.global_admin.help',
             ])
             ->add('subAdminRole', TextType::class, [
-                'label' => 'Sub admin role ID',
+                'label' => 'admin.sso.roles.field.sub_admin.label',
                 'required' => false,
-                'help' => 'A user holding this role becomes a sub admin. A user holding both this and '
-                    . 'the global admin role becomes a global admin.',
+                'help' => 'admin.sso.roles.field.sub_admin.help',
             ]);
     }
 

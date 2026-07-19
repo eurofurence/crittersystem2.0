@@ -1,9 +1,9 @@
 {% extends 'onboarding/_layout.html.twig' %}
-{% block title %}Telegram{% endblock %}
-{% block step_title %}Link Telegram (optional){% endblock %}
+{% block title %}{{ 'onboarding.telegram.title'|trans }}{% endblock %}
+{% block step_title %}{{ 'onboarding.telegram.heading'|trans }}{% endblock %}
 {% block step_body %}
-  <p>You can link your Telegram account to receive shift notifications via the bot. You can also do this later from your profile.</p>
+  <p>{{ 'onboarding.telegram.body'|trans }}</p>
   <form method="post">
-    <button class="btn btn-outline-secondary">Skip for now</button>
+    <button class="btn btn-outline-secondary">{{ 'onboarding.telegram.skip'|trans }}</button>
   </form>
 {% endblock %}

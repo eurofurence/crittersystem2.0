@@ -13,8 +13,8 @@ use Symfony\Component\Routing\Attribute\Route;
  * k8s readiness/liveness). Always public and never gated by the installation
  * listener, so the platform can scrape it during a migration.
  *
- *  - 200: database reachable and schema up to date — ready to serve traffic.
- *  - 503: database unreachable or a migration is still pending — not ready.
+ *  - 200: database reachable and schema up to date - ready to serve traffic.
+ *  - 503: database unreachable or a migration is still pending - not ready.
  */
 final class HealthController extends AbstractController
 {

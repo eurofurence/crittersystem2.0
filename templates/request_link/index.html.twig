@@ -1,18 +1,18 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Request links — {{ department.name }}{% endblock %}
+{% block title %}{{ 'request_link.page.title'|trans({'%name%': department.name}) }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Availability & invitation links', {
-    subtitle: 'Department-bound links for collecting availability or inviting staff to apply.',
-    actions: [{label: '← Shift Manager', href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('request_link.heading'|trans, {
+    subtitle: 'request_link.subtitle'|trans,
+    actions: [{label: 'request_link.back_to_manager'|trans, href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ d.card_start(null, {bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
       <form method="get" class="d-flex align-items-end gap-2">
         <div>
-          <label class="form-label mb-1" for="rl-department">Department</label>
+          <label class="form-label mb-1" for="rl-department">{{ 'common.label.department'|trans }}</label>
           <select id="rl-department" name="department" class="form-select" onchange="this.form.submit()">
             {% for dept in departments %}
               <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
@@ -22,44 +22,44 @@
       </form>
       <div class="ms-auto small">
         {% if ssoManaged %}
-          {{ d.badge('SSO-managed', 'bg-azure-lt') }} membership is never changed by links.
+          {{ d.badge('request_link.badge_sso'|trans, 'bg-azure-lt') }} {{ 'request_link.sso_note'|trans }}
         {% elseif autoMembership %}
-          {{ d.badge('Auto-membership on', 'bg-green-lt') }} using a link adds the user to this department.
+          {{ d.badge('request_link.badge_auto_on'|trans, 'bg-green-lt') }} {{ 'request_link.auto_on_note'|trans }}
         {% else %}
-          {{ d.badge('Auto-membership off', 'bg-secondary-lt') }} links don't change membership.
+          {{ d.badge('request_link.badge_auto_off'|trans, 'bg-secondary-lt') }} {{ 'request_link.auto_off_note'|trans }}
         {% endif %}
       </div>
   {{ d.card_end({bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
 
-  {{ d.card_start('Create a link') }}
+  {{ d.card_start('request_link.create_card'|trans) }}
       <form method="post" action="{{ path('app_request_links_create') }}" class="row g-2 align-items-end">
         <input type="hidden" name="_token" value="{{ csrf_token('request_link') }}">
         <input type="hidden" name="department" value="{{ department.uuid }}">
         <div class="col-12 col-md-4">
-          <label class="form-label" for="rl-type">Type</label>
+          <label class="form-label" for="rl-type">{{ 'common.label.type'|trans }}</label>
           <select class="form-select" id="rl-type" name="type">
-            <option value="availability_request">Availability request</option>
-            <option value="shift_invitation">Shift application invitation</option>
+            <option value="availability_request">{{ 'request_link.type_availability'|trans }}</option>
+            <option value="shift_invitation">{{ 'request_link.type_invitation'|trans }}</option>
           </select>
         </div>
         <div class="col-12 col-md-4">
-          <label class="form-label" for="rl-expires">Deadline / expiry (optional)</label>
+          <label class="form-label" for="rl-expires">{{ 'request_link.deadline_label'|trans }}</label>
           <input type="datetime-local" class="form-control" id="rl-expires" name="expires_at">
         </div>
         <div class="col-12 col-md-4">
-          <button class="btn btn-primary" type="submit">Create link</button>
+          <button class="btn btn-primary" type="submit">{{ 'request_link.create_btn'|trans }}</button>
         </div>
       </form>
   {{ d.card_end() }}
 
   {% if links is empty %}
-    {{ d.empty_state('No links yet', {message: 'Create an availability request or shift invitation above.'}) }}
+    {{ d.empty_state('request_link.empty_title'|trans, {message: 'request_link.empty_message'|trans}) }}
   {% else %}
     {{ d.card_start(null, {class: '', bodyClass: ''}) }}
       <div class="table-responsive">
         <table class="table table-vcenter card-table">
           <thead>
-            <tr><th>Type</th><th>Link</th><th>Deadline</th><th>Status</th><th></th></tr>
+            <tr><th>{{ 'common.label.type'|trans }}</th><th>{{ 'request_link.col_link'|trans }}</th><th>{{ 'request_link.col_deadline'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th></th></tr>
           </thead>
           <tbody>
             {% for link in links %}
@@ -68,18 +68,18 @@
                 <td>
                   <code class="user-select-all">{{ url('app_request_link_access', {token: link.token}) }}</code>
                 </td>
-                <td>{{ link.expiresAt ? link.expiresAt|app_datetime : '—' }}</td>
+                <td>{{ link.expiresAt ? link.expiresAt|app_datetime : '-' }}</td>
                 <td>
-                  {% if link.revoked %}{{ d.badge('Revoked', 'bg-red-lt') }}
-                  {% elseif link.expired %}{{ d.badge('Expired', 'bg-secondary-lt') }}
-                  {% else %}{{ d.badge('Active', 'bg-green-lt') }}{% endif %}
+                  {% if link.revoked %}{{ d.badge('request_link.status_revoked'|trans, 'bg-red-lt') }}
+                  {% elseif link.expired %}{{ d.badge('common.state.expired'|trans, 'bg-secondary-lt') }}
+                  {% else %}{{ d.badge('common.state.active'|trans, 'bg-green-lt') }}{% endif %}
                 </td>
                 <td class="text-end">
                   {% if not link.revoked %}
                     <form method="post" action="{{ path('app_request_links_revoke', {id: link.uuid}) }}" class="d-inline"
-                          data-controller="confirm" data-confirm-message-value="Revoke this link?">
+                          data-controller="confirm" data-confirm-message-value="{{ 'request_link.revoke_confirm'|trans }}">
                       <input type="hidden" name="_token" value="{{ csrf_token('request_link_revoke' ~ link.id) }}">
-                      <button class="btn btn-sm btn-outline-danger">Revoke</button>
+                      <button class="btn btn-sm btn-outline-danger">{{ 'request_link.revoke_btn'|trans }}</button>
                     </form>
                   {% endif %}
                 </td>

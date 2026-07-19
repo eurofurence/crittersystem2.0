@@ -60,7 +60,7 @@ final class ErasureService
     {
         $user = $request->getUser();
 
-        // Audit BEFORE removal — the record outlives the account.
+        // Audit BEFORE removal - the record outlives the account.
         $this->audit->log(AuditEvents::GDPR, AuditEvents::DELETE, [
             'resourceType' => 'User',
             'resourceId' => $user->getId(),

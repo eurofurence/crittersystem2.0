@@ -19,53 +19,52 @@ final class OperationsConfigType extends AbstractType
 
         $builder
             ->add('noShowThreshold', IntegerType::class, [
-                'label' => 'No-show ban threshold (shifts)',
-                'help' => 'Account is locked after this many no-show shifts.',
+                'label' => 'manage.operations_config.field.no_show_threshold.label',
+                'help' => 'manage.operations_config.field.no_show_threshold.help',
             ])
             ->add('banScreenMessage', TextareaType::class, [
-                'label' => 'Ban screen message',
+                'label' => 'manage.operations_config.field.ban_screen_message.label',
                 'required' => true,
                 'attr' => ['rows' => 2],
-                'help' => 'Optional extra message shown on the ban screen.',
+                'help' => 'manage.operations_config.field.ban_screen_message.help',
             ])
             ->add('messagesEnabled', CheckboxType::class, [
-                'label' => 'Enable the messaging feature',
+                'label' => 'manage.operations_config.field.messages_enabled.label',
                 'required' => false,
             ])
             ->add('infoDeskWelcome', TextareaType::class, [
-                'label' => 'Info Desk welcome message',
+                'label' => 'manage.operations_config.field.infodesk_welcome.label',
                 'required' => true,
                 'attr' => ['rows' => 2],
             ])
             ->add('infoDeskFinalization', TextareaType::class, [
-                'label' => 'Info Desk finalization message',
+                'label' => 'manage.operations_config.field.infodesk_finalization.label',
                 'required' => true,
                 'attr' => ['rows' => 2],
             ])
-            ->add('infoDeskClaimTimeout', IntegerType::class, ['label' => 'Info Desk claim idle timeout (seconds)'] + $seconds)
-            ->add('messageEditWindow', IntegerType::class, ['label' => 'Message edit window (seconds)'] + $seconds)
-            ->add('callResponseTimeout', IntegerType::class, ['label' => 'Global call response timeout (seconds)'] + $seconds)
-            ->add('callManagerLead', IntegerType::class, ['label' => 'Manager call start window before shift (seconds)'] + $seconds)
-            ->add('shiftReminderLead', IntegerType::class, ['label' => 'Default shift reminder lead time (seconds)'] + $seconds)
+            ->add('infoDeskClaimTimeout', IntegerType::class, ['label' => 'manage.operations_config.field.infodesk_claim_timeout.label'] + $seconds)
+            ->add('messageEditWindow', IntegerType::class, ['label' => 'manage.operations_config.field.message_edit_window.label'] + $seconds)
+            ->add('callResponseTimeout', IntegerType::class, ['label' => 'manage.operations_config.field.call_response_timeout.label'] + $seconds)
+            ->add('callManagerLead', IntegerType::class, ['label' => 'manage.operations_config.field.call_manager_lead.label'] + $seconds)
+            ->add('shiftReminderLead', IntegerType::class, ['label' => 'manage.operations_config.field.shift_reminder_lead.label'] + $seconds)
             ->add('recommendedMaxHours', IntegerType::class, [
-                'label' => 'Recommended maximum planned event hours',
-                'help' => 'Warning threshold only, not a hard limit.',
+                'label' => 'manage.operations_config.field.recommended_max_hours.label',
+                'help' => 'manage.operations_config.field.recommended_max_hours.help',
                 'attr' => ['min' => 1],
             ])
             ->add('autoMembershipFromLinks', CheckboxType::class, [
-                'label' => 'Allow automatic department membership from non-SSO request links',
+                'label' => 'manage.operations_config.field.auto_membership.label',
                 'required' => false,
             ])
             ->add('sessionIdleMinutes', IntegerType::class, [
-                'label' => 'Sign-out after inactivity (minutes)',
-                'help' => 'How long a session survives with no request. An open, visible page keeps itself '
-                    . 'signed in by polling, so this governs tabs that are hidden or closed.',
+                'label' => 'manage.operations_config.field.session_idle.label',
+                'help' => 'manage.operations_config.field.session_idle.help',
                 'attr' => ['min' => 1],
             ])
-            ->add('nightStartHour', IntegerType::class, ['label' => 'Night bonus start hour (0-23)', 'attr' => ['min' => 0, 'max' => 23]])
-            ->add('nightEndHour', IntegerType::class, ['label' => 'Night bonus end hour (0-24)', 'attr' => ['min' => 0, 'max' => 24]])
-            ->add('nightMultiplier', NumberType::class, ['label' => 'Night hours multiplier', 'scale' => 2])
-            ->add('noShowMultiplier', NumberType::class, ['label' => 'No-show penalty multiplier', 'scale' => 2]);
+            ->add('nightStartHour', IntegerType::class, ['label' => 'manage.operations_config.field.night_start.label', 'attr' => ['min' => 0, 'max' => 23]])
+            ->add('nightEndHour', IntegerType::class, ['label' => 'manage.operations_config.field.night_end.label', 'attr' => ['min' => 0, 'max' => 24]])
+            ->add('nightMultiplier', NumberType::class, ['label' => 'manage.operations_config.field.night_multiplier.label', 'scale' => 2])
+            ->add('noShowMultiplier', NumberType::class, ['label' => 'manage.operations_config.field.noshow_multiplier.label', 'scale' => 2]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

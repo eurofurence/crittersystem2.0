@@ -9,7 +9,7 @@ use App\Repository\PositionGroupRepository;
 /**
  * Builds the Advanced Matrix Planner view model: shifts/work blocks as
  * rows, the department's Position Groups and their Named Positions as grouped
- * columns, and structured cells. All labels are department data — nothing about a
+ * columns, and structured cells. All labels are department data - nothing about a
  * specific department (e.g. stage roles) is hard-coded.
  *
  * Cell state maps the stage reference values structurally:

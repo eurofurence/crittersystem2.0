@@ -18,6 +18,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Manual assignment of users to a shift: add department members or
@@ -105,14 +106,14 @@ final class AssignmentController extends AbstractController
 
         $ids = array_values(array_unique(array_filter(array_map('intval', (array) $request->request->all('users')))));
         if ($ids === []) {
-            $this->addFlash('danger', 'Choose at least one user.');
+            $this->addFlash('danger', new TranslatableMessage('assignment.flash.choose_user'));
 
             return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
         }
 
         $override = $request->request->getBoolean('override');
         if ($override && !$this->isGranted('assignment:override', $shift->getDepartment())) {
-            $this->addFlash('danger', 'You are not allowed to override warnings.');
+            $this->addFlash('danger', new TranslatableMessage('assignment.flash.no_override'));
 
             return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
         }
@@ -150,13 +151,13 @@ final class AssignmentController extends AbstractController
 
         // Report every outcome so nothing is silently dropped.
         if ($assigned !== []) {
-            $this->addFlash('success', \sprintf('Assigned: %s.', implode(', ', $assigned)));
+            $this->addFlash('success', new TranslatableMessage('assignment.flash.assigned', ['%names%' => implode(', ', $assigned)]));
         }
         if ($notMember !== []) {
-            $this->addFlash('warning', \sprintf('Not a confirmed member of a volunteer type this shift needs: %s.', implode(', ', $notMember)));
+            $this->addFlash('warning', new TranslatableMessage('assignment.flash.not_member', ['%names%' => implode(', ', $notMember)]));
         }
         if ($needOverride !== []) {
-            $this->addFlash('warning', \sprintf('Availability or hour warnings block these — tick "override" to assign anyway: %s.', implode(', ', $needOverride)));
+            $this->addFlash('warning', new TranslatableMessage('assignment.flash.need_override', ['%names%' => implode(', ', $needOverride)]));
         }
 
         return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
@@ -170,7 +171,7 @@ final class AssignmentController extends AbstractController
         if ($entry instanceof ShiftEntry && $entry->getShift() === $shift
             && $this->isCsrfTokenValid('staffing_remove'.$entryId, (string) $request->request->get('_token'))) {
             $this->assignments->remove($entry);
-            $this->addFlash('success', 'Assignment removed.');
+            $this->addFlash('success', new TranslatableMessage('assignment.flash.removed'));
         }
 
         return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);

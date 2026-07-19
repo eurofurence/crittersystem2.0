@@ -7,11 +7,11 @@
         <div class="progress progress-sm">
             <div class="progress-bar" style="width: {{ progress }}%" role="progressbar"
                  aria-valuenow="{{ progress }}" aria-valuemin="0" aria-valuemax="100"
-                 aria-label="{{ progress }}% complete">
-                <span class="visually-hidden">{{ progress }}% complete</span>
+                 aria-label="{{ 'install.progress.percent_complete'|trans({'%percent%': progress}) }}">
+                <span class="visually-hidden">{{ 'install.progress.percent_complete'|trans({'%percent%': progress}) }}</span>
             </div>
         </div>
-        <div class="small text-secondary mt-1">Step {{ step }} of {{ steps_total }}</div>
+        <div class="small text-secondary mt-1">{{ 'install.progress.step_counter'|trans({'%step%': step, '%total%': steps_total}) }}</div>
     </div>
     <div class="col">
         <div class="btn-list justify-content-end">

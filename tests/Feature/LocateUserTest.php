@@ -107,7 +107,7 @@ final class LocateUserTest extends DatabaseWebTestCase
         $this->client->request('GET', '/backstage/distribute?q=target');
         self::assertResponseIsSuccessful();
         self::assertStringNotContainsString('target-one@example.com', (string) $this->client->getResponse()->getContent());
-        self::assertSelectorTextContains('td.small', '—');
+        self::assertSelectorTextContains('td.small', '-');
 
         // Admin: the address is shown.
         $this->client->loginUser($this->user('boss', 'ROLE_ADMIN', 'global:admin'));

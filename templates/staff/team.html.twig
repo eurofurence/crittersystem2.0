@@ -1,36 +1,36 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Team Status{% endblock %}
+{% block title %}{{ 'staff.team.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Team Status', {
-    subtitle: 'Roster overview for staff coordinators.',
+  {{ d.page_header('staff.team.page.title'|trans, {
+    subtitle: 'staff.team.page.subtitle'|trans,
     actions: [
-      {label: '← Staff overview', href: path('app_staff_overview'), class: 'btn btn-outline-secondary'},
-      {label: 'Export CSV', href: path('app_staff_team_export'), class: 'btn btn-outline-primary'}
+      {label: 'staff.action.back_overview'|trans, href: path('app_staff_overview'), class: 'btn btn-outline-secondary'},
+      {label: 'staff.team.action.export'|trans, href: path('app_staff_team_export'), class: 'btn btn-outline-primary'}
     ]
   }) }}
 
   {{ d.table_start() }}
     <thead>
-      <tr><th>Name</th><th>On duty</th><th>Duty h</th><th>Shift h</th><th>Goodies</th><th class="text-end">Actions</th></tr>
+      <tr><th>{{ 'common.label.name'|trans }}</th><th>{{ 'staff.label.on_duty'|trans }}</th><th>{{ 'staff.team.col.duty_h'|trans }}</th><th>{{ 'staff.team.col.shift_h'|trans }}</th><th>{{ 'staff.label.goodies'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr>
     </thead>
     <tbody>
       {% for row in rows %}
         <tr>
           <td class="fw-semibold">{{ row.user.name }}</td>
           <td>
-            {% if row.currentDuty %}{{ d.badge((row.currentDuty.department ? row.currentDuty.department.name : 'on duty'), 'text-bg-success') }}
-            {% else %}<span class="text-muted">off</span>{% endif %}
+            {% if row.currentDuty %}{{ d.badge((row.currentDuty.department ? row.currentDuty.department.name : 'staff.team.on_duty_lower'|trans), 'text-bg-success') }}
+            {% else %}<span class="text-muted">{{ 'staff.team.off'|trans }}</span>{% endif %}
           </td>
           <td>{{ row.dutyHours|round(1) }}</td>
           <td>{{ row.shiftHours|round(1) }}</td>
           <td>{{ row.goodies }}</td>
           <td class="text-end text-nowrap">
-            {% if is_granted('global:admin') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_staff_stats', {user: row.user.uuid}) }}">Stats</a>{% endif %}
-            {% if is_granted('message:use') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_messages_with', {id: row.user.uuid}) }}">Message</a>{% endif %}
-            <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_staff_notes') }}?">Note</a>
+            {% if is_granted('global:admin') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_staff_stats', {user: row.user.uuid}) }}">{{ 'staff.team.action.stats'|trans }}</a>{% endif %}
+            {% if is_granted('message:use') %}<a class="btn btn-sm btn-outline-secondary" href="{{ path('app_messages_with', {id: row.user.uuid}) }}">{{ 'staff.team.action.message'|trans }}</a>{% endif %}
+            <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_staff_notes') }}?">{{ 'staff.team.action.note'|trans }}</a>
           </td>
         </tr>
       {% endfor %}

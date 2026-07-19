@@ -16,14 +16,14 @@ final class GoodieCategoryType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('name', TextType::class, ['label' => 'Name'])
+            ->add('name', TextType::class, ['label' => 'common.label.name'])
             ->add('description', TextareaType::class, [
-                'label' => 'Description',
+                'label' => 'common.label.description',
                 'required' => false,
                 'attr' => ['rows' => 3],
             ])
-            ->add('displayOrder', IntegerType::class, ['label' => 'Display order'])
-            ->add('isActive', CheckboxType::class, ['label' => 'Active', 'required' => false]);
+            ->add('displayOrder', IntegerType::class, ['label' => 'backstage.goodie.label.display_order'])
+            ->add('isActive', CheckboxType::class, ['label' => 'common.state.active', 'required' => false]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

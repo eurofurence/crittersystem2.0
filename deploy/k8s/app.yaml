@@ -20,7 +20,7 @@ spec:
       # `app:migrate` advisory-locks, so with replicas>1 exactly one pod's init
       # container migrates and the rest no-op. If the DB is not ready yet the
       # command exits non-zero, the init container fails, and Kubernetes retries
-      # it with back-off until it succeeds — no half-migrated state, no manual
+      # it with back-off until it succeeds - no half-migrated state, no manual
       # intervention after an interrupted rollout.
       # ----------------------------------------------------------------------
       initContainers:
@@ -46,6 +46,11 @@ spec:
               value: "0"
             - name: PUBLIC_SYNC_DIR
               value: /var/www/public
+            # TLS terminates at the ingress; trust the forwarded scheme so generated URLs
+            # (notably the OIDC SSO redirect_uri) are https. Requires the nginx sidecar to
+            # pass X-Forwarded-Proto through. Pods are only reachable via the ingress.
+            - name: TRUSTED_PROXIES
+              value: private_ranges
           ports:
             - containerPort: 9000
           volumeMounts:
@@ -89,7 +94,7 @@ spec:
 #
 # The queue is durable (PostgreSQL), so a restarted or rescheduled worker resumes
 # where it left off; nothing is lost while it is down, only delayed. Keep exactly
-# one replica unless you have measured a backlog — Messenger's doctrine transport
+# one replica unless you have measured a backlog - Messenger's doctrine transport
 # locks rows, so several replicas are safe, but one is enough and keeps ordering
 # easy to reason about.
 #
@@ -129,7 +134,7 @@ spec:
           # Do not add a liveness probe on queue depth: a backlog means the worker is busy, and
           # killing it under load would restart-loop it exactly when it is needed most.
           # Restart-on-exit plus --time-limit is the recycling mechanism; monitor the backlog from
-          # outside the worker — see the CronJob below.
+          # outside the worker - see the CronJob below.
 ---
 # Queue alarm. A stalled worker is otherwise invisible: the application keeps serving normally.
 # This CronJob runs `app:audit:health`, which exits non-zero when the queue is backing up, when the
@@ -163,8 +168,8 @@ spec:
 ---
 # Retention. Export archives are short-lived bundles of personal data and must not accumulate: the
 # GDPR archive is a complete copy of one user's data with a 24-hour download window, and the audit
-# package is a signed legal artifact kept for 30 days. Both commands are idempotent — an archive that
-# is already gone is skipped — so a missed run simply catches up on the next one.
+# package is a signed legal artifact kept for 30 days. Both commands are idempotent - an archive that
+# is already gone is skipped - so a missed run simply catches up on the next one.
 #
 # EXPORT_STORAGE_DSN must be an `s3://` DSN here. Pods share no filesystem: a `local://` DSN would put
 # the archive on the disk of whichever pod happened to build it, invisible to the pod serving the

@@ -27,9 +27,9 @@ final class FeedController extends AbstractController
         $entries = '';
         foreach ($news->findFeed(false) as $n) {
             $entries .= \sprintf(
-                "  <entry>\n    <title>%s</title>\n    <id>urn:news:%d</id>\n    <updated>%s</updated>\n    <content type=\"text\">%s</content>\n  </entry>\n",
+                "  <entry>\n    <title>%s</title>\n    <id>urn:news:%s</id>\n    <updated>%s</updated>\n    <content type=\"text\">%s</content>\n  </entry>\n",
                 self::xml($n->getTitle()),
-                $n->getId(),
+                $n->getUuid(),
                 $n->getUpdatedAt()->format(\DATE_ATOM),
                 self::xml($n->getFullText()),
             );
@@ -52,9 +52,9 @@ final class FeedController extends AbstractController
         $items = '';
         foreach ($news->findFeed(false) as $n) {
             $items .= \sprintf(
-                "    <item>\n      <title>%s</title>\n      <guid isPermaLink=\"false\">news-%d</guid>\n      <pubDate>%s</pubDate>\n      <description>%s</description>\n    </item>\n",
+                "    <item>\n      <title>%s</title>\n      <guid isPermaLink=\"false\">news-%s</guid>\n      <pubDate>%s</pubDate>\n      <description>%s</description>\n    </item>\n",
                 self::xml($n->getTitle()),
-                $n->getId(),
+                $n->getUuid(),
                 $n->getCreatedAt()->format(\DATE_RSS),
                 self::xml($n->getFullText()),
             );
@@ -80,7 +80,7 @@ final class FeedController extends AbstractController
         // so a volunteer whose phone is set to a different timezone than the
         // venue would be reminded at the wrong moment. UTC instants are
         // converted by every calendar client to the device's local time and
-        // always fire at the correct absolute moment — which is what we want
+        // always fire at the correct absolute moment - which is what we want
         // for international attendees travelling to the event.
         $utc = new \DateTimeZone('UTC');
         $stamp = (new \DateTimeImmutable('now', $utc))->format('Ymd\THis\Z');
@@ -89,7 +89,7 @@ final class FeedController extends AbstractController
         foreach ($entries->findByUserOrdered($user) as $entry) {
             $shift = $entry->getShift();
             $lines[] = 'BEGIN:VEVENT';
-            $lines[] = 'UID:shift-entry-'.$entry->getId().'@critter';
+            $lines[] = 'UID:shift-entry-'.$entry->getUuid().'@critter';
             $lines[] = 'DTSTAMP:'.$stamp;
             $lines[] = 'DTSTART:'.$shift->getStartsAt()->setTimezone($utc)->format('Ymd\THis\Z');
             $lines[] = 'DTEND:'.$shift->getEndsAt()->setTimezone($utc)->format('Ymd\THis\Z');
@@ -112,7 +112,7 @@ final class FeedController extends AbstractController
     public function shiftsJson(ShiftRepository $shifts): JsonResponse
     {
         $data = array_map(static fn (Shift $s): array => [
-            'id' => $s->getId(),
+            'id' => (string) $s->getUuid(),
             'title' => $s->getTitle(),
             'start' => $s->getStartsAt()->format(\DATE_ATOM),
             'end' => $s->getEndsAt()->format(\DATE_ATOM),

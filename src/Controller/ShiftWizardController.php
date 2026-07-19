@@ -21,6 +21,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * The Shift Wizard: generate repeated draft shifts across selected
@@ -78,7 +79,7 @@ final class ShiftWizardController extends AbstractController
     private function generate(Request $request, Department $department, VolunteerTypeRepository $types, LocationRepository $locations, \DateTimeZone $tz): Response
     {
         if (!$this->isCsrfTokenValid('shift_wizard', (string) $request->request->get('_token'))) {
-            $this->addFlash('danger', 'Invalid form token.');
+            $this->addFlash('danger', new TranslatableMessage('shift_manager.wizard.flash.invalid_token'));
 
             return $this->redirectToRoute('app_manage_shifts_wizard', ['department' => $department->getUuid()]);
         }
@@ -120,7 +121,7 @@ final class ShiftWizardController extends AbstractController
             return $this->redirectToRoute('app_manage_shifts_wizard', ['department' => $department->getUuid()]);
         }
 
-        $this->addFlash('success', \sprintf('%d draft shift(s) created. Review and publish them in the planner.', \count($created)));
+        $this->addFlash('success', new TranslatableMessage('shift_manager.wizard.flash.created', ['%count%' => \count($created)]));
 
         return $this->redirectToRoute('app_manage_shifts_planner', ['department' => $department->getUuid()]);
     }

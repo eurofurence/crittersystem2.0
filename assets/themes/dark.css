@@ -1,5 +1,5 @@
 /*
- * Eurofurence — official brand theme (dark).
+ * Eurofurence - official brand theme (dark).
  *
  * The official EF website has no dark mode, so this is an EF-flavoured dark
  * theme: Tabler's native dark base (`data-bs-theme="dark"`) tinted toward the
@@ -24,7 +24,7 @@
   --tblr-border-color: #25403d;
 }
 
-/* Deep-teal navbar — the brand green works as a dark surface. */
+/* Deep-teal navbar - the brand green works as a dark surface. */
 [data-bs-theme="dark"] .navbar {
   --tblr-navbar-bg: #00413c;
   --tblr-navbar-color: rgba(255, 255, 255, .78);

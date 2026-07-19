@@ -13,6 +13,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/backstage/goodies/categories')]
 #[IsGranted('goodie:manage')]
@@ -42,14 +43,14 @@ final class GoodieCategoryController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->persist($category);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Category "%s" created.', $category->getName()));
+            $this->addFlash('success', new TranslatableMessage('backstage.goodie.category.flash.created', ['%name%' => $category->getName()]));
 
             return $this->redirectToRoute('app_backstage_goodie_category_index');
         }
 
         return $this->render('backstage/goodie_category/form.html.twig', [
             'form' => $form,
-            'heading' => 'New goodie category',
+            'heading' => 'backstage.goodie.category.form.heading_new',
         ]);
     }
 
@@ -61,14 +62,14 @@ final class GoodieCategoryController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Category "%s" updated.', $category->getName()));
+            $this->addFlash('success', new TranslatableMessage('backstage.goodie.category.flash.updated', ['%name%' => $category->getName()]));
 
             return $this->redirectToRoute('app_backstage_goodie_category_index');
         }
 
         return $this->render('backstage/goodie_category/form.html.twig', [
             'form' => $form,
-            'heading' => 'Edit goodie category',
+            'heading' => 'backstage.goodie.category.form.heading_edit',
         ]);
     }
 
@@ -78,7 +79,7 @@ final class GoodieCategoryController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$category->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($category);
             $this->em->flush();
-            $this->addFlash('success', 'Category deleted.');
+            $this->addFlash('success', new TranslatableMessage('backstage.goodie.category.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_backstage_goodie_category_index');

@@ -1,18 +1,18 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Shift Planner — {{ department.name }}{% endblock %}
+{% block title %}{{ 'planner.page.title_department'|trans({'%name%': department.name}) }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Shift Planner', {
-    subtitle: 'Paint, move and resize draft shifts. Changes autosave as drafts until you publish.',
-    actions: [{label: '← Shift Manager', href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('planner.page.title'|trans, {
+    subtitle: 'planner.page.subtitle'|trans,
+    actions: [{label: 'planner.action.shift_manager'|trans, href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ d.card_start(null, {bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
       <form method="get" class="d-flex align-items-end gap-2">
         <div>
-          <label class="form-label mb-1" for="planner-department">Department</label>
+          <label class="form-label mb-1" for="planner-department">{{ 'common.label.department'|trans }}</label>
           <select id="planner-department" name="department" class="form-select" onchange="this.form.submit()">
             {% for dept in departments %}
               <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
@@ -22,9 +22,9 @@
       </form>
 
       <div class="ms-auto text-secondary small">
-        <span class="planner-legend-swatch planner-audience-public"></span> Public
-        <span class="planner-legend-swatch planner-audience-staff ms-2"></span> Staff-only
-        <span class="planner-legend-swatch planner-phase-setup ms-2"></span> Setup/teardown
+        <span class="planner-legend-swatch planner-audience-public"></span> {{ 'common.state.public'|trans }}
+        <span class="planner-legend-swatch planner-audience-staff ms-2"></span> {{ 'planner.legend.staff_only'|trans }}
+        <span class="planner-legend-swatch planner-phase-setup ms-2"></span> {{ 'planner.legend.setup_teardown'|trans }}
       </div>
   {{ d.card_end({bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
 

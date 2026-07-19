@@ -15,14 +15,14 @@ final class PrivacyNoticeType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('eventName', TextType::class, ['label' => 'Event name'])
-            ->add('controllerOrg', TextType::class, ['label' => 'Data controller — organization'])
-            ->add('controllerEmail', EmailType::class, ['label' => 'Data controller — contact email'])
-            ->add('contactEmail', EmailType::class, ['label' => 'Privacy / contact email'])
-            ->add('deletionDays', IntegerType::class, ['label' => 'Days until data deletion'])
+            ->add('eventName', TextType::class, ['label' => 'manage.privacy_notice.field.event_name.label'])
+            ->add('controllerOrg', TextType::class, ['label' => 'manage.privacy_notice.field.controller_org.label'])
+            ->add('controllerEmail', EmailType::class, ['label' => 'manage.privacy_notice.field.controller_email.label'])
+            ->add('contactEmail', EmailType::class, ['label' => 'manage.privacy_notice.field.contact_email.label'])
+            ->add('deletionDays', IntegerType::class, ['label' => 'manage.privacy_notice.field.deletion_days.label'])
             ->add('bodyHtml', RichTextType::class, [
-                'label' => 'Notice body',
-                'help' => 'Variables: %event_name, %organization, %controller_email, %contact_email, %deletion_days',
+                'label' => 'manage.privacy_notice.field.body.label',
+                'help' => 'manage.privacy_notice.field.body.help',
             ]);
     }
 

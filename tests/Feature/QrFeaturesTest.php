@@ -87,7 +87,7 @@ final class QrFeaturesTest extends DatabaseWebTestCase
     public function testANearlyExpiredTokenIsRotatedInsteadOfServed(): void
     {
         $user = $this->user('expiring');
-        // Alive, but with only a few seconds left — scanning it would likely fail.
+        // Alive, but with only a few seconds left - scanning it would likely fail.
         $stale = new DigitalIdToken($user, 5);
         $this->em->persist($stale);
         $this->em->flush();

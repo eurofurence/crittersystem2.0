@@ -53,7 +53,7 @@ final class ShiftScenario
 
     /**
      * A user with the given privileges. `$memberOf` grants a CONFIRMED membership of a volunteer
-     * type — without confirmation the user can browse shifts but can never sign up, which is the
+     * type - without confirmation the user can browse shifts but can never sign up, which is the
      * single easiest way to write a shift test that passes for the wrong reason.
      *
      * @param string[] $privileges
@@ -64,7 +64,7 @@ final class ShiftScenario
 
         $group = new Group('Grp '.$suffix, 'grp-'.$suffix, $role);
         foreach ($privileges as $name) {
-            // Privileges are global and unique by name — reuse one if a previous user in this
+            // Privileges are global and unique by name - reuse one if a previous user in this
             // scenario already created it, or the second user blows up on the unique index.
             $privilege = $this->em->getRepository(Privilege::class)->findOneBy(['name' => $name])
                 ?? new Privilege($name);
@@ -123,7 +123,7 @@ final class ShiftScenario
     /**
      * Make a user a member of the scenario's department.
      *
-     * Department membership is a group assignment SCOPED to the department — an unscoped assignment
+     * Department membership is a group assignment SCOPED to the department - an unscoped assignment
      * makes someone a member of nothing, which is why they would not appear as an assignable
      * candidate anywhere.
      */

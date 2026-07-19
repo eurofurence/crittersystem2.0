@@ -14,6 +14,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/worklogs')]
 #[IsGranted('user:worklog:edit')]
@@ -46,14 +47,17 @@ final class WorklogController extends AbstractController
             $worklog->setCreator($actor);
             $this->em->persist($worklog);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Logged %.2f h for %s.', $worklog->getHours(), $worklog->getUser()->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.worklog.flash.logged', [
+                '%hours%' => \sprintf('%.2f', $worklog->getHours()),
+                '%name%' => $worklog->getUser()->getName(),
+            ]));
 
             return $this->redirectToRoute('app_manage_worklog_index');
         }
 
         return $this->render('manage/worklog/form.html.twig', [
             'form' => $form,
-            'heading' => 'New worklog',
+            'heading' => 'manage.worklog.form.heading_new',
         ]);
     }
 
@@ -63,7 +67,7 @@ final class WorklogController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$worklog->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($worklog);
             $this->em->flush();
-            $this->addFlash('success', 'Worklog deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.worklog.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_worklog_index');

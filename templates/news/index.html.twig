@@ -1,17 +1,17 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}News{% endblock %}
+{% block title %}{{ 'ui.nav.news'|trans }}{% endblock %}
 
 {% block body %}
 
-  {{ d.page_header('News', {
-    subtitle: 'Latest announcements.',
-    actions: is_granted('news:manage') ? [{label: 'Manage news', href: path('app_manage_news_index'), class: 'btn btn-outline-primary'}] : []
+  {{ d.page_header('ui.nav.news'|trans, {
+    subtitle: 'news.page.subtitle'|trans,
+    actions: is_granted('news:manage') ? [{label: 'news.action.manage'|trans, href: path('app_manage_news_index'), class: 'btn btn-outline-primary'}] : []
   }) }}
 
   {% if items is empty %}
-    {{ d.empty_state('No news yet', {message: 'Check back later for announcements.'}) }}
+    {{ d.empty_state('news.empty.title'|trans, {message: 'news.empty.message'|trans}) }}
   {% else %}
     <div class="row row-cards">
       <div class="col-12">
@@ -23,17 +23,17 @@
             <a href="{{ path('app_news_show', {id: n.uuid}) }}" class="text-decoration-none">{{ n.title }}</a>
           </h2>
           <div class="d-flex flex-wrap gap-1">
-            {% if n.pinned %}{{ d.badge('Pinned', 'text-bg-primary') }}{% endif %}
-            {% if n.meeting %}{{ d.badge('Meeting', 'text-bg-info') }}{% endif %}
-            {% if n.staffOnly %}{{ d.badge('Staff', 'text-bg-secondary') }}{% endif %}
+            {% if n.pinned %}{{ d.badge('news.badge.pinned'|trans, 'text-bg-primary') }}{% endif %}
+            {% if n.meeting %}{{ d.badge('news.badge.meeting'|trans, 'text-bg-info') }}{% endif %}
+            {% if n.staffOnly %}{{ d.badge('news.badge.staff'|trans, 'text-bg-secondary') }}{% endif %}
           </div>
         </div>
         <div class="text-muted small mb-2">
           {{ n.createdAt|app_datetime }}{% if n.author %} · {{ n.author.name }}{% endif %}
         </div>
         <p class="mb-1">{{ n.preview|nl2br }}</p>
-        {% if n.hasMore %}<a href="{{ path('app_news_show', {id: n.uuid}) }}">Read more →</a>{% endif %}
-        <div class="text-muted small mt-2">{{ n.comments|length }} comment(s)</div>
+        {% if n.hasMore %}<a href="{{ path('app_news_show', {id: n.uuid}) }}">{{ 'news.action.read_more'|trans }}</a>{% endif %}
+        <div class="text-muted small mt-2">{{ 'news.comments.count'|trans({'%count%': n.comments|length}) }}</div>
       {{ d.card_end() }}
     {% endfor %}
   

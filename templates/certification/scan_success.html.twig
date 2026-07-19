@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Certified — {{ certification.title }}{% endblock %}
+{% block title %}{{ 'certification.scan.success_title'|trans({'%title%': certification.title}) }}{% endblock %}
 
 {% block body %}
   {% set icon %}<div class="display-6 mb-2">🎉</div>{% endset %}
@@ -13,13 +13,13 @@
     titleClass: 'h4 mb-2',
     iconHtml: icon
   }) }}
-          <p class="text-muted mb-3">{{ app.user.name }}, your certification has been approved.</p>
+          <p class="text-muted mb-3">{{ 'certification.scan.approved'|trans({'%name%': app.user.name}) }}</p>
 
-          {% set details = [{ label: 'Certified on', value: record.dateCertified|app_datetime }] %}
+          {% set details = [{ label: 'certification.field.certified_on'|trans, value: record.dateCertified|app_datetime }] %}
           {% if record.dateExpires %}
-            {% set details = details|merge([{ label: 'Valid until', value: record.dateExpires|app_date }]) %}
+            {% set details = details|merge([{ label: 'certification.field.valid_until'|trans, value: record.dateExpires|app_date }]) %}
           {% else %}
-            {% set details = details|merge([{ label: 'Validity', value: 'Never expires' }]) %}
+            {% set details = details|merge([{ label: 'certification.field.validity'|trans, value: 'certification.validity.never'|trans }]) %}
           {% endif %}
           {{ d.definition_list(details, {
             class: 'mb-0 small text-start',
@@ -29,6 +29,6 @@
             valueClass: ''
           }) }}
 
-          <a class="btn btn-primary mt-3" href="{{ path('app_certifications_index') }}">My certifications</a>
+          <a class="btn btn-primary mt-3" href="{{ path('app_certifications_index') }}">{{ 'certification.action.my_certifications'|trans }}</a>
   {{ d.message_card_end() }}
 {% endblock %}

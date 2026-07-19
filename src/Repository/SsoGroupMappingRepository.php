@@ -45,7 +45,7 @@ class SsoGroupMappingRepository extends ServiceEntityRepository
         return array_map(static fn (array $r): int => (int) $r['did'], $rows);
     }
 
-    /** Whether any SSO group maps to this department — i.e. it is SSO-managed. */
+    /** Whether any SSO group maps to this department - i.e. it is SSO-managed. */
     public function existsForDepartment(\App\Entity\Department $department): bool
     {
         return null !== $this->createQueryBuilder('m')

@@ -34,7 +34,7 @@ class Department
     #[ORM\Column(length: 128, unique: true)]
     #[Assert\NotBlank]
     #[Assert\Length(max: 128)]
-    #[Assert\Regex(pattern: '/^[a-z0-9]+(?:-[a-z0-9]+)*$/', message: 'Use lowercase letters, numbers and hyphens only.')]
+    #[Assert\Regex(pattern: '/^[a-z0-9]+(?:-[a-z0-9]+)*$/', message: 'validation.department.slug')]
     private string $slug;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]

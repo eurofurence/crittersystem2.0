@@ -18,13 +18,13 @@ final class VolunteerTypeType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('name', TextType::class, ['label' => 'Name'])
+            ->add('name', TextType::class, ['label' => 'common.label.name'])
             ->add('description', RichTextType::class, [
-                'label' => 'Description',
+                'label' => 'common.label.description',
                 'required' => false,
             ])
             ->add('contacts', CollectionType::class, [
-                'label' => 'Contacts',
+                'label' => 'manage.volunteer_type.card.contacts',
                 'entry_type' => VolunteerTypeContactType::class,
                 'allow_add' => true,
                 'allow_delete' => true,
@@ -32,7 +32,7 @@ final class VolunteerTypeType extends AbstractType
                 'prototype' => true,
             ])
             ->add('certifications', EntityType::class, [
-                'label' => 'Certifications / requirements',
+                'label' => 'manage.volunteer_type.card.certifications',
                 'class' => Certification::class,
                 'choice_label' => 'title',
                 'multiple' => true,
@@ -41,31 +41,31 @@ final class VolunteerTypeType extends AbstractType
                 'by_reference' => false,
             ])
             ->add('restricted', CheckboxType::class, [
-                'label' => 'Requires Introduction (cannot apply to shifts until confirmed)',
+                'label' => 'manage.volunteer_type.field.restricted.label',
                 'required' => false,
             ])
             ->add('departmentOnly', CheckboxType::class, [
-                'label' => 'Department only (requires Staff only)',
+                'label' => 'manage.volunteer_type.field.department_only.label',
                 'required' => false,
             ])
             ->add('shiftSelfSignup', CheckboxType::class, [
-                'label' => 'Self sign-up for shifts (no approval needed)',
+                'label' => 'manage.volunteer_type.field.shift_self_signup.label',
                 'required' => false,
             ])
             ->add('showOnDashboard', CheckboxType::class, [
-                'label' => 'Show on public dashboard',
+                'label' => 'manage.volunteer_type.field.show_on_dashboard.label',
                 'required' => false,
             ])
             ->add('hideRegister', CheckboxType::class, [
-                'label' => 'Hide from registration page',
+                'label' => 'manage.volunteer_type.field.hide_register.label',
                 'required' => false,
             ])
             ->add('hideOnShiftView', CheckboxType::class, [
-                'label' => 'Hide in shift details',
+                'label' => 'manage.volunteer_type.field.hide_on_shift_view.label',
                 'required' => false,
             ])
             ->add('staffOnly', CheckboxType::class, [
-                'label' => 'Staff only',
+                'label' => 'common.state.staff_only',
                 'required' => false,
             ]);
     }

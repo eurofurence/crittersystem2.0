@@ -1,15 +1,15 @@
 {% extends 'install/_layout.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Privacy notice · Setup · VMS{% endblock %}
+{% block title %}{{ 'install.privacy.title'|trans }}{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
 
     {% set privacyFooter %}
         <div class="btn-list justify-content-end">
-            <button type="submit" name="action" value="skip" class="btn btn-link link-secondary">Skip for now</button>
-            <button type="submit" name="action" value="save" class="btn btn-primary">Save &amp; finish</button>
+            <button type="submit" name="action" value="skip" class="btn btn-link link-secondary">{{ 'common.action.skip'|trans }}</button>
+            <button type="submit" name="action" value="save" class="btn btn-primary">{{ 'install.privacy.save_finish'|trans }}</button>
         </div>
     {% endset %}
     {{ d.card_start(null, {
@@ -17,33 +17,31 @@
         class: 'card-md',
         attrs: {method: 'post', action: path('app_install_privacy'), 'data-turbo': 'false'}
     }) }}
-            <h2 class="mb-1">Privacy notice</h2>
+            <h2 class="mb-1">{{ 'install.privacy.heading'|trans }}</h2>
             <p class="text-secondary">
-                The essentials for the GDPR privacy notice and the onboarding consent shown to
-                volunteers. You can write the full notice text later from
-                <em>Manage → Privacy notice</em>.
+                {{ 'install.privacy.intro'|trans({'%location%': '<em>Manage → Privacy notice</em>'})|raw }}
             </p>
 
             {% include 'install/_flashes.html.twig' %}
             <input type="hidden" name="_token" value="{{ csrf_token('install_privacy') }}">
 
             <div class="mb-3">
-                <label class="form-label">Event name</label>
-                <input type="text" name="event_name" class="form-control" value="{{ eventName }}" placeholder="e.g. Eurofurence 28">
+                <label class="form-label">{{ 'install.field.event_name.label'|trans }}</label>
+                <input type="text" name="event_name" class="form-control" value="{{ eventName }}" placeholder="{{ 'install.field.event_name.placeholder'|trans }}">
             </div>
             <div class="mb-3">
-                <label class="form-label">Data controller</label>
-                <input type="text" name="controller_org" class="form-control" value="{{ controllerOrg }}" placeholder="Organization responsible for the data">
+                <label class="form-label">{{ 'install.privacy.controller_label'|trans }}</label>
+                <input type="text" name="controller_org" class="form-control" value="{{ controllerOrg }}" placeholder="{{ 'install.privacy.controller_placeholder'|trans }}">
             </div>
             <div class="row">
                 <div class="col-md-7 mb-3">
-                    <label class="form-label">Privacy contact email</label>
-                    <input type="email" name="contact_email" class="form-control" value="{{ contactEmail }}" placeholder="privacy@example.org">
+                    <label class="form-label">{{ 'install.privacy.contact_email_label'|trans }}</label>
+                    <input type="email" name="contact_email" class="form-control" value="{{ contactEmail }}" placeholder="{{ 'install.privacy.contact_email_placeholder'|trans }}">
                 </div>
                 <div class="col-md-5 mb-3">
-                    <label class="form-label">Days until data deletion</label>
+                    <label class="form-label">{{ 'install.privacy.deletion_days_label'|trans }}</label>
                     <input type="number" name="deletion_days" class="form-control" min="1" value="{{ deletionDays }}">
-                    <small class="form-hint">Personal data is purged this many days after the event.</small>
+                    <small class="form-hint">{{ 'install.privacy.deletion_days_hint'|trans }}</small>
                 </div>
             </div>
     {{ d.card_end({tag: 'form', footer: privacyFooter}) }}

@@ -95,7 +95,7 @@ final class LocationImportExportTest extends DatabaseTestCase
 
     public function testParentByAliasResolvesRegardlessOfOrder(): void
     {
-        // Child listed before its parent — the second pass still links them.
+        // Child listed before its parent - the second pass still links them.
         $result = $this->importer->import([
             ['name' => 'Desk', 'alias' => 'desk', 'parent' => 'lobby'],
             ['name' => 'Lobby', 'alias' => 'lobby'],

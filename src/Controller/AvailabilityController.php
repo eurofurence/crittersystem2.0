@@ -15,6 +15,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * A user's global Planning Availability self-service. A crab.fit-style
@@ -100,7 +101,7 @@ final class AvailabilityController extends AbstractController
         $this->availability->submit($user, $ranges, (string) $request->request->get('comment') ?: null);
 
         /*
-         * The grid builds this payload itself, so a rejected entry means a client bug — and telling the
+         * The grid builds this payload itself, so a rejected entry means a client bug - and telling the
          * user "saved" while quietly discarding part of what they drew loses their work without a trace.
          */
         if ($rejected > 0) {
@@ -111,7 +112,7 @@ final class AvailabilityController extends AbstractController
                 $rejected === 1 ? 'was' : 'were',
             ));
         } else {
-            $this->addFlash('success', 'Your availability was saved.');
+            $this->addFlash('success', new TranslatableMessage('availability.flash.saved'));
         }
 
         return $this->redirectToRoute('app_availability');

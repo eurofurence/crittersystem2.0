@@ -24,6 +24,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * OIDC SSO login (controller-driven), plus the admin connection-status page.
@@ -69,7 +70,7 @@ final class SsoController extends AbstractController
 
         $state = $request->query->get('state');
         if ($state === null || $state !== $request->getSession()->get('sso_state')) {
-            $this->addFlash('danger', 'Invalid SSO state. Please try again.');
+            $this->addFlash('danger', new TranslatableMessage('admin.sso.flash.invalid_state'));
 
             return $this->redirectToRoute('app_login');
         }
@@ -88,10 +89,10 @@ final class SsoController extends AbstractController
             /*
              * The exception here comes from the identity provider or the HTTP client, so its message can
              * carry endpoint URLs, client ids and provider internals. That belongs in the log, for the
-             * operator — never on the login page, for whoever happens to be at the browser.
+             * operator - never on the login page, for whoever happens to be at the browser.
              */
             $this->logger->error('SSO login failed: {reason}', ['reason' => $e->getMessage(), 'exception' => $e]);
-            $this->addFlash('danger', 'SSO login failed. Please try again, or contact an administrator.');
+            $this->addFlash('danger', new TranslatableMessage('admin.sso.flash.login_failed'));
 
             return $this->redirectToRoute('app_login');
         }
@@ -126,7 +127,7 @@ final class SsoController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->registrationApi->save($data->apiUrl);
-            $this->addFlash('success', 'Registration API endpoint saved.');
+            $this->addFlash('success', new TranslatableMessage('admin.sso.flash.registration_saved'));
 
             return $this->redirectToRoute('app_admin_sso');
         }

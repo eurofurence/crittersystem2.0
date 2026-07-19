@@ -17,7 +17,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
  * container happened to build them: the messenger worker writes a GDPR archive and a *different*
  * process serves the download, and in Kubernetes the two share no filesystem at all.
  *
- * Also protects the retention rule — an expired archive is a full copy of a user's personal data and
+ * Also protects the retention rule - an expired archive is a full copy of a user's personal data and
  * has to be deleted, not merely hidden behind an expiry check.
  */
 final class ExportStorageTest extends DatabaseTestCase

@@ -2,13 +2,13 @@
 {% import 'components/data/_macros.twig' as d %}
 {% import 'components/icon/_macros.twig' as i %}
 
-{% block title %}Departments{% endblock %}
+{% block title %}{{ 'department.index.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Departments', {subtitle: 'Teams that organise shifts and volunteers.'}) }}
+  {{ d.page_header('department.index.page.title'|trans, {subtitle: 'department.index.page.subtitle'|trans}) }}
 
   {% if rows is empty %}
-    {{ d.empty_state('No departments', {message: 'No departments are visible to you.'}) }}
+    {{ d.empty_state('department.index.empty.title'|trans, {message: 'department.index.empty.message'|trans}) }}
   {% else %}
     <div class="row g-3">
       {% for row in rows %}
@@ -18,9 +18,9 @@
             {{ d.card_start(dept.name, {class: 'h-100 shadow-sm ' ~ (row.member ? 'border-primary' : ''), bodyClass: ''}) }}
               {% if dept.description %}<div class="card-body">{{ dept.description }}</div>{% endif %}
               {% set deptFooter %}
-                {% if row.member %}<span class="badge bg-primary">{{ i.icon('users', {class: 'icon-1 me-1'}) }}Member</span>{% endif %}
-                {% if dept.organizational %}{{ d.badge('Organizational', 'bg-secondary-lt') }}{% endif %}
-                {% if dept.staffOnly %}{{ d.badge('Staff only', 'bg-secondary-lt') }}{% endif %}
+                {% if row.member %}<span class="badge bg-primary">{{ i.icon('users', {class: 'icon-1 me-1'}) }}{{ 'department.label.member'|trans }}</span>{% endif %}
+                {% if dept.organizational %}{{ d.badge('department.index.organizational'|trans, 'bg-secondary-lt') }}{% endif %}
+                {% if dept.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'bg-secondary-lt') }}{% endif %}
               {% endset %}
             {{ d.card_end({bodyClass: '', footer: deptFooter, footerClass: 'card-footer d-flex gap-2'}) }}
           </a>

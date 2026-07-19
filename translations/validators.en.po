@@ -1,0 +1,21 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+
+# Entity/constraint violation messages resolve through the `validators` domain (Symfony's default
+# for constraint messages), so these keys must live here - not in messages.en.po - or a failed
+# constraint would render the raw key.
+
+msgid "validation.department.slug"
+msgstr "Use lowercase letters, numbers and hyphens only."
+
+msgid "validation.shift_task.name_unique"
+msgstr "This department already has a shift task with that name."
+
+msgid "validation.shift.end_after_start"
+msgstr "The end must be after the start."
+
+msgid "validation.shift_task.department_required"
+msgstr "Choose the department this task belongs to."

@@ -19,7 +19,7 @@ final class NotificationKitController extends AbstractController
         $this->addFlash('danger', 'Could not reach the demo server.');
 
         return $this->render('notification_kit/index.html.twig', [
-            'pageTitle' => 'UI Kit — Notifications',
+            'pageTitle' => 'UI Kit - Notifications',
         ]);
     }
 }

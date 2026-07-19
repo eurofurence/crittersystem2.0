@@ -14,14 +14,14 @@ final class ConsentTextType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('locale', TextType::class, ['help' => 'e.g. en_US, de_DE'])
+            ->add('locale', TextType::class, ['help' => 'manage.consent_text.field.locale.help'])
             ->add('headerTitle', TextType::class)
             ->add('headerBody', TextareaType::class, ['attr' => ['rows' => 3]])
             ->add('checkboxLabel', TextareaType::class, [
                 'attr' => ['rows' => 2],
-                'help' => 'Shown next to the required consent checkbox. Supports %variables.',
+                'help' => 'manage.consent_text.field.checkbox_label.help',
             ])
-            ->add('footer', TextareaType::class, ['attr' => ['rows' => 3], 'help' => 'Supports %variables.']);
+            ->add('footer', TextareaType::class, ['attr' => ['rows' => 3], 'help' => 'manage.consent_text.field.footer.help']);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

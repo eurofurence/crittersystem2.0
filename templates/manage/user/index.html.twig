@@ -1,21 +1,33 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Users{% endblock %}
+{% block title %}{{ 'manage.user.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Users', {
-    subtitle: 'Manage volunteer and staff accounts.',
+  {{ d.page_header('manage.user.page.title'|trans, {
+    subtitle: 'manage.user.page.subtitle'|trans,
     actions: [
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      is_granted('user:create') ? {label: '+ Invite user', href: path('app_manage_user_invite'), class: 'btn btn-primary'} : null
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      is_granted('user:create') ? {label: 'manage.user.action.invite'|trans, href: path('app_manage_user_invite'), class: 'btn btn-primary'} : null
     ]|filter(a => a is not null)
   }) }}
 
-  <form method="get" class="mb-3"><input type="text" name="q" value="{{ query }}" class="form-control" placeholder="Search name, email or id"></form>
+  <div class="d-flex gap-2 mb-3">
+    <form method="get" class="flex-grow-1"><input type="text" name="q" value="{{ query }}" class="form-control" placeholder="{{ 'manage.user.search.placeholder'|trans }}"></form>
+    {% if is_granted('global:admin') %}
+      {{ d.delete_form(path('app_manage_user_reset_onboarding_all'), csrf_token('reset-onboarding-all'), {
+        label: 'manage.user.onboarding.force_all_label'|trans,
+        class: 'btn btn-outline-warning text-nowrap',
+        confirmTitle: 'manage.user.onboarding.force_all_title'|trans,
+        confirmLabel: 'manage.user.onboarding.force_all_confirm'|trans,
+        variant: 'warning',
+        message: 'manage.user.onboarding.force_all_message'|trans
+      }) }}
+    {% endif %}
+  </div>
 
   {{ d.table_start() }}
-    <thead><tr><th>User</th><th>Email</th><th>Position</th><th>Onboarded</th><th class="text-end">Actions</th></tr></thead>
+    <thead><tr><th>{{ 'common.label.user'|trans }}</th><th>{{ 'common.label.email'|trans }}</th><th>{{ 'manage.user.table.position'|trans }}</th><th>{{ 'manage.user.table.onboarded'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
     <tbody>
       {% for u in users %}
         <tr>
@@ -24,10 +36,26 @@
             {% for b in u.badges %}{{ d.badge(b.name, 'text-bg-' ~ b.color, {class: 'ms-1'}) }}{% endfor %}
           </td>
           <td class="small">{{ u.email|pii_email }}</td>
-          <td class="small">{{ u.positionBadge ? u.positionBadge.name : '—' }}</td>
-          <td>{% if u.onboardingCompleted %}{{ d.badge('Yes', 'text-bg-success') }}{% else %}{{ d.badge('Pending', 'text-bg-warning') }}{% endif %}</td>
+          <td class="small">{{ u.positionBadge ? u.positionBadge.name : '-' }}</td>
+          <td>
+            {% if u.onboardingCompleted %}{{ d.badge('common.state.yes'|trans, 'text-bg-success') }}{% else %}{{ d.badge('common.state.pending'|trans, 'text-bg-warning') }}{% endif %}
+            {# The reset is queued, not applied: it takes effect at the user's next sign-in. #}
+            {% if u.onboardingResetPending %}{{ d.badge('manage.user.onboarding.rerun_queued'|trans, 'text-bg-info', {class: 'ms-1'}) }}{% endif %}
+          </td>
           <td class="text-end text-nowrap">
-            {% if is_granted('user:edit') %}<a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_user_edit', {id: u.uuid}) }}">Edit</a>{% endif %}
+            {% if is_granted('user:edit') %}<a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_user_edit', {id: u.uuid}) }}">{{ 'common.action.edit'|trans }}</a>{% endif %}
+            {% if is_granted('global:admin') %}
+              {{ d.delete_form(path('app_manage_user_reset_onboarding', {id: u.uuid}), csrf_token('reset-onboarding' ~ u.id), {
+                label: u.onboardingResetPending ? 'manage.user.onboarding.cancel_rerun'|trans : 'manage.user.onboarding.force'|trans,
+                class: 'btn btn-sm ' ~ (u.onboardingResetPending ? 'btn-outline-secondary' : 'btn-outline-warning'),
+                confirmTitle: u.onboardingResetPending ? 'manage.user.onboarding.cancel_title'|trans : 'manage.user.onboarding.force_title'|trans,
+                confirmLabel: u.onboardingResetPending ? 'manage.user.onboarding.cancel_rerun'|trans : 'manage.user.onboarding.force'|trans,
+                variant: u.onboardingResetPending ? 'secondary' : 'warning',
+                message: u.onboardingResetPending
+                  ? 'manage.user.onboarding.cancel_message'|trans({'%name%': u.name})
+                  : 'manage.user.onboarding.force_message'|trans({'%name%': u.name})
+              }) }}
+            {% endif %}
           </td>
         </tr>
       {% endfor %}

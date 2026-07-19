@@ -21,6 +21,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -28,7 +29,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * First-run onboarding wizard: consent & privacy, profile confirmation, Telegram
  * link (skippable), notification opt-ins, and finally setting a password. On
- * completion the user is flagged onboarded and assigned — already confirmed —
+ * completion the user is flagged onboarded and assigned - already confirmed -
  * the Volunteer (or Staff) volunteer type, plus the Volunteer permission group
  * for non-staff.
  */
@@ -66,7 +67,7 @@ final class OnboardingController extends AbstractController
 
         if ($request->isMethod('POST')) {
             if (!$request->request->getBoolean('consent')) {
-                $this->addFlash('danger', 'You must consent to continue.');
+                $this->addFlash('danger', new TranslatableMessage('onboarding.flash.consent_required'));
             } else {
                 $consent = $user->getConsent() ?? new UserConsent($user);
                 $consent->grantDataProcessing($locale);
@@ -170,7 +171,7 @@ final class OnboardingController extends AbstractController
             $confirm = (string) $request->request->get('password_confirm');
             if (!$user->isSsoManaged()) {
                 if (\strlen($password) < 8 || $password !== $confirm) {
-                    $this->addFlash('danger', 'Passwords must match and be at least 8 characters.');
+                    $this->addFlash('danger', new TranslatableMessage('onboarding.flash.password_mismatch'));
 
                     return $this->render('onboarding/finish.html.twig', ['user' => $user]);
                 }
@@ -181,7 +182,7 @@ final class OnboardingController extends AbstractController
             $user->completeOnboarding();
             $this->em->flush();
             $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, ['details' => ['onboarding' => 'completed']]);
-            $this->addFlash('success', 'Welcome aboard! Your onboarding is complete.');
+            $this->addFlash('success', new TranslatableMessage('onboarding.flash.complete'));
 
             return $this->redirectToRoute('app_dashboard');
         }
@@ -193,7 +194,7 @@ final class OnboardingController extends AbstractController
      * Give the finishing user everything they need to actually use the app: the
      * default volunteer type (Staff for staff, Volunteer otherwise), confirmed
      * right away because it is granted by the system rather than requested, and
-     * — for plain volunteers — the baseline Volunteer permission group, without
+     * - for plain volunteers - the baseline Volunteer permission group, without
      * which they would land on the dashboard with no privileges at all.
      */
     private function assignDefaults(User $user): void

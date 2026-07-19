@@ -1,18 +1,18 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Locations{% endblock %}
+{% block title %}{{ 'manage.location.page.title'|trans }}{% endblock %}
 
 {% block body %}
   {% set porter %}
-    <a href="{{ path('app_manage_location_export') }}" class="btn btn-outline-secondary">Export JSON</a>
-    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#location-import-modal">Import</button>
+    <a href="{{ path('app_manage_location_export') }}" class="btn btn-outline-secondary">{{ 'manage.action.export_json'|trans }}</a>
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#location-import-modal">{{ 'common.action.import'|trans }}</button>
   {% endset %}
-  {{ d.page_header('Locations', {
-    subtitle: 'Physical areas where shifts take place.',
+  {{ d.page_header('manage.location.page.title'|trans, {
+    subtitle: 'manage.location.page.subtitle'|trans,
     actions: [
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New location', href: path('app_manage_location_new'), class: 'btn btn-primary'}
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.location.action.new'|trans, href: path('app_manage_location_new'), class: 'btn btn-primary'}
     ],
     actionsHtml: porter
   }) }}
@@ -21,49 +21,44 @@
     <div class="modal-dialog modal-lg">
       <form class="modal-content" method="post" action="{{ path('app_manage_location_import') }}" enctype="multipart/form-data">
         <div class="modal-header">
-          <h5 class="modal-title">Import locations (JSON)</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">{{ 'manage.location.import.title'|trans }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'ui.aria.close'|trans }}"></button>
         </div>
         <div class="modal-body">
           <input type="hidden" name="_token" value="{{ csrf_token('location_import') }}">
-          <p class="text-muted small mb-3">
-            An array of locations. <code>name</code> and <code>alias</code> are required; a location whose
-            <code>alias</code> already exists is updated, otherwise it is created. <code>parent</code> is
-            another location's <code>alias</code> (or <code>null</code>). Download the current locations with
-            <strong>Export JSON</strong> to use as a template.
-          </p>
+          <p class="text-muted small mb-3">{{ 'manage.location.import.help'|trans|raw }}</p>
           <div class="mb-3">
-            <label class="form-label" for="location-import-file">Upload a file</label>
+            <label class="form-label" for="location-import-file">{{ 'manage.import.upload_label'|trans }}</label>
             <input class="form-control" id="location-import-file" type="file" name="file" accept=".json,application/json">
           </div>
           <div class="mb-1">
-            <label class="form-label" for="location-import-json">…or paste JSON</label>
+            <label class="form-label" for="location-import-json">{{ 'manage.import.paste_label'|trans }}</label>
             <textarea class="form-control font-monospace" id="location-import-json" name="json" rows="8"
               placeholder='[{"name":"Main Hall","alias":"main-hall","phone":"100","staffOnly":false,"parent":null}]'></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Import locations</button>
+          <button type="button" class="btn btn-link" data-bs-dismiss="modal">{{ 'common.action.cancel'|trans }}</button>
+          <button type="submit" class="btn btn-primary">{{ 'manage.location.import.submit'|trans }}</button>
         </div>
       </form>
     </div>
   </div>
 
   {% if locations is empty %}
-    {{ d.empty_state('No locations yet', {
-      message: 'Create the first location to start assigning shifts.',
-      actionLabel: '+ New location',
+    {{ d.empty_state('manage.location.empty.title'|trans, {
+      message: 'manage.location.empty.message'|trans,
+      actionLabel: 'manage.location.action.new'|trans,
       actionHref: path('app_manage_location_new')
     }) }}
   {% else %}
     {{ d.table_start() }}
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Phone</th>
-          <th>Visibility</th>
-          <th class="text-end">Actions</th>
+          <th>{{ 'common.label.name'|trans }}</th>
+          <th>{{ 'manage.label.phone'|trans }}</th>
+          <th>{{ 'manage.label.visibility'|trans }}</th>
+          <th class="text-end">{{ 'common.label.actions'|trans }}</th>
         </tr>
       </thead>
       <tbody>
@@ -74,18 +69,18 @@
               <code class="small text-muted">{{ location.alias }}</code>
               {% if location.description %}<div class="text-muted small">{{ location.description }}</div>{% endif %}
             </td>
-            <td>{{ location.phone ?: '—' }}</td>
+            <td>{{ location.phone ?: '-' }}</td>
             <td>
-              {% if location.staffOnly %}{{ d.badge('Staff only', 'text-bg-warning') }}
-              {% else %}{{ d.badge('Public', 'text-bg-success') }}{% endif %}
+              {% if location.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'text-bg-warning') }}
+              {% else %}{{ d.badge('common.state.public'|trans, 'text-bg-success') }}{% endif %}
             </td>
             {% set del %}
               {{ d.delete_form(path('app_manage_location_delete', {id: location.uuid}), csrf_token('delete' ~ location.id), {
-                message: 'Delete location "' ~ location.name ~ '"?'
+                message: 'manage.location.confirm.delete'|trans({'%name%': location.name})
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'Edit', href: path('app_manage_location_edit', {id: location.uuid})}
+              {label: 'common.action.edit'|trans, href: path('app_manage_location_edit', {id: location.uuid})}
             ], {extraHtml: del}) }}
           </tr>
         {% endfor %}

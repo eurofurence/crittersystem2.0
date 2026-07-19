@@ -2,12 +2,12 @@
 {% import 'components/data/_macros.twig' as d %}
 {% import 'components/forms/_macros.twig' as f %}
 
-{% block title %}Privacy notice{% endblock %}
+{% block title %}{{ 'manage.privacy_notice.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Privacy notice', {
-    subtitle: 'How volunteer data is handled. Supports %variables.',
-    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('manage.privacy_notice.page.title'|trans, {
+    subtitle: 'manage.privacy_notice.page.subtitle'|trans,
+    actions: [{label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   <div class="row g-4">
@@ -22,19 +22,19 @@
         </div>
         {{ f.field(form.bodyHtml) }}
         <div class="mt-3">
-          <button class="btn btn-primary">Save</button>
+          <button class="btn btn-primary">{{ 'common.action.save'|trans }}</button>
         </div>
       {{ form_end(form) }}
 
       <form method="post" action="{{ path('app_manage_privacy_notice_reset') }}" class="mt-2"
-            data-controller="confirm" data-confirm-message-value="Replace the current notice body with the shipped default?">
+            data-controller="confirm" data-confirm-message-value="{{ 'manage.privacy_notice.confirm.reset'|trans }}">
         <input type="hidden" name="_token" value="{{ csrf_token('privacy_reset') }}">
-        <button class="btn btn-outline-warning btn-sm">Restore default text</button>
+        <button class="btn btn-outline-warning btn-sm">{{ 'manage.privacy_notice.action.restore_default'|trans }}</button>
       </form>
     </div>
     <div class="col-12 col-xl-5">
       <div class="card">
-        <div class="card-header"><strong>Preview</strong> <span class="text-muted small">(variables resolved)</span></div>
+        <div class="card-header"><strong>{{ 'manage.privacy_notice.preview.title'|trans }}</strong> <span class="text-muted small">{{ 'manage.privacy_notice.preview.note'|trans }}</span></div>
         <div class="card-body">{{ preview|raw }}</div>
       </div>
     </div>

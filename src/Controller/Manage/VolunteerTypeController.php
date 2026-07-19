@@ -14,6 +14,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/volunteer-types')]
 #[IsGranted('volunteertype:manage')]
@@ -60,14 +61,14 @@ final class VolunteerTypeController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->persist($volunteerType);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Volunteer type "%s" created.', $volunteerType->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.volunteer_type.flash.created', ['%name%' => $volunteerType->getName()]));
 
             return $this->redirectToRoute('app_manage_volunteer_type_index');
         }
 
         return $this->render('manage/volunteer_type/form.html.twig', [
             'form' => $form,
-            'heading' => 'New volunteer type',
+            'heading' => 'manage.volunteer_type.form.heading_new',
             'certifications' => $this->certificationsById(),
         ]);
     }
@@ -80,14 +81,14 @@ final class VolunteerTypeController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Volunteer type "%s" updated.', $volunteerType->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.volunteer_type.flash.updated', ['%name%' => $volunteerType->getName()]));
 
             return $this->redirectToRoute('app_manage_volunteer_type_index');
         }
 
         return $this->render('manage/volunteer_type/form.html.twig', [
             'form' => $form,
-            'heading' => 'Edit volunteer type',
+            'heading' => 'manage.volunteer_type.form.heading_edit',
             'certifications' => $this->certificationsById(),
         ]);
     }
@@ -98,7 +99,7 @@ final class VolunteerTypeController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$volunteerType->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($volunteerType);
             $this->em->flush();
-            $this->addFlash('success', 'Volunteer type deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.volunteer_type.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_volunteer_type_index');

@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * In-app notification centre: bell fragment, history page and
@@ -82,7 +83,7 @@ final class NotificationController extends AbstractController
             $user->getSettings()?->setNotificationReminderLead($lead === '' || $lead === null ? null : (int) $lead);
             $this->em->flush();
 
-            $this->addFlash('success', 'Notification preferences saved.');
+            $this->addFlash('success', new TranslatableMessage('notifications.flash.saved'));
 
             return $this->redirectToRoute('app_notifications_preferences');
         }

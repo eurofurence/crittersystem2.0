@@ -1,15 +1,15 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Conversation{% endblock %}
+{% block title %}{{ 'message.conversation.title'|trans }}{% endblock %}
 
 {% block body %}
   {% set owner = queueService.ownerLabel(conversation) %}
   {{ d.page_header(
-    conversation.type.value == 'support' ? 'Info Desk — ' ~ (conversation.subject ? conversation.subject.name : '') : 'Conversation',
+    conversation.type.value == 'support' ? 'message.conversation.support_title'|trans({'%name%': (conversation.subject ? conversation.subject.name : '')}) : 'message.conversation.title'|trans,
     {
-      subtitle: owner ? 'Claimed by ' ~ owner : (conversation.isOpen ? '' : 'Closed'),
-      actions: [{label: '← Messages', href: path('app_messages_index'), class: 'btn btn-outline-secondary'}]
+      subtitle: owner ? 'message.conversation.claimed_by'|trans({'%name%': owner}) : (conversation.isOpen ? '' : 'message.conversation.closed'|trans),
+      actions: [{label: 'message.action.back'|trans, href: path('app_messages_index'), class: 'btn btn-outline-secondary'}]
     }
   ) }}
 
@@ -18,17 +18,17 @@
       {% if not conversation.isClaimed %}
         <form method="post" action="{{ path('app_messages_claim', {id: conversation.uuid}) }}">
           <input type="hidden" name="_token" value="{{ csrf_token('chat_claim' ~ conversation.id) }}">
-          <button class="btn btn-sm btn-primary">Claim</button>
+          <button class="btn btn-sm btn-primary">{{ 'message.action.claim'|trans }}</button>
         </form>
       {% elseif conversation.claimedBy.id == app.user.id %}
         <form method="post" action="{{ path('app_messages_unclaim', {id: conversation.uuid}) }}">
           <input type="hidden" name="_token" value="{{ csrf_token('chat_claim' ~ conversation.id) }}">
-          <button class="btn btn-sm btn-outline-secondary">Unclaim</button>
+          <button class="btn btn-sm btn-outline-secondary">{{ 'message.action.unclaim'|trans }}</button>
         </form>
         <form method="post" action="{{ path('app_messages_close', {id: conversation.uuid}) }}"
-              data-controller="confirm" data-confirm-message-value="Close this conversation?">
+              data-controller="confirm" data-confirm-message-value="{{ 'message.confirm.close'|trans }}">
           <input type="hidden" name="_token" value="{{ csrf_token('chat_claim' ~ conversation.id) }}">
-          <button class="btn btn-sm btn-outline-danger">Close</button>
+          <button class="btn btn-sm btn-outline-danger">{{ 'message.action.close'|trans }}</button>
         </form>
       {% endif %}
     </div>
@@ -52,16 +52,16 @@
               data-controller="chat-typing"
               data-chat-typing-url-value="{{ path('app_messages_typing', {id: conversation.uuid}) }}">
           <input type="hidden" name="_token" value="{{ csrf_token('chat' ~ conversation.id) }}">
-          <input type="text" name="text" class="form-control" placeholder="Type a message…" autocomplete="off"
+          <input type="text" name="text" class="form-control" placeholder="{{ 'message.conversation.placeholder'|trans }}" autocomplete="off"
                  data-action="input->chat-typing#ping" required>
-          <button class="btn btn-primary">Send</button>
+          <button class="btn btn-primary">{{ 'message.action.send'|trans }}</button>
         </form>
         {% if is_granted('chat:restricted') %}
           <form method="post" action="{{ path('app_messages_image', {id: conversation.uuid}) }}"
                 enctype="multipart/form-data" class="d-flex gap-2 mt-2">
             <input type="hidden" name="_token" value="{{ csrf_token('chat' ~ conversation.id) }}">
             <input type="file" name="image" accept="image/*" class="form-control form-control-sm">
-            <button class="btn btn-sm btn-outline-secondary">Attach image</button>
+            <button class="btn btn-sm btn-outline-secondary">{{ 'message.action.attach_image'|trans }}</button>
           </form>
         {% endif %}
       {% endset %}

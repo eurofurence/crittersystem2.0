@@ -10,8 +10,8 @@ import { confirmModal, alertModal } from '../js/modal.js';
 export default class extends Controller {
     /*
      * `reload` is for a change the grid reload cannot show. `planner:changed` refreshes the grid
-     * only, so something that alters the toolbar itself — a new shift task appearing in the task
-     * picker — needs the page.
+     * only, so something that alters the toolbar itself - a new shift task appearing in the task
+     * picker - needs the page.
      */
     static values = { closeModal: String, confirm: String, reload: Boolean };
 

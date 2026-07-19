@@ -2,46 +2,46 @@
 {% import 'components/navigation/_macros.twig' as nav %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Account settings{% endblock %}
+{% block title %}{{ 'settings.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Account settings', {subtitle: 'Manage your profile, notifications and security.'}) }}
+  {{ d.page_header('settings.page.title'|trans, {subtitle: 'settings.page.subtitle'|trans}) }}
 
   <div class="row g-3">
     <div class="col-12 col-md-3">
       <div class="list-group">
-        {{ nav.sidebar_item('Profile & account', null, {href: '#profile', active: true}) }}
-        {{ nav.sidebar_item('My availability', 'app_availability') }}
-        {{ nav.sidebar_item('Notifications', 'app_notifications_preferences') }}
-        {{ nav.sidebar_item('Privacy & my data', 'app_profile_privacy') }}
-        {{ nav.sidebar_item('Two-factor authentication', 'app_2fa') }}
-        {{ nav.sidebar_item('Telegram', 'app_profile_telegram') }}
-        {{ nav.sidebar_item('Digital ID', 'app_digital_id') }}
-        {{ nav.sidebar_item('Theme', 'app_settings_theme') }}
-        {{ nav.sidebar_item('API key', 'app_api_key') }}
-        {{ nav.sidebar_item('View my profile', 'app_profile') }}
+        {{ nav.sidebar_item('settings.nav.profile'|trans, null, {href: '#profile', active: true}) }}
+        {{ nav.sidebar_item('settings.nav.availability'|trans, 'app_availability') }}
+        {{ nav.sidebar_item('settings.nav.notifications'|trans, 'app_notifications_preferences') }}
+        {{ nav.sidebar_item('ui.user_menu.privacy'|trans, 'app_profile_privacy') }}
+        {{ nav.sidebar_item('settings.nav.two_factor'|trans, 'app_2fa') }}
+        {{ nav.sidebar_item('ui.user_menu.telegram'|trans, 'app_profile_telegram') }}
+        {{ nav.sidebar_item('ui.user_menu.digital_id'|trans, 'app_digital_id') }}
+        {{ nav.sidebar_item('settings.theme.label'|trans, 'app_settings_theme') }}
+        {{ nav.sidebar_item('settings.nav.api_key'|trans, 'app_api_key') }}
+        {{ nav.sidebar_item('settings.nav.view_profile'|trans, 'app_profile') }}
       </div>
     </div>
 
     <div class="col-12 col-md-9" id="profile">
       {{ form_start(form) }}
-        {{ d.card_start('Account') }}
+        {{ d.card_start('settings.card.account'|trans) }}
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label class="form-label">Username</label>
+                <label class="form-label">{{ 'common.label.username'|trans }}</label>
                 <input type="text" class="form-control" value="{{ user.name }}" disabled>
               </div>
               <div class="col-md-6 mb-3">
-                <label class="form-label">Email</label>
+                <label class="form-label">{{ 'common.label.email'|trans }}</label>
                 <input type="text" class="form-control" value="{{ user.email }}" disabled>
               </div>
             </div>
             {% if user.ssoManaged %}
-              <p class="text-secondary small mb-0">Your name and email are managed by single sign-on and cannot be changed here.</p>
+              <p class="text-secondary small mb-0">{{ 'settings.account.sso_managed'|trans }}</p>
             {% endif %}
         {{ d.card_end() }}
 
-        {{ d.card_start('Profile') }}
+        {{ d.card_start('settings.card.profile'|trans) }}
             <div class="row">
               <div class="col-md-6">{{ form_row(form.firstName) }}</div>
               <div class="col-md-6">{{ form_row(form.lastName) }}</div>
@@ -58,7 +58,7 @@
             </div>
         {{ d.card_end() }}
 
-        {{ d.card_start('Preferences') }}
+        {{ d.card_start('settings.card.preferences'|trans) }}
             <div class="row">
               <div class="col-md-6">{{ form_row(form.language) }}</div>
               <div class="col-md-6">{{ form_row(form.theme) }}</div>
@@ -66,16 +66,16 @@
         {{ d.card_end() }}
 
         {% if form.newPassword is defined %}
-          {{ d.card_start('Change password') }}
+          {{ d.card_start('settings.card.change_password'|trans) }}
               <div class="row">
                 <div class="col-md-6">{{ form_row(form.currentPassword) }}</div>
                 <div class="col-md-6">{{ form_row(form.newPassword) }}</div>
               </div>
-              <p class="text-secondary small mb-0">Leave blank to keep your current password.</p>
+              <p class="text-secondary small mb-0">{{ 'settings.password.help'|trans }}</p>
           {{ d.card_end() }}
         {% endif %}
 
-        <button class="btn btn-primary">Save settings</button>
+        <button class="btn btn-primary">{{ 'settings.action.save'|trans }}</button>
       {{ form_end(form) }}
     </div>
   </div>

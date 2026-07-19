@@ -14,6 +14,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/backstage/goodies/items')]
 #[IsGranted('goodie:manage')]
@@ -39,7 +40,7 @@ final class GoodieItemController extends AbstractController
     {
         $category = $this->categories->findOneBy([]);
         if ($category === null) {
-            $this->addFlash('warning', 'Create a goodie category before adding items.');
+            $this->addFlash('warning', new TranslatableMessage('backstage.goodie.item.flash.need_category'));
 
             return $this->redirectToRoute('app_backstage_goodie_category_new');
         }
@@ -51,14 +52,14 @@ final class GoodieItemController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->persist($item);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Item "%s" created.', $item->getName()));
+            $this->addFlash('success', new TranslatableMessage('backstage.goodie.item.flash.created', ['%name%' => $item->getName()]));
 
             return $this->redirectToRoute('app_backstage_goodie_item_index');
         }
 
         return $this->render('backstage/goodie_item/form.html.twig', [
             'form' => $form,
-            'heading' => 'New goodie item',
+            'heading' => 'backstage.goodie.item.form.heading_new',
         ]);
     }
 
@@ -70,14 +71,14 @@ final class GoodieItemController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Item "%s" updated.', $item->getName()));
+            $this->addFlash('success', new TranslatableMessage('backstage.goodie.item.flash.updated', ['%name%' => $item->getName()]));
 
             return $this->redirectToRoute('app_backstage_goodie_item_index');
         }
 
         return $this->render('backstage/goodie_item/form.html.twig', [
             'form' => $form,
-            'heading' => 'Edit goodie item',
+            'heading' => 'backstage.goodie.item.form.heading_edit',
         ]);
     }
 
@@ -87,7 +88,7 @@ final class GoodieItemController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$item->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($item);
             $this->em->flush();
-            $this->addFlash('success', 'Item deleted.');
+            $this->addFlash('success', new TranslatableMessage('backstage.goodie.item.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_backstage_goodie_item_index');

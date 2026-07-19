@@ -7,7 +7,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Console output that forwards everything to a primary output (the real
- * console) while also handing each chunk to a sink closure — used to stream a
+ * console) while also handing each chunk to a sink closure - used to stream a
  * running migration's output into a log file the install wizard can tail.
  *
  * Decoration is disabled so both the console and the log receive plain text

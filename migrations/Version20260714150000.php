@@ -14,9 +14,9 @@ use Doctrine\Migrations\AbstractMigration;
  * department from having one, which makes department-specific tasks unusable.
  *
  * Two indexes replace the single global one:
- *   - (department_id, name) unique — a department cannot repeat a name. PostgreSQL treats NULLs as
+ *   - (department_id, name) unique - a department cannot repeat a name. PostgreSQL treats NULLs as
  *     distinct, so this does NOT constrain the global tasks;
- *   - a partial unique index on name WHERE department_id IS NULL — the global pool keeps unique
+ *   - a partial unique index on name WHERE department_id IS NULL - the global pool keeps unique
  *     names of its own. Doctrine cannot express a partial index, so it is created here directly.
  *
  * Non-destructive: the new constraints are strictly weaker than the old one, so existing rows

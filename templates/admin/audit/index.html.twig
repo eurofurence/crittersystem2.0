@@ -1,65 +1,63 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Audit log{% endblock %}
+{% block title %}{{ 'admin.audit.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Audit log', {subtitle: 'Forensic record of security-relevant actions. Admin only.'}) }}
+  {{ d.page_header('admin.audit.page.title'|trans, {subtitle: 'admin.audit.page.subtitle'|trans}) }}
 
-  {{ d.card_start('Legal export', {class: 'mb-4', titleTag: 'strong'}) }}
+  {{ d.card_start('admin.audit.export.title'|trans, {class: 'mb-4', titleTag: 'strong'}) }}
       <p class="text-muted small mb-3">
-        Generates a signed package (machine-readable JSON + presentation PDF + manifest with SHA-256
-        and signing certificate). System and internal actions are always included, even when a focus
-        user is set. The file is available for download for {{ constant('App\\Entity\\AuditExport::RETENTION_DAYS') }} days.
+        {{ 'admin.audit.export.help'|trans({'%days%': constant('App\\Entity\\AuditExport::RETENTION_DAYS')}) }}
       </p>
       {% if is_granted('audit:export') %}
         <form method="post" action="{{ path('app_manage_audit_export') }}" class="row g-2 align-items-end">
           <input type="hidden" name="_token" value="{{ csrf_token('audit_export') }}">
           <div class="col-auto">
-            <label class="form-label">From</label>
+            <label class="form-label">{{ 'admin.audit.export.from'|trans }}</label>
             <input type="date" name="from" class="form-control" required>
           </div>
           <div class="col-auto">
-            <label class="form-label">To</label>
+            <label class="form-label">{{ 'admin.audit.export.to'|trans }}</label>
             <input type="date" name="to" class="form-control" required>
           </div>
           <div class="col-auto">
-            <label class="form-label">Focus user ID <span class="text-muted">(optional)</span></label>
+            <label class="form-label">{{ 'admin.audit.export.focus_user'|trans }} <span class="text-muted">{{ 'admin.audit.export.optional'|trans }}</span></label>
             <input type="number" name="focus_user" class="form-control" min="1">
           </div>
           <div class="col-auto">
-            <label class="form-label">Legal hold ref <span class="text-muted">(optional)</span></label>
+            <label class="form-label">{{ 'admin.audit.export.legal_hold'|trans }} <span class="text-muted">{{ 'admin.audit.export.optional'|trans }}</span></label>
             <input type="text" name="legal_hold" class="form-control">
           </div>
           <div class="col-auto">
-            <button class="btn btn-primary">Generate export</button>
+            <button class="btn btn-primary">{{ 'admin.audit.export.submit'|trans }}</button>
           </div>
         </form>
       {% else %}
-        <p class="text-muted mb-0">You do not have permission to generate exports.</p>
+        <p class="text-muted mb-0">{{ 'admin.audit.export.no_permission'|trans }}</p>
       {% endif %}
   {{ d.card_end() }}
 
   {% if exports is not empty %}
-    {{ d.card_start('Recent exports', {class: 'mb-4', titleTag: 'strong', bodyClass: ''}) }}
+    {{ d.card_start('admin.audit.exports.title'|trans, {class: 'mb-4', titleTag: 'strong', bodyClass: ''}) }}
       {{ d.table_start() }}
-        <thead><tr><th>Created</th><th>Scope</th><th>Events</th><th>Expires</th><th>Status</th><th class="text-end">File</th></tr></thead>
+        <thead><tr><th>{{ 'admin.audit.exports.col.created'|trans }}</th><th>{{ 'admin.audit.exports.col.scope'|trans }}</th><th>{{ 'admin.audit.exports.col.events'|trans }}</th><th>{{ 'admin.audit.exports.col.expires'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th class="text-end">{{ 'admin.audit.exports.col.file'|trans }}</th></tr></thead>
         <tbody>
           {% for ex in exports %}
             <tr>
               <td class="small">{{ ex.createdAt|app_datetime }}</td>
-              <td class="small">{{ ex.scopeStart|app_date }} → {{ ex.scopeEnd|app_date }}{% if ex.focusUserId %} <span class="text-muted">(user {{ ex.focusUserId }})</span>{% endif %}</td>
+              <td class="small">{{ ex.scopeStart|app_date }} → {{ ex.scopeEnd|app_date }}{% if ex.focusUserId %} <span class="text-muted">{{ 'admin.audit.exports.user'|trans({'%id%': ex.focusUserId}) }}</span>{% endif %}</td>
               <td class="small">{{ ex.eventCount }}</td>
               <td class="small">{{ ex.expiresAt|app_date }}</td>
               <td>
-                {% if ex.isExpired %}{{ d.badge('Expired', 'text-bg-secondary') }}
-                {% elseif ex.downloadedAt %}{{ d.badge('Downloaded', 'text-bg-success') }}
-                {% else %}{{ d.badge('Ready', 'text-bg-azure') }}{% endif %}
+                {% if ex.isExpired %}{{ d.badge('common.state.expired'|trans, 'text-bg-secondary') }}
+                {% elseif ex.downloadedAt %}{{ d.badge('admin.audit.exports.status.downloaded'|trans, 'text-bg-success') }}
+                {% else %}{{ d.badge('admin.audit.exports.status.ready'|trans, 'text-bg-azure') }}{% endif %}
               </td>
               <td class="text-end">
                 {% if not ex.isExpired and storedKeys[ex.storageKey] is defined and is_granted('audit:export') %}
-                  <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_audit_download', {uuid: ex.uuid}) }}">Download</a>
-                {% else %}<span class="text-muted small">—</span>{% endif %}
+                  <a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_audit_download', {uuid: ex.uuid}) }}">{{ 'admin.audit.exports.download'|trans }}</a>
+                {% else %}<span class="text-muted small">-</span>{% endif %}
               </td>
             </tr>
           {% endfor %}
@@ -71,7 +69,7 @@
   {% set eventsFilter %}
     <form method="get" class="d-flex gap-2">
       <select name="type" class="form-select form-select-sm" onchange="this.form.submit()">
-        <option value="">All types</option>
+        <option value="">{{ 'admin.audit.events.all_types'|trans }}</option>
         {% for value, label in eventTypes %}
           <option value="{{ value }}" {{ value == selectedType ? 'selected' }}>{{ label }}</option>
         {% endfor %}
@@ -79,27 +77,27 @@
     </form>
   {% endset %}
 
-  {{ d.card_start('Recent events', {class: '', titleTag: 'strong', bodyClass: '', headerActions: eventsFilter}) }}
+  {{ d.card_start('admin.audit.events.title'|trans, {class: '', titleTag: 'strong', bodyClass: '', headerActions: eventsFilter}) }}
     {% if events is empty %}
-      {{ d.empty_state('No audit events', {message: 'Nothing has been recorded yet for this filter.'}) }}
+      {{ d.empty_state('admin.audit.events.empty.title'|trans, {message: 'admin.audit.events.empty.message'|trans}) }}
     {% else %}
       {{ d.table_start() }}
-        <thead><tr><th>When (UTC)</th><th>Type / action</th><th>Actor</th><th>Resource</th><th>Outcome</th></tr></thead>
+        <thead><tr><th>{{ 'admin.audit.events.col.when'|trans }}</th><th>{{ 'admin.audit.events.col.type'|trans }}</th><th>{{ 'admin.audit.events.col.actor'|trans }}</th><th>{{ 'admin.audit.events.col.resource'|trans }}</th><th>{{ 'admin.audit.events.col.outcome'|trans }}</th></tr></thead>
         <tbody>
           {% for e in events %}
             <tr>
               <td class="small text-nowrap">{{ e.occurredAt|app_datetime }}</td>
               <td class="small"><code>{{ e.eventType }}</code> / {{ e.action }}</td>
               <td class="small">
-                {% if e.actorType == 'system' %}<span class="text-muted">system</span>
-                {% else %}{{ e.actorUsername ?? '—' }}{% if e.actorUserId %} <span class="text-muted">#{{ e.actorUserId }}</span>{% endif %}
+                {% if e.actorType == 'system' %}<span class="text-muted">{{ 'admin.audit.events.system'|trans }}</span>
+                {% else %}{{ e.actorUsername ?? '-' }}{% if e.actorUserId %} <span class="text-muted">#{{ e.actorUserId }}</span>{% endif %}
                   {% if e.actorIp %}<div class="text-muted">{{ e.actorIp }}</div>{% endif %}
                 {% endif %}
               </td>
-              <td class="small">{% if e.resourceType %}{{ e.resourceType }} {{ e.resourceId }}{% else %}—{% endif %}</td>
+              <td class="small">{% if e.resourceType %}{{ e.resourceType }} {{ e.resourceId }}{% else %}-{% endif %}</td>
               <td>
-                {% if e.outcome == 'SUCCESS' %}{{ d.badge('Success', 'text-bg-success') }}
-                {% else %}{{ d.badge('Failure', 'text-bg-danger') }}{% endif %}
+                {% if e.outcome == 'SUCCESS' %}{{ d.badge('admin.audit.events.success'|trans, 'text-bg-success') }}
+                {% else %}{{ d.badge('admin.audit.events.failure'|trans, 'text-bg-danger') }}{% endif %}
               </td>
             </tr>
           {% endfor %}

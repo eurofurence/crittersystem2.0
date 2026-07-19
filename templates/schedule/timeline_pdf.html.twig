@@ -18,13 +18,13 @@
   </style>
 </head>
 <body>
-  <h1>Staff schedule — {{ department.name }}</h1>
-  <p class="sub">Confirmed assignments. Generated for posting.</p>
+  <h1>{{ 'schedule.page.title'|trans({'%department%': department.name}) }}</h1>
+  <p class="sub">{{ 'schedule.pdf.subtitle'|trans }}</p>
 
   <table>
     <thead>
       <tr>
-        <th class="user">User</th>
+        <th class="user">{{ 'common.label.user'|trans }}</th>
         {% for day in days %}<th>{{ day.label }}</th>{% endfor %}
       </tr>
     </thead>
@@ -45,7 +45,7 @@
           {% endfor %}
         </tr>
       {% else %}
-        <tr><td colspan="{{ 1 + days|length }}">No confirmed assignments.</td></tr>
+        <tr><td colspan="{{ 1 + days|length }}">{{ 'schedule.pdf.empty'|trans }}</td></tr>
       {% endfor %}
     </tbody>
   </table>

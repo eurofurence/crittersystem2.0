@@ -6,7 +6,7 @@
 
 {% block body %}
   {{ d.page_header(pageTitle, {
-    subtitle: 'field, datetime_local, range_slider, check, switch, choice, choice_multiple, search_input — templates/components/forms/_macros.twig',
+    subtitle: 'field, datetime_local, range_slider, check, switch, choice, choice_multiple, search_input - templates/components/forms/_macros.twig',
     actions: [
       {label: 'Back to the kit index', href: path('app_navigation_kit'), class: 'btn btn-outline-primary'}
     ]
@@ -22,7 +22,7 @@
   {# ------------------------------------------------------- the Symfony form demo #}
 
   {{ d.card_start('A Symfony form, rendered with the macros', {
-    subtitle: 'FormKitDemoType — every row goes through a macro, so it picks up .form-control / .form-select and the help/error slots.'
+    subtitle: 'FormKitDemoType - every row goes through a macro, so it picks up .form-control / .form-select and the help/error slots.'
   }) }}
     {{ form_start(form) }}
       <div class="row">
@@ -66,7 +66,7 @@
 
         {{ f.field(extras.apiKey, {
           col: 'col-12 col-md-6',
-          help: 'A disabled field — pass disabled: true when building the form type, not to the macro.'
+          help: 'A disabled field - pass disabled: true when building the form type, not to the macro.'
         }) }}
 
         {{ d.section_header('Validation error state', {size: 'h6', class: 'col-12 mt-3 mb-2'}) }}
@@ -79,7 +79,7 @@
         <div class="col-12 col-md-6 mb-3">
           <p class="text-muted small mb-0">
             The error next to it is a real <code>FormError</code> on the field (the same thing a
-            failed constraint leaves behind on an invalid submit) — the macro always renders
+            failed constraint leaves behind on an invalid submit) - the macro always renders
             <code>form_errors(row)</code>, so you get it for free. Note it renders through the
             <em>default</em> Symfony form theme (a plain list), because no Bootstrap form theme
             is configured for this app.
@@ -102,12 +102,12 @@
 ->add('apiKey', TextType::class, ['disabled' => true])
 {{ f.field(form.apiKey) }}
 
-{# error state: nothing to do — field() always renders form_errors(row) #}
+{# error state: nothing to do - field() always renders form_errors(row) #}
 {{ f.field(form.email) }}
 
 {# checkbox / switch / choice / multiple choice #}
 {{ f.check(form.newsletter) }}
-{{ f.switch(form.notify, {help: 'Toggle switch — same contract as check().'}) }}
+{{ f.switch(form.notify, {help: 'Toggle switch - same contract as check().'}) }}
 {{ f.choice(form.department, {help: 'Pick one.'}) }}
 {{ f.choice_multiple(form.skills, {size: 4}) }}{% endverbatim %}</code></pre>
   {{ d.card_end() }}
@@ -141,7 +141,7 @@
   {# ------------------------------------------------------- search + Turbo Frame #}
 
   {{ d.card_start('search_input + Turbo Frame', {
-    subtitle: 'A debounced search box that reloads only the frame — no Symfony form, no page refresh.'
+    subtitle: 'A debounced search box that reloads only the frame - no Symfony form, no page refresh.'
   }) }}
     <div class="row">
       {{ f.search_input('q', {

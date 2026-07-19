@@ -1,7 +1,7 @@
 {# Install-scoped flash messages (separate keys from the main app flashes). #}
 {% for message in app.flashes('install_error') %}
-    <div class="alert alert-danger" role="alert">{{ message }}</div>
+    <div class="alert alert-danger" role="alert">{{ message|trans }}</div>
 {% endfor %}
 {% for message in app.flashes('install_success') %}
-    <div class="alert alert-success" role="alert">{{ message }}</div>
+    <div class="alert alert-success" role="alert">{{ message|trans }}</div>
 {% endfor %}

@@ -1,10 +1,10 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Messages{% endblock %}
+{% block title %}{{ 'ui.nav.messages'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Messages', {subtitle: 'Chat with the Info Desk and your contacts.'}) }}
+  {{ d.page_header('ui.nav.messages'|trans, {subtitle: 'message.index.subtitle'|trans}) }}
 
   <div class="row g-3">
     <div class="col-12 col-lg-4">
@@ -13,7 +13,7 @@
           <a href="{{ path('app_messages_conversation', {id: support.uuid}) }}"
              class="list-group-item list-group-item-action d-flex align-items-center">
             <span class="avatar avatar-sm bg-blue-lt me-2">ID</span>
-            <span class="fw-bold">Info Desk Team</span>
+            <span class="fw-bold">{{ 'message.index.info_desk_team'|trans }}</span>
           </a>
           {% for row in mine %}
             {% set c = row.conversation %}
@@ -21,7 +21,7 @@
               <a href="{{ path('app_messages_conversation', {id: c.uuid}) }}"
                  class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
                 <span>
-                  {% if c.type.value == 'support' %}Support: {{ c.subject ? c.subject.name : '—' }}
+                  {% if c.type.value == 'support' %}{{ 'message.index.support_prefix'|trans({'%name%': c.subject ? c.subject.name : '-'}) }}
                   {% else %}
                     {{ c.participants|filter(p => p.user.id != app.user.id)|map(p => p.user.name)|join(', ') }}
                   {% endif %}
@@ -36,26 +36,26 @@
 
     {% if canClaim %}
       <div class="col-12 col-lg-8">
-        {{ d.card_start('Waiting (' ~ waiting|length ~ ')', {bodyClass: ''}) }}
+        {{ d.card_start('message.index.waiting'|trans({'%count%': waiting|length}), {bodyClass: ''}) }}
           <div class="list-group list-group-flush">
             {% for c in waiting %}
               <a href="{{ path('app_messages_conversation', {id: c.uuid}) }}" class="list-group-item list-group-item-action">
-                {{ c.subject ? c.subject.name : 'Unknown' }}
+                {{ c.subject ? c.subject.name : 'message.index.unknown'|trans }}
                 <span class="text-secondary small">· {{ c.updatedAt|app_datetime }}</span>
               </a>
             {% else %}
-              {{ d.empty_inline('No conversations waiting.', {tag: 'div', class: 'list-group-item text-secondary'}) }}
+              {{ d.empty_inline('message.index.empty.waiting'|trans, {tag: 'div', class: 'list-group-item text-secondary'}) }}
             {% endfor %}
           </div>
         {{ d.card_end({bodyClass: ''}) }}
-        {{ d.card_start('Claimed by you (' ~ claimed|length ~ ')', {class: '', bodyClass: ''}) }}
+        {{ d.card_start('message.index.claimed_by_you'|trans({'%count%': claimed|length}), {class: '', bodyClass: ''}) }}
           <div class="list-group list-group-flush">
             {% for c in claimed %}
               <a href="{{ path('app_messages_conversation', {id: c.uuid}) }}" class="list-group-item list-group-item-action">
-                {{ c.subject ? c.subject.name : 'Unknown' }} {{ d.badge('claimed', 'bg-green-lt') }}
+                {{ c.subject ? c.subject.name : 'message.index.unknown'|trans }} {{ d.badge('message.index.badge_claimed'|trans, 'bg-green-lt') }}
               </a>
             {% else %}
-              {{ d.empty_inline('You have no claimed conversations.', {tag: 'div', class: 'list-group-item text-secondary'}) }}
+              {{ d.empty_inline('message.index.empty.claimed'|trans, {tag: 'div', class: 'list-group-item text-secondary'}) }}
             {% endfor %}
           </div>
         {{ d.card_end({bodyClass: ''}) }}

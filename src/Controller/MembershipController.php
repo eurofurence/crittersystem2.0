@@ -12,6 +12,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
@@ -122,8 +123,8 @@ final class MembershipController extends AbstractController
             $this->em->flush();
 
             $this->addFlash('success', $type->isRestricted()
-                ? \sprintf('Request to join "%s" submitted — awaiting confirmation.', $type->getName())
-                : \sprintf('You joined "%s".', $type->getName()));
+                ? new TranslatableMessage('membership.flash.join_requested', ['%name%' => $type->getName()])
+                : new TranslatableMessage('membership.flash.joined', ['%name%' => $type->getName()]));
         }
 
         return $this->redirectToRoute('app_membership_index');
@@ -140,7 +141,7 @@ final class MembershipController extends AbstractController
             if ($membership !== null) {
                 $this->em->remove($membership);
                 $this->em->flush();
-                $this->addFlash('success', \sprintf('You left "%s".', $type->getName()));
+                $this->addFlash('success', new TranslatableMessage('membership.flash.left', ['%name%' => $type->getName()]));
             }
         }
 

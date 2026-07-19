@@ -3,11 +3,11 @@
 {% import 'components/notification/_macros.twig' as n %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ eventName ? eventName ~ ' · Sign in' : 'Sign in · Critter' }}{% endblock %}
+{% block title %}{{ eventName ? 'login.title.event'|trans({'%name%': eventName}) : 'login.title.default'|trans }}{% endblock %}
 
 {% block body %}
     <div class="text-center mb-4">
-        <h1 class="display-6 mb-2">{{ eventName ?: 'Volunteer & Staff Management' }}</h1>
+        <h1 class="display-6 mb-2">{{ eventName ?: 'login.heading.default'|trans }}</h1>
         {% if welcomeMessage %}
             <p class="lead text-muted mb-0">{{ welcomeMessage }}</p>
         {% endif %}
@@ -20,11 +20,11 @@
                 {% set upcoming = date > date() %}
                 <div class="col-6 col-md-3">
                     {{ d.card_start(null, {class: 'h-100 text-center ' ~ (upcoming ? '' : 'opacity-75'), bodyClass: 'card-body py-3'}) }}
-                            <div class="text-muted small text-uppercase">{{ label }}</div>
+                            <div class="text-muted small text-uppercase">{{ label|trans }}</div>
                             <div class="fw-semibold">{{ date|app_date }}</div>
                             <div class="small">{{ date|app_time }}</div>
                             {{ d.badge(
-                                upcoming ? 'in ' ~ date.diff(date()).days ~ ' day(s)' : 'passed',
+                                upcoming ? 'login.timeline.in_days'|trans({'%count%': date.diff(date()).days}) : 'login.timeline.passed'|trans,
                                 upcoming ? 'text-bg-primary' : 'text-bg-secondary',
                                 {class: 'mt-2'}
                             ) }}
@@ -36,34 +36,34 @@
 
     <div class="row justify-content-center">
         <div class="col-12 col-md-9 col-lg-6">
-            {{ d.card_start('Sign in', {class: 'shadow-sm'}) }}
+            {{ d.card_start('login.sign_in'|trans, {class: 'shadow-sm'}) }}
                     {% if error %}
                         {{ n.alert('danger', error.messageKey|trans(error.messageData, 'security'), { icon: '⚠️' }) }}
                     {% endif %}
 
                     <form method="post" action="{{ path('app_login') }}">
                         <div class="mb-3">
-                            <label for="username" class="form-label">Username or email</label>
+                            <label for="username" class="form-label">{{ 'login.field.username.label'|trans }}</label>
                             <input type="text" id="username" name="_username"
                                    value="{{ last_username }}" class="form-control"
                                    autocomplete="username" required autofocus>
                         </div>
 
                         <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
+                            <label for="password" class="form-label">{{ 'login.field.password.label'|trans }}</label>
                             <input type="password" id="password" name="_password"
                                    class="form-control" autocomplete="current-password" required>
                         </div>
 
                         <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
 
-                        <button class="btn btn-primary w-100" type="submit">Sign in</button>
+                        <button class="btn btn-primary w-100" type="submit">{{ 'login.sign_in'|trans }}</button>
                     </form>
 
                     {% if sso_enabled() %}
-                        <div class="hr-text">or</div>
+                        <div class="hr-text">{{ 'login.sso.or'|trans }}</div>
                         <a href="{{ path('app_sso_start') }}" class="btn btn-outline-secondary w-100">
-                            🔐 Sign in with {{ sso_provider_label() }}
+                            🔐 {{ 'login.sso.sign_in_with'|trans({'%provider%': sso_provider_label()}) }}
                         </a>
                     {% endif %}
             {{ d.card_end() }}

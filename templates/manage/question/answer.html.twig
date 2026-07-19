@@ -1,24 +1,24 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Answer Question{% endblock %}
+{% block title %}{{ 'manage.question.answer.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Answer Question', {
-    actions: [{label: '← Back to questions', href: path('app_manage_questions_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('manage.question.answer.page.title'|trans, {
+    actions: [{label: 'manage.question.action.back'|trans, href: path('app_manage_questions_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ d.card_start() }}
-    <div class="small text-muted">{{ question.user ? question.user.name : 'Unknown' }} · {{ question.createdAt|app_datetime }}</div>
+    <div class="small text-muted">{{ question.user ? question.user.name : 'manage.question.unknown'|trans }} · {{ question.createdAt|app_datetime }}</div>
     <div class="fw-semibold">{{ question.text|nl2br }}</div>
   {{ d.card_end() }}
 
   <form method="post" action="{{ path('app_manage_questions_answer', {id: question.uuid}) }}">
     <input type="hidden" name="_token" value="{{ csrf_token('answer' ~ question.id) }}">
     <div class="mb-2">
-      <label class="form-label" for="answer">Answer</label>
+      <label class="form-label" for="answer">{{ 'manage.question.field.answer.label'|trans }}</label>
       <textarea id="answer" name="answer" class="form-control" rows="5" required>{{ question.answer }}</textarea>
     </div>
-    <button class="btn btn-primary">Save answer</button>
+    <button class="btn btn-primary">{{ 'manage.question.action.save_answer'|trans }}</button>
   </form>
 {% endblock %}

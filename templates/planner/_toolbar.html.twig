@@ -1,23 +1,23 @@
 {# Planner toolbar: Add Shift and the paint defaults picked up by the `planner`
    Stimulus controller. #}
-<div class="btn-toolbar mb-2 gap-2 align-items-end" role="toolbar" aria-label="Planner actions">
+<div class="btn-toolbar mb-2 gap-2 align-items-end" role="toolbar" aria-label="{{ 'planner.toolbar.aria'|trans }}">
   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#planner-add-modal">
-    + Add Shift
+    {{ 'planner.action.add_shift'|trans }}
   </button>
 
   <a href="{{ path('app_manage_shifts_wizard', {department: department.uuid}) }}" class="btn btn-outline-primary">
-    Shift Wizard
+    {{ 'planner.wizard.title'|trans }}
   </a>
 
   <a href="{{ path('app_manage_shifts_matrix', {department: department.uuid}) }}" class="btn btn-outline-primary">
-    Matrix view
+    {{ 'planner.action.matrix_view'|trans }}
   </a>
 
   {% if is_granted('assignment:manage', department) %}
     <form method="post" action="{{ path('app_proposal_generate') }}" class="d-inline">
       <input type="hidden" name="_token" value="{{ csrf_token('proposal_generate') }}">
       <input type="hidden" name="department" value="{{ department.uuid }}">
-      <button type="submit" class="btn btn-outline-primary">Auto-assign…</button>
+      <button type="submit" class="btn btn-outline-primary">{{ 'planner.action.auto_assign'|trans }}</button>
     </form>
   {% endif %}
 
@@ -26,25 +26,25 @@
     data-controller="planner-defaults"
   >
     <div>
-      <label class="form-label mb-1 small" for="paint-audience">Paint as</label>
+      <label class="form-label mb-1 small" for="paint-audience">{{ 'planner.field.paint_as'|trans }}</label>
       <select id="paint-audience" class="form-select form-select-sm" data-action="change->planner-defaults#audience">
-        <option value="public_volunteer">Public volunteer</option>
-        <option value="all_staff">All staff</option>
-        <option value="department_staff" selected>Department staff</option>
-        <option value="invite_only">Invite-only</option>
+        <option value="public_volunteer">{{ 'planner.audience.public_volunteer'|trans }}</option>
+        <option value="all_staff">{{ 'planner.audience.all_staff'|trans }}</option>
+        <option value="department_staff" selected>{{ 'planner.audience.department_staff'|trans }}</option>
+        <option value="invite_only">{{ 'planner.audience.invite_only'|trans }}</option>
       </select>
     </div>
     <div>
-      <label class="form-label mb-1 small" for="paint-task">Task</label>
+      <label class="form-label mb-1 small" for="paint-task">{{ 'planner.label.task'|trans }}</label>
       <div class="d-flex align-items-center gap-1">
         <select id="paint-task" class="form-select form-select-sm" data-action="change->planner-defaults#task">
-          <option value="0">— None —</option>
+          <option value="0">{{ 'planner.option.none'|trans }}</option>
           {% for task in shiftTasks %}
             <option value="{{ task.id }}">{{ task.displayName }}</option>
           {% endfor %}
         </select>
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#planner-new-task"
-                title="Create a shift task for this department" aria-label="Create a shift task for this department">+</button>
+                title="{{ 'planner.toolbar.new_task_aria'|trans }}" aria-label="{{ 'planner.toolbar.new_task_aria'|trans }}">+</button>
       </div>
     </div>
   </div>
@@ -59,20 +59,20 @@
               data-controller="planner-form" data-planner-form-close-modal-value="planner-new-task"
               data-planner-form-reload-value="1">
           <div class="modal-header">
-            <h5 class="modal-title" id="planner-new-task-title">New shift task for {{ department.name }}</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 class="modal-title" id="planner-new-task-title">{{ 'planner.toolbar.new_task_title'|trans({'%name%': department.name}) }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'ui.aria.close'|trans }}"></button>
           </div>
           <div class="modal-body">
             <input type="hidden" name="_token" value="{{ csrf_token('planner_edit') }}">
             <input type="hidden" name="department" value="{{ department.uuid }}">
-            <label class="form-label" for="planner-new-task-name">Name</label>
+            <label class="form-label" for="planner-new-task-name">{{ 'common.label.name'|trans }}</label>
             <input type="text" class="form-control" id="planner-new-task-name" name="name" required
-                   placeholder="e.g. Briefing">
-            <div class="form-text">Available when planning shifts for this department.</div>
+                   placeholder="{{ 'planner.toolbar.new_task_placeholder'|trans }}">
+            <div class="form-text">{{ 'planner.toolbar.new_task_help'|trans }}</div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary" data-action="planner-form#submit">Create task</button>
+            <button type="button" class="btn btn-link" data-bs-dismiss="modal">{{ 'common.action.cancel'|trans }}</button>
+            <button type="submit" class="btn btn-primary" data-action="planner-form#submit">{{ 'planner.toolbar.new_task_submit'|trans }}</button>
           </div>
         </form>
       </div>
@@ -81,13 +81,13 @@
 
   <div class="ms-auto d-flex align-items-center gap-2">
     {% set draftCount = grid.blocks|filter(b => b.shift.draft)|length %}
-    <span class="text-secondary small">{{ draftCount }} draft{{ draftCount == 1 ? '' : 's' }}</span>
+    <span class="text-secondary small">{{ draftCount }} {{ (draftCount == 1 ? 'planner.toolbar.draft_one' : 'planner.toolbar.draft_other')|trans }}</span>
     {% if is_granted('shift:publish') %}
       <form method="post" action="{{ path('app_manage_shifts_planner_publish') }}" data-controller="planner-form">
         <input type="hidden" name="_token" value="{{ csrf_token('planner_publish') }}">
         <input type="hidden" name="department" value="{{ department.uuid }}">
         <button type="submit" class="btn btn-success" data-action="planner-form#submit" {{ draftCount == 0 ? 'disabled' : '' }}>
-          Publish Shifts
+          {{ 'planner.action.publish'|trans }}
         </button>
       </form>
     {% endif %}

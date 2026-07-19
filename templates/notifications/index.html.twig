@@ -1,16 +1,16 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Notifications{% endblock %}
+{% block title %}{{ 'notifications.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Notifications', {
-    subtitle: 'Your notification history.',
-    actions: [{label: 'Preferences', href: path('app_notifications_preferences'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('notifications.page.title'|trans, {
+    subtitle: 'notifications.index.subtitle'|trans,
+    actions: [{label: 'notifications.action.preferences'|trans, href: path('app_notifications_preferences'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if notifications is empty %}
-    {{ d.empty_state('No notifications yet', {message: 'Notifications about shifts, messages and calls will appear here.'}) }}
+    {{ d.empty_state('notifications.empty.title'|trans, {message: 'notifications.empty.message'|trans}) }}
   {% else %}
     <div class="list-group">
       {% for n in notifications %}

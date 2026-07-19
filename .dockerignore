@@ -3,7 +3,7 @@
 .gitignore
 .github
 
-# Rebuilt inside the image — never copy host-specific copies.
+# Rebuilt inside the image - never copy host-specific copies.
 vendor
 var
 public/assets

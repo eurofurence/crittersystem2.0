@@ -8,11 +8,11 @@ namespace App\Service\Install;
  * Three small files, all NON-transactional on purpose so they survive a rolled
  * back / interrupted migration and can be read while one is running:
  *
- *  - `status.json` — the live migration run state (idle|running|ok|failed) plus
+ *  - `status.json` - the live migration run state (idle|running|ok|failed) plus
  *    timestamps and the last error. Drives the wizard's progress page.
- *  - `migration.log` — the streamed console output of the running migration so
+ *  - `migration.log` - the streamed console output of the running migration so
  *    the operator can follow along.
- *  - `ready.json` — an advisory cache flag, keyed by the latest available
+ *  - `ready.json` - an advisory cache flag, keyed by the latest available
  *    migration version, that lets the per-request maintenance gate skip the
  *    database round-trip in steady state. A new deploy (new version) or a wiped
  *    `var/` directory simply invalidates it; it is never the source of truth.
@@ -151,7 +151,7 @@ final class InstallStateStore
 
     /**
      * True only when the cached flag exists AND matches the currently shipped
-     * latest version — otherwise the caller must do a full database check.
+     * latest version - otherwise the caller must do a full database check.
      */
     public function isReadyFor(?string $latestVersion): bool
     {

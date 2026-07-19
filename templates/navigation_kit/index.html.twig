@@ -7,7 +7,7 @@
 
 {% block body %}
   {{ d.page_header(pageTitle, {
-    subtitle: 'The index of the UI kit — every kit page, plus the navigation components themselves.'
+    subtitle: 'The index of the UI kit - every kit page, plus the navigation components themselves.'
   }) }}
 
   {# ------------------------------------------------------------------ the hub #}
@@ -20,7 +20,7 @@
     {% set kits = [
       {title: 'Data Kit',         route: 'app_data_kit',         icon: 'checklist', text: 'Cards, tables, badges & status badges, empty states, stat cards and action cards.'},
       {title: 'Form Kit',         route: 'app_form_kit',         icon: 'puzzle',    text: 'Form fields (help text, prefix/suffix, errors), checkboxes, choices, debounced search.'},
-      {title: 'Modal Kit',        route: 'app_modal_kit',        icon: 'help',      text: 'Confirmations & dialogs — the supported mechanism. Never window.confirm()/alert().'},
+      {title: 'Modal Kit',        route: 'app_modal_kit',        icon: 'help',      text: 'Confirmations & dialogs - the supported mechanism. Never window.confirm()/alert().'},
       {title: 'Notification Kit', route: 'app_notification_kit', icon: 'bell',      text: 'Alerts (4 types, dismissible), Symfony flash messages, and toasts.'},
       {title: 'Theme Kit',        route: 'app_theme_kit',        icon: 'palette',   text: 'The registered themes, their CSS variables, and how the active theme is resolved.'}
     ] %}
@@ -45,7 +45,7 @@
   {{ d.card_start('Written reference') }}
     <p class="mb-0">
       The full, authoritative component reference is
-      <code>docs/ui-components.md</code> — every macro, every option, and the rules
+      <code>docs/ui-components.md</code> - every macro, every option, and the rules
       (no business logic in macros, no CSRF minted in macros, only <code>…Html</code>
       options accept trusted markup). These kit pages are the <em>visual</em> counterpart:
       what each component looks like, and a snippet you can paste.
@@ -55,7 +55,7 @@
   {# --------------------------------------------------- the navigation components #}
 
   {{ d.section_header('Navigation components', {
-    subtitle: 'templates/components/navigation/_macros.twig — nav_item, sidebar, sidebar_item.'
+    subtitle: 'templates/components/navigation/_macros.twig - nav_item, sidebar, sidebar_item.'
   }) }}
 
   {{ d.card_start('nav_item', {subtitle: 'A horizontal navbar entry. Active state is derived from the current route name.'}) }}
@@ -106,14 +106,14 @@
       {{ d.card_start('sidebar + sidebar_item') }}
         <p>
           <code>sidebar(title, contentHtml)</code> is a card with a flush list-group; the
-          <code>contentHtml</code> is <strong>captured markup</strong> — build it with
+          <code>contentHtml</code> is <strong>captured markup</strong> - build it with
           <code>{% verbatim %}{% set items %}…{% endset %}{% endverbatim %}</code>, never from user input.
         </p>
         <ul class="text-muted small">
-          <li><strong>Route-based</strong> — pass a route name; active state is derived from the current route (entry 1, active here).</li>
-          <li><strong>Badge</strong> — <code>badge: 7</code> (entry 2).</li>
-          <li><strong>Forced active</strong> — <code>active: true</code>, for targets the router cannot resolve, e.g. an in-page anchor (entry 4).</li>
-          <li><strong>href-based</strong> — <code>href: '…'</code> instead of a route name, for plain/external links (entry 5).</li>
+          <li><strong>Route-based</strong> - pass a route name; active state is derived from the current route (entry 1, active here).</li>
+          <li><strong>Badge</strong> - <code>badge: 7</code> (entry 2).</li>
+          <li><strong>Forced active</strong> - <code>active: true</code>, for targets the router cannot resolve, e.g. an in-page anchor (entry 4).</li>
+          <li><strong>href-based</strong> - <code>href: '…'</code> instead of a route name, for plain/external links (entry 5).</li>
         </ul>
 
 <pre class="mb-0"><code>{% verbatim %}{% set items %}

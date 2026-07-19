@@ -17,7 +17,7 @@ use Symfony\Component\Security\Core\Role\RoleHierarchyInterface;
  *  - admin  : ROLE_SUBADMIN and above ("Admin only" also admits sub-admins)
  *
  * The required role is resolved through the role hierarchy, so ROLE_ADMIN satisfies
- * every mode — an administrator can never lock themselves out by tightening the gate.
+ * every mode - an administrator can never lock themselves out by tightening the gate.
  *
  * This only decides *whether* a user qualifies; enforcement (logging out and
  * redirecting non-qualifying users) lives in {@see \App\EventSubscriber\AccessModeGateSubscriber}.

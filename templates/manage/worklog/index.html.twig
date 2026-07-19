@@ -1,27 +1,27 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Worklogs{% endblock %}
+{% block title %}{{ 'manage.worklog.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Worklogs', {
-    subtitle: 'Manual hour entries for work outside formal shifts.',
+  {{ d.page_header('manage.worklog.page.title'|trans, {
+    subtitle: 'manage.worklog.page.subtitle'|trans,
     actions: [
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New worklog', href: path('app_manage_worklog_new'), class: 'btn btn-primary'}
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.worklog.action.new'|trans, href: path('app_manage_worklog_new'), class: 'btn btn-primary'}
     ]
   }) }}
 
   {% if worklogs is empty %}
-    {{ d.empty_state('No worklogs yet', {
-      message: 'Record hours for work not tracked through shifts.',
-      actionLabel: '+ New worklog',
+    {{ d.empty_state('manage.worklog.empty.title'|trans, {
+      message: 'manage.worklog.empty.message'|trans,
+      actionLabel: 'manage.worklog.action.new'|trans,
       actionHref: path('app_manage_worklog_new')
     }) }}
   {% else %}
     {{ d.table_start() }}
       <thead>
-        <tr><th>Volunteer</th><th>Hours</th><th>Worked at</th><th>Comment</th><th>By</th><th class="text-end"></th></tr>
+        <tr><th>{{ 'manage.label.volunteer'|trans }}</th><th>{{ 'manage.worklog.field.hours.label'|trans }}</th><th>{{ 'manage.worklog.field.worked_at.label'|trans }}</th><th>{{ 'manage.worklog.field.comment.label'|trans }}</th><th>{{ 'manage.worklog.table.by'|trans }}</th><th class="text-end"></th></tr>
       </thead>
       <tbody>
         {% for w in worklogs %}
@@ -29,11 +29,11 @@
             <td class="fw-semibold">{{ w.user.name }}</td>
             <td>{{ w.hours|round(2) }}</td>
             <td class="small">{{ w.workedAt|app_datetime }}</td>
-            <td class="small">{{ w.comment ?: '—' }}</td>
-            <td class="small text-muted">{{ w.creator ? w.creator.name : '—' }}</td>
+            <td class="small">{{ w.comment ?: '-' }}</td>
+            <td class="small text-muted">{{ w.creator ? w.creator.name : '-' }}</td>
             {% set del %}
               {{ d.delete_form(path('app_manage_worklog_delete', {id: w.uuid}), csrf_token('delete' ~ w.id), {
-                message: 'Delete this worklog?'
+                message: 'manage.worklog.confirm.delete'|trans
               }) }}
             {% endset %}
             {{ d.row_actions([], {class: 'text-end', extraHtml: del}) }}

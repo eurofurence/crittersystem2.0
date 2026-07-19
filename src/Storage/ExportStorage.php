@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * The filesystem export archives live on — audit legal packages and GDPR data exports.
+ * The filesystem export archives live on - audit legal packages and GDPR data exports.
  *
  * Kept separate from {@see FileStorage} (user uploads) because the two have different retention and
  * sensitivity: exports are short-lived bundles of personal data that a purge command deletes on a
@@ -22,7 +22,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  * directory is invisible to the reader and is destroyed by the next deploy.
  *
  * Keys are backend-relative (e.g. "audit/{uuid}.zip"). Archives are private and are only ever served
- * by an authorization-checked controller — never from a public bucket URL.
+ * by an authorization-checked controller - never from a public bucket URL.
  */
 final class ExportStorage
 {
@@ -55,7 +55,7 @@ final class ExportStorage
      * Every key under a prefix, as a lookup set.
      *
      * For listing a page of exports, this is one round trip where calling exists() per row would be one
-     * per row — against S3 that is a HEAD request each.
+     * per row - against S3 that is a HEAD request each.
      *
      * @return array<string, true>
      */

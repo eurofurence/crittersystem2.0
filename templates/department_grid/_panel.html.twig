@@ -3,27 +3,27 @@
 <turbo-frame id="grid-panel">
   {{ d.card_start(shift.title, {class: ''}) }}
       {{ d.definition_list([
-        {label: 'When',     value: (shift.startsAt|app_datetime) ~ ' – ' ~ (shift.endsAt|app_time)},
-        {label: 'Location', value: shift.location ? shift.location.name : '—'},
-        {label: 'Task',     value: shift.shiftTask ? shift.shiftTask.name : '—'},
-        {label: 'Audience', value: shift.audience.label},
-        {label: 'Fill',     value: row.assigned ~ ' / ' ~ row.needed}
+        {label: 'common.label.when'|trans,     value: (shift.startsAt|app_datetime) ~ ' – ' ~ (shift.endsAt|app_time)},
+        {label: 'common.label.location'|trans, value: shift.location ? shift.location.name : '-'},
+        {label: 'department_grid.label.task'|trans,     value: shift.shiftTask ? shift.shiftTask.name : '-'},
+        {label: 'department_grid.col.audience'|trans, value: shift.audience.label},
+        {label: 'department_grid.col.fill'|trans,     value: row.assigned ~ ' / ' ~ row.needed}
       ], {class: 'mb-3 small', labelClass: '', valueClass: ''}) }}
 
-      <h4 class="h5">Assignments ({{ assignments|length }})</h4>
+      <h4 class="h5">{{ 'department_grid.panel.assignments'|trans({'%count%': assignments|length}) }}</h4>
       <ul class="list-unstyled mb-3">
         {% for entry in assignments %}
           <li>
             {{ entry.user.name }} <span class="text-secondary small">· {{ entry.volunteerType.name }}</span>
-            {% if entry.overridden %}{{ d.badge('override', 'bg-red-lt') }}{% endif %}
+            {% if entry.overridden %}{{ d.badge('department_grid.badge.override'|trans, 'bg-red-lt') }}{% endif %}
           </li>
         {% else %}
-          {{ d.empty_inline('No one assigned.', {tag: 'li', class: 'text-secondary'}) }}
+          {{ d.empty_inline('department_grid.panel.none_assigned'|trans, {tag: 'li', class: 'text-secondary'}) }}
         {% endfor %}
       </ul>
 
       {% if applications|length > 0 %}
-        <h4 class="h5">Applications ({{ applications|length }})</h4>
+        <h4 class="h5">{{ 'department_grid.panel.applications'|trans({'%count%': applications|length}) }}</h4>
         <ul class="list-unstyled mb-3">
           {% for entry in applications %}
             <li>{{ entry.user.name }} <span class="text-secondary small">· {{ entry.volunteerType.name }}</span></li>
@@ -32,23 +32,23 @@
       {% endif %}
 
       {% if shift.shiftPositions|length > 0 %}
-        <h4 class="h5">Positions</h4>
+        <h4 class="h5">{{ 'department_grid.panel.positions'|trans }}</h4>
         <ul class="list-unstyled mb-3 small">
           {% for sp in shift.shiftPositions %}
             <li>
-              {{ sp.namedPosition.name }} —
-              {% if sp.cellState == 'filled' %}{{ d.badge('filled', 'bg-blue-lt') }}
-              {% elseif sp.cellState == 'open' %}{{ d.badge('open', 'bg-orange-lt') }}
-              {% else %}<span class="text-secondary">not required</span>{% endif %}
+              {{ sp.namedPosition.name }} -
+              {% if sp.cellState == 'filled' %}{{ d.badge('department_grid.badge.filled'|trans, 'bg-blue-lt') }}
+              {% elseif sp.cellState == 'open' %}{{ d.badge('department_grid.badge.open'|trans, 'bg-orange-lt') }}
+              {% else %}<span class="text-secondary">{{ 'department_grid.panel.not_required'|trans }}</span>{% endif %}
             </li>
           {% endfor %}
         </ul>
       {% endif %}
   {% set panelFooter %}
       {% if is_granted('assignment:manage', shift.department) %}
-        <a href="{{ path('app_shift_staffing', {id: shift.uuid}) }}" class="btn btn-sm btn-primary" data-turbo="false">Manage staffing</a>
+        <a href="{{ path('app_shift_staffing', {id: shift.uuid}) }}" class="btn btn-sm btn-primary" data-turbo="false">{{ 'department_grid.action.manage_staffing'|trans }}</a>
       {% endif %}
-      <a href="{{ path('app_manage_shifts_planner', {department: shift.department.uuid}) }}" class="btn btn-sm btn-outline-secondary" data-turbo="false">Open planner</a>
+      <a href="{{ path('app_manage_shifts_planner', {department: shift.department.uuid}) }}" class="btn btn-sm btn-outline-secondary" data-turbo="false">{{ 'department_grid.action.open_planner'|trans }}</a>
   {% endset %}
   {{ d.card_end({footer: panelFooter, footerClass: 'card-footer d-flex flex-wrap gap-2'}) }}
 </turbo-frame>

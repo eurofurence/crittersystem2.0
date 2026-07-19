@@ -2,11 +2,11 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ heading }}{% endblock %}
+{% block title %}{{ heading|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header(heading, {
-    actions: [{label: '← Back to certifications', href: path('app_manage_certification_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.certification.action.back'|trans, href: path('app_manage_certification_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
@@ -16,15 +16,15 @@
       {{ f.field(form.description, {col: 'col-12'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Contact</h2>
+    <h2 class="h6 mt-2">{{ 'manage.certification.card.contact'|trans }}</h2>
     <div class="row">
       {{ f.field(form.contactPerson, {col: 'col-12 col-md-6'}) }}
       {{ f.field(form.contactEmail, {col: 'col-12 col-md-6'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Validity &amp; options</h2>
+    <h2 class="h6 mt-2">{{ 'manage.certification.card.validity_options'|trans }}</h2>
     <div class="row">
-      {{ f.field(form.validityPeriodDays, {col: 'col-12 col-md-4', help: 'Leave blank for perpetual certifications'}) }}
+      {{ f.field(form.validityPeriodDays, {col: 'col-12 col-md-4', help: 'manage.certification.field.validity_period_days.help'|trans}) }}
     </div>
     <div class="row">
       {{ f.check(form.isPerpetual) }}
@@ -33,6 +33,6 @@
       {{ f.check(form.isActive) }}
     </div>
 
-    <button class="btn btn-primary mt-3">Save</button>
+    <button class="btn btn-primary mt-3">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

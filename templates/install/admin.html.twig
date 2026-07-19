@@ -1,29 +1,28 @@
 {% extends 'install/_layout.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Administrator · Setup · VMS{% endblock %}
+{% block title %}{{ 'install.admin.title'|trans }}{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
 
     {% if alreadyExists %}
         {{ d.card_start(null, {class: 'card-md'}) }}
-                <h2 class="mb-1">Administrator account</h2>
+                <h2 class="mb-1">{{ 'install.admin.heading_exists'|trans }}</h2>
                 <div class="alert alert-info mt-2" role="alert">
-                    An account already exists, so no administrator needs to be created. You can manage users from
-                    inside the application after signing in.
+                    {{ 'install.admin.exists_notice'|trans }}
                 </div>
         {{ d.card_end() }}
 
         {% embed 'install/_progress.html.twig' %}
             {% block buttons %}
-                <a href="{{ path('app_install_config') }}" class="btn btn-primary">Continue</a>
+                <a href="{{ path('app_install_config') }}" class="btn btn-primary">{{ 'common.action.continue'|trans }}</a>
             {% endblock %}
         {% endembed %}
     {% else %}
         {% set adminFooter %}
             <div class="btn-list justify-content-end">
-                <button type="submit" class="btn btn-primary">Create administrator</button>
+                <button type="submit" class="btn btn-primary">{{ 'install.admin.create_button'|trans }}</button>
             </div>
         {% endset %}
         {{ d.card_start(null, {
@@ -31,8 +30,8 @@
             class: 'card-md',
             attrs: {method: 'post', action: path('app_install_admin'), 'data-turbo': 'false'}
         }) }}
-                <h2 class="mb-1">Create the first administrator</h2>
-                <p class="text-secondary">This account has full access. You can change the password later from the app.</p>
+                <h2 class="mb-1">{{ 'install.admin.create_heading'|trans }}</h2>
+                <p class="text-secondary">{{ 'install.admin.create_intro'|trans }}</p>
 
                 {% for error in errors|default([]) %}
                     <div class="alert alert-danger" role="alert">{{ error }}</div>
@@ -40,20 +39,20 @@
 
                 <input type="hidden" name="_token" value="{{ csrf_token('install_admin') }}">
                 <div class="mb-3">
-                    <label class="form-label required">Username</label>
+                    <label class="form-label required">{{ 'common.label.username'|trans }}</label>
                     <input type="text" name="username" class="form-control" value="{{ username|default('admin') }}" required autofocus>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label required">Email</label>
+                    <label class="form-label required">{{ 'common.label.email'|trans }}</label>
                     <input type="email" name="email" class="form-control" value="{{ email|default('') }}" required>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label required">Password</label>
+                    <label class="form-label required">{{ 'install.admin.password_label'|trans }}</label>
                     <input type="password" name="password" class="form-control" autocomplete="new-password" required>
-                    <small class="form-hint">At least 8 characters.</small>
+                    <small class="form-hint">{{ 'install.admin.password_hint'|trans }}</small>
                 </div>
                 <div class="mb-1">
-                    <label class="form-label required">Confirm password</label>
+                    <label class="form-label required">{{ 'install.admin.password_confirm_label'|trans }}</label>
                     <input type="password" name="password_confirm" class="form-control" autocomplete="new-password" required>
                 </div>
         {{ d.card_end({tag: 'form', footer: adminFooter}) }}

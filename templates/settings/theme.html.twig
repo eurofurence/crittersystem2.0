@@ -1,12 +1,12 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Theme — Settings{% endblock %}
+{% block title %}{{ 'settings.theme.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Theme', {
-    subtitle: 'Pick how the site looks. Leave it on the default to follow what an administrator chose for everyone.',
-    actions: [{label: '← Settings', href: path('app_settings'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('settings.theme.label'|trans, {
+    subtitle: 'settings.theme.subtitle'|trans,
+    actions: [{label: 'settings.theme.back'|trans, href: path('app_settings'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ d.card_start(null, {
@@ -22,8 +22,8 @@
             <div class="card-body d-flex align-items-start gap-2">
               <input class="form-check-input mt-1" type="radio" name="theme" value="" {{ followsDefault ? 'checked' }}>
               <div>
-                <div class="fw-semibold">System default</div>
-                <div class="text-muted small">Use whatever the administrator has set as the default.</div>
+                <div class="fw-semibold">{{ 'settings.theme.system_default'|trans }}</div>
+                <div class="text-muted small">{{ 'settings.theme.system_default_help'|trans }}</div>
               </div>
             </div>
           </label>
@@ -45,12 +45,12 @@
         {% endfor %}
       </div>
 
-      <button class="btn btn-primary mt-3">Save</button>
-      <a class="btn btn-link" href="?theme={{ active_theme.slug }}">Preview the active theme on the next page</a>
+      <button class="btn btn-primary mt-3">{{ 'common.action.save'|trans }}</button>
+      <a class="btn btn-link" href="?theme={{ active_theme.slug }}">{{ 'settings.theme.preview_link'|trans }}</a>
   {{ d.card_end({tag: 'form'}) }}
 
   <div class="alert alert-info">
-    Active theme right now: <code>{{ active_theme.slug }}</code> ({{ active_theme.type }}).
-    Tip: append <code>?theme=&lt;slug&gt;</code> to any URL to preview a theme without saving.
+    {{ 'settings.theme.active_label'|trans }} <code>{{ active_theme.slug }}</code> ({{ active_theme.type }}).
+    {{ 'settings.theme.tip_prefix'|trans }} <code>?theme=&lt;slug&gt;</code> {{ 'settings.theme.tip_suffix'|trans }}
   </div>
 {% endblock %}

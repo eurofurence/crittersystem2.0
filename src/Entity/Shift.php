@@ -44,7 +44,7 @@ class Shift
 
     #[ORM\Column(name: 'ends_at')]
     #[Assert\NotNull]
-    #[Assert\GreaterThan(propertyPath: 'startsAt', message: 'The end must be after the start.')]
+    #[Assert\GreaterThan(propertyPath: 'startsAt', message: 'validation.shift.end_after_start')]
     private \DateTimeImmutable $endsAt;
 
     #[ORM\ManyToOne(targetEntity: ShiftTask::class)]
@@ -73,7 +73,7 @@ class Shift
     private ShiftState $state = ShiftState::PUBLISHED;
 
     /**
-     * When true, a volunteer cannot apply until checked in — even during setup
+     * When true, a volunteer cannot apply until checked in - even during setup
      * and teardown. Overrides the phase-based default.
      */
     #[ORM\Column(name: 'require_checkin')]

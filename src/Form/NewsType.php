@@ -15,16 +15,16 @@ final class NewsType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('title', TextType::class, ['label' => 'Title'])
+            ->add('title', TextType::class, ['label' => 'common.label.title'])
             ->add('text', TextareaType::class, [
-                'label' => 'Text',
+                'label' => 'manage.news.field.text.label',
                 'attr' => ['rows' => 8],
-                'help' => 'Use [more] to split a short preview from the full article.',
+                'help' => 'manage.news.field.text.help',
             ])
-            ->add('isMeeting', CheckboxType::class, ['label' => 'Meeting announcement', 'required' => false])
-            ->add('isPinned', CheckboxType::class, ['label' => 'Pin to top', 'required' => false])
-            ->add('isHighlighted', CheckboxType::class, ['label' => 'Highlight', 'required' => false])
-            ->add('staffOnly', CheckboxType::class, ['label' => 'Staff only', 'required' => false]);
+            ->add('isMeeting', CheckboxType::class, ['label' => 'manage.news.field.is_meeting.label', 'required' => false])
+            ->add('isPinned', CheckboxType::class, ['label' => 'manage.news.field.is_pinned.label', 'required' => false])
+            ->add('isHighlighted', CheckboxType::class, ['label' => 'manage.news.field.is_highlighted.label', 'required' => false])
+            ->add('staffOnly', CheckboxType::class, ['label' => 'common.state.staff_only', 'required' => false]);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

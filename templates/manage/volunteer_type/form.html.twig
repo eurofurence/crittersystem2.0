@@ -2,11 +2,11 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ heading }}{% endblock %}
+{% block title %}{{ heading|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header(heading, {
-    actions: [{label: '← Back to volunteer types', href: path('app_manage_volunteer_type_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.volunteer_type.action.back'|trans, href: path('app_manage_volunteer_type_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
@@ -15,7 +15,7 @@
       {{ f.field(form.description, {col: 'col-12'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Contacts</h2>
+    <h2 class="h6 mt-2">{{ 'manage.volunteer_type.card.contacts'|trans }}</h2>
     <div data-controller="collection" data-prototype="{{ form_widget(form.contacts.vars.prototype)|e('html_attr') }}">
       <div data-collection-container>
         {% for contact in form.contacts %}
@@ -26,14 +26,14 @@
               {{ f.field(contact.telegram, {col: 'col-6 col-md-3'}) }}
               {{ f.field(contact.email, {col: 'col-6 col-md-3'}) }}
             </div>
-            <button type="button" class="btn btn-sm btn-outline-danger" data-action="collection#remove">Remove</button>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-action="collection#remove">{{ 'common.action.remove'|trans }}</button>
           </div>
         {% endfor %}
       </div>
-      <button type="button" class="btn btn-sm btn-outline-secondary" data-action="collection#add">Add contact</button>
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-action="collection#add">{{ 'manage.volunteer_type.action.add_contact'|trans }}</button>
     </div>
 
-    <h2 class="h6 mt-3">Certifications / requirements</h2>
+    <h2 class="h6 mt-3">{{ 'manage.volunteer_type.card.certifications'|trans }}</h2>
     {% if form.certifications|length > 0 %}
       <div class="row">
         {% for cert in form.certifications %}
@@ -53,11 +53,11 @@
         {% endfor %}
       </div>
     {% else %}
-      <p class="text-muted">No certifications defined yet.</p>
+      <p class="text-muted">{{ 'manage.volunteer_type.empty.certifications'|trans }}</p>
     {% endif %}
     {{ form_errors(form.certifications) }}
 
-    <h2 class="h6 mt-3">Configuration flags</h2>
+    <h2 class="h6 mt-3">{{ 'manage.volunteer_type.card.flags'|trans }}</h2>
     <div class="row" data-controller="volunteer-type-flags">
       {{ f.switch(form.staffOnly, {col: 'col-12 col-md-4', attr: {'data-volunteer-type-flags-target': 'staffOnly', 'data-action': 'change->volunteer-type-flags#sync'}}) }}
       {{ f.switch(form.departmentOnly, {col: 'col-12 col-md-4', attr: {'data-volunteer-type-flags-target': 'departmentOnly'}}) }}
@@ -68,6 +68,6 @@
       {{ f.switch(form.hideRegister, {col: 'col-12 col-md-4'}) }}
     </div>
 
-    <button class="btn btn-primary mt-3">Save</button>
+    <button class="btn btn-primary mt-3">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

@@ -2,7 +2,7 @@
 
 <turbo-frame id="kit_search_frame">
   {% set title %}Demo search results{% if q %} for “{{ q }}”{% endif %}{% endset %}
-  {{ d.card_start(title, {subtitle: 'Rendered by app_form_kit_search_frame — only this frame is reloaded.'}) }}
+  {{ d.card_start(title, {subtitle: 'Rendered by app_form_kit_search_frame - only this frame is reloaded.'}) }}
     {% if items is empty %}
       {{ d.empty_inline('No demo departments match.') }}
     {% else %}

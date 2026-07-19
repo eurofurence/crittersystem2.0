@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Certifications{% endblock %}
+{% block title %}{{ 'certification.page.title'|trans }}{% endblock %}
 
 {% block body %}
   {# This page's own status vocabulary, passed into d.status_badge(). #}
@@ -14,20 +14,20 @@
     'other':          'text-bg-secondary'
   } %}
   {% set certLabels = {
-    'certified':      'Certified',
-    'pending':        'Pending — scan the QR at the event',
-    'self_confirmed': 'Self-confirmed',
-    'revoked':        'Revoked',
-    'expired':        'Expired'
+    'certified':      'certification.status.certified'|trans,
+    'pending':        'certification.status.pending'|trans,
+    'self_confirmed': 'certification.status.self_confirmed'|trans,
+    'revoked':        'certification.status.revoked'|trans,
+    'expired':        'common.state.expired'|trans
   } %}
 
-  {{ d.page_header('Certifications', {
-    subtitle: 'Apply for the certifications you have. Approval happens in-person by scanning the operator\'s QR.',
-    actions: is_granted('global:admin') ? [{label: 'Manage certifications', href: path('app_manage_certification_index'), class: 'btn btn-outline-primary'}] : []
+  {{ d.page_header('certification.page.title'|trans, {
+    subtitle: 'certification.page.subtitle'|trans,
+    actions: is_granted('global:admin') ? [{label: 'certification.action.manage'|trans, href: path('app_manage_certification_index'), class: 'btn btn-outline-primary'}] : []
   }) }}
 
   {% if rows is empty %}
-    {{ d.empty_state('No certifications', {message: 'There are no active certifications to apply for.'}) }}
+    {{ d.empty_state('certification.empty.title'|trans, {message: 'certification.empty.message'|trans}) }}
   {% else %}
     <div class="row">
       {% for row in rows %}
@@ -35,14 +35,14 @@
 
         {% set bodyExtra %}
           <div class="small text-muted mt-1">
-            {% if c.perpetual %}Never expires
-            {% elseif c.validityPeriodDays %}{{ c.validityPeriodDays }} days validity
+            {% if c.perpetual %}{{ 'certification.validity.never'|trans }}
+            {% elseif c.validityPeriodDays %}{{ 'certification.validity.days'|trans({'%count%': c.validityPeriodDays}) }}
             {% endif %}
-            {% if r and r.dateExpires %}<div>Expires {{ r.dateExpires|app_date }}</div>{% endif %}
+            {% if r and r.dateExpires %}<div>{{ 'certification.field.expires'|trans({'%date%': r.dateExpires|app_date}) }}</div>{% endif %}
           </div>
           <div class="mt-2">
             {% if r is null %}
-              <span class="text-muted small">Not applied</span>
+              <span class="text-muted small">{{ 'certification.status.not_applied'|trans }}</span>
             {% else %}
               {% set certStatus = r.valid ? 'certified'
                 : (r.status == 'pending' ? 'pending'
@@ -61,13 +61,13 @@
           {% if r is null %}
             <form method="post" action="{{ path('app_certifications_apply', {id: c.uuid}) }}" class="d-inline">
               <input type="hidden" name="_token" value="{{ csrf_token('cert-apply' ~ c.id) }}">
-              <button class="btn btn-sm btn-primary">Apply</button>
+              <button class="btn btn-sm btn-primary">{{ 'common.action.apply'|trans }}</button>
             </form>
           {% endif %}
           {% if c.allowSelfConfirmation and (r is null or not r.valid) %}
             <form method="post" action="{{ path('app_certifications_self_confirm', {id: c.uuid}) }}" class="d-inline">
               <input type="hidden" name="_token" value="{{ csrf_token('cert-self' ~ c.id) }}">
-              <button class="btn btn-sm btn-outline-success">Self-confirm</button>
+              <button class="btn btn-sm btn-outline-success">{{ 'certification.action.self_confirm'|trans }}</button>
             </form>
           {% endif %}
         {% endset %}

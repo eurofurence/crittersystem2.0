@@ -19,6 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Account settings: a Tabler-style page with a left navigation and
@@ -95,7 +96,7 @@ final class SettingsController extends AbstractController
                 $user->setPersonalData($personalData)->setContact($contact)->setSettings($settings);
                 $this->em->flush();
 
-                $this->addFlash('success', 'Settings saved.');
+                $this->addFlash('success', new TranslatableMessage('settings.flash.saved'));
 
                 return $this->redirectToRoute('app_settings');
             }
@@ -122,8 +123,8 @@ final class SettingsController extends AbstractController
                 $settings->setTheme($newSlug);
                 $this->em->flush();
                 $this->addFlash('success', $newSlug !== null
-                    ? sprintf('Theme set to "%s".', $this->themes->find($newSlug)->name)
-                    : 'Theme reset to the system default.');
+                    ? new TranslatableMessage('settings.flash.theme_set', ['%name%' => $this->themes->find($newSlug)->name])
+                    : new TranslatableMessage('settings.flash.theme_reset'));
             }
 
             return $this->redirectToRoute('app_settings_theme');

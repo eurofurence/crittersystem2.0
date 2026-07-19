@@ -14,6 +14,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Volunteer-facing certifications: see active ones, your status per cert, and
@@ -75,8 +76,8 @@ final class CertificationController extends AbstractController
         if ($this->isCsrfTokenValid('cert-apply'.$certification->getId(), (string) $request->request->get('_token'))) {
             $record = $this->service->applyFor($user, $certification);
             $record !== null
-                ? $this->addFlash('success', \sprintf('Application submitted for "%s". Scan the certification QR at the event to complete it.', $certification->getTitle()))
-                : $this->addFlash('warning', 'You already have a record for this certification.');
+                ? $this->addFlash('success', new TranslatableMessage('certification.flash.applied', ['%name%' => $certification->getTitle()]))
+                : $this->addFlash('warning', new TranslatableMessage('certification.flash.already_have'));
         }
 
         return $this->redirectToRoute('app_certifications_index');
@@ -91,8 +92,8 @@ final class CertificationController extends AbstractController
         if ($this->isCsrfTokenValid('cert-self'.$certification->getId(), (string) $request->request->get('_token'))) {
             $record = $this->service->selfConfirm($user, $certification);
             $record !== null
-                ? $this->addFlash('success', \sprintf('Self-confirmed "%s".', $certification->getTitle()))
-                : $this->addFlash('danger', 'You cannot self-confirm this certification right now.');
+                ? $this->addFlash('success', new TranslatableMessage('certification.flash.self_confirmed', ['%name%' => $certification->getTitle()]))
+                : $this->addFlash('danger', new TranslatableMessage('certification.flash.cannot_self_confirm'));
         }
 
         return $this->redirectToRoute('app_certifications_index');

@@ -2,23 +2,23 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Event Configuration{% endblock %}
+{% block title %}{{ 'manage.event_config.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Event Configuration', {
-    subtitle: 'Global event settings and timeline.',
-    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('manage.event_config.page.title'|trans, {
+    subtitle: 'manage.event_config.page.subtitle'|trans,
+    actions: [{label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
-    <h2 class="h6">General</h2>
+    <h2 class="h6">{{ 'manage.event_config.section.general'|trans }}</h2>
     <div class="row">
       {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
-      {{ f.choice(form.accessMode, {col: 'col-12 col-md-6', help: 'Who can access the system'}) }}
+      {{ f.choice(form.accessMode, {col: 'col-12 col-md-6', help: 'manage.event_config.field.access_mode.help'|trans}) }}
       {{ f.field(form.welcomeMessage, {col: 'col-12'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Timeline</h2>
+    <h2 class="h6 mt-2">{{ 'manage.event_config.section.timeline'|trans }}</h2>
     <div class="row">
       {{ f.field(form.buildupStart, {col: 'col-12 col-md-3'}) }}
       {{ f.field(form.eventStart, {col: 'col-12 col-md-3'}) }}
@@ -26,11 +26,11 @@
       {{ f.field(form.teardownEnd, {col: 'col-12 col-md-3'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Appearance</h2>
+    <h2 class="h6 mt-2">{{ 'manage.event_config.section.appearance'|trans }}</h2>
     <div class="row">
       {{ f.choice(form.defaultTheme, {col: 'col-12 col-md-6'}) }}
     </div>
 
-    <button class="btn btn-primary mt-2">Save</button>
+    <button class="btn btn-primary mt-2">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

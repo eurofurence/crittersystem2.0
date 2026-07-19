@@ -19,17 +19,17 @@ final class LocationType extends AbstractType
         $current = $builder->getData();
         $builder
             ->add('name', TextType::class, [
-                'label' => 'Name',
+                'label' => 'common.label.name',
             ])
             ->add('alias', TextType::class, [
-                'label' => 'Alias',
-                'help' => 'Stable key used to match this location on JSON import. Must be unique.',
+                'label' => 'manage.location.field.alias.label',
+                'help' => 'manage.location.field.alias.help',
             ])
             ->add('parent', EntityType::class, [
-                'label' => 'Parent location',
+                'label' => 'manage.location.field.parent.label',
                 'class' => Location::class,
                 'required' => false,
-                'placeholder' => '— None (root) —',
+                'placeholder' => 'manage.location.field.parent.placeholder',
                 'choice_label' => fn (Location $l) => $l->fullName(),
                 // Only roots and first-level children can be parents (max depth 2),
                 // and a location cannot be its own parent.
@@ -43,27 +43,27 @@ final class LocationType extends AbstractType
                 },
             ])
             ->add('description', TextareaType::class, [
-                'label' => 'Description',
+                'label' => 'common.label.description',
                 'required' => false,
                 'attr' => ['rows' => 3],
             ])
             ->add('mapUrl', TextType::class, [
-                'label' => 'Map URL',
+                'label' => 'manage.location.field.map_url.label',
                 'required' => false,
-                'help' => 'https URL from an allowed domain, embedded in an app-controlled iframe.',
+                'help' => 'manage.location.field.map_url.help',
             ])
             ->add('embedHtml', TextareaType::class, [
-                'label' => 'Map embed (iframe)',
+                'label' => 'manage.location.field.embed_html.label',
                 'required' => false,
                 'attr' => ['rows' => 3],
-                'help' => 'Optional <iframe> snippet; only allowed-domain https sources are rendered.',
+                'help' => 'manage.location.field.embed_html.help',
             ])
             ->add('phone', TextType::class, [
-                'label' => 'Phone',
+                'label' => 'manage.label.phone',
                 'required' => false,
             ])
             ->add('staffOnly', CheckboxType::class, [
-                'label' => 'Staff only',
+                'label' => 'common.state.staff_only',
                 'required' => false,
             ]);
     }

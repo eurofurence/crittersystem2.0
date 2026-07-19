@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Volunteer-facing questions: ask and see your own questions/answers
@@ -46,7 +47,7 @@ final class QuestionController extends AbstractController
         if ($text !== '' && $this->isCsrfTokenValid('ask', (string) $request->request->get('_token'))) {
             $this->em->persist(new Question($user, $text));
             $this->em->flush();
-            $this->addFlash('success', 'Your question was submitted.');
+            $this->addFlash('success', new TranslatableMessage('question.flash.submitted'));
         }
 
         return $this->redirectToRoute('app_questions_index');

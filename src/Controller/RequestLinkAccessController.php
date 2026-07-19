@@ -8,6 +8,7 @@ use App\Service\Invite\RequestLinkService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Translation\TranslatableMessage;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
@@ -36,11 +37,11 @@ final class RequestLinkAccessController extends AbstractController
         $user = $this->getUser();
         $joined = $this->service->use($link, $user);
         if ($joined) {
-            $this->addFlash('success', \sprintf('You were added to %s.', $link->getDepartment()->getName()));
+            $this->addFlash('success', new TranslatableMessage('request_link.flash.added', ['%name%' => $link->getDepartment()->getName()]));
         }
 
         if ($link->getType() === RequestLinkType::AVAILABILITY_REQUEST) {
-            $this->addFlash('info', \sprintf('%s asked you to share your availability.', $link->getDepartment()->getName()));
+            $this->addFlash('info', new TranslatableMessage('request_link.flash.availability_requested', ['%name%' => $link->getDepartment()->getName()]));
 
             return $this->redirectToRoute('app_availability');
         }

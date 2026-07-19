@@ -18,7 +18,7 @@ final class NavigationKitController extends AbstractController
     public function index(): Response
     {
         return $this->render('navigation_kit/index.html.twig', [
-            'pageTitle' => 'UI Kit — Navigation',
+            'pageTitle' => 'UI Kit - Navigation',
         ]);
     }
 }

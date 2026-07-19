@@ -1,40 +1,39 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}SSO status{% endblock %}
+{% block title %}{{ 'admin.sso.status.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('SSO connection status', {subtitle: 'OpenID Connect configuration and connectivity.'}) }}
+  {{ d.page_header('admin.sso.status.page.heading'|trans, {subtitle: 'admin.sso.status.page.subtitle'|trans}) }}
 
   {{ d.card_start(null, {class: ''}) }}
       <dl class="row mb-0">
-        <dt class="col-sm-4">Enabled</dt>
-        <dd class="col-sm-8">{% if enabled %}{{ d.badge('Yes', 'text-bg-success') }}{% else %}{{ d.badge('No', 'text-bg-secondary') }}{% endif %}</dd>
-        <dt class="col-sm-4">Provider</dt><dd class="col-sm-8">{{ provider }}</dd>
-        <dt class="col-sm-4">Client ID</dt><dd class="col-sm-8"><code>{{ clientId }}</code></dd>
-        <dt class="col-sm-4">Configuration</dt>
-        <dd class="col-sm-8">{{ usesDiscovery ? 'Automatic (.well-known)' : 'Manual endpoints' }}{% if usesDiscovery %}<div class="text-muted small">{{ discoveryUrl }}</div>{% endif %}</dd>
-        <dt class="col-sm-4">Discovery</dt>
+        <dt class="col-sm-4">{{ 'common.state.enabled'|trans }}</dt>
+        <dd class="col-sm-8">{% if enabled %}{{ d.badge('common.state.yes'|trans, 'text-bg-success') }}{% else %}{{ d.badge('common.state.no'|trans, 'text-bg-secondary') }}{% endif %}</dd>
+        <dt class="col-sm-4">{{ 'admin.sso.status.field.provider'|trans }}</dt><dd class="col-sm-8">{{ provider }}</dd>
+        <dt class="col-sm-4">{{ 'admin.sso.status.field.client_id'|trans }}</dt><dd class="col-sm-8"><code>{{ clientId }}</code></dd>
+        <dt class="col-sm-4">{{ 'admin.sso.status.field.configuration'|trans }}</dt>
+        <dd class="col-sm-8">{{ usesDiscovery ? 'admin.sso.status.config.automatic'|trans : 'admin.sso.status.config.manual'|trans }}{% if usesDiscovery %}<div class="text-muted small">{{ discoveryUrl }}</div>{% endif %}</dd>
+        <dt class="col-sm-4">{{ 'admin.sso.status.field.discovery'|trans }}</dt>
         <dd class="col-sm-8">
-          {% if discovery.ok %}{{ d.badge('Reachable', 'text-bg-success') }}
-          {% else %}{{ d.badge('Unavailable', 'text-bg-danger') }} <span class="text-muted small">{{ discovery.error }}</span>{% endif %}
+          {% if discovery.ok %}{{ d.badge('admin.sso.status.reachable'|trans, 'text-bg-success') }}
+          {% else %}{{ d.badge('admin.sso.status.unavailable'|trans, 'text-bg-danger') }} <span class="text-muted small">{{ discovery.error }}</span>{% endif %}
         </dd>
         {% if discovery.endpoints %}
-          <dt class="col-sm-4">Authorization</dt><dd class="col-sm-8"><code class="small">{{ discovery.endpoints.authorization }}</code></dd>
-          <dt class="col-sm-4">Token</dt><dd class="col-sm-8"><code class="small">{{ discovery.endpoints.token }}</code></dd>
-          <dt class="col-sm-4">Userinfo</dt><dd class="col-sm-8"><code class="small">{{ discovery.endpoints.userinfo }}</code></dd>
+          <dt class="col-sm-4">{{ 'admin.sso.status.field.authorization'|trans }}</dt><dd class="col-sm-8"><code class="small">{{ discovery.endpoints.authorization }}</code></dd>
+          <dt class="col-sm-4">{{ 'admin.sso.status.field.token'|trans }}</dt><dd class="col-sm-8"><code class="small">{{ discovery.endpoints.token }}</code></dd>
+          <dt class="col-sm-4">{{ 'admin.sso.status.field.userinfo'|trans }}</dt><dd class="col-sm-8"><code class="small">{{ discovery.endpoints.userinfo }}</code></dd>
         {% endif %}
-        <dt class="col-sm-4">Redirect URI</dt>
-        <dd class="col-sm-8"><code class="small">{{ redirectUri }}</code><div class="text-muted small">Configure this as a valid redirect URI in the SSO provider.</div></dd>
+        <dt class="col-sm-4">{{ 'admin.sso.status.field.redirect_uri'|trans }}</dt>
+        <dd class="col-sm-8"><code class="small">{{ redirectUri }}</code><div class="text-muted small">{{ 'admin.sso.status.redirect_help'|trans }}</div></dd>
       </dl>
   {{ d.card_end() }}
 
-  {{ d.card_start('Registration number lookup', {class: 'mt-3'}) }}
-      <p class="text-muted">After a user signs in through SSO, their registration number can be fetched from an
-        external registration API using their own access token, then shown read-only on their profile and Digital ID.</p>
+  {{ d.card_start('admin.sso.status.registration.title'|trans, {class: 'mt-3'}) }}
+      <p class="text-muted">{{ 'admin.sso.status.registration.help'|trans }}</p>
       {{ form_start(registrationApiForm) }}
         {{ form_row(registrationApiForm.apiUrl) }}
-        <button class="btn btn-primary">Save</button>
+        <button class="btn btn-primary">{{ 'common.action.save'|trans }}</button>
       {{ form_end(registrationApiForm) }}
   {{ d.card_end() }}
 {% endblock %}

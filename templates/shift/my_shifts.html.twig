@@ -1,29 +1,29 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}My Shifts{% endblock %}
+{% block title %}{{ 'shift.my.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('My Shifts', {
-    subtitle: 'Your sign-ups and credited hours.',
-    actions: [{label: 'Browse shifts', href: path('app_shift_index'), class: 'btn btn-outline-primary'}]
+  {{ d.page_header('shift.my.page.title'|trans, {
+    subtitle: 'shift.my.page.subtitle'|trans,
+    actions: [{label: 'shift.action.browse_shifts'|trans, href: path('app_shift_index'), class: 'btn btn-outline-primary'}]
   }) }}
 
   {{ d.card_start(null, {bodyClass: 'card-body d-flex justify-content-between align-items-center'}) }}
-      <span class="fw-semibold">Total credited hours</span>
+      <span class="fw-semibold">{{ 'shift.my.total_hours'|trans }}</span>
       <span class="fs-4">{{ totalHours|round(2) }}</span>
   {{ d.card_end({bodyClass: 'card-body d-flex justify-content-between align-items-center'}) }}
 
   {% if entries is empty %}
-    {{ d.empty_state('No shifts yet', {
-      message: 'Sign up for a shift to see it here.',
-      actionLabel: 'Browse shifts',
+    {{ d.empty_state('shift.my.empty.title'|trans, {
+      message: 'shift.my.empty.message'|trans,
+      actionLabel: 'shift.action.browse_shifts'|trans,
       actionHref: path('app_shift_index')
     }) }}
   {% else %}
     {{ d.table_start() }}
       <thead>
-        <tr><th>Shift</th><th>When</th><th>Role</th><th>Hours</th><th class="text-end">Action</th></tr>
+        <tr><th>{{ 'shift.table.shift'|trans }}</th><th>{{ 'common.label.when'|trans }}</th><th>{{ 'common.label.role'|trans }}</th><th>{{ 'shift.table.hours'|trans }}</th><th class="text-end">{{ 'shift.table.action'|trans }}</th></tr>
       </thead>
       <tbody>
         {% for entry in entries %}
@@ -31,16 +31,16 @@
           <tr class="{{ entry.noshow ? 'table-danger' : (shift.past ? 'opacity-75' : '') }}">
             <td><a href="{{ path('app_shift_show', {id: shift.uuid}) }}">{{ shift.title }}</a></td>
             <td class="small">{{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}</td>
-            <td>{{ entry.volunteerType.name }}{% if entry.noshow %} {{ d.badge('No-show', 'text-bg-danger') }}{% endif %}</td>
+            <td>{{ entry.volunteerType.name }}{% if entry.noshow %} {{ d.badge('common.state.no_show'|trans, 'text-bg-danger') }}{% endif %}</td>
             <td>{{ perEntryHours[entry.id]|round(2) }}</td>
             <td class="text-end">
               {% if not shift.past %}
                 <form method="post" action="{{ path('app_shift_cancel', {id: entry.uuid}) }}" class="d-inline"
-                      data-controller="confirm" data-confirm-message-value="Cancel this sign-up?">
+                      data-controller="confirm" data-confirm-message-value="{{ 'shift.confirm.cancel_this_signup'|trans }}">
                   <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ entry.id) }}">
-                  <button class="btn btn-sm btn-outline-danger">Cancel</button>
+                  <button class="btn btn-sm btn-outline-danger">{{ 'common.action.cancel'|trans }}</button>
                 </form>
-              {% else %}<span class="text-muted small">—</span>{% endif %}
+              {% else %}<span class="text-muted small">-</span>{% endif %}
             </td>
           </tr>
         {% endfor %}

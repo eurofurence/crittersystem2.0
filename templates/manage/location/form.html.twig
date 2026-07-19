@@ -2,18 +2,18 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ heading }}{% endblock %}
+{% block title %}{{ heading|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header(heading, {
-    actions: [{label: '← Back to locations', href: path('app_manage_location_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.location.action.back_to_index'|trans, href: path('app_manage_location_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
     <div class="row">
       {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
-      {{ f.choice(form.parent, {col: 'col-12 col-md-3', help: 'Optional parent (max 2 levels deep)'}) }}
-      {{ f.field(form.phone, {col: 'col-12 col-md-3', help: 'Phone number'}) }}
+      {{ f.choice(form.parent, {col: 'col-12 col-md-3', help: 'manage.location.field.parent.help'|trans}) }}
+      {{ f.field(form.phone, {col: 'col-12 col-md-3', help: 'manage.location.field.phone.help'|trans}) }}
       {{ f.field(form.mapUrl, {col: 'col-12'}) }}
       {{ f.field(form.embedHtml, {col: 'col-12'}) }}
       {{ f.field(form.description, {col: 'col-12'}) }}
@@ -25,6 +25,6 @@
         {{ form_errors(form.staffOnly) }}
       </div>
     </div>
-    <button class="btn btn-primary">Save</button>
+    <button class="btn btn-primary">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

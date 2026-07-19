@@ -6,17 +6,17 @@
     <div class="chat-bubble {{ mine ? 'chat-bubble-mine' : '' }} {{ message.internal ? 'chat-bubble-internal' : '' }}">
       <div class="chat-bubble-meta">
         <span class="fw-bold">{{ chat.senderLabel(message) }}</span>
-        <span class="text-secondary small">{{ message.createdAt|app_time }}{% if message.editedAt %} · edited{% endif %}</span>
+        <span class="text-secondary small">{{ message.createdAt|app_time }}{% if message.editedAt %} · {{ 'message.thread.edited'|trans }}{% endif %}</span>
       </div>
       {% if message.body %}<div class="chat-bubble-body">{{ message.body|nl2br }}</div>{% endif %}
       {% if message.imagePath %}
-        <img src="{{ path('app_media_chat', {path: message.imagePath}) }}" alt="Attached image" class="chat-bubble-image">
+        <img src="{{ path('app_media_chat', {path: message.imagePath}) }}" alt="{{ 'message.thread.image_alt'|trans }}" class="chat-bubble-image">
       {% endif %}
     </div>
   {% else %}
-    {{ d.empty_inline('No messages yet.', {class: 'text-secondary text-center py-3'}) }}
+    {{ d.empty_inline('message.thread.empty'|trans, {class: 'text-secondary text-center py-3'}) }}
   {% endfor %}
 </div>
 {% if typing is not empty %}
-  <div class="chat-typing text-secondary small">{{ typing|join(', ') }} {{ typing|length == 1 ? 'is' : 'are' }} typing…</div>
+  <div class="chat-typing text-secondary small">{{ typing|join(', ') }} {{ typing|length == 1 ? 'message.thread.is'|trans : 'message.thread.are'|trans }} {{ 'message.thread.typing'|trans }}</div>
 {% endif %}

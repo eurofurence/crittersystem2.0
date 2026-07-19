@@ -1,21 +1,21 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Backstage{% endblock %}
+{% block title %}{{ 'ui.nav.backstage'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Backstage', {subtitle: 'Goodies distribution and rewards.'}) }}
+  {{ d.page_header('ui.nav.backstage'|trans, {subtitle: 'backstage.page.subtitle'|trans}) }}
 
   <div class="row g-3 mb-3">
-    {{ d.stat_card(distributedToday, 'Distributed today', {col: 'col-6 col-md-3', size: 'fs-3'}) }}
-    {{ d.stat_card(distributedThisWeek, 'This week', {col: 'col-6 col-md-3', size: 'fs-3'}) }}
+    {{ d.stat_card(distributedToday, 'backstage.stat.distributed_today'|trans, {col: 'col-6 col-md-3', size: 'fs-3'}) }}
+    {{ d.stat_card(distributedThisWeek, 'backstage.stat.this_week'|trans, {col: 'col-6 col-md-3', size: 'fs-3'}) }}
   </div>
 
   {# Each card is gated by the privilege that guards its controller. #}
   {% set cards = [
-    {priv: 'user:locate', route: 'app_backstage_distribute',            icon: '🔎', title: 'Locate User', text: 'Find a volunteer by email, registration number or badge scan.'},
-    {priv: 'goodie:manage', route: 'app_backstage_goodie_category_index', icon: '🗂️', title: 'Goodie Categories', text: 'Manage categories.'},
-    {priv: 'goodie:manage', route: 'app_backstage_goodie_item_index',     icon: '🎽', title: 'Goodie Items',      text: 'Manage items and thresholds.'}
+    {priv: 'user:locate', route: 'app_backstage_distribute',            icon: '🔎', title: 'backstage.card.locate_user.title'|trans, text: 'backstage.card.locate_user.text'|trans},
+    {priv: 'goodie:manage', route: 'app_backstage_goodie_category_index', icon: '🗂️', title: 'backstage.goodie.category.title'|trans, text: 'backstage.card.goodie_categories.text'|trans},
+    {priv: 'goodie:manage', route: 'app_backstage_goodie_item_index',     icon: '🎽', title: 'backstage.goodie.item.title'|trans,      text: 'backstage.card.goodie_items.text'|trans}
   ] %}
   <div class="row g-3 mb-4">
     {% for c in cards %}
@@ -32,12 +32,12 @@
     {% endfor %}
   </div>
 
-  <h2 class="h5">Recent distributions</h2>
+  <h2 class="h5">{{ 'backstage.section.recent'|trans }}</h2>
   {% if recent is empty %}
-    {{ d.empty_inline('No distributions yet.', {class: 'text-muted'}) }}
+    {{ d.empty_inline('backstage.empty.no_distributions'|trans, {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>When</th><th>Volunteer</th><th>Item</th><th>Qty</th><th>By</th></tr></thead>
+      <thead><tr><th>{{ 'common.label.when'|trans }}</th><th>{{ 'backstage.table.volunteer'|trans }}</th><th>{{ 'backstage.table.item'|trans }}</th><th>{{ 'backstage.label.qty'|trans }}</th><th>{{ 'backstage.table.by'|trans }}</th></tr></thead>
       <tbody>
         {% for dist in recent %}
           <tr>
@@ -45,7 +45,7 @@
             <td>{{ dist.user.name }}</td>
             <td>{{ dist.itemName }}</td>
             <td>{{ dist.quantity }}</td>
-            <td class="small text-muted">{{ dist.distributedBy ? dist.distributedBy.name : '—' }}</td>
+            <td class="small text-muted">{{ dist.distributedBy ? dist.distributedBy.name : '-' }}</td>
           </tr>
         {% endfor %}
       </tbody>

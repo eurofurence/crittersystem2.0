@@ -15,22 +15,24 @@ final class ConfigurationType extends AbstractType
     {
         $builder
             ->add('timezone', ChoiceType::class, [
-                'label' => 'Timezone',
+                'label' => 'manage.configuration.field.timezone.label',
                 'choices' => self::timezoneChoices(),
-                'help' => 'All dates and times are shown in this timezone for every user, '
-                    . 'regardless of their browser or device settings.',
+                'help' => 'manage.configuration.field.timezone.help',
             ])
             ->add('dateTimeFormat', TextType::class, [
-                'label' => 'Date & time format',
-                'help' => 'PHP date() format, e.g. "D, d M Y H:i" → ' . date('D, d M Y H:i'),
+                'label' => 'manage.configuration.field.datetime_format.label',
+                'help' => 'manage.configuration.field.datetime_format.help',
+                'help_translation_parameters' => ['%example%' => date('D, d M Y H:i')],
             ])
             ->add('dateFormat', TextType::class, [
-                'label' => 'Date format',
-                'help' => 'PHP date() format, e.g. "D, d M Y" → ' . date('D, d M Y'),
+                'label' => 'manage.configuration.field.date_format.label',
+                'help' => 'manage.configuration.field.date_format.help',
+                'help_translation_parameters' => ['%example%' => date('D, d M Y')],
             ])
             ->add('timeFormat', TextType::class, [
-                'label' => 'Time format',
-                'help' => 'PHP date() format, e.g. "H:i" → ' . date('H:i'),
+                'label' => 'manage.configuration.field.time_format.label',
+                'help' => 'manage.configuration.field.time_format.help',
+                'help_translation_parameters' => ['%example%' => date('H:i')],
             ]);
     }
 

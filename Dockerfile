@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 #
-# Critter 2.0 — multi-stage image.
+# Critter 2.0 - multi-stage image.
 #
 #   target=prod  → optimized PHP-FPM image (no dev deps, compiled assets,
 #                  opcache tuned). Paired with the bundled nginx config.
@@ -67,7 +67,7 @@ RUN composer dump-autoload --classmap-authoritative --no-dev \
  && chown -R www-data:www-data var public/assets \
  && rm -rf var/cache/dev
 
-# Note: we deliberately keep the default php-fpm process model — the master
+# Note: we deliberately keep the default php-fpm process model - the master
 # (and our entrypoint) run as root so the entrypoint can migrate and publish
 # assets to the shared volume, while php-fpm *worker* processes drop to
 # www-data. Application code is never executed as root.

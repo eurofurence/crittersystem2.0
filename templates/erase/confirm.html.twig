@@ -1,16 +1,16 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Confirm deletion{% endblock %}
+{% block title %}{{ 'erase.confirm.title'|trans }}{% endblock %}
 {% block body %}
-  {{ d.message_card_start('Permanently delete your account?', {
+  {{ d.message_card_start('erase.confirm.heading'|trans, {
     width: 'col-md-6',
     class: 'border-danger',
     titleTag: 'h2',
     titleClass: 'card-title text-danger'
   }) }}
-    <p>This is irreversible. All your data will be removed.</p>
+    <p>{{ 'erase.confirm.body'|trans }}</p>
     <form method="post" action="{{ path('app_erase_execute', {token: token}) }}">
-      <button class="btn btn-danger">Yes, delete my account permanently</button>
+      <button class="btn btn-danger">{{ 'erase.confirm.submit'|trans }}</button>
     </form>
   {{ d.message_card_end() }}
 {% endblock %}

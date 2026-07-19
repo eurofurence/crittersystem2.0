@@ -6,7 +6,7 @@
 
 {% block body %}
   {{ d.page_header(pageTitle, {
-    subtitle: 'alert, flash_messages and toast — templates/components/notification/_macros.twig',
+    subtitle: 'alert, flash_messages and toast - templates/components/notification/_macros.twig',
     actions: [
       {label: 'Back to the kit index', href: path('app_navigation_kit'), class: 'btn btn-outline-primary'}
     ]
@@ -25,13 +25,13 @@
     </p>
     <p class="text-muted small mb-3">
       Reload the page to get them back. You never need to call <code>flash_messages()</code>
-      in a page template — doing so would render them twice.
+      in a page template - doing so would render them twice.
     </p>
 
 <pre class="mb-0"><code>{% verbatim %}{# in the controller #}
 $this-&gt;addFlash('success', 'Demo Department was saved.');
 
-{# in base.html.twig — already done, once, for every page #}
+{# in base.html.twig - already done, once, for every page #}
 {% import 'components/notification/_macros.twig' as n %}
 {{ n.flash_messages(app) }}{% endverbatim %}</code></pre>
   {{ d.card_end() }}
@@ -45,11 +45,11 @@ $this-&gt;addFlash('success', 'Demo Department was saved.');
     {{ n.alert('danger', 'Could not reach the demo server.') }}
 
     {{ d.section_header('Dismissible', {size: 'h6', subtitle: 'dismissible: true adds the close button (Bootstrap handles it, no JS of ours).'}) }}
-    {{ n.alert('success', 'Dismissible success — click the ×.', {dismissible: true}) }}
-    {{ n.alert('danger', 'Dismissible danger — click the ×.', {dismissible: true}) }}
+    {{ n.alert('success', 'Dismissible success - click the ×.', {dismissible: true}) }}
+    {{ n.alert('danger', 'Dismissible danger - click the ×.', {dismissible: true}) }}
 
     {{ d.section_header('With an icon', {size: 'h6', subtitle: 'icon: a short literal (emoji/glyph) rendered before the message.'}) }}
-    {{ n.alert('info', 'Heads up — the demo event starts in 3 days.', {icon: 'ℹ️'}) }}
+    {{ n.alert('info', 'Heads up - the demo event starts in 3 days.', {icon: 'ℹ️'}) }}
     {{ n.alert('warning', 'Two demo shifts overlap.', {icon: '⚠️', dismissible: true}) }}
 
     {{ d.section_header('Overflow: a long message', {size: 'h6', subtitle: 'Long text wraps; it must not push the card sideways.'}) }}
@@ -66,14 +66,14 @@ $this-&gt;addFlash('success', 'Demo Department was saved.');
     <p class="text-muted small">
       <code>alert()</code> escapes its message, so a literal <code>&lt;br&gt;</code> would be
       shown, not rendered. The block above keeps the newlines by putting the alert inside a
-      <code>white-space: pre-line</code> wrapper — the only escaping-safe way with the macro as it stands.
+      <code>white-space: pre-line</code> wrapper - the only escaping-safe way with the macro as it stands.
     </p>
 
 <pre class="mb-0"><code>{% verbatim %}{% import 'components/notification/_macros.twig' as n %}
 
 {{ n.alert('success', 'Demo Department was saved.') }}
 {{ n.alert('danger', 'Could not reach the demo server.', {dismissible: true}) }}
-{{ n.alert('info', 'Heads up — the demo event starts in 3 days.', {icon: 'ℹ️'}) }}{% endverbatim %}</code></pre>
+{{ n.alert('info', 'Heads up - the demo event starts in 3 days.', {icon: 'ℹ️'}) }}{% endverbatim %}</code></pre>
   {{ d.card_end() }}
 
   {# ------------------------------------------------------------------- toasts #}

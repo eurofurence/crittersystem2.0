@@ -11,7 +11,7 @@ SSO is configured entirely via environment variables (see `.env` `app/sso`):
 | Variable                                                       | Purpose                                                                                              |
 | -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `SSO_ENABLED`                                                  | `1` to enable the SSO login button and routes.                                                       |
-| `SSO_DISCOVERY_URL`                                            | Provider `.well-known/openid-configuration`. **Preferred** — endpoints are discovered automatically. |
+| `SSO_DISCOVERY_URL`                                            | Provider `.well-known/openid-configuration`. **Preferred** - endpoints are discovered automatically. |
 | `SSO_CLIENT_ID` / `SSO_CLIENT_SECRET`                          | Application client credentials.                                                                      |
 | `SSO_AUTHORIZATION_URL` / `SSO_TOKEN_URL` / `SSO_USERINFO_URL` | Manual fallback when discovery is not used.                                                          |
 | `SSO_SCOPES`                                                   | Default `openid profile email`.                                                                      |
@@ -28,7 +28,7 @@ The redirect URI to register with the provider is `…/login/sso/check`.
 
 On SSO login the user is created or updated from the claims:
 
-- **SSO owns** the username, full name and email — the user cannot change them.
+- **SSO owns** the username, full name and email - the user cannot change them.
 - The username is collision-suffixed (`user_23`) on first creation, then kept
   stable.
 - Banned identities are refused (the user only sees "The Ledger-Keeper").

@@ -1,17 +1,17 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}FAQ{% endblock %}
+{% block title %}{{ 'ui.nav.faq'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Frequently Asked Questions', {
-    subtitle: 'Answers to common questions.',
-    actions: (is_granted('question:ask') ? [{label: 'Ask a question', href: path('app_questions_index'), class: 'btn btn-outline-primary'}] : [])
-      |merge(is_granted('faq:manage') ? [{label: 'Manage FAQ', href: path('app_manage_faq_index'), class: 'btn btn-outline-secondary'}] : [])
+  {{ d.page_header('faq.page.heading'|trans, {
+    subtitle: 'faq.page.subtitle'|trans,
+    actions: (is_granted('question:ask') ? [{label: 'faq.action.ask'|trans, href: path('app_questions_index'), class: 'btn btn-outline-primary'}] : [])
+      |merge(is_granted('faq:manage') ? [{label: 'faq.action.manage'|trans, href: path('app_manage_faq_index'), class: 'btn btn-outline-secondary'}] : [])
   }) }}
 
   {% if byCategory is empty %}
-    {{ d.empty_state('No FAQ yet', {message: 'Check back later.'}) }}
+    {{ d.empty_state('faq.empty.title'|trans, {message: 'faq.empty.message'|trans}) }}
   {% else %}
     {% for category, entries in byCategory %}
       <h2 class="h5 mt-3">{{ category }}</h2>

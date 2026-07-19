@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Locations{% endblock %}
+{% block title %}{{ 'location.index.page.title'|trans }}{% endblock %}
 
 {% macro branch(nodes) %}
   {% import _self as tree %}
@@ -11,7 +11,7 @@
     {% for node in nodes %}
       <li class="mb-1">
         <a href="{{ path('app_location_show', {id: node.location.uuid}) }}">{{ node.location.name }}</a>
-        {% if node.location.staffOnly %}{{ d.badge('Staff only', 'bg-secondary-lt', {class: 'ms-1'}) }}{% endif %}
+        {% if node.location.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'bg-secondary-lt', {class: 'ms-1'}) }}{% endif %}
         {% if node.children is not empty %}{{ tree.branch(node.children) }}{% endif %}
       </li>
     {% endfor %}
@@ -19,10 +19,10 @@
 {% endmacro %}
 
 {% block body %}
-  {{ d.page_header('Locations', {subtitle: 'Where shifts take place.'}) }}
+  {{ d.page_header('location.index.page.title'|trans, {subtitle: 'location.index.page.subtitle'|trans}) }}
 
   {% if tree is empty %}
-    {{ d.empty_state('No locations', {message: 'No locations are visible to you.'}) }}
+    {{ d.empty_state('location.index.empty.title'|trans, {message: 'location.index.empty.message'|trans}) }}
   {% else %}
     {{ d.card_start(null, {class: ''}) }}
       {{ _self.branch(tree) }}

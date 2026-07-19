@@ -19,12 +19,12 @@ use Symfony\Component\HttpKernel\KernelEvents;
  *
  * It must run before the firewall, so that invalidating the session leaves an ordinary anonymous request
  * behind and the normal entry point decides what the caller sees (a redirect for a navigation, a 401 for
- * a background request — see App\Security\LoginFormAuthenticator).
+ * a background request - see App\Security\LoginFormAuthenticator).
  *
  * Every request refreshes the stamp, including the widgets that poll in the background. That is
  * deliberate: it keeps the bounty board signed in on a display that nobody touches for days. The cost is
  * that any *visible* tab stays signed in indefinitely, because polling only stops when the tab is hidden
- * — so the idle limit really governs tabs that are hidden or closed, not unattended ones.
+ * - so the idle limit really governs tabs that are hidden or closed, not unattended ones.
  */
 final class SessionIdleSubscriber implements EventSubscriberInterface
 {
@@ -57,7 +57,7 @@ final class SessionIdleSubscriber implements EventSubscriberInterface
 
         /*
          * Only ever touch a session that already exists. The session is lazy and this runs before the
-         * firewall has read it, so `isStarted()` is still false here — the cookie is the only honest
+         * firewall has read it, so `isStarted()` is still false here - the cookie is the only honest
          * signal. Reading the session unconditionally would start one, and hand a cookie and a session
          * file to every anonymous visitor and every crawler.
          */

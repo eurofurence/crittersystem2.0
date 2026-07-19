@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/operations')]
 #[IsGranted('config:event')]
@@ -47,7 +48,7 @@ final class OperationsConfigController extends AbstractController
             $this->store->set(EventConfigStore::KEY_HOURS_NOSHOW_MULTIPLIER, $data->noShowMultiplier);
             $this->store->flush();
 
-            $this->addFlash('success', 'Operational configuration saved.');
+            $this->addFlash('success', new TranslatableMessage('manage.operations_config.flash.saved'));
 
             return $this->redirectToRoute('app_manage_operations_config');
         }

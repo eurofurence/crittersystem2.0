@@ -17,8 +17,8 @@ use App\Service\Availability\AvailabilityService;
 use App\Tests\DatabaseTestCase;
 
 /**
- * Automatic assignment proposal: it produces a draft proposal only —
- * never published assignments — and respects the hard constraints (membership,
+ * Automatic assignment proposal: it produces a draft proposal only -
+ * never published assignments - and respects the hard constraints (membership,
  * capacity, explicit Unavailable).
  */
 final class AutoAssignmentPlannerTest extends DatabaseTestCase

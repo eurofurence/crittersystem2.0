@@ -1,19 +1,19 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Membership Applications{% endblock %}
+{% block title %}{{ 'manage.applications.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Membership Applications', {
-    subtitle: 'Pending requests to join restricted volunteer types.',
-    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('manage.applications.page.title'|trans, {
+    subtitle: 'manage.applications.page.subtitle'|trans,
+    actions: [{label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if pending is empty %}
-    {{ d.empty_state('All caught up', {message: 'There are no pending membership requests.'}) }}
+    {{ d.empty_state('manage.applications.empty.title'|trans, {message: 'manage.applications.empty.message'|trans}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>Volunteer</th><th>Volunteer type</th><th>Requested</th><th class="text-end">Decision</th></tr></thead>
+      <thead><tr><th>{{ 'manage.applications.table.volunteer'|trans }}</th><th>{{ 'manage.applications.table.volunteer_type'|trans }}</th><th>{{ 'manage.applications.table.requested'|trans }}</th><th class="text-end">{{ 'manage.applications.table.decision'|trans }}</th></tr></thead>
       <tbody>
         {% for m in pending %}
           <tr>
@@ -23,12 +23,12 @@
             <td class="text-end text-nowrap">
               <form method="post" action="{{ path('app_manage_vt_member_confirm', {id: m.volunteerType.uuid, membershipId: m.uuid}) }}" class="d-inline">
                 <input type="hidden" name="_token" value="{{ csrf_token('confirm' ~ m.uuid) }}">
-                <button class="btn btn-sm btn-outline-success">Confirm</button>
+                <button class="btn btn-sm btn-outline-success">{{ 'common.action.confirm'|trans }}</button>
               </form>
               <form method="post" action="{{ path('app_manage_vt_member_remove', {id: m.volunteerType.uuid, membershipId: m.uuid}) }}" class="d-inline"
-                    data-controller="confirm" data-confirm-message-value="Deny {{ m.user.name }}?">
+                    data-controller="confirm" data-confirm-message-value="{{ 'manage.applications.confirm.deny'|trans({'%name%': m.user.name}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('remove' ~ m.uuid) }}">
-                <button class="btn btn-sm btn-outline-danger">Deny</button>
+                <button class="btn btn-sm btn-outline-danger">{{ 'manage.applications.action.deny'|trans }}</button>
               </form>
             </td>
           </tr>

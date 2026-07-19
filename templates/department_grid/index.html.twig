@@ -1,22 +1,22 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Shift grid — {{ department.name }}{% endblock %}
+{% block title %}{{ 'department_grid.page.title'|trans({'%name%': department.name}) }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Department shift grid', {
-    subtitle: 'Fill status, assignments and open positions at a glance.',
+  {{ d.page_header('department_grid.page.header'|trans, {
+    subtitle: 'department_grid.page.subtitle'|trans,
     actions: [
-      {label: 'Timeline', href: path('app_schedule_timeline', {department: department.uuid}), class: 'btn btn-outline-primary'},
-      {label: 'Matrix', href: path('app_manage_shifts_matrix', {department: department.uuid}), class: 'btn btn-outline-primary'},
-      {label: '← Shift Manager', href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}
+      {label: 'department_grid.action.timeline'|trans, href: path('app_schedule_timeline', {department: department.uuid}), class: 'btn btn-outline-primary'},
+      {label: 'department_grid.action.matrix'|trans, href: path('app_manage_shifts_matrix', {department: department.uuid}), class: 'btn btn-outline-primary'},
+      {label: 'department_grid.action.back'|trans, href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}
     ]
   }) }}
 
   {{ d.card_start() }}
       <form method="get" class="d-flex align-items-end gap-2">
         <div>
-          <label class="form-label mb-1" for="grid-department">Department</label>
+          <label class="form-label mb-1" for="grid-department">{{ 'common.label.department'|trans }}</label>
           <select id="grid-department" name="department" class="form-select" onchange="this.form.submit()">
             {% for dept in departments %}
               <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
@@ -29,13 +29,13 @@
   <div class="row g-3">
     <div class="col-12 col-lg-7 col-xl-8">
       {% if rows is empty %}
-        {{ d.empty_state('No shifts in range', {message: 'Create shifts in the planner first.'}) }}
+        {{ d.empty_state('department_grid.empty.title'|trans, {message: 'department_grid.empty.message'|trans}) }}
       {% else %}
         {{ d.card_start(null, {class: '', bodyClass: ''}) }}
           <div class="table-responsive">
             <table class="table table-vcenter card-table">
               <thead>
-                <tr><th>Shift</th><th>When</th><th>Location</th><th>Audience</th><th>Fill</th><th>Open pos.</th><th>Apps</th></tr>
+                <tr><th>{{ 'department_grid.col.shift'|trans }}</th><th>{{ 'common.label.when'|trans }}</th><th>{{ 'common.label.location'|trans }}</th><th>{{ 'department_grid.col.audience'|trans }}</th><th>{{ 'department_grid.col.fill'|trans }}</th><th>{{ 'department_grid.col.open_pos'|trans }}</th><th>{{ 'department_grid.col.apps'|trans }}</th></tr>
               </thead>
               <tbody>
                 {% for row in rows %}
@@ -45,18 +45,18 @@
                       <a href="{{ path('app_department_grid_panel', {id: shift.uuid}) }}" data-turbo-frame="grid-panel">
                         {{ shift.title }}
                       </a>
-                      {% if shift.draft %}{{ d.badge('draft', 'bg-yellow-lt') }}{% endif %}
+                      {% if shift.draft %}{{ d.badge('department_grid.badge.draft'|trans, 'bg-yellow-lt') }}{% endif %}
                     </td>
                     <td class="text-nowrap">{{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}</td>
-                    <td>{{ shift.location ? shift.location.name : '—' }}</td>
+                    <td>{{ shift.location ? shift.location.name : '-' }}</td>
                     <td>{{ d.badge(shift.audience.label, shift.audience.isPublic ? 'bg-blue-lt' : 'bg-purple-lt') }}</td>
                     <td>
                       {% if row.fillState == 'full' %}{{ d.badge(row.assigned ~ '/' ~ row.needed, 'bg-green-lt') }}
                       {% elseif row.fillState == 'open' %}{{ d.badge(row.assigned ~ '/' ~ row.needed, 'bg-red-lt') }}
-                      {% else %}<span class="text-secondary">—</span>{% endif %}
+                      {% else %}<span class="text-secondary">-</span>{% endif %}
                     </td>
-                    <td>{{ row.openPositions > 0 ? d.badge(row.openPositions, 'bg-orange-lt') : '—' }}</td>
-                    <td>{{ row.applications > 0 ? d.badge(row.applications, 'bg-azure-lt') : '—' }}</td>
+                    <td>{{ row.openPositions > 0 ? d.badge(row.openPositions, 'bg-orange-lt') : '-' }}</td>
+                    <td>{{ row.applications > 0 ? d.badge(row.applications, 'bg-azure-lt') : '-' }}</td>
                   </tr>
                 {% endfor %}
               </tbody>
@@ -68,7 +68,7 @@
 
     <div class="col-12 col-lg-5 col-xl-4">
       <turbo-frame id="grid-panel">
-        {{ d.card_start(null, {class: '', bodyClass: 'card-body text-secondary'}) }}Select a shift to see details and actions.{{ d.card_end({bodyClass: 'card-body text-secondary'}) }}
+        {{ d.card_start(null, {class: '', bodyClass: 'card-body text-secondary'}) }}{{ 'department_grid.panel.placeholder'|trans }}{{ d.card_end({bodyClass: 'card-body text-secondary'}) }}
       </turbo-frame>
     </div>
   </div>

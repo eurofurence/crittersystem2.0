@@ -13,10 +13,9 @@ final class RegistrationApiType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder->add('apiUrl', UrlType::class, [
-            'label' => 'Registration API endpoint',
+            'label' => 'manage.registration_api.field.url.label',
             'required' => false,
-            'help' => 'Queried with the user\'s own access token right after SSO login to read their '
-                . 'registration number (expects a JSON body like {"ids": [12345]}). Leave empty to disable.',
+            'help' => 'manage.registration_api.field.url.help',
         ]);
     }
 

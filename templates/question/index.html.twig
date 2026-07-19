@@ -1,12 +1,12 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}My Questions{% endblock %}
+{% block title %}{{ 'question.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Ask a Question', {
-    subtitle: 'Submit a question and see the answers here.',
-    actions: [{label: 'FAQ', href: path('app_faq_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('question.page.heading'|trans, {
+    subtitle: 'question.page.subtitle'|trans,
+    actions: [{label: 'ui.nav.faq'|trans, href: path('app_faq_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ d.card_start(null, {
@@ -15,14 +15,14 @@
     attrs: {method: 'post', action: path('app_questions_ask')}
   }) }}
       <input type="hidden" name="_token" value="{{ csrf_token('ask') }}">
-      <label class="form-label" for="q-text">Your question</label>
+      <label class="form-label" for="q-text">{{ 'question.field.text.label'|trans }}</label>
       <textarea id="q-text" name="text" class="form-control mb-2" rows="3" required></textarea>
-      <button class="btn btn-primary">Submit</button>
+      <button class="btn btn-primary">{{ 'common.action.submit'|trans }}</button>
   {{ d.card_end({tag: 'form'}) }}
 
-  <h2 class="h5">Your questions</h2>
+  <h2 class="h5">{{ 'question.card.your_questions'|trans }}</h2>
   {% if questions is empty %}
-    <p class="text-muted">You haven't asked anything yet.</p>
+    <p class="text-muted">{{ 'question.empty.message'|trans }}</p>
   {% else %}
     {% for q in questions %}
       {{ d.card_start(null, {class: 'mb-2'}) }}
@@ -30,10 +30,10 @@
         <div class="fw-semibold">{{ q.text|nl2br }}</div>
         {% if q.answered %}
           <hr class="my-2">
-          <div class="text-success small">Answered{% if q.answerer %} by {{ q.answerer.name }}{% endif %}:</div>
+          <div class="text-success small">{% if q.answerer %}{{ 'question.answered_by'|trans({'%name%': q.answerer.name}) }}{% else %}{{ 'question.answered'|trans }}{% endif %}</div>
           <div>{{ q.answer|nl2br }}</div>
         {% else %}
-          <div class="text-muted small mt-1">Awaiting an answer…</div>
+          <div class="text-muted small mt-1">{{ 'question.awaiting'|trans }}</div>
         {% endif %}
       {{ d.card_end() }}
     {% endfor %}

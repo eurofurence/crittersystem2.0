@@ -7,7 +7,7 @@
  * that only checks `response.ok` will happily inject that document into the page.
  *
  * When the session is gone the page is dead: it is still displaying the previous user's personal data.
- * So we do not try to recover it — we clear it and leave, keeping the current path so the user lands
+ * So we do not try to recover it - we clear it and leave, keeping the current path so the user lands
  * back where they were once they sign in again.
  */
 
@@ -25,7 +25,7 @@ export function isSessionExpired(response) {
  * Leave for the login page, carrying the page the user was on.
  *
  * Idempotent: the status widget and the notification bell poll on the same tick, so both will call this.
- * The body is emptied before navigating — a navigation is not instant, and the point of leaving is that
+ * The body is emptied before navigating - a navigation is not instant, and the point of leaving is that
  * the data on screen should stop being on screen.
  */
 export function sessionExpired() {
@@ -44,7 +44,7 @@ export function sessionExpired() {
  * `fetch` for anything the page requests on its own behalf.
  *
  * The X-Requested-With header is not decoration. It is what tells the server this is not a navigation,
- * so it answers 401 rather than redirecting — and it is also what stops Symfony recording the polled URL
+ * so it answers 401 rather than redirecting - and it is also what stops Symfony recording the polled URL
  * as the place to return to after signing in, which would strand the user on a bare `/status` fragment
  * instead of the page they were reading.
  *

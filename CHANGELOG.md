@@ -2,19 +2,48 @@
 
 All notable changes to this project are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
-versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and sometimes
+[Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
 Critter 2.0 is pre-production. **`0.0.1-alpha` it is not yet run for a live event.**
 
 ## [Unreleased]
+
+### Fixed
+
+- **matrix:** fix volunteer assignment picker for departments with no members and fix user_select query string handling (`bf7d480`)
+
+### Added
+
+- **localization:** add full UI internationalization with hierarchical `.po` catalogs, locale resolver, and multi-language fallback (`375db17`)
+- **users:** allow administrators to queue onboarding re-runs per user or bulk, effective on next sign-in (`375db17`)
+- **bot api:** add `/api/bot/*` surface for Telegram bot with shift browsing, check-in, check-out, broadcasts, and profiles (`375db17`)
+- **shifts:** add attendance tracking with `checked_in_at` and `checked_out_at` fields per shift entry (`375db17`)
+- **notifications:** add per-category "Manager alert" notification type separate from global broadcasts (`375db17`)
+- **bot api:** expose per-category Telegram consent at `/api/bot/users/me/notification-preferences` (`375db17`)
+- **deploy:** `BOT_API_TOKEN` - secret for any deployment running the Telegram bot, which takes the same value as the bot's `VMS_API_TOKEN` (`375db17`)
+- **ai rules:** added ai rules - don't tell anyone about this :)
+
+### Security
+
+- **api:** fix `/api/v0-beta` shifting private shifts publicly via unfiltered visibility finders (`c46d2a4`)
+- **rbac:** enforce department scoping on shifts without shift tasks to prevent privilege escalation (`375db17`)
+- **api:** stop exposing internal sequential primary keys; use public UUIDs instead (`c46d2a4`)
+
+### Changed
+
+- **api:** **breaking** - all `/api/v0-beta` response IDs are now UUID strings instead of integers; `v0-beta` is explicitly beta surface (`c46d2a4`)
+- **docs:** add `/api/bot` coverage and visibility/identifier rules to `docs/api.md`; state `/api/shifts-json-export` as deliberately unfiltered (`c46d2a4`)
+
+---
 
 ## [0.0.1-alpha] - 2026-07-16
 
 ### Fixed
 
 - **planner:** show a shift's saved required volunteer-type counts when its side panel is reopened; the counts were stored correctly but always rendered as 0 because the panel built its lookup with Twig's `merge` filter, which renumbers integer keys and dropped the volunteer-type id (`ca79d40`)
-- **2fa:** show the one-time recovery codes after enabling two-factor authentication or regenerating them — the codes were issued but the non-redirect response was discarded by Turbo, so the user never saw them; both flows now redirect to a dedicated page (`a83691a`)
+- **2fa:** show the one-time recovery codes after enabling two-factor authentication or regenerating them - the codes were issued but the non-redirect response was discarded by Turbo, so the user never saw them; both flows now redirect to a dedicated page (`a83691a`)
 - **install:** accept the setup password when `INSTALL_PASSWORD` carries trailing whitespace (e.g. a secret file's newline), and distinguish an expired setup session from a wrong password (`530f1be`)
 
 ### Changed
@@ -27,15 +56,14 @@ Critter 2.0 is pre-production. **`0.0.1-alpha` it is not yet run for a live even
 
 ### Features
 
-- **install:** add a privacy-notice step to the setup wizard — capturing the event name, data controller, privacy contact email and data-retention period — and pre-seed the English (`en_US`) onboarding consent text, which records the volunteer's agreement to share their personal data and states that no tracking cookies are used and that data is deleted after the event (`ccd3835`)
+- **install:** add a privacy-notice step to the setup wizard - capturing the event name, data controller, privacy contact email and data-retention period - and pre-seed the English (`en_US`) onboarding consent text, which records the volunteer's agreement to share their personal data and states that no tracking cookies are used and that data is deleted after the event (`ccd3835`)
 - **manage:** on the volunteer-type form, show certifications as a card grid with a toggle switch to require each one, and render the configuration flags as toggle switches; the same card now backs the volunteer-facing certifications list, and a new read-only certification detail page is linked from both. Adds reusable `forms.switch` and `data.certification_card` macros (`ccd3835`)
-- **staffing:** replace the shift staffing search-and-select with a tag-style type-ahead user picker — search by username, pick several from a live dropdown (avatar and a "(staff)" suffix), and assign them all in one submit; built as a reusable `forms.user_select` macro + Stimulus controller (`4ea6943`)
+- **staffing:** replace the shift staffing search-and-select with a tag-style type-ahead user picker - search by username, pick several from a live dropdown (avatar and a "(staff)" suffix), and assign them all in one submit; built as a reusable `forms.user_select` macro + Stimulus controller (`4ea6943`)
 - **security:** enforce the event-wide Access mode gate (public / staff only / admin only), which was previously stored but never applied; the mode is checked on every web and API request, so tightening it signs non-qualifying users out on their next request, and both form and SSO login redirect them to a "system restricted" notice. "Admin only" also admits sub-admins, admins can never lock themselves out, the API is gated too (except the `/info` endpoint), and the digital badge stays reachable so a gated volunteer can still identify themselves to security (`a31410c`)
 - **manage:** add JSON export and file-or-paste import to departments and SSO group mappings, matching the locations tool; department exports round-trip their location and volunteer-type links (`11c609f`)
 - **sso:** grant global admin / sub admin from two identity-provider role IDs on the SSO roles page; holding both resolves to global admin, and the grants are reconciled on every sign-in so a demotion at the provider takes effect on next login (`a8c7c54`)
-- **backstage:** rework Distribute Goodies into the Info Desk "Locate user" tool — check-in, shift review, profile and contact shortcuts, a mining-resistant exact/badge-scan lookup behind a new `user:locate` privilege, and SSO-sourced registration numbers shown on the profile and Digital ID (`5071f94`)
+- **backstage:** rework Distribute Goodies into the Info Desk "Locate user" tool - check-in, shift review, profile and contact shortcuts, a mining-resistant exact/badge-scan lookup behind a new `user:locate` privilege, and SSO-sourced registration numbers shown on the profile and Digital ID (`5071f94`)
 - **locations:** add JSON export/import (paste or upload) with a unique alias as the upsert key and parent-by-alias resolution (`d45ec37`)
-
 - **domain:** add the core domain model (users, shifts, volunteer types, memberships) with repositories (`2b9d4b3`)
 - **security:** add local username/password login, privilege-based access control, and an API-key firewall (`ac883d2`)
 - **install:** add the idempotent `app:install` seeding command (`0ecc732`)
@@ -77,7 +105,7 @@ Critter 2.0 is pre-production. **`0.0.1-alpha` it is not yet run for a live even
 - **staff:** add the duty-record and internal-note domain model (`8f4ba93`)
 - **database:** add the migration for the staff tables (`ca635d6`)
 - **staff:** add duty tracking and staff statistics services (`ba197f1`)
-- **staff:** add the operational suite — overview, live view, statistics, team and notes (`359617e`)
+- **staff:** add the operational suite - overview, live view, statistics, team and notes (`359617e`)
 - **api:** add the API key management page (`2c8d43d`)
 - **api:** add the public read-only API (`db85f0b`)
 - **api:** add Atom, RSS, iCal and JSON feeds (`ea459b7`)
@@ -166,13 +194,13 @@ Critter 2.0 is pre-production. **`0.0.1-alpha` it is not yet run for a live even
 - **planner:** send the department identifier, not `NaN`, when painting shifts (`fde9587`)
 - **security:** keep the interface development kits out of production and behind administrator access (`fca068d`)
 - **audit:** write audit events reliably by running the messaging worker in every deployment, and alarm when it stalls (`7f3ece5`)
-- **exports:** store audit and GDPR export archives where every process can reach them — the worker built them on a disk the web container could not see, so a data export could never be downloaded — and delete them once their retention window closes (`40c2ab2`)
+- **exports:** store audit and GDPR export archives where every process can reach them - the worker built them on a disk the web container could not see, so a data export could never be downloaded - and delete them once their retention window closes (`40c2ab2`)
 - **security:** sign the user out cleanly when their session expires, instead of loading the login page inside the navbar and leaving their personal data on screen; return them to the page they were on, and make the inactivity limit admin-configurable (`533e280`)
 - **audit:** repair the audit log page, which still asked the export record whether its archive was on disk after the archives moved to pluggable storage (`1142fd4`)
 - **operations:** give the ban screen and the Info Desk greeting and closing messages real defaults, so a fresh install shows a sentence where one is expected instead of nothing (`684bbc9`)
-- **security:** sign users out after 60 minutes of inactivity, the interval the code already claimed — the form model's value was overwritten on load, so the effective default was 30 (`f8a18af`)
+- **security:** sign users out after 60 minutes of inactivity, the interval the code already claimed - the form model's value was overwritten on load, so the effective default was 30 (`f8a18af`)
 - **theme:** apply a chosen theme immediately instead of leaving the previous one in place until the next full page load (`8decc18`)
-- **observability:** log the failures the application was discarding — an unreachable database, an unusable timezone, a failed identity-provider lookup, a two-factor gate that fails open — and stop showing the identity provider's raw error text on the login page (`049a8fa`)
+- **observability:** log the failures the application was discarding - an unreachable database, an unusable timezone, a failed identity-provider lookup, a two-factor gate that fails open - and stop showing the identity provider's raw error text on the login page (`049a8fa`)
 - **matrix:** staff positions from the grid, and refresh it without a reload (`1e96df9`)
 - **shift-tasks:** let department managers own their tasks, and create them while planning (`8f0d3ab`)
 - **planner:** keep the grid where the manager left it when a shift is painted, freeze the hour column while scrolling, and label setup and teardown days above the date (`e454a99`)

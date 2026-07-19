@@ -1,16 +1,16 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Edit worklog{% endblock %}
+{% block title %}{{ 'worklog.page.edit_title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Edit worklog entry', {
-    actions: [{label: '← Profile', href: path('app_profile'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('worklog.page.edit_heading'|trans, {
+    actions: [{label: 'worklog.action.back_to_profile'|trans, href: path('app_profile'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
     {% set worklogFooter %}
-      <button class="btn btn-primary">Save</button>
+      <button class="btn btn-primary">{{ 'common.action.save'|trans }}</button>
     {% endset %}
     {{ d.card_start(null, {class: '', attrs: {style: 'max-width: 32rem;'}}) }}
         {{ form_row(form.hours) }}

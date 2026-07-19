@@ -2,17 +2,17 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ heading }}{% endblock %}
+{% block title %}{{ heading|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header(heading, {
-    actions: [{label: '← Back to shifts', href: path('app_manage_shift_index'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.shift.action.back'|trans, href: path('app_manage_shift_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
     <div class="row">
       {{ f.field(form.title, {col: 'col-12 col-md-8'}) }}
-      {{ f.field(form.url, {col: 'col-12 col-md-4', help: 'Optional link'}) }}
+      {{ f.field(form.url, {col: 'col-12 col-md-4', help: 'manage.shift.field.url.help'|trans}) }}
       {{ f.field(form.startsAt, {col: 'col-12 col-md-3'}) }}
       {{ f.field(form.endsAt, {col: 'col-12 col-md-3'}) }}
       {{ f.choice(form.department, {col: 'col-12 col-md-3'}) }}
@@ -22,6 +22,6 @@
       {{ f.field(form.requireCheckin, {col: 'col-12 col-md-3'}) }}
       {{ f.field(form.description, {col: 'col-12'}) }}
     </div>
-    <button class="btn btn-primary mt-2">Save</button>
+    <button class="btn btn-primary mt-2">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

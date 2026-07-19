@@ -1,7 +1,7 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Volunteer Types{% endblock %}
+{% block title %}{{ 'membership.page.title'|trans }}{% endblock %}
 
 {% macro card(row) %}
   {% import 'components/data/_macros.twig' as d %}
@@ -11,8 +11,8 @@
       <div class="card-header">
         <h3 class="card-title mb-0"><a href="{{ path('app_membership_show', {id: type.uuid}) }}" class="text-reset">{{ type.name }}</a></h3>
         <div class="mt-1">
-          {% if type.requiresIntroduction %}{{ d.badge('Requires introduction', 'text-bg-warning') }}{% endif %}
-          {% if type.staffOnly %}{{ d.badge('Staff', 'text-bg-secondary') }}{% endif %}
+          {% if type.requiresIntroduction %}{{ d.badge('membership.badge_requires_intro'|trans, 'text-bg-warning') }}{% endif %}
+          {% if type.staffOnly %}{{ d.badge('membership.badge_staff'|trans, 'text-bg-secondary') }}{% endif %}
         </div>
       </div>
       <div class="card-body">
@@ -28,12 +28,12 @@
         {% if row.membership is null %}
           <form method="post" action="{{ path('app_membership_join', {id: type.uuid}) }}" class="d-inline">
             <input type="hidden" name="_token" value="{{ csrf_token('join' ~ type.id) }}">
-            <button class="btn btn-sm btn-primary">{{ type.requiresIntroduction ? 'Apply' : 'Join' }}</button>
+            <button class="btn btn-sm btn-primary">{{ type.requiresIntroduction ? 'membership.action_apply'|trans : 'membership.action_join'|trans }}</button>
           </form>
         {% elseif row.membership.confirmed %}
-          {{ d.badge('Member', 'text-bg-success') }}
+          {{ d.badge('membership.badge_member'|trans, 'text-bg-success') }}
         {% else %}
-          {{ d.badge('Pending', 'text-bg-warning') }}
+          {{ d.badge('common.state.pending'|trans, 'text-bg-warning') }}
         {% endif %}
       </div>
     </div>
@@ -41,22 +41,22 @@
 {% endmacro %}
 
 {% block body %}
-  {{ d.page_header('Volunteer Types', {
-    subtitle: 'Join the teams you want to help with.',
-    actions: [{label: 'Table view', href: path('app_membership_table'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('membership.page.title'|trans, {
+    subtitle: 'membership.index.subtitle'|trans,
+    actions: [{label: 'membership.index.table_view'|trans, href: path('app_membership_table'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if public is empty and staff is empty %}
-    {{ d.empty_state('No volunteer types', {message: 'There are no volunteer types to join yet.'}) }}
+    {{ d.empty_state('membership.empty.title'|trans, {message: 'membership.empty.message'|trans}) }}
   {% endif %}
 
   {% if public is not empty %}
-    <h2 class="h5 mt-2">Open opportunities</h2>
+    <h2 class="h5 mt-2">{{ 'membership.index.open_heading'|trans }}</h2>
     <div class="row g-3">{% for row in public %}{{ _self.card(row) }}{% endfor %}</div>
   {% endif %}
 
   {% if staff is not empty %}
-    <h2 class="h5 mt-4">Staff opportunities</h2>
+    <h2 class="h5 mt-4">{{ 'membership.index.staff_heading'|trans }}</h2>
     <div class="row g-3">{% for row in staff %}{{ _self.card(row) }}{% endfor %}</div>
   {% endif %}
 {% endblock %}

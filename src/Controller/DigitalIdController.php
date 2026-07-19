@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * The user's digital ID card (a rotating QR pointing at a public verify page)
@@ -39,7 +40,7 @@ final class DigitalIdController extends AbstractController
         return $this->render('digital_id/index.html.twig', $this->cardData());
     }
 
-    /** The QR card on its own — polled by the page to rotate the code in place. */
+    /** The QR card on its own - polled by the page to rotate the code in place. */
     #[IsGranted('ROLE_USER')]
     #[Route('/card', name: 'app_digital_id_card', methods: ['GET'])]
     public function card(): Response
@@ -80,13 +81,13 @@ final class DigitalIdController extends AbstractController
 
         if ($this->isCsrfTokenValid('digital-id-refresh', (string) $request->request->get('_token'))) {
             $this->service->refresh($user);
-            $this->addFlash('success', 'A fresh QR has been issued.');
+            $this->addFlash('success', new TranslatableMessage('digital_id.flash.refreshed'));
         }
 
         return $this->redirectToRoute('app_digital_id');
     }
 
-    /** PUBLIC — scanned by anyone, no login required. */
+    /** PUBLIC - scanned by anyone, no login required. */
     #[Route('/verify/{token}', name: 'app_digital_id_verify', methods: ['GET'], requirements: ['token' => '[0-9a-f]{64}'])]
     public function verify(string $token): Response
     {

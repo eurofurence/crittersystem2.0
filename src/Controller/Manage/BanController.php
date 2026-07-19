@@ -15,6 +15,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Ban administration. Lists all bans with their reason and whether
@@ -51,13 +52,13 @@ final class BanController extends AbstractController
         if ($user !== null) {
             // Behavioural ban: lift all of the user's ban records and reset the counter.
             $this->noShowBans->liftAndReset($user, 'Lifted by administrator');
-            $this->addFlash('success', 'Ban lifted and no-show counter reset.');
+            $this->addFlash('success', new TranslatableMessage('manage.ban.flash.lifted_reset'));
 
             return $this->redirectToRoute('app_manage_ban_index');
         }
 
         if (!$ban->hasAppeal()) {
-            $this->addFlash('danger', 'A GDPR ban can only be lifted after the user submits an appeal.');
+            $this->addFlash('danger', new TranslatableMessage('manage.ban.flash.gdpr_appeal_required'));
 
             return $this->redirectToRoute('app_manage_ban_index');
         }
@@ -69,7 +70,7 @@ final class BanController extends AbstractController
             'resourceType' => 'BannedIdentity',
             'resourceId' => $id,
         ]);
-        $this->addFlash('success', 'Ban lifted.');
+        $this->addFlash('success', new TranslatableMessage('manage.ban.flash.lifted'));
 
         return $this->redirectToRoute('app_manage_ban_index');
     }

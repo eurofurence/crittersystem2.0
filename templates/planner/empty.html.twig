@@ -1,13 +1,13 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Shift Planner{% endblock %}
+{% block title %}{{ 'planner.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Shift Planner') }}
-  {{ d.empty_state('No planning departments', {
-    message: 'Create a non-organizational department before planning shifts.',
-    actionLabel: 'Manage departments',
+  {{ d.page_header('planner.page.title'|trans) }}
+  {{ d.empty_state('planner.empty.no_departments.title'|trans, {
+    message: 'planner.empty.no_departments.message'|trans,
+    actionLabel: 'planner.empty.no_departments.action'|trans,
     actionHref: path('app_manage_department_index')
   }) }}
 {% endblock %}

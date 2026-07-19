@@ -1,32 +1,32 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Dashboard · Critter{% endblock %}
+{% block title %}{{ 'dashboard.page.title'|trans }}{% endblock %}
 
 {% block body %}
     {% set user = app.user %}
 
-    {{ d.page_header('Welcome, ' ~ user.userIdentifier, {
-        subtitle: 'Your account at a glance.',
+    {{ d.page_header('dashboard.header.welcome'|trans({'%name%': user.userIdentifier}), {
+        subtitle: 'dashboard.header.subtitle'|trans,
         actions: [
-            {label: 'Digital ID', href: path('app_digital_id'), class: 'btn btn-outline-secondary'},
-            {label: 'Settings', href: path('app_settings'), class: 'btn btn-outline-secondary'}
+            {label: 'ui.user_menu.digital_id'|trans, href: path('app_digital_id'), class: 'btn btn-outline-secondary'},
+            {label: 'ui.user_menu.settings'|trans, href: path('app_settings'), class: 'btn btn-outline-secondary'}
         ]
     }) }}
 
-    {{ d.card_start('Account') }}
+    {{ d.card_start('dashboard.card.account'|trans) }}
             {# Not definition_list(): the "Roles" value is a list of badges, not a scalar. #}
             <dl class="row mb-0">
-                <dt class="col-sm-3">Username</dt>
+                <dt class="col-sm-3">{{ 'common.label.username'|trans }}</dt>
                 <dd class="col-sm-9">{{ user.name }}</dd>
 
-                <dt class="col-sm-3">Email</dt>
+                <dt class="col-sm-3">{{ 'common.label.email'|trans }}</dt>
                 <dd class="col-sm-9">{{ user.email }}</dd>
 
-                <dt class="col-sm-3">Last login</dt>
-                <dd class="col-sm-9">{{ user.lastLoginAt ? user.lastLoginAt|app_datetime : '—' }}</dd>
+                <dt class="col-sm-3">{{ 'dashboard.field.last_login'|trans }}</dt>
+                <dd class="col-sm-9">{{ user.lastLoginAt ? user.lastLoginAt|app_datetime : '-' }}</dd>
 
-                <dt class="col-sm-3">Roles</dt>
+                <dt class="col-sm-3">{{ 'dashboard.field.roles'|trans }}</dt>
                 <dd class="col-sm-9">
                     {% for role in user.roles %}
                         {{ d.badge(role, 'bg-primary-lt') }}
@@ -35,24 +35,24 @@
             </dl>
     {{ d.card_end() }}
 
-    {{ d.card_start('Groups') }}
+    {{ d.card_start('dashboard.card.groups'|trans) }}
             {% for group in user.groups %}
                 {{ d.badge(group.name, 'bg-blue-lt') }}
             {% else %}
-                {{ d.empty_inline('No groups assigned.', {tag: 'span', class: 'text-muted'}) }}
+                {{ d.empty_inline('dashboard.empty.groups'|trans, {tag: 'span', class: 'text-muted'}) }}
             {% endfor %}
     {{ d.card_end() }}
 
-    {{ d.card_start('Effective privileges (' ~ user.privilegeNames|length ~ ')') }}
+    {{ d.card_start('dashboard.card.privileges'|trans({'%count%': user.privilegeNames|length})) }}
             {% for privilege in user.privilegeNames|sort %}
                 <code class="d-inline-block me-2 mb-1">{{ privilege }}</code>
             {% else %}
-                {{ d.empty_inline('No privileges.', {tag: 'span', class: 'text-muted'}) }}
+                {{ d.empty_inline('dashboard.empty.privileges'|trans, {tag: 'span', class: 'text-muted'}) }}
             {% endfor %}
     {{ d.card_end() }}
 
-    {{ d.card_start('Privilege voter check (live)', {class: ''}) }}
-            <p class="text-muted small">Demonstrates the fine-grained privilege voter via <code>is_granted()</code>.</p>
+    {{ d.card_start('dashboard.card.voter_check'|trans, {class: ''}) }}
+            <p class="text-muted small">{{ 'dashboard.voter_check.help'|trans }} <code>is_granted()</code>.</p>
             <ul class="list-unstyled mb-0">
                 {% for privilege in ['user:view', 'news:manage', 'goodie:manage', 'shift:view'] %}
                     <li>

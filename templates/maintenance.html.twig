@@ -1,6 +1,6 @@
 {% extends 'install/_layout.html.twig' %}
 
-{% block title %}Maintenance · VMS{% endblock %}
+{% block title %}{{ 'maintenance.page.title'|trans }}{% endblock %}
 
 {% block content %}
     <div class="empty">
@@ -12,10 +12,9 @@
                 <path d="M7 10h3v-3l-3.5 -3.5a6 6 0 0 1 8 8l6 6a2 2 0 0 1 -3 3l-6 -6a6 6 0 0 1 -8 -8l3.5 3.5"/>
             </svg>
         </div>
-        <p class="empty-title">Temporarily down for maintenance</p>
+        <p class="empty-title">{{ 'maintenance.title'|trans }}</p>
         <p class="empty-subtitle text-secondary">
-            We’re applying a database update right now. The system will be back online automatically as soon
-            as it finishes — please try again in a moment.
+            {{ 'maintenance.subtitle'|trans }}
         </p>
         <div class="empty-action">
             <a href="." class="btn btn-primary">
@@ -25,7 +24,7 @@
                     <path d="M20 11a8.1 8.1 0 0 0 -15.5 -2m-.5 -4v4h4"/>
                     <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/>
                 </svg>
-                Retry
+                {{ 'maintenance.retry'|trans }}
             </a>
         </div>
     </div>

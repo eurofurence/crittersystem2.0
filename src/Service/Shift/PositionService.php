@@ -67,7 +67,7 @@ final class PositionService
 
     /**
      * Enable a Named Position on a shift, or return the existing enablement.
-     * Idempotent — a shift enables each position at most once.
+     * Idempotent - a shift enables each position at most once.
      */
     public function enablePosition(Shift $shift, NamedPosition $position, bool $required = true): ShiftPosition
     {
@@ -157,7 +157,7 @@ final class PositionService
     /**
      * Copy the position structure (which positions are enabled, their
      * required flag and notes) from one shift to another. Assignments
-     * are not copied — they are user-specific. Existing positions on the target
+     * are not copied - they are user-specific. Existing positions on the target
      * are updated in place; missing ones are added.
      *
      * @return ShiftPosition[] the target's positions after the copy
@@ -240,7 +240,7 @@ final class PositionService
      *   4. any type the user is a confirmed member of.
      *
      * Steps 3 and 4 exist because a manager staffing a spot from the planner normally picks somebody
-     * who is not yet on the shift, and most positions define no required type — without them the
+     * who is not yet on the shift, and most positions define no required type - without them the
      * grid cannot staff anyone at all.
      *
      * @throws \RuntimeException when no Volunteer Type can be resolved

@@ -1,37 +1,37 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Locate User{% endblock %}
+{% block title %}{{ 'backstage.locate.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Locate User', {
-    subtitle: 'Find a volunteer by exact email, registration number, or a scanned badge.',
-    actions: [{label: '← Backstage', href: path('app_backstage'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('backstage.locate.page.title'|trans, {
+    subtitle: 'backstage.locate.page.subtitle'|trans,
+    actions: [{label: 'backstage.action.back_to_backstage'|trans, href: path('app_backstage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   <form method="get" action="{{ path('app_backstage_distribute') }}" class="row g-2 mb-3">
     <div class="col-12 col-md-8">
-      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="Exact email, registration number, name, or scan a badge…" autofocus>
+      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="{{ 'backstage.locate.search.placeholder'|trans }}" autofocus>
     </div>
-    <div class="col-12 col-md-4"><button class="btn btn-primary w-100">Search</button></div>
+    <div class="col-12 col-md-4"><button class="btn btn-primary w-100">{{ 'common.action.search'|trans }}</button></div>
   </form>
 
   {% if badgeNotResolved %}
-    {{ d.empty_state('Badge not recognised', {message: 'That badge code is no longer valid — badges rotate and expire quickly. Ask the volunteer to reopen their Digital ID and scan again.'}) }}
+    {{ d.empty_state('backstage.locate.badge_not_recognised.title'|trans, {message: 'backstage.locate.badge_not_recognised.message'|trans}) }}
   {% elseif q != '' %}
     {% if results is empty %}
-      {{ d.empty_state('No matches', {message: 'No volunteer matches that email, registration number, or name. Emails must be entered in full.'}) }}
+      {{ d.empty_state('backstage.locate.no_matches.title'|trans, {message: 'backstage.locate.no_matches.message'|trans}) }}
     {% else %}
       {{ d.table_start() }}
-        <thead><tr><th>Name</th><th>Email</th><th class="text-end"></th></tr></thead>
+        <thead><tr><th>{{ 'common.label.name'|trans }}</th><th>{{ 'common.label.email'|trans }}</th><th class="text-end"></th></tr></thead>
         <tbody>
           {% for u in results %}
             <tr>
               <td class="fw-semibold">{{ u.name }}</td>
               {# Email is a mining vector: only admins see the raw address as an identity column. #}
-              <td class="small">{{ is_granted('ROLE_ADMIN') ? u.email : '—' }}</td>
+              <td class="small">{{ is_granted('ROLE_ADMIN') ? u.email : '-' }}</td>
               <td class="text-end">
-                <a class="btn btn-sm btn-primary" href="{{ path('app_backstage_distribute_user', {id: u.uuid}) }}">Open</a>
+                <a class="btn btn-sm btn-primary" href="{{ path('app_backstage_distribute_user', {id: u.uuid}) }}">{{ 'backstage.action.open'|trans }}</a>
               </td>
             </tr>
           {% endfor %}

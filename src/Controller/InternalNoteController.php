@@ -15,6 +15,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Staff-only internal notes: a filterable log of operational notes.
@@ -68,7 +69,7 @@ final class InternalNoteController extends AbstractController
 
             $this->em->persist($note);
             $this->em->flush();
-            $this->addFlash('success', 'Note added.');
+            $this->addFlash('success', new TranslatableMessage('staff.notes.flash.added'));
         }
 
         return $this->redirectToRoute('app_staff_notes');
@@ -80,7 +81,7 @@ final class InternalNoteController extends AbstractController
         if ($this->isCsrfTokenValid('note-del'.$note->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($note);
             $this->em->flush();
-            $this->addFlash('success', 'Note deleted.');
+            $this->addFlash('success', new TranslatableMessage('staff.notes.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_staff_notes');

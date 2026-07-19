@@ -1,11 +1,11 @@
 /*
- * Eurofurence — official brand theme (light).
+ * Eurofurence - official brand theme (light).
  *
  * Palette + type taken from the official Eurofurence website:
  *   --ef-green:       #005953   (primary brand teal)
  *   --ef-green-light: #69a3a2   (lighter accent)
  *   headings:         Georgia serif    body: system sans-serif
- *   border-radius:    6px (already the Tabler default — no override needed)
+ *   border-radius:    6px (already the Tabler default - no override needed)
  *
  * Tabler is a Bootstrap 5 theme, so overriding its `--tblr-*` tokens rebrands
  * the whole UI without touching markup. This file is loaded LAST in <head>,
@@ -23,7 +23,7 @@
   --tblr-link-hover-color: #00413c;
 }
 
-/* Deep-teal top navbar with light text — echoes the official EF site nav.
+/* Deep-teal top navbar with light text - echoes the official EF site nav.
    Both the brand bar and the horizontal menu are `.navbar`, so they unify. */
 .navbar {
   --tblr-navbar-bg: #005953;

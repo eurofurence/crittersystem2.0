@@ -2,10 +2,10 @@
 {% import 'components/data/_macros.twig' as d %}
 {% import 'components/icon/_macros.twig' as i %}
 
-{% block title %}Shift Manager{% endblock %}
+{% block title %}{{ 'shift_manager.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Shift Manager', {subtitle: 'Apply to, manage and create staff shifts.'}) }}
+  {{ d.page_header('shift_manager.page.title'|trans, {subtitle: 'shift_manager.page.subtitle'|trans}) }}
 
   {#
     One tile per action. `priv: null` = available to every staff member in the module;
@@ -14,12 +14,12 @@
     stretched-link anchor are part of this page's contract.
   #}
   {% set actions = [
-    {action: 'apply',    priv: null,             route: 'app_manage_shifts_apply',   icon: 'checklist', color: 'text-blue',  title: 'Apply to staff shifts',       text: 'Browse and apply to the staff shifts you are eligible for.'},
-    {action: 'overview', priv: null,             route: 'app_my_shifts',             icon: 'clock',     color: 'text-blue',  title: 'My shifts & duties',          text: 'Your applications, assignments and worklog.'},
-    {action: 'manage',   priv: 'shift:manage',   route: 'app_manage_shifts_planner', icon: 'dashboard', color: 'text-green', title: 'Manage shifts',               text: 'Open the planner to edit, assign and publish shifts.'},
-    {action: 'create',   priv: 'shift:manage',   route: 'app_manage_shifts_planner', icon: 'plus',      color: 'text-green', title: 'Create shifts',               text: 'Paint new shifts on the grid or run the Shift Wizard.'},
-    {action: 'grid',     priv: 'shift:manage',   route: 'app_department_grid',       icon: 'checklist', color: 'text-green', title: 'Department grid',             text: 'Fill status, assignments and open positions at a glance.'},
-    {action: 'links',    priv: 'invite:manage',  route: 'app_request_links',         icon: 'mail',      color: 'text-green', title: 'Availability & invitations',  text: 'Send availability requests and shift invitation links.'}
+    {action: 'apply',    priv: null,             route: 'app_manage_shifts_apply',   icon: 'checklist', color: 'text-blue',  title: 'shift_manager.apply.title'|trans,           text: 'shift_manager.action.apply.text'|trans},
+    {action: 'overview', priv: null,             route: 'app_my_shifts',             icon: 'clock',     color: 'text-blue',  title: 'shift_manager.action.overview.title'|trans, text: 'shift_manager.action.overview.text'|trans},
+    {action: 'manage',   priv: 'shift:manage',   route: 'app_manage_shifts_planner', icon: 'dashboard', color: 'text-green', title: 'shift_manager.action.manage.title'|trans,   text: 'shift_manager.action.manage.text'|trans},
+    {action: 'create',   priv: 'shift:manage',   route: 'app_manage_shifts_planner', icon: 'plus',      color: 'text-green', title: 'shift_manager.action.create.title'|trans,   text: 'shift_manager.action.create.text'|trans},
+    {action: 'grid',     priv: 'shift:manage',   route: 'app_department_grid',       icon: 'checklist', color: 'text-green', title: 'shift_manager.action.grid.title'|trans,     text: 'shift_manager.action.grid.text'|trans},
+    {action: 'links',    priv: 'invite:manage',  route: 'app_request_links',         icon: 'mail',      color: 'text-green', title: 'shift_manager.action.links.title'|trans,    text: 'shift_manager.action.links.text'|trans}
   ] %}
 
   <div class="row row-cards">

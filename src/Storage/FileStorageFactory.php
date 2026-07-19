@@ -12,8 +12,8 @@ use League\Flysystem\Visibility;
 
 /**
  * Builds the uploads filesystem from a single DSN so the backend is chosen
- * purely by the UPLOAD_STORAGE_DSN environment variable — a local folder in
- * development, S3 (or an S3-compatible service) in production — with no code
+ * purely by the UPLOAD_STORAGE_DSN environment variable - a local folder in
+ * development, S3 (or an S3-compatible service) in production - with no code
  * change to switch.
  *
  *   local://var/uploads

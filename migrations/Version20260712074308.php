@@ -16,7 +16,7 @@ final class Version20260712074308 extends AbstractMigration
 
     public function up(Schema $schema): void
     {
-        // Existing shifts are already live and public — backfill accordingly, then
+        // Existing shifts are already live and public - backfill accordingly, then
         // drop the column default so the ORM (which sets the value) owns it.
         $this->addSql("ALTER TABLE shift_entries ADD state VARCHAR(16) NOT NULL DEFAULT 'assignment'");
         $this->addSql('ALTER TABLE shift_entries ALTER state DROP DEFAULT');

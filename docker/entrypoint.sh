@@ -7,7 +7,7 @@
 #   * waits on a PostgreSQL advisory lock, so concurrent replicas serialise and
 #     a killed pod never leaves a stale lock behind;
 #   * runs migrations all-or-nothing, so an interruption rolls back cleanly;
-#   * is idempotent — replicas that find nothing pending exit successfully.
+#   * is idempotent - replicas that find nothing pending exit successfully.
 #
 # The retry loop below keeps trying until it succeeds, which also handles the
 # common "database not ready yet" race on a cold start of the whole stack.

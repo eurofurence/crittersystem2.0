@@ -96,13 +96,13 @@
   {% set col = options.col|default('col-12') %}
   {% set id = options.id|default('search_' ~ name) %}
   <div class="{{ col }} mb-3">
-    <label class="form-label" for="{{ id }}">{{ options.label|default('Search') }}</label>
+    <label class="form-label" for="{{ id }}">{{ options.label|default('common.action.search'|trans) }}</label>
     <input
       id="{{ id }}"
       name="{{ name }}"
       type="search"
       class="form-control"
-      placeholder="{{ options.placeholder|default('Type to search…') }}"
+      placeholder="{{ options.placeholder|default('common.search.placeholder'|trans) }}"
       autocomplete="off"
       data-search-debounce="{{ options.debounceMs|default(250) }}"
       {% if options.turboFrame is defined %}data-search-turbo-frame="{{ options.turboFrame }}"{% endif %}
@@ -216,7 +216,7 @@
   {% set withSuffix = options.staffSuffix is defined ? options.staffSuffix : true %}
   <div class="{{ col }} mb-3">
     {% if options.label is not same as(false) %}
-      <label class="form-label" for="{{ id }}-input">{{ options.label|default('Add users') }}</label>
+      <label class="form-label" for="{{ id }}-input">{{ options.label|default('common.user_select.label'|trans) }}</label>
     {% endif %}
     <div class="user-select"
          data-controller="user-select"
@@ -230,12 +230,12 @@
             <span class="user-select-chip badge d-inline-flex align-items-center gap-1" data-user-select-id="{{ u.id }}">
               <span class="avatar avatar-xs"{% if u.avatar %} style="background-image: url('{{ u.avatar }}')"{% endif %}>{% if not u.avatar %}{{ u.name|slice(0, 2)|upper }}{% endif %}</span>
               <span>{{ u.name }}{{ withSuffix and u.staff ? ' (staff)' : '' }}</span>
-              <button type="button" class="btn-close" aria-label="Remove {{ u.name }}"></button>
+              <button type="button" class="btn-close" aria-label="{{ 'common.user_select.remove_aria'|trans({'%name%': u.name}) }}"></button>
             </span>
           {% endfor %}
         </span>
         <input type="text" class="user-select-input" id="{{ id }}-input" autocomplete="off"
-               placeholder="{{ options.placeholder|default('Type a username…') }}"
+               placeholder="{{ options.placeholder|default('common.user_select.placeholder'|trans) }}"
                data-user-select-target="input"
                data-action="input->user-select#onInput focus->user-select#onInput keydown->user-select#onKeydown">
       </div>

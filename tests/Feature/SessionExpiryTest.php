@@ -12,7 +12,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  * What an expired session does to a page that polls in the background.
  *
  * The failure this protects against: the entry point answered a poll with a redirect to /login, `fetch`
- * followed it, and the widget injected the whole login document into the navbar — while the previous
+ * followed it, and the widget injected the whole login document into the navbar - while the previous
  * user's personal data stayed on screen. The poll also overwrote the "return to" path, so even a clean
  * re-login landed on a bare /status fragment.
  */
@@ -92,7 +92,7 @@ final class SessionExpiryTest extends DatabaseWebTestCase
     }
 
     /**
-     * The return path is attacker-supplied, so it must never be able to point off-site — otherwise the
+     * The return path is attacker-supplied, so it must never be able to point off-site - otherwise the
      * login page becomes an open redirect that phishing can hang a credible URL on.
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('hostileReturnPaths')]

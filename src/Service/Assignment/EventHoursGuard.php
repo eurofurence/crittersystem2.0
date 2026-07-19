@@ -13,7 +13,7 @@ use App\Service\HoursCalculator;
  * Recommended event-hours threshold. The admin configures a
  * recommended maximum of planned hours from setup through teardown; this is a
  * warning threshold, not a hard limit. Self-application beyond it requires the
- * user's explicit acknowledgement and manager assignment an override — both
+ * user's explicit acknowledgement and manager assignment an override - both
  * audited. Changing the configuration never invalidates existing assignments.
  */
 final class EventHoursGuard

@@ -2,22 +2,22 @@
 {% import 'components/forms/_macros.twig' as f %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Operational Configuration{% endblock %}
+{% block title %}{{ 'manage.operations_config.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Operational Configuration', {
-    subtitle: 'Bans, messaging, calls, reminders and reward-hour tuning.',
-    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('manage.operations_config.page.title'|trans, {
+    subtitle: 'manage.operations_config.page.subtitle'|trans,
+    actions: [{label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {{ form_start(form) }}
-    <h2 class="h6">Bans</h2>
+    <h2 class="h6">{{ 'manage.operations_config.section.bans'|trans }}</h2>
     <div class="row">
       {{ f.field(form.noShowThreshold, {col: 'col-12 col-md-4'}) }}
       {{ f.field(form.banScreenMessage, {col: 'col-12 col-md-8'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Messaging &amp; Info Desk</h2>
+    <h2 class="h6 mt-2">{{ 'manage.operations_config.section.messaging'|trans }}</h2>
     <div class="row">
       {{ f.check(form.messagesEnabled, {col: 'col-12 col-md-4'}) }}
       {{ f.field(form.messageEditWindow, {col: 'col-12 col-md-4'}) }}
@@ -26,25 +26,25 @@
       {{ f.field(form.infoDeskFinalization, {col: 'col-12 col-md-6'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Calls &amp; Reminders</h2>
+    <h2 class="h6 mt-2">{{ 'manage.operations_config.section.calls'|trans }}</h2>
     <div class="row">
       {{ f.field(form.callResponseTimeout, {col: 'col-12 col-md-4'}) }}
       {{ f.field(form.callManagerLead, {col: 'col-12 col-md-4'}) }}
       {{ f.field(form.shiftReminderLead, {col: 'col-12 col-md-4'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Planned hours</h2>
+    <h2 class="h6 mt-2">{{ 'manage.operations_config.section.planned_hours'|trans }}</h2>
     <div class="row">
       {{ f.field(form.recommendedMaxHours, {col: 'col-12 col-md-4'}) }}
       {{ f.check(form.autoMembershipFromLinks, {col: 'col-12 col-md-8'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Sessions</h2>
+    <h2 class="h6 mt-2">{{ 'manage.operations_config.section.sessions'|trans }}</h2>
     <div class="row">
       {{ f.field(form.sessionIdleMinutes, {col: 'col-12 col-md-4'}) }}
     </div>
 
-    <h2 class="h6 mt-2">Reward-hour multipliers</h2>
+    <h2 class="h6 mt-2">{{ 'manage.operations_config.section.multipliers'|trans }}</h2>
     <div class="row">
       {{ f.field(form.nightStartHour, {col: 'col-6 col-md-3'}) }}
       {{ f.field(form.nightEndHour, {col: 'col-6 col-md-3'}) }}
@@ -52,6 +52,6 @@
       {{ f.field(form.noShowMultiplier, {col: 'col-6 col-md-3'}) }}
     </div>
 
-    <button class="btn btn-primary mt-2">Save</button>
+    <button class="btn btn-primary mt-2">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
 {% endblock %}

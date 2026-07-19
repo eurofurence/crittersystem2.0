@@ -14,7 +14,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  * Signing up for and cancelling a shift, driven through HTTP.
  *
  * ShiftSignupService is covered by integration tests; this file covers the controller layer on top
- * of it — the CSRF checks, the ownership check on cancel, and the redirects.
+ * of it - the CSRF checks, the ownership check on cancel, and the redirects.
  *
  * Forms are submitted as rendered (the crawler carries the real CSRF token) rather than by minting
  * tokens out of band, so the test exercises the same request a browser would send.

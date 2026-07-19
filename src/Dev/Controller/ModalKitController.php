@@ -14,7 +14,7 @@ final class ModalKitController extends AbstractController
     public function index(): Response
     {
         return $this->render('modal_kit/index.html.twig', [
-            'pageTitle' => 'UI Kit — Modals',
+            'pageTitle' => 'UI Kit - Modals',
         ]);
     }
 }

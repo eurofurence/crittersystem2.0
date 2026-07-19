@@ -1,29 +1,28 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Apply to staff shifts{% endblock %}
+{% block title %}{{ 'shift_manager.apply.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Apply to staff shifts', {
-    subtitle: 'Staff shifts you are eligible to see and apply for.',
-    actions: [{label: '← Shift Manager', href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('shift_manager.apply.title'|trans, {
+    subtitle: 'shift_manager.apply.subtitle'|trans,
+    actions: [{label: 'shift_manager.action.back_to_manager'|trans, href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if recommendedMax > 0 %}
     <div class="alert {{ overHours > 0 ? 'alert-warning' : 'alert-info' }} d-flex align-items-center">
       <div>
-        You have <strong>{{ plannedHours|round(1) }}</strong> planned hours
-        (recommended max {{ recommendedMax }}).
-        {% if overHours > 0 %}<strong>{{ overHours|round(1) }} h over</strong> the recommendation.{% endif %}
+        {{ 'shift_manager.apply.planned_hours'|trans({'%hours%': plannedHours|round(1), '%max%': recommendedMax})|raw }}
+        {% if overHours > 0 %}{{ 'shift_manager.apply.over_hours'|trans({'%amount%': overHours|round(1)})|raw }}{% endif %}
       </div>
     </div>
   {% endif %}
 
   {% set hasAny = groups.member|length > 0 or groups.other|length > 0 %}
   {% if not hasAny %}
-    {{ d.empty_state('No staff shifts available', {message: 'There are no published staff shifts you can apply to right now.'}) }}
+    {{ d.empty_state('shift_manager.apply.empty.title'|trans, {message: 'shift_manager.apply.empty.message'|trans}) }}
   {% else %}
-    {% for section, label in {'member': 'Your departments', 'other': 'Other departments'} %}
+    {% for section, label in {'member': 'shift_manager.apply.your_departments'|trans, 'other': 'shift_manager.apply.other_departments'|trans} %}
       {% for group in groups[section] %}
         <div class="card mb-3">
           <div class="card-header">
@@ -33,7 +32,7 @@
           <div class="list-group list-group-flush">
             {% for row in group.shifts %}
               {# Each row is its own Turbo Frame, polled for live capacity/status.
-                 Keep the frame ids stable — the server responses target them by id. #}
+                 Keep the frame ids stable - the server responses target them by id. #}
               <turbo-frame id="apply-row-{{ row.shift.id }}"
                            src="{{ path('app_manage_shifts_apply_frame', {id: row.shift.uuid}) }}"
                            data-controller="live-refresh"

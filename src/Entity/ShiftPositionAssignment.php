@@ -11,7 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 /**
  * Associates one Named Position (via its per-shift {@see ShiftPosition}) with a
  * single {@see ShiftEntry}. One user holds exactly one ShiftEntry
- * per shift and may hold multiple positions through several of these rows —
+ * per shift and may hold multiple positions through several of these rows -
  * hours count the shift time only once. Position additions/removals are audited.
  */
 #[ORM\Entity(repositoryClass: ShiftPositionAssignmentRepository::class)]

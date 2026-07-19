@@ -113,7 +113,7 @@ final class PlannerDraftStore
         $merged = [];
         foreach ($valid as [$start, $end]) {
             if ($merged !== [] && $start <= $merged[\count($merged) - 1][1]) {
-                // Overlaps or touches the previous span — extend it.
+                // Overlaps or touches the previous span - extend it.
                 $last = &$merged[\count($merged) - 1];
                 if ($end > $last[1]) {
                     $last[1] = $end;

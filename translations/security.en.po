@@ -1,0 +1,14 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en\n"
+
+# The `security` domain follows Symfony's convention of message-as-key: the login page renders
+# `error.messageKey|trans(error.messageData, 'security')`, so a missing catalog entry falls back to
+# the English message itself rather than an opaque key. Framework auth messages ("Invalid
+# credentials." etc.) already ship translated in symfony/security-core; only app-specific auth
+# messages shown on the login screen are listed here.
+
+msgid "Your account is locked. If you believe this is a mistake, you can appeal."
+msgstr "Your account is locked. If you believe this is a mistake, you can appeal."

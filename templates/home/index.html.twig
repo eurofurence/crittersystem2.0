@@ -1,6 +1,6 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Hello HomeController!{% endblock %}
+{% block title %}{{ 'home.page.title'|trans }}{% endblock %}
 
 {% block body %}
 <style>
@@ -9,12 +9,12 @@
 </style>
 
 <div class="example-wrapper">
-    <h1>Hello {{ controller_name }}! ✅</h1>
+    <h1>{{ 'home.hello'|trans({'%name%': controller_name}) }} ✅</h1>
 
-    This friendly message is coming from:
+    {{ 'home.intro'|trans }}
     <ul>
-        <li>Your controller at <code>/home/fred/dev/my_project/src/Controller/HomeController.php</code></li>
-        <li>Your template at <code>/home/fred/dev/my_project/templates/home/index.html.twig</code></li>
+        <li>{{ 'home.controller_at'|trans }} <code>/home/fred/dev/my_project/src/Controller/HomeController.php</code></li>
+        <li>{{ 'home.template_at'|trans }} <code>/home/fred/dev/my_project/templates/home/index.html.twig</code></li>
     </ul>
 </div>
 {% endblock %}

@@ -20,10 +20,11 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Volunteer-facing shift browsing (filterable list, grouped by hour), sign-up/
- * cancellation, and "my shifts" — the ShiftManagerV2-style apply screen.
+ * cancellation, and "my shifts" - the ShiftManagerV2-style apply screen.
  */
 final class ShiftBrowseController extends AbstractController
 {
@@ -127,14 +128,14 @@ final class ShiftBrowseController extends AbstractController
             $type = $options[(int) $request->request->get('volunteer_type')] ?? null;
 
             if ($type === null) {
-                $this->addFlash('danger', 'Choose a volunteer type you can sign up as.');
+                $this->addFlash('danger', new TranslatableMessage('shift.flash.choose_type'));
             } else {
                 $error = $this->signup->signUpError($user, $shift, $type);
                 if ($error !== null) {
                     $this->addFlash('danger', $error);
                 } else {
                     $this->signup->signUp($user, $shift, $type, (string) $request->request->get('comment') ?: null);
-                    $this->addFlash('success', \sprintf('Signed up as %s.', $type->getName()));
+                    $this->addFlash('success', new TranslatableMessage('shift.flash.signed_up', ['%name%' => $type->getName()]));
                 }
             }
         }
@@ -179,7 +180,7 @@ final class ShiftBrowseController extends AbstractController
                 $this->addFlash('danger', $error);
             } else {
                 $this->signup->cancel($entry);
-                $this->addFlash('success', 'Sign-up cancelled.');
+                $this->addFlash('success', new TranslatableMessage('shift.flash.signup_cancelled'));
             }
         }
 

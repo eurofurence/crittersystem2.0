@@ -25,23 +25,23 @@ final class WorklogType extends AbstractType
 
         $builder
             ->add('user', EntityType::class, [
-                'label' => 'Volunteer',
+                'label' => 'manage.label.volunteer',
                 'class' => User::class,
                 'choice_label' => 'name',
             ])
             ->add('hours', NumberType::class, [
-                'label' => 'Hours',
+                'label' => 'manage.worklog.field.hours.label',
                 'scale' => 2,
             ])
             ->add('workedAt', DateTimeType::class, [
-                'label' => 'Worked at',
+                'label' => 'manage.worklog.field.worked_at.label',
                 'widget' => 'single_text',
                 'input' => 'datetime_immutable',
                 'view_timezone' => $tz,
                 'model_timezone' => 'UTC',
             ])
             ->add('comment', TextareaType::class, [
-                'label' => 'Comment',
+                'label' => 'manage.worklog.field.comment.label',
                 'required' => false,
                 'attr' => ['rows' => 2],
             ]);

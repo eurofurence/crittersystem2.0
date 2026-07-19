@@ -68,7 +68,7 @@ final class Notifier
     private function send(string $to, string $subject, string $body, ?User $user = null, ?string $unsubscribeType = null): void
     {
         if ($user !== null && $unsubscribeType !== null && $this->unsubscribe !== null) {
-            $body .= "\n\n—\nUnsubscribe from these emails: ".$this->unsubscribe->url($user, $unsubscribeType);
+            $body .= "\n\n-\nUnsubscribe from these emails: ".$this->unsubscribe->url($user, $unsubscribeType);
         }
 
         $this->mailer->send(

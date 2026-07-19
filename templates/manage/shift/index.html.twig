@@ -1,32 +1,32 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Shifts{% endblock %}
+{% block title %}{{ 'manage.shift.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Shifts', {
-    subtitle: 'Scheduled work that volunteers sign up for.',
+  {{ d.page_header('manage.shift.page.title'|trans, {
+    subtitle: 'manage.shift.page.subtitle'|trans,
     actions: [
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New shift', href: path('app_manage_shift_new'), class: 'btn btn-primary'}
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.shift.action.new'|trans, href: path('app_manage_shift_new'), class: 'btn btn-primary'}
     ]
   }) }}
 
   {% if shifts is empty %}
-    {{ d.empty_state('No shifts yet', {
-      message: 'Create the first shift for volunteers to sign up.',
-      actionLabel: '+ New shift',
+    {{ d.empty_state('manage.shift.empty.title'|trans, {
+      message: 'manage.shift.empty.message'|trans,
+      actionLabel: 'manage.shift.action.new'|trans,
       actionHref: path('app_manage_shift_new')
     }) }}
   {% else %}
     {{ d.table_start() }}
       <thead>
         <tr>
-          <th>Title</th>
-          <th>When</th>
-          <th>Type / Location</th>
-          <th>Signed up</th>
-          <th class="text-end">Actions</th>
+          <th>{{ 'common.label.title'|trans }}</th>
+          <th>{{ 'common.label.when'|trans }}</th>
+          <th>{{ 'manage.shift.table.type_location'|trans }}</th>
+          <th>{{ 'manage.shift.table.signed_up'|trans }}</th>
+          <th class="text-end">{{ 'common.label.actions'|trans }}</th>
         </tr>
       </thead>
       <tbody>
@@ -35,21 +35,21 @@
             <td class="fw-semibold">{{ shift.title }}</td>
             <td class="small">
               {{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}
-              <div class="text-muted">{{ shift.durationHours }}h{% if shift.past %} · past{% endif %}</div>
+              <div class="text-muted">{{ shift.durationHours }}h{% if shift.past %} · {{ 'manage.shift.label.past'|trans }}{% endif %}</div>
             </td>
             <td class="small">
-              {{ shift.shiftTask ? shift.shiftTask.name : '—' }}
-              <div class="text-muted">{{ shift.location ? shift.location.name : 'No location' }}</div>
+              {{ shift.shiftTask ? shift.shiftTask.name : '-' }}
+              <div class="text-muted">{{ shift.location ? shift.location.name : 'manage.shift.label.no_location'|trans }}</div>
             </td>
             <td>{{ shift.entries|length }}</td>
             {% set del %}
               {{ d.delete_form(path('app_manage_shift_delete', {id: shift.uuid}), csrf_token('delete' ~ shift.id), {
-                message: 'Delete shift "' ~ shift.title ~ '"?'
+                message: 'manage.shift.confirm.delete'|trans({'%name%': shift.title})
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'Staffing', href: path('app_manage_shift_needs', {id: shift.uuid}), class: 'btn btn-sm btn-outline-secondary'},
-              {label: 'Edit', href: path('app_manage_shift_edit', {id: shift.uuid})}
+              {label: 'manage.shift.action.staffing'|trans, href: path('app_manage_shift_needs', {id: shift.uuid}), class: 'btn btn-sm btn-outline-secondary'},
+              {label: 'common.action.edit'|trans, href: path('app_manage_shift_edit', {id: shift.uuid})}
             ], {extraHtml: del}) }}
           </tr>
         {% endfor %}

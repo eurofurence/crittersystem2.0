@@ -1,21 +1,21 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Staff schedule — {{ department.name }}{% endblock %}
+{% block title %}{{ 'schedule.page.title'|trans({'%department%': department.name}) }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Staff schedule timeline', {
-    subtitle: 'Confirmed assignments by user and time.',
+  {{ d.page_header('schedule.header.title'|trans, {
+    subtitle: 'schedule.header.subtitle'|trans,
     actions: [
-      {label: 'Download PDF', href: path('app_schedule_timeline_pdf', {department: department.uuid}), class: 'btn btn-outline-primary'},
-      {label: '← Department grid', href: path('app_department_grid', {department: department.uuid}), class: 'btn btn-outline-secondary'}
+      {label: 'schedule.action.download_pdf'|trans, href: path('app_schedule_timeline_pdf', {department: department.uuid}), class: 'btn btn-outline-primary'},
+      {label: 'schedule.action.back_to_grid'|trans, href: path('app_department_grid', {department: department.uuid}), class: 'btn btn-outline-secondary'}
     ]
   }) }}
 
   {{ d.card_start() }}
       <form method="get" class="d-flex align-items-end gap-2">
         <div>
-          <label class="form-label mb-1" for="sched-department">Department</label>
+          <label class="form-label mb-1" for="sched-department">{{ 'common.label.department'|trans }}</label>
           <select id="sched-department" name="department" class="form-select" onchange="this.form.submit()">
             {% for dept in departments %}
               <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
@@ -26,7 +26,7 @@
   {{ d.card_end() }}
 
   {% if rows is empty %}
-    {{ d.empty_state('No confirmed assignments', {message: 'Assign staff to shifts to populate the schedule.'}) }}
+    {{ d.empty_state('schedule.empty.title'|trans, {message: 'schedule.empty.message'|trans}) }}
   {% else %}
     {{ d.card_start(null, {class: '', bodyClass: ''}) }}
       <div class="schedule-scroll">
@@ -45,7 +45,9 @@
                     <div class="schedule-block schedule-hue-{{ loop.index0 % 6 }}"
                          style="left: {{ block.left }}%; width: {{ block.width }}%;"
                          title="{{ block.title }} {{ block.startsAt|app_time }}–{{ block.endsAt|app_time }}{{ block.location ? ' @ ' ~ block.location : '' }}"
-                         aria-label="{{ row.user.name }}: {{ block.title }} {{ block.startsAt|app_time }} to {{ block.endsAt|app_time }}{{ block.location ? ' at ' ~ block.location : '' }}">
+                         aria-label="{{ block.location
+                           ? 'schedule.block.aria_at'|trans({'%user%': row.user.name, '%title%': block.title, '%start%': block.startsAt|app_time, '%end%': block.endsAt|app_time, '%location%': block.location})
+                           : 'schedule.block.aria'|trans({'%user%': row.user.name, '%title%': block.title, '%start%': block.startsAt|app_time, '%end%': block.endsAt|app_time}) }}">
                       <span class="schedule-block-label">{{ block.location ?: block.title }}</span>
                     </div>
                   {% endfor %}

@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * The identity-provider role IDs that decide a user's position inside every department they are
@@ -43,7 +44,7 @@ final class SsoRoleController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->settings->save($data->departmentManagerRole, $data->shiftManagerRole, $data->globalAdminRole, $data->subAdminRole);
-            $this->addFlash('success', 'SSO roles saved. They apply on each user\'s next sign-in.');
+            $this->addFlash('success', new TranslatableMessage('admin.sso.flash.roles_saved'));
 
             return $this->redirectToRoute('app_admin_sso_roles');
         }

@@ -7,8 +7,8 @@ import { confirmModal, alertModal } from '../js/modal.js';
  *
  * Two jobs:
  *
- *  1. Keep the page current. Every mutation here — including the structure forms, which use the
- *     shared `planner-form` controller — ends in a `planner:changed` event. Reloading the content
+ *  1. Keep the page current. Every mutation here - including the structure forms, which use the
+ *     shared `planner-form` controller - ends in a `planner:changed` event. Reloading the content
  *     region on that event is what keeps newly added groups, positions and assignments visible
  *     without a manual page refresh. The region covers the structure panel too, so a new group also
  *     appears in the "Add Named Position" dropdown.
@@ -47,9 +47,20 @@ export default class extends Controller {
     openCell(event) {
         const cell = event.currentTarget;
         this.cell = { ...cell.dataset };
-        this.editorTitleTarget.textContent = `${this.cell.position} — ${this.cell.shiftTitle}`;
+        this.editorTitleTarget.textContent = `${this.cell.position} - ${this.cell.shiftTitle}`;
         this.editorBodyTarget.innerHTML = this.renderEditor(this.cell);
+        this.mountPicker();
         this.modal().show();
+    }
+
+    // Clone the shared user-select type-ahead into the editor. Cloning (rather than rebuilding its
+    // markup here) keeps the picker identical to the one on the staffing screen.
+    mountPicker() {
+        const placeholder = this.editorBodyTarget.querySelector('.matrix-user-picker');
+        const template = document.getElementById('matrix-user-picker');
+        if (placeholder && template) {
+            placeholder.appendChild(template.content.cloneNode(true));
+        }
     }
 
     renderEditor(cell) {
@@ -73,24 +84,17 @@ export default class extends Controller {
             : '<li class="list-group-item text-secondary">Nobody assigned yet.</li>';
 
         const full = assignments.length >= Number(cell.capacity);
-        const candidates = this.candidateOptions();
         let assignBlock;
         if (!this.canAssignValue) {
             assignBlock = '<p class="text-secondary mb-0">You do not have permission to assign volunteers.</p>';
         } else if (full) {
             assignBlock = `<p class="text-secondary mb-0">This position is full (${cell.capacity}/${cell.capacity}).</p>`;
-        } else if (!candidates) {
-            // An empty picker is a dead end; say who is eligible instead of showing an empty select.
-            assignBlock = `<p class="text-secondary mb-0">
-                Nobody is available to assign yet. Add members to this department, or sign volunteers
-                up to the shift first.</p>`;
         } else {
+            // The type-ahead is cloned in by mountPicker(); its picked users submit as matrix_user[].
             assignBlock = `
-                <label class="form-label" for="matrix-assign-user">Assign a volunteer</label>
-                <div class="input-group">
-                    <select class="form-select" id="matrix-assign-user" data-matrix-role="user">${candidates}</select>
-                    <button class="btn btn-primary" data-action="matrix#assign">Assign</button>
-                </div>`;
+                <label class="form-label">Assign a volunteer</label>
+                <div class="matrix-user-picker"></div>
+                <button class="btn btn-primary" data-action="matrix#assign">Assign</button>`;
         }
 
         return `
@@ -114,11 +118,6 @@ export default class extends Controller {
             <button class="btn btn-outline-danger" data-action="matrix#disable">Disable position on this shift</button>`;
     }
 
-    candidateOptions() {
-        const source = document.getElementById('matrix-candidates');
-        return source ? source.innerHTML : '';
-    }
-
     // ---- mutations --------------------------------------------------------
 
     enable() {
@@ -130,12 +129,35 @@ export default class extends Controller {
         );
     }
 
-    assign() {
-        const select = this.editorBodyTarget.querySelector('[data-matrix-role="user"]');
-        if (!select || !select.value) {
+    async assign() {
+        const ids = Array.from(this.editorBodyTarget.querySelectorAll('input[name="matrix_user[]"]'))
+            .map((input) => input.value)
+            .filter(Boolean);
+        if (ids.length === 0) {
             return;
         }
-        this.post(this.assignUrlValue.replace('__ID__', this.cell.shiftPositionUuid), { user: select.value });
+
+        // Place each picked user in turn; the server enforces capacity and rejects duplicates, so a
+        // partial batch reports what could not be placed without losing what was.
+        const url = this.assignUrlValue.replace('__ID__', this.cell.shiftPositionUuid);
+        let assigned = 0;
+        const errors = [];
+        for (const id of ids) {
+            const result = await this.request(url, { user: id });
+            if (result.ok) {
+                assigned += 1;
+            } else if (result.error) {
+                errors.push(result.error);
+            }
+        }
+
+        if (assigned > 0) {
+            this.modal().hide();
+            window.dispatchEvent(new CustomEvent('planner:changed'));
+        }
+        if (errors.length > 0) {
+            await alertModal([...new Set(errors)].join(' '));
+        }
     }
 
     unassign(event) {
@@ -163,6 +185,20 @@ export default class extends Controller {
     }
 
     async post(url, body) {
+        const result = await this.request(url, body);
+        if (result.skipped) {
+            return;
+        }
+        if (!result.ok) {
+            await alertModal(result.error);
+            return;
+        }
+        this.modal().hide();
+        window.dispatchEvent(new CustomEvent('planner:changed'));
+    }
+
+    /** POST a mutation and report its outcome without touching the modal, so callers can batch. */
+    async request(url, body) {
         const form = new FormData();
         form.append('_token', this.tokenValue);
         Object.entries(body).forEach(([key, value]) => form.append(key, value));
@@ -170,18 +206,16 @@ export default class extends Controller {
         try {
             const response = await backgroundFetch(url, { method: 'POST', body: form });
             if (response === null) {
-                return;
+                return { skipped: true };
             }
             const data = await response.json().catch(() => ({}));
             if (!response.ok || data.ok === false) {
-                await alertModal(data.error || 'The change could not be saved.');
-                return;
+                return { ok: false, error: data.error || 'The change could not be saved.' };
             }
-            this.modal().hide();
-            window.dispatchEvent(new CustomEvent('planner:changed'));
+            return { ok: true };
         } catch (e) {
             console.error('Save request failed.', e);
-            await alertModal('Network error while saving.');
+            return { ok: false, error: 'Network error while saving.' };
         }
     }
 
@@ -202,7 +236,7 @@ export default class extends Controller {
             }
             window.location.reload();
         } catch (e) {
-            // A bug in the swap above would otherwise surface only as the page mysteriously reloading —
+            // A bug in the swap above would otherwise surface only as the page mysteriously reloading -
             // and, if it throws again on the way back, as a reload loop with an empty console.
             console.error('Refresh failed; falling back to a full page load.', e);
             window.location.reload();

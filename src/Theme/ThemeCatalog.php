@@ -5,11 +5,11 @@ namespace App\Theme;
 /**
  * Single source of truth for the application's themes. Each theme has a stable
  * slug (stored in user settings + event config), a display name, a `type`
- * (light|dark — drives the Bootstrap 5.3 `data-bs-theme` attribute) and an
+ * (light|dark - drives the Bootstrap 5.3 `data-bs-theme` attribute) and an
  * asset path resolved through AssetMapper.
  *
  * **Adding a theme:** drop a CSS file under `assets/themes/`, add it here.
- * No compilation step is required for development — the file is served by
+ * No compilation step is required for development - the file is served by
  * AssetMapper. For production builds, run `php bin/console asset-map:compile`
  * to produce hashed immutable copies under `public/assets/`.
  */

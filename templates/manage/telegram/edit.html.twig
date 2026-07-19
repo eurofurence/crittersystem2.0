@@ -1,23 +1,23 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
-{% block title %}Telegram configuration{% endblock %}
+{% block title %}{{ 'manage.telegram.page.title'|trans }}{% endblock %}
 {% block body %}
-  {{ d.page_header('Telegram bot configuration', {actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]}) }}
+  {{ d.page_header('manage.telegram.page.heading'|trans, {actions: [{label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}]}) }}
   <form method="post" style="max-width:40rem">
     <input type="hidden" name="_token" value="{{ csrf_token('telegram_config') }}">
     <label class="form-check mb-3">
       <input type="checkbox" class="form-check-input" name="enabled" value="1" {{ config.enabled ? 'checked' }}>
-      <span class="form-check-label">Enable Telegram linking</span>
+      <span class="form-check-label">{{ 'manage.telegram.field.enabled.label'|trans }}</span>
     </label>
     <div class="mb-3">
-      <label class="form-label">Bot API endpoint</label>
+      <label class="form-label">{{ 'manage.telegram.field.api_endpoint.label'|trans }}</label>
       <input type="url" class="form-control" name="api_endpoint" value="{{ config.apiEndpoint }}" placeholder="https://bot.example/api">
     </div>
     <div class="mb-3">
-      <label class="form-label">API key {% if config.hasApiKey %}<span class="text-success small">(set — leave blank to keep)</span>{% endif %}</label>
+      <label class="form-label">{{ 'manage.telegram.field.api_key.label'|trans }} {% if config.hasApiKey %}<span class="text-success small">{{ 'manage.telegram.field.api_key.set_hint'|trans }}</span>{% endif %}</label>
       <input type="password" class="form-control" name="api_key" autocomplete="new-password" placeholder="{{ config.hasApiKey ? '••••••••' : '' }}">
-      <div class="form-text">Stored encrypted. Never displayed.</div>
+      <div class="form-text">{{ 'manage.telegram.field.api_key.help'|trans }}</div>
     </div>
-    <button class="btn btn-primary">Save</button>
+    <button class="btn btn-primary">{{ 'common.action.save'|trans }}</button>
   </form>
 {% endblock %}

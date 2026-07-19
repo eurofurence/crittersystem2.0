@@ -1,7 +1,7 @@
 {% extends 'install/_layout.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Database · Setup · VMS{% endblock %}
+{% block title %}{{ 'install.database.title'|trans }}{% endblock %}
 
 {% block content %}
     {% include 'install/_brand.html.twig' %}
@@ -9,37 +9,35 @@
     {% set running = status.state == 'running' or app.request.query.get('running') %}
 
     {{ d.card_start(null, {class: 'card-md'}) }}
-            <h2 class="mb-1">Database check</h2>
+            <h2 class="mb-1">{{ 'install.database.heading'|trans }}</h2>
             {% include 'install/_flashes.html.twig' %}
 
             {% if not reachable %}
                 <div class="alert alert-danger" role="alert">
                     <div class="d-flex">
                         <div>
-                            <h4 class="alert-title">Cannot connect to the database</h4>
-                            <div class="text-secondary">The application could not open a connection using the configured
-                                <code>DATABASE_URL</code>.</div>
+                            <h4 class="alert-title">{{ 'install.database.cannot_connect_title'|trans }}</h4>
+                            <div class="text-secondary">{{ 'install.database.cannot_connect_body'|trans({'%code%': '<code>DATABASE_URL</code>'})|raw }}</div>
                         </div>
                     </div>
                 </div>
-                <p class="text-secondary">Common causes and fixes:</p>
+                <p class="text-secondary">{{ 'install.database.common_causes'|trans }}</p>
                 <ul class="text-secondary">
-                    <li>The database server is not running yet — start it and retry.</li>
-                    <li><code>DATABASE_URL</code> is wrong (host, port, user, password or database name).</li>
-                    <li>The database/user has not been created on the server.</li>
-                    <li>Network/firewall rules block the connection between this app and the database.</li>
+                    <li>{{ 'install.database.cause_not_running'|trans }}</li>
+                    <li>{{ 'install.database.cause_url_wrong'|trans({'%code%': '<code>DATABASE_URL</code>'})|raw }}</li>
+                    <li>{{ 'install.database.cause_not_created'|trans }}</li>
+                    <li>{{ 'install.database.cause_firewall'|trans }}</li>
                 </ul>
             {% elseif pending == 0 and not running %}
                 <div class="alert alert-success" role="alert">
-                    <h4 class="alert-title">The database schema is up to date</h4>
-                    {{ d.empty_inline('No migrations are pending.', {tag: 'div', class: 'text-secondary'}) }}
+                    <h4 class="alert-title">{{ 'install.database.up_to_date_title'|trans }}</h4>
+                    {{ d.empty_inline('install.database.no_pending'|trans, {tag: 'div', class: 'text-secondary'}) }}
                 </div>
             {% else %}
                 <p class="text-secondary">
-                    {% if pending %}<strong>{{ pending }}</strong> migration(s) need to be applied{% endif %}
-                    {% if latest %} up to version <code>{{ latest }}</code>{% endif %}.
-                    Migrations run inside a single transaction (all-or-nothing) and are guarded by a database lock, so
-                    they are safe to run and self-heal if interrupted.
+                    {% if pending %}{{ 'install.database.pending_count'|trans({'%count%': '<strong>' ~ pending ~ '</strong>'})|raw }}{% endif %}
+                    {% if latest %} {{ 'install.database.up_to_version'|trans({'%version%': '<code>' ~ latest ~ '</code>'})|raw }}{% endif %}.
+                    {{ 'install.database.migrations_note'|trans }}
                 </p>
 
                 <div id="migration-panel" data-running="{{ running ? '1' : '0' }}"
@@ -49,14 +47,14 @@
                     {% if not running %}
                         <form method="post" action="{{ path('app_install_migrate') }}" data-turbo="false">
                             <input type="hidden" name="_token" value="{{ csrf_token('install_migrate') }}">
-                            <button type="submit" class="btn btn-primary">Start migration</button>
+                            <button type="submit" class="btn btn-primary">{{ 'install.database.start_migration'|trans }}</button>
                         </form>
                     {% endif %}
 
                     <div id="migration-progress" class="{{ running ? '' : 'd-none' }}">
                         <div class="d-flex align-items-center mb-2 mt-2">
                             <div class="spinner-border spinner-border-sm me-2" id="migration-spinner" role="status"></div>
-                            <span id="migration-state-text">Running migrations…</span>
+                            <span id="migration-state-text">{{ 'install.database.running'|trans }}</span>
                         </div>
                         <pre id="migration-log" class="bg-dark text-white p-3 rounded"
                              style="max-height: 320px; overflow:auto; white-space: pre-wrap;">{{ status.error ? status.error : '' }}</pre>
@@ -69,9 +67,9 @@
     {% embed 'install/_progress.html.twig' %}
         {% block buttons %}
             {% if not reachable %}
-                <a href="{{ path('app_install_database') }}" class="btn btn-primary">Retry</a>
+                <a href="{{ path('app_install_database') }}" class="btn btn-primary">{{ 'install.database.retry'|trans }}</a>
             {% elseif pending == 0 and not running %}
-                <a href="{{ path('app_install_admin') }}" class="btn btn-primary">Continue</a>
+                <a href="{{ path('app_install_admin') }}" class="btn btn-primary">{{ 'common.action.continue'|trans }}</a>
             {% endif %}
         {% endblock %}
     {% endembed %}
@@ -93,9 +91,9 @@
                 stateText.textContent = message;
                 actions.classList.remove('d-none');
                 if (ok) {
-                    actions.innerHTML = '<a class="btn btn-primary" href="' + panel.dataset.nextUrl + '">Continue</a>';
+                    actions.innerHTML = '<a class="btn btn-primary" href="' + panel.dataset.nextUrl + '">{{ 'common.action.continue'|trans|e('js') }}</a>';
                 } else {
-                    actions.innerHTML = '<a class="btn btn-danger" href="' + window.location.pathname + '">Retry</a>';
+                    actions.innerHTML = '<a class="btn btn-danger" href="' + window.location.pathname + '">{{ 'install.database.retry'|trans|e('js') }}</a>';
                 }
             }
 
@@ -104,8 +102,8 @@
                     .then(function (r) { return r.json(); })
                     .then(function (data) {
                         if (data.log) { logEl.textContent = data.log; logEl.scrollTop = logEl.scrollHeight; }
-                        if (data.state === 'ok') { finish(true, 'Migrations applied successfully.'); return; }
-                        if (data.state === 'failed') { finish(false, 'Migration failed — see the log above.'); return; }
+                        if (data.state === 'ok') { finish(true, '{{ 'install.database.migrate_success'|trans|e('js') }}'); return; }
+                        if (data.state === 'failed') { finish(false, '{{ 'install.database.migrate_failed'|trans|e('js') }}'); return; }
                         setTimeout(poll, 1200);
                     })
                     .catch(function () { setTimeout(poll, 2000); });

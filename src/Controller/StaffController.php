@@ -15,9 +15,10 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
- * Staff Operational Suite — overview, duty control, live status and personal
+ * Staff Operational Suite - overview, duty control, live status and personal
  * stats. Gated to staff
  */
 #[Route('/staff')]
@@ -64,11 +65,11 @@ final class StaffController extends AbstractController
 
         if ($this->isCsrfTokenValid('duty-start', (string) $request->request->get('_token'))) {
             if ($this->duty->getCurrentDuty($user) !== null) {
-                $this->addFlash('warning', 'You are already on duty.');
+                $this->addFlash('warning', new TranslatableMessage('staff.flash.already_on_duty'));
             } else {
                 $department = ($id = $request->request->get('department')) ? $this->departments->findOneByUuid((string) $id) : null;
                 $this->duty->startDuty($user, $department);
-                $this->addFlash('success', 'You are now on duty.');
+                $this->addFlash('success', new TranslatableMessage('staff.flash.now_on_duty'));
             }
         }
 
@@ -83,8 +84,8 @@ final class StaffController extends AbstractController
 
         if ($this->isCsrfTokenValid('duty-end', (string) $request->request->get('_token'))) {
             $this->duty->endDuty($user) !== null
-                ? $this->addFlash('success', 'You are now off duty.')
-                : $this->addFlash('warning', 'You were not on duty.');
+                ? $this->addFlash('success', new TranslatableMessage('staff.flash.now_off_duty'))
+                : $this->addFlash('warning', new TranslatableMessage('staff.flash.not_on_duty'));
         }
 
         return $this->redirectToRoute('app_staff_overview');

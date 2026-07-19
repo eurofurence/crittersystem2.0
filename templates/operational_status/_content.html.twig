@@ -2,24 +2,24 @@
 <div class="nav-item dropdown">
   <button type="button"
           class="btn btn-sm dropdown-toggle {{ vm.value == 'free_to_help' ? 'btn-success' : (vm.value == 'not_available' ? 'btn-outline-danger' : 'btn-outline-secondary') }}"
-          data-bs-toggle="dropdown" aria-expanded="false" title="Operational status">
+          data-bs-toggle="dropdown" aria-expanded="false" title="{{ 'operational_status.title'|trans }}">
     {{ i.icon('activity', {class: 'icon-1 me-1'}) }}<span class="nav-status-label">{{ vm.label }}</span>
   </button>
   <div class="dropdown-menu dropdown-menu-end">
     {% if vm.freeToHelp %}
-      <span class="dropdown-header">Free to help until {{ vm.expiresAt|app_time }}</span>
+      <span class="dropdown-header">{{ 'operational_status.free_until'|trans({'%time%': vm.expiresAt|app_time}) }}</span>
       <form method="post" action="{{ path('app_operational_status_clear') }}">
         <input type="hidden" name="_op_token" value="{{ csrf_token('op_status') }}">
-        <button class="dropdown-item" type="submit">Stop being free to help</button>
+        <button class="dropdown-item" type="submit">{{ 'operational_status.action.stop'|trans }}</button>
       </form>
     {% else %}
-      <span class="dropdown-header">Set “Free to help” for…</span>
+      <span class="dropdown-header">{{ 'operational_status.set_for'|trans }}</span>
       {% for minutes in vm.durations %}
         <form method="post" action="{{ path('app_operational_status_set') }}">
           <input type="hidden" name="_op_token" value="{{ csrf_token('op_status') }}">
           <input type="hidden" name="minutes" value="{{ minutes }}">
           <button class="dropdown-item" type="submit">
-            {{ minutes >= 60 ? (minutes // 60) ~ (minutes // 60 > 1 ? ' hours' : ' hour') : minutes ~ ' minutes' }}
+            {% if minutes >= 60 %}{{ (minutes // 60 > 1 ? 'operational_status.duration.hours' : 'operational_status.duration.hour')|trans({'%count%': minutes // 60}) }}{% else %}{{ 'operational_status.duration.minutes'|trans({'%count%': minutes}) }}{% endif %}
           </button>
         </form>
       {% endfor %}

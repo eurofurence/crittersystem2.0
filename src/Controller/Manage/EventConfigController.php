@@ -10,6 +10,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/event-config')]
 #[IsGranted('config:event')]
@@ -40,9 +41,9 @@ final class EventConfigController extends AbstractController
             $this->store->set(EventConfigStore::KEY_DEFAULT_THEME, $data->defaultTheme ?: null);
             $this->store->flush();
 
-            $this->addFlash('success', 'Event configuration saved.');
+            $this->addFlash('success', new TranslatableMessage('manage.event_config.flash.saved'));
             if ($data->accessMode !== $previousMode && $data->accessMode !== 'public') {
-                $this->addFlash('info', 'Access mode tightened: users who no longer qualify are signed out on their next request.');
+                $this->addFlash('info', new TranslatableMessage('manage.event_config.flash.access_tightened'));
             }
 
             return $this->redirectToRoute('app_manage_event_config');

@@ -22,7 +22,7 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class BanAppealController extends AbstractController
 {
-    public const LEDGER_KEEPER = "We can't reach The Ledger-Keeper right now — he seems to be on vacation.";
+    public const LEDGER_KEEPER = "We can't reach The Ledger-Keeper right now - he seems to be on vacation.";
 
     public function __construct(
         private readonly BanChecker $bans,

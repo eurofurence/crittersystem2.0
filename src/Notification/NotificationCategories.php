@@ -17,6 +17,7 @@ final class NotificationCategories
     public const CHECKIN_REQUIRED = 'checkin_required';
     public const SECURITY = 'security';
     public const INFO_DESK = 'info_desk';
+    public const MANAGER_ALERT = 'manager_alert';
     public const GENERAL = 'general';
 
     /** @var array<string, array{0: string, 1: bool, 2: bool}> category => [label, system, inAppOnly] */
@@ -28,6 +29,11 @@ final class NotificationCategories
         self::CHECKIN_REQUIRED => ['Required check-in', true, false],
         self::SECURITY => ['Security event', true, false],
         self::INFO_DESK => ['Info Desk support', true, true],
+        // Operational alerts to the manager of a shift (e.g. it is understaffed).
+        // Distinct from CALL_FOR_HELP, which is a broadcast asking volunteers to
+        // step in: a manager must be able to mute that broadcast without also
+        // losing the alerts about their own shifts.
+        self::MANAGER_ALERT => ['Manager alert', false, false],
         self::GENERAL => ['General', false, false],
     ];
 

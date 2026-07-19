@@ -29,7 +29,7 @@ final class CertificationScanController extends AbstractController
         $certToken = $this->service->findActiveToken($token);
         if ($certToken === null) {
             return $this->render('certification/scan_error.html.twig', [
-                'message' => 'This QR code is invalid or has expired — ask the operator to refresh it.',
+                'message' => 'certification.scan.invalid_or_expired',
             ], new Response('', Response::HTTP_NOT_FOUND));
         }
 

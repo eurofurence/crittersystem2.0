@@ -10,8 +10,8 @@ namespace App\Audit;
  * It lays plain text out across A4 pages using the standard Helvetica font, and
  * emits a structurally valid PDF. This produces a fixed, presentable document
  * for non-technical readers; the machine-readable JSON remains the authoritative
- * forensic artifact. (Strict PDF/A-1b conformance — font embedding, output
- * intent — is intentionally out of scope here.)
+ * forensic artifact. (Strict PDF/A-1b conformance - font embedding, output
+ * intent - is intentionally out of scope here.)
  */
 final class PdfDocument
 {

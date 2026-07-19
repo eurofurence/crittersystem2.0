@@ -28,26 +28,26 @@ final class AccountSettingsType extends AbstractType
         $date = ['widget' => 'single_text', 'required' => false, 'input' => 'datetime_immutable', 'html5' => true];
 
         $builder
-            ->add('pronoun', TextType::class, ['required' => false, 'label' => 'Pronouns'])
-            ->add('firstName', TextType::class, ['required' => false, 'disabled' => !$nameEditable])
-            ->add('lastName', TextType::class, ['required' => false, 'disabled' => !$nameEditable])
-            ->add('mobile', TextType::class, ['required' => false, 'label' => 'Mobile'])
-            ->add('plannedArrivalDate', DateType::class, ['label' => 'Planned arrival'] + $date)
-            ->add('plannedDepartureDate', DateType::class, ['label' => 'Planned departure'] + $date)
+            ->add('pronoun', TextType::class, ['required' => false, 'label' => 'settings.field.pronoun.label'])
+            ->add('firstName', TextType::class, ['required' => false, 'disabled' => !$nameEditable, 'label' => 'settings.field.first_name.label'])
+            ->add('lastName', TextType::class, ['required' => false, 'disabled' => !$nameEditable, 'label' => 'settings.field.last_name.label'])
+            ->add('mobile', TextType::class, ['required' => false, 'label' => 'settings.field.mobile.label'])
+            ->add('plannedArrivalDate', DateType::class, ['label' => 'settings.field.planned_arrival.label'] + $date)
+            ->add('plannedDepartureDate', DateType::class, ['label' => 'settings.field.planned_departure.label'] + $date)
             ->add('language', ChoiceType::class, [
-                'choices' => ['English' => 'en_US', 'Deutsch' => 'de_DE'],
-                'label' => 'Language',
+                'choices' => ['settings.language.option.en' => 'en_US', 'settings.language.option.de' => 'de_DE'],
+                'label' => 'settings.field.language.label',
             ])
             ->add('theme', ChoiceType::class, [
                 'required' => false,
-                'placeholder' => 'System default',
+                'placeholder' => 'settings.theme.system_default',
                 'choices' => $this->themes->choices(),
-                'label' => 'Theme',
+                'label' => 'settings.theme.label',
             ])
             ->add('avatar', FileType::class, [
                 'required' => false,
                 'mapped' => false,
-                'label' => 'Profile picture',
+                'label' => 'settings.field.avatar.label',
                 'constraints' => [
                     new Assert\Image(maxSize: '2M', mimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif']),
                 ],
@@ -55,11 +55,11 @@ final class AccountSettingsType extends AbstractType
 
         if ($passwordChangeable) {
             $builder
-                ->add('currentPassword', PasswordType::class, ['required' => false, 'mapped' => false, 'label' => 'Current password'])
+                ->add('currentPassword', PasswordType::class, ['required' => false, 'mapped' => false, 'label' => 'settings.field.current_password.label'])
                 ->add('newPassword', PasswordType::class, [
                     'required' => false,
                     'mapped' => false,
-                    'label' => 'New password',
+                    'label' => 'settings.field.new_password.label',
                     'constraints' => [new Assert\Length(min: 8, max: 4096)],
                 ]);
         }

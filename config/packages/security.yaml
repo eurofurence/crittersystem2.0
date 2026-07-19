@@ -10,7 +10,7 @@ security:
 
     # Core role ladder. ROLE_ADMIN has full, unrestricted access, so it
     # reaches every role-gated route; ROLE_SUBADMIN is one step below, etc. This
-    # only covers ROLE_* attribute checks — fine-grained permissions go through
+    # only covers ROLE_* attribute checks - fine-grained permissions go through
     # App\Security\PrivilegeVoter, which also treats ROLE_ADMIN as a super-role.
     role_hierarchy:
         ROLE_ADMIN: [ROLE_SUBADMIN, ROLE_STAFF, ROLE_USER]
@@ -22,6 +22,15 @@ security:
             # Ensure dev tools and static assets are always allowed
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
+        api_bot:
+            # Telegram bot surface. Must stay ABOVE the ^/api firewall, which would
+            # otherwise match first and authenticate the bearer token as a user API
+            # key. Here the token identifies the *bot*; the acting volunteer comes
+            # from the X-Acting-User header (App\Security\Bot\ActingUserResolver).
+            pattern: ^/api/bot
+            stateless: true
+            custom_authenticators:
+                - App\Security\Bot\BotTokenAuthenticator
         api:
             # Stateless API-key firewall (Bearer / X-API-Key / ?key=).
             pattern: ^/api
@@ -49,10 +58,14 @@ security:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/unavailable$, roles: PUBLIC_ACCESS } # "system restricted" notice for access-mode-gated users
         - { path: ^/$, roles: PUBLIC_ACCESS }     # site root redirects (guest -> login, user -> dashboard)
+        # Must precede ^/api: the bot surface is never public. Without this the
+        # PUBLIC_ACCESS rule below would match it, and a request carrying no
+        # Authorization header would never reach the authenticator at all.
+        - { path: ^/api/bot, roles: IS_AUTHENTICATED_FULLY }
         - { path: ^/api, roles: PUBLIC_ACCESS }   # authorization is enforced per endpoint by the API controllers
-        - { path: ^/digital-id/verify, roles: PUBLIC_ACCESS } # scannable digital ID — no login required
-        - { path: ^/unsubscribe/, roles: PUBLIC_ACCESS } # one-click email unsubscribe — no login required
-        - { path: ^/invite/, roles: PUBLIC_ACCESS } # account invitation acceptance — signs the user in
+        - { path: ^/digital-id/verify, roles: PUBLIC_ACCESS } # scannable digital ID - no login required
+        - { path: ^/unsubscribe/, roles: PUBLIC_ACCESS } # one-click email unsubscribe - no login required
+        - { path: ^/invite/, roles: PUBLIC_ACCESS } # account invitation acceptance - signs the user in
         - { path: ^/erase/, roles: PUBLIC_ACCESS } # erasure confirmation from emailed link
         - { path: ^/appeal, roles: PUBLIC_ACCESS } # ban appeal ("The Ledger-Keeper")
         - { path: ^/telegram/dummy, roles: PUBLIC_ACCESS } # dev/test dummy bot callback (404 in prod)

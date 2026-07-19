@@ -10,7 +10,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Theme development/preview page. Shows a broad
- * Bootstrap component showcase that picks up the active theme — append
+ * Bootstrap component showcase that picks up the active theme - append
  * `?theme=<slug>` to switch without saving. Use this to author and check
  * new theme CSS files in `assets/themes/`.
  */

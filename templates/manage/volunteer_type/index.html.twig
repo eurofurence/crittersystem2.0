@@ -1,31 +1,31 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Volunteer Types{% endblock %}
+{% block title %}{{ 'manage.volunteer_type.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Volunteer Types', {
-    subtitle: 'Role categories volunteers can join.',
+  {{ d.page_header('manage.volunteer_type.page.title'|trans, {
+    subtitle: 'manage.volunteer_type.page.subtitle'|trans,
     actions: [
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New volunteer type', href: path('app_manage_volunteer_type_new'), class: 'btn btn-primary'}
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.volunteer_type.action.new'|trans, href: path('app_manage_volunteer_type_new'), class: 'btn btn-primary'}
     ]
   }) }}
 
   {% if volunteerTypes is empty %}
-    {{ d.empty_state('No volunteer types yet', {
-      message: 'Create the first volunteer type so people can join it.',
-      actionLabel: '+ New volunteer type',
+    {{ d.empty_state('manage.volunteer_type.empty.title'|trans, {
+      message: 'manage.volunteer_type.empty.message'|trans,
+      actionLabel: 'manage.volunteer_type.action.new'|trans,
       actionHref: path('app_manage_volunteer_type_new')
     }) }}
   {% else %}
     {{ d.table_start() }}
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Contact</th>
-          <th>Flags</th>
-          <th class="text-end">Actions</th>
+          <th>{{ 'common.label.name'|trans }}</th>
+          <th>{{ 'manage.volunteer_type.table.contact'|trans }}</th>
+          <th>{{ 'manage.volunteer_type.table.flags'|trans }}</th>
+          <th class="text-end">{{ 'common.label.actions'|trans }}</th>
         </tr>
       </thead>
       <tbody>
@@ -36,26 +36,26 @@
               {% if vt.description %}<div class="text-muted small">{{ vt.description }}</div>{% endif %}
             </td>
             <td class="small">
-              {{ vt.contactName ?: '—' }}
-              {% if vt.contactPhone %}<div class="text-muted">Phone {{ vt.contactPhone }}</div>{% endif %}
+              {{ vt.contactName ?: '-' }}
+              {% if vt.contactPhone %}<div class="text-muted">{{ 'manage.volunteer_type.label.phone'|trans({'%phone%': vt.contactPhone}) }}</div>{% endif %}
               {% if vt.contactEmail %}<div class="text-muted">{{ vt.contactEmail }}</div>{% endif %}
             </td>
             <td>
               <div class="d-flex flex-wrap gap-1">
-                {% if vt.restricted %}{{ d.badge('Restricted', 'text-bg-warning') }}{% endif %}
-                {% if vt.shiftSelfSignup %}{{ d.badge('Self-signup', 'text-bg-info') }}{% endif %}
-                {% if vt.showOnDashboard %}{{ d.badge('Dashboard', 'text-bg-secondary') }}{% endif %}
-                {% if vt.staffOnly %}{{ d.badge('Staff only', 'text-bg-dark') }}{% endif %}
+                {% if vt.restricted %}{{ d.badge('manage.volunteer_type.badge.restricted'|trans, 'text-bg-warning') }}{% endif %}
+                {% if vt.shiftSelfSignup %}{{ d.badge('manage.volunteer_type.badge.self_signup'|trans, 'text-bg-info') }}{% endif %}
+                {% if vt.showOnDashboard %}{{ d.badge('manage.volunteer_type.badge.dashboard'|trans, 'text-bg-secondary') }}{% endif %}
+                {% if vt.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'text-bg-dark') }}{% endif %}
               </div>
             </td>
             {% set del %}
               {{ d.delete_form(path('app_manage_volunteer_type_delete', {id: vt.uuid}), csrf_token('delete' ~ vt.id), {
-                message: 'Delete volunteer type "' ~ vt.name ~ '"?'
+                message: 'manage.volunteer_type.confirm.delete'|trans({'%name%': vt.name})
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'Members', href: path('app_manage_vt_members', {id: vt.uuid}), class: 'btn btn-sm btn-outline-secondary'},
-              {label: 'Edit', href: path('app_manage_volunteer_type_edit', {id: vt.uuid})}
+              {label: 'common.label.members'|trans, href: path('app_manage_vt_members', {id: vt.uuid}), class: 'btn btn-sm btn-outline-secondary'},
+              {label: 'common.action.edit'|trans, href: path('app_manage_volunteer_type_edit', {id: vt.uuid})}
             ], {extraHtml: del}) }}
           </tr>
         {% endfor %}

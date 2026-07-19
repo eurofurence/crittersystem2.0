@@ -32,21 +32,21 @@
 
           <div class="d-flex flex-wrap gap-3 text-secondary">
             {% if u.personalData and u.personalData.badgeNumber %}
-              <div><span class="text-muted">Registration number:</span> {{ u.personalData.badgeNumber }}</div>
+              <div><span class="text-muted">{{ 'profile.field.registration_number'|trans }}:</span> {{ u.personalData.badgeNumber }}</div>
             {% endif %}
-            <div><span class="text-muted">Status:</span> {{ header.status }}</div>
-            <div><span class="text-muted">Planned arrival:</span> {{ header.plannedArrival ? header.plannedArrival|app_date : '—' }}</div>
-            <div><span class="text-muted">Checked in:</span>
-              {{ header.arrived ? (header.arrivalDate ? header.arrivalDate|app_datetime : 'Yes') : 'Not yet' }}
+            <div><span class="text-muted">{{ 'common.label.status'|trans }}:</span> {{ header.status }}</div>
+            <div><span class="text-muted">{{ 'profile.field.planned_arrival'|trans }}:</span> {{ header.plannedArrival ? header.plannedArrival|app_date : '-' }}</div>
+            <div><span class="text-muted">{{ 'profile.field.checked_in'|trans }}:</span>
+              {{ header.arrived ? (header.arrivalDate ? header.arrivalDate|app_datetime : 'common.state.yes'|trans) : 'profile.value.not_yet'|trans }}
             </div>
-            <div><span class="text-muted">Next shift:</span> {{ header.nextShiftAt ? header.nextShiftAt|app_datetime : '—' }}</div>
-            <div><span class="text-muted">Total shifts:</span> {{ header.totalShifts }}</div>
+            <div><span class="text-muted">{{ 'profile.field.next_shift'|trans }}:</span> {{ header.nextShiftAt ? header.nextShiftAt|app_datetime : '-' }}</div>
+            <div><span class="text-muted">{{ 'profile.field.total_shifts'|trans }}:</span> {{ header.totalShifts }}</div>
           </div>
         </div>
 
         <div>
           {% if isSelf %}
-            <a href="{{ path('app_settings') }}" class="btn btn-outline-secondary">Settings</a>
+            <a href="{{ path('app_settings') }}" class="btn btn-outline-secondary">{{ 'ui.user_menu.settings'|trans }}</a>
           {% endif %}
         </div>
       </div>
@@ -56,20 +56,20 @@
     <div class="col-12">
       {% set workHistoryActions %}
           {% if canAddWorklog %}
-            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#add-worklog-modal">Add worklog</button>
+            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#add-worklog-modal">{{ 'profile.action.add_worklog'|trans }}</button>
           {% endif %}
       {% endset %}
-      {{ d.card_start('Work history', {class: '', bodyClass: '', headerActions: workHistoryActions}) }}
+      {{ d.card_start('profile.card.work_history'|trans, {class: '', bodyClass: '', headerActions: workHistoryActions}) }}
         {% if workHistory is null %}
-          <div class="card-body text-secondary">You do not have permission to view this user's shift history.</div>
+          <div class="card-body text-secondary">{{ 'profile.work_history.no_permission'|trans }}</div>
         {% elseif workHistory is empty %}
-          {{ d.empty_state('No work yet', {message: 'Shifts and worklog entries will appear here.'}) }}
+          {{ d.empty_state('profile.empty.work.title'|trans, {message: 'profile.empty.work.message'|trans}) }}
         {% else %}
           {{ d.table_start() }}
             <thead>
               <tr>
-                <th>Date</th><th>Time</th><th>Duration</th><th>Location</th>
-                <th>Volunteer Type</th><th>Status</th><th class="text-end">Rewarded</th>
+                <th>{{ 'profile.table.date'|trans }}</th><th>{{ 'profile.table.time'|trans }}</th><th>{{ 'profile.table.duration'|trans }}</th><th>{{ 'common.label.location'|trans }}</th>
+                <th>{{ 'profile.table.volunteer_type'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th class="text-end">{{ 'profile.table.rewarded'|trans }}</th>
                 {% if isSelf %}<th></th>{% endif %}
               </tr>
             </thead>
@@ -80,13 +80,13 @@
                   <td>
                     {% if r.kind == 'shift' %}{{ r.start|app_time }}–{{ r.end|app_time }}{% else %}{{ r.start|app_time }}{% endif %}
                   </td>
-                  <td>{% if r.kind == 'shift' %}{{ r.duration|round(2) }}h{% else %}—{% endif %}</td>
-                  <td>{{ r.kind == 'shift' ? (r.location ?? '—') : '—' }}</td>
+                  <td>{% if r.kind == 'shift' %}{{ r.duration|round(2) }}h{% else %}-{% endif %}</td>
+                  <td>{{ r.kind == 'shift' ? (r.location ?? '-') : '-' }}</td>
                   <td>
                     {% if r.kind == 'shift' %}
                       {{ r.volunteerType.name }}
                     {% else %}
-                      {{ d.badge('Worklog' ~ (r.creator ? ' · by ' ~ r.creator : ''), 'bg-azure-lt') }}
+                      {{ d.badge(r.creator ? 'profile.worklog.by'|trans({'%name%': r.creator}) : 'profile.worklog.label'|trans, 'bg-azure-lt') }}
                     {% endif %}
                   </td>
                   <td>
@@ -96,14 +96,14 @@
                   {% if isSelf %}
                     <td class="text-end text-nowrap">
                       {% if r.kind == 'worklog' and r.editable %}
-                        <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_worklog_self_edit', {id: r.worklogUuid}) }}">Edit</a>
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_worklog_self_edit', {id: r.worklogUuid}) }}">{{ 'common.action.edit'|trans }}</a>
                         <form method="post" action="{{ path('app_worklog_self_delete', {id: r.worklogUuid}) }}" class="d-inline"
-                              data-controller="confirm" data-confirm-message-value="Delete this worklog entry?">
+                              data-controller="confirm" data-confirm-message-value="{{ 'profile.confirm.delete_worklog'|trans }}">
                           <input type="hidden" name="_token" value="{{ csrf_token('worklog-delete-' ~ r.worklogUuid) }}">
-                          <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
+                          <button class="btn btn-sm btn-outline-danger" type="submit">{{ 'common.action.delete'|trans }}</button>
                         </form>
                       {% elseif r.kind == 'worklog' %}
-                        <span class="text-secondary small" title="Recorded by {{ r.creator }}">Locked — contact {{ r.creator }}</span>
+                        <span class="text-secondary small" title="{{ 'profile.worklog.recorded_by'|trans({'%name%': r.creator}) }}">{{ 'profile.worklog.locked'|trans({'%name%': r.creator}) }}</span>
                       {% endif %}
                     </td>
                   {% endif %}
@@ -116,13 +116,13 @@
     </div>
 
     <div class="col-12 col-lg-6">
-      {{ d.card_start('Volunteer Types', {class: 'h-100'}) }}
+      {{ d.card_start('profile.card.volunteer_types'|trans, {class: 'h-100'}) }}
           {% if memberships is empty %}
-            {{ d.empty_inline('No memberships.', {tag: 'div', class: 'text-secondary'}) }}
+            {{ d.empty_inline('profile.empty.memberships'|trans, {tag: 'div', class: 'text-secondary'}) }}
           {% else %}
             {% for m in memberships %}
               {{ d.badge(
-                m.type.name ~ (m.confirmed ? '' : ' (pending)'),
+                m.confirmed ? m.type.name : 'profile.membership.pending'|trans({'%name%': m.type.name}),
                 m.confirmed ? 'bg-green-lt' : 'bg-yellow-lt',
                 {class: 'me-1 mb-1'}
               ) }}
@@ -133,19 +133,19 @@
 
     {% if goodies is not null %}
       <div class="col-12 col-lg-6">
-        {% set goodiesActions %}<span class="text-secondary">{{ goodies.hours|round(1) }}h credited</span>{% endset %}
-        {{ d.card_start('Goodies', {class: 'h-100', headerActions: goodiesActions}) }}
+        {% set goodiesActions %}<span class="text-secondary">{{ 'profile.goodies.credited'|trans({'%hours%': goodies.hours|round(1)}) }}</span>{% endset %}
+        {{ d.card_start('profile.card.goodies'|trans, {class: 'h-100', headerActions: goodiesActions}) }}
             <div class="mb-2">
-              <div class="fw-bold small text-uppercase text-muted">Claimable now</div>
-              {% for r in goodies.eligible %}{{ d.badge(r.item.name, 'bg-green-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('None yet.', {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
+              <div class="fw-bold small text-uppercase text-muted">{{ 'profile.goodies.claimable_now'|trans }}</div>
+              {% for r in goodies.eligible %}{{ d.badge(r.item.name, 'bg-green-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('profile.empty.none_yet'|trans, {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
             </div>
             <div class="mb-2">
-              <div class="fw-bold small text-uppercase text-muted">Next targets</div>
-              {% for r in goodies.pending %}{{ d.badge(r.item.name ~ ' (+' ~ r.gap|round(1) ~ 'h)', 'bg-secondary-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('None.', {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
+              <div class="fw-bold small text-uppercase text-muted">{{ 'profile.goodies.next_targets'|trans }}</div>
+              {% for r in goodies.pending %}{{ d.badge('profile.goodies.gap'|trans({'%name%': r.item.name, '%hours%': r.gap|round(1)}), 'bg-secondary-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('profile.empty.none'|trans, {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
             </div>
             <div>
-              <div class="fw-bold small text-uppercase text-muted">Collected</div>
-              {% for r in goodies.claimed %}{{ d.badge(r.item.name ~ ' ×' ~ r.claimed, 'bg-blue-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('None.', {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
+              <div class="fw-bold small text-uppercase text-muted">{{ 'profile.goodies.collected'|trans }}</div>
+              {% for r in goodies.claimed %}{{ d.badge('profile.goodies.claimed'|trans({'%name%': r.item.name, '%count%': r.claimed}), 'bg-blue-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('profile.empty.none'|trans, {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
             </div>
         {{ d.card_end() }}
       </div>
@@ -153,20 +153,20 @@
   </div>
 
   {% if banReview is not null %}
-    {{ d.card_start('Ban & no-show review', {class: 'mt-3 border-danger'}) }}
-        <p>No-shows counting toward the ban threshold: <strong>{{ banReview.count }}</strong> / {{ banReview.threshold }}</p>
+    {{ d.card_start('profile.card.ban_review'|trans, {class: 'mt-3 border-danger'}) }}
+        <p>{{ 'profile.ban.threshold_label'|trans }} <strong>{{ banReview.count }}</strong> / {{ banReview.threshold }}</p>
         {% if banReview.bans is empty %}
-          {{ d.empty_inline('No ban history.', {tag: 'div', class: 'text-secondary'}) }}
+          {{ d.empty_inline('profile.empty.ban_history'|trans, {tag: 'div', class: 'text-secondary'}) }}
         {% else %}
           {{ d.table_start() }}
-            <thead><tr><th>Banned at</th><th>Reason</th><th>Origin</th><th>Appeal</th></tr></thead>
+            <thead><tr><th>{{ 'profile.table.banned_at'|trans }}</th><th>{{ 'common.label.reason'|trans }}</th><th>{{ 'profile.table.origin'|trans }}</th><th>{{ 'profile.table.appeal'|trans }}</th></tr></thead>
             <tbody>
               {% for b in banReview.bans %}
                 <tr>
                   <td class="small">{{ b.bannedAt|app_datetime }}</td>
-                  <td class="small">{{ b.reason ?? '—' }}</td>
-                  <td>{% if b.automatic %}{{ d.badge('Automatic', 'bg-red-lt') }}{% else %}{{ d.badge('Manual', 'bg-secondary-lt') }}{% endif %}</td>
-                  <td>{{ b.appeal ? 'Yes' : '—' }}</td>
+                  <td class="small">{{ b.reason ?? '-' }}</td>
+                  <td>{% if b.automatic %}{{ d.badge('common.state.automatic'|trans, 'bg-red-lt') }}{% else %}{{ d.badge('common.state.manual'|trans, 'bg-secondary-lt') }}{% endif %}</td>
+                  <td>{{ b.appeal ? 'common.state.yes'|trans : '-' }}</td>
                 </tr>
               {% endfor %}
             </tbody>
@@ -180,27 +180,27 @@
       <div class="modal-dialog">
         <form class="modal-content" method="post" action="{{ path('app_worklog_self_create') }}">
           <div class="modal-header">
-            <h5 class="modal-title">Add worklog hours</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <h5 class="modal-title">{{ 'profile.worklog_modal.title'|trans }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'ui.aria.close'|trans }}"></button>
           </div>
           <div class="modal-body">
             <input type="hidden" name="worklog_self[_token]" value="{{ csrf_token('worklog_self') }}">
             <div class="mb-3">
-              <label class="form-label" for="wl-hours">Hours</label>
+              <label class="form-label" for="wl-hours">{{ 'profile.worklog_modal.hours'|trans }}</label>
               <input class="form-control" id="wl-hours" type="number" step="0.25" min="0" name="worklog_self[hours]" required>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="wl-when">Worked at</label>
+              <label class="form-label" for="wl-when">{{ 'profile.worklog_modal.worked_at'|trans }}</label>
               <input class="form-control" id="wl-when" type="datetime-local" name="worklog_self[workedAt]" required>
             </div>
             <div class="mb-3">
-              <label class="form-label" for="wl-comment">Comment</label>
+              <label class="form-label" for="wl-comment">{{ 'profile.worklog_modal.comment'|trans }}</label>
               <textarea class="form-control" id="wl-comment" name="worklog_self[comment]" rows="2"></textarea>
             </div>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
-            <button type="submit" class="btn btn-primary">Add</button>
+            <button type="button" class="btn btn-link" data-bs-dismiss="modal">{{ 'common.action.cancel'|trans }}</button>
+            <button type="submit" class="btn btn-primary">{{ 'common.action.add'|trans }}</button>
           </div>
         </form>
       </div>

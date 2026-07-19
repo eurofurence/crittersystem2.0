@@ -1,39 +1,39 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Bans{% endblock %}
+{% block title %}{{ 'manage.ban.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Bans', {
-    subtitle: 'Automatic (no-show) and manual bans. Lifting a behavioural ban resets the no-show counter.',
-    actions: [{label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('manage.ban.page.title'|trans, {
+    subtitle: 'manage.ban.page.subtitle'|trans,
+    actions: [{label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if bans is empty %}
-    {{ d.empty_state('No bans', {message: 'There are no active bans.'}) }}
+    {{ d.empty_state('manage.ban.empty.title'|trans, {message: 'manage.ban.empty.message'|trans}) }}
   {% else %}
     {{ d.table_start() }}
       <thead><tr>
-        <th>User</th><th>Type</th><th>Reason</th><th>Origin</th><th>Banned at</th><th>Appeal</th><th class="text-end">Action</th>
+        <th>{{ 'common.label.user'|trans }}</th><th>{{ 'common.label.type'|trans }}</th><th>{{ 'common.label.reason'|trans }}</th><th>{{ 'manage.ban.table.origin'|trans }}</th><th>{{ 'manage.ban.table.banned_at'|trans }}</th><th>{{ 'manage.ban.table.appeal'|trans }}</th><th class="text-end">{{ 'manage.ban.table.action'|trans }}</th>
       </tr></thead>
       <tbody>
         {% for b in bans %}
           <tr>
             <td>
-              {% if b.user %}<a href="{{ path('app_profile_show', {id: b.user.uuid}) }}">{{ b.user.name }}</a>{% else %}<span class="text-secondary">(hashed)</span>{% endif %}
+              {% if b.user %}<a href="{{ path('app_profile_show', {id: b.user.uuid}) }}">{{ b.user.name }}</a>{% else %}<span class="text-secondary">{{ 'manage.ban.hashed'|trans }}</span>{% endif %}
             </td>
             <td>{{ b.hashType }}</td>
-            <td class="small">{{ b.reason ?? '—' }}{% if b.noShowCount is not null %} <span class="text-secondary">({{ b.noShowCount }} no-shows)</span>{% endif %}</td>
+            <td class="small">{{ b.reason ?? '-' }}{% if b.noShowCount is not null %} <span class="text-secondary">{{ 'manage.ban.no_show_count'|trans({'%count%': b.noShowCount}) }}</span>{% endif %}</td>
             <td>
-              {% if b.automatic %}{{ d.badge('Automatic', 'bg-red-lt') }}{% else %}{{ d.badge('Manual', 'bg-secondary-lt') }}{% endif %}
+              {% if b.automatic %}{{ d.badge('common.state.automatic'|trans, 'bg-red-lt') }}{% else %}{{ d.badge('common.state.manual'|trans, 'bg-secondary-lt') }}{% endif %}
             </td>
             <td class="small">{{ b.bannedAt|app_datetime }}</td>
-            <td class="small">{{ b.appeal ? (b.appealRequestedAt|app_datetime) : '—' }}</td>
+            <td class="small">{{ b.appeal ? (b.appealRequestedAt|app_datetime) : '-' }}</td>
             <td class="text-end">
               <form method="post" action="{{ path('app_manage_ban_lift', {id: b.uuid}) }}" class="d-inline"
-                    data-controller="confirm" data-confirm-message-value="Lift this ban?">
+                    data-controller="confirm" data-confirm-message-value="{{ 'manage.ban.confirm.lift'|trans }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('lift' ~ b.id) }}">
-                <button class="btn btn-sm btn-outline-success">Lift ban</button>
+                <button class="btn btn-sm btn-outline-success">{{ 'manage.ban.action.lift'|trans }}</button>
               </form>
             </td>
           </tr>

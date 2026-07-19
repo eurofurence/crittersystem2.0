@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Member management for a volunteer type. Open to holders of
@@ -51,7 +52,7 @@ final class VolunteerTypeMembersController extends AbstractController
             $actor = $this->getUser();
             $membership->setConfirmedBy($actor);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Confirmed %s.', $membership->getUser()->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.volunteer_type.members.flash.confirmed', ['%name%' => $membership->getUser()->getName()]));
         }
 
         return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getUuid()]);
@@ -72,7 +73,9 @@ final class VolunteerTypeMembersController extends AbstractController
             }
             $membership->setSupporter(!$membership->isSupporter());
             $this->em->flush();
-            $this->addFlash('success', \sprintf('%s is %s a supporter.', $membership->getUser()->getName(), $membership->isSupporter() ? 'now' : 'no longer'));
+            $this->addFlash('success', $membership->isSupporter()
+                ? new TranslatableMessage('manage.volunteer_type.members.flash.now_supporter', ['%name%' => $membership->getUser()->getName()])
+                : new TranslatableMessage('manage.volunteer_type.members.flash.not_supporter', ['%name%' => $membership->getUser()->getName()]));
         }
 
         return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getUuid()]);
@@ -88,7 +91,7 @@ final class VolunteerTypeMembersController extends AbstractController
             $name = $membership->getUser()->getName();
             $this->em->remove($membership);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Removed %s.', $name));
+            $this->addFlash('success', new TranslatableMessage('manage.volunteer_type.members.flash.removed', ['%name%' => $name]));
         }
 
         return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getUuid()]);

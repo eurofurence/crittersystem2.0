@@ -173,7 +173,7 @@ final class SsoMappingImporter
         return trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($value)) ?? '', '-');
     }
 
-    /** "art-show" => "Art Show" — a readable default department name. */
+    /** "art-show" => "Art Show" - a readable default department name. */
     private function humanizeSlug(string $slug): string
     {
         return ucwords(str_replace('-', ' ', $slug));

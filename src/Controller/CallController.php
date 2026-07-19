@@ -13,6 +13,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Global Call for Help and the Bounty Board. Managers/Info
@@ -41,14 +42,14 @@ final class CallController extends AbstractController
 
         $me = $this->getUser();
         if (!$this->calls->canTriggerNow($me, $shift, $me->isInfoDesk())) {
-            $this->addFlash('warning', 'A call cannot be triggered for this shift yet.');
+            $this->addFlash('warning', new TranslatableMessage('call.flash.cannot_trigger'));
 
             return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
         }
 
         $slots = max(1, $request->request->getInt('slots', 1));
         $this->calls->trigger($shift, $me, $slots);
-        $this->addFlash('success', 'Call for help sent.');
+        $this->addFlash('success', new TranslatableMessage('call.flash.sent'));
 
         return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
     }
@@ -59,7 +60,7 @@ final class CallController extends AbstractController
     {
         if ($this->isCsrfTokenValid('call_cancel'.$call->getId(), (string) $request->request->get('_token'))) {
             $this->calls->cancel($call);
-            $this->addFlash('success', 'Call cancelled.');
+            $this->addFlash('success', new TranslatableMessage('call.flash.cancelled'));
         }
 
         return $this->redirectToRoute('app_shift_staffing', ['id' => $call->getShift()->getUuid()]);
@@ -98,7 +99,7 @@ final class CallController extends AbstractController
         if ($this->isCsrfTokenValid('call_respond'.$call->getId(), (string) $request->request->get('_token'))) {
             try {
                 $this->calls->accept($call, $me);
-                $this->addFlash('success', \sprintf('You accepted "%s". Thank you!', $call->getShift()->getTitle()));
+                $this->addFlash('success', new TranslatableMessage('call.flash.accepted', ['%title%' => $call->getShift()->getTitle()]));
             } catch (\RuntimeException $e) {
                 $this->addFlash('warning', $e->getMessage());
             }

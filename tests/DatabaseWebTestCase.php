@@ -11,8 +11,8 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
  * need a real database. Same guarantees as {@see DatabaseTestCase}: the test is
  * skipped when no database is reachable, and starts from an empty one.
  *
- * Reboot is disabled on the client so the kernel booted here — and with it the
- * EntityManager the test writes its fixtures through — stays the one serving the
+ * Reboot is disabled on the client so the kernel booted here - and with it the
+ * EntityManager the test writes its fixtures through - stays the one serving the
  * requests.
  */
 abstract class DatabaseWebTestCase extends WebTestCase

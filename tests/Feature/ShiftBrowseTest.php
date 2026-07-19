@@ -8,7 +8,7 @@ use App\Tests\Support\ShiftScenario;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
- * /shifts — the volunteer-facing shift browser.
+ * /shifts - the volunteer-facing shift browser.
  *
  * Covers the card loop end to end (statuses, availability, sign-up controls, filters) with real
  * shifts in the database; a regression here is invisible to any test that renders the page empty.

@@ -30,7 +30,7 @@ enum AvailabilityValue: string
         };
     }
 
-    /** Lower is more willing — used to rank soft constraints. */
+    /** Lower is more willing - used to rank soft constraints. */
     public function rank(): int
     {
         return match ($this) {

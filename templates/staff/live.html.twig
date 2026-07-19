@@ -2,26 +2,26 @@
 {% import 'components/data/_macros.twig' as d %}
 {% import 'components/notification/_macros.twig' as n %}
 
-{% block title %}Live Status{% endblock %}
+{% block title %}{{ 'staff.live.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Live Status', {
-    subtitle: 'Who is on duty right now.',
-    actions: [{label: '← Staff overview', href: path('app_staff_overview'), class: 'btn btn-outline-secondary'}]
+  {{ d.page_header('staff.live.page.title'|trans, {
+    subtitle: 'staff.live.page.subtitle'|trans,
+    actions: [{label: 'staff.action.back_overview'|trans, href: path('app_staff_overview'), class: 'btn btn-outline-secondary'}]
   }) }}
 
   {% if understaffed is not empty %}
-    {{ n.alert('warning', 'No one is on duty in: ' ~ understaffed|map(dep => dep.name)|join(', '), {icon: '⚠️'}) }}
+    {{ n.alert('warning', 'staff.live.understaffed'|trans({'%departments%': understaffed|map(dep => dep.name)|join(', ')}), {icon: '⚠️'}) }}
   {% endif %}
 
   {% if byDepartment is empty %}
-    {{ d.empty_state('Nobody on duty', {message: 'No staff are currently on duty.'}) }}
+    {{ d.empty_state('staff.live.empty.title'|trans, {message: 'staff.live.empty.message'|trans}) }}
   {% else %}
     <div class="row g-3">
       {% for group in byDepartment %}
         <div class="col-12 col-md-6 col-lg-4">
-          {% set dutyCount %}{{ d.badge(group.records|length ~ ' on duty', 'text-bg-success') }}{% endset %}
-          {{ d.card_start(group.department ? group.department.name : 'No specific area', {
+          {% set dutyCount %}{{ d.badge('staff.live.on_duty_count'|trans({'%count%': group.records|length}), 'text-bg-success') }}{% endset %}
+          {{ d.card_start(group.department ? group.department.name : 'staff.live.no_specific_area'|trans, {
             class: 'h-100',
             bodyClass: '',
             titleTag: 'span',

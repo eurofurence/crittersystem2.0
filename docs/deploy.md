@@ -1,4 +1,4 @@
-# Critter 2.0 — Deployment Manual
+# Critter 2.0 - Deployment Manual
 
 This guide covers every supported way to deploy Critter 2.0 and explains the
 **safe, self-healing migration model** that backs all of them.
@@ -35,17 +35,17 @@ Four subsystems dispatch their work to the `async` transport and are written **o
 | `ChatMessage` / `SmsMessage`  | No notifications.                                       |
 
 **The failure is silent.** Without the worker the application serves normally, every action still
-dispatches its message, users see no error — and the messages simply accumulate in the
+dispatches its message, users see no error - and the messages simply accumulate in the
 `messenger_messages` table, unwritten. `audit_events` stays empty and nothing surfaces it.
 
 Nothing is _lost_ while the worker is down. The transport is `doctrine://default`, a durable
 PostgreSQL-backed buffer: messages persist across restarts, crashes and redeploys, and a worker that
-comes back resumes exactly where it stopped. A backlog is a delay, not a data loss — provided a
+comes back resumes exactly where it stopped. A backlog is a delay, not a data loss - provided a
 worker eventually runs.
 
 The worker is defined for you in `compose.prod.yaml`, `compose.dev.yaml` and `deploy/k8s/app.yaml`
-(a separate `critter-worker` Deployment). If you deploy some other way — bare metal, systemd,
-supervisor — **you must run it yourself**, with a restart-on-exit supervisor. `--time-limit` /
+(a separate `critter-worker` Deployment). If you deploy some other way - bare metal, systemd,
+supervisor - **you must run it yourself**, with a restart-on-exit supervisor. `--time-limit` /
 `--memory-limit` make the process exit periodically on purpose; the supervisor restarting it is how a
 long-lived PHP worker is recycled.
 
@@ -60,7 +60,7 @@ php bin/console app:audit:health     # exit 0 = healthy, 1 = the trail is not be
 
 It reports the backlog, the age of the oldest unconsumed message, anything in the failed transport,
 and the number of rows actually in `audit_events`. Run it on a schedule and **alert on a non-zero
-exit** — the k8s manifest ships a `critter-audit-health` CronJob that does exactly this. Thresholds
+exit** - the k8s manifest ships a `critter-audit-health` CronJob that does exactly this. Thresholds
 are tunable with `--max-backlog` and `--max-age`.
 
 Recovering a backlog is just running the worker; it drains what is waiting. Messages that failed
@@ -81,8 +81,8 @@ once. Critter 2.0 removes those failure modes:
 
 | Mechanism                                                   | What it guarantees                                                                                                                                                                      |
 | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Doctrine-native status**                                  | "Is a migration needed?" is always recomputed from the database vs. the shipped migration classes — there is **no marker file** that can drift out of sync after a crash.               |
-| **PostgreSQL advisory lock** (`app:migrate`)                | Only one process migrates at a time. The lock is held on the DB _session_, so if the migrating pod dies, PostgreSQL **releases it automatically** — no stale lock, no manual `--force`. |
+| **Doctrine-native status**                                  | "Is a migration needed?" is always recomputed from the database vs. the shipped migration classes - there is **no marker file** that can drift out of sync after a crash.               |
+| **PostgreSQL advisory lock** (`app:migrate`)                | Only one process migrates at a time. The lock is held on the DB _session_, so if the migrating pod dies, PostgreSQL **releases it automatically** - no stale lock, no manual `--force`. |
 | **All-or-nothing transaction** (`doctrine_migrations.yaml`) | An interrupted migration **rolls back as one unit**. PostgreSQL has transactional DDL, so the schema is never left half-migrated.                                                       |
 | **Idempotent + retried**                                    | Replicas that find nothing pending exit cleanly. Startup loops/initContainers **retry until success**, which also rides out "database not ready yet" races.                             |
 
@@ -111,7 +111,7 @@ GET /health  → 200 {"status":"ok","database":"up","migrationsPending":0}
   before any user exists). Leave `INSTALL_PASSWORD` empty to disable the wizard
   entirely and manage setup from the console.
 - When there is **nothing to do** (schema current, an admin exists),
-  `/admin/install` simply redirects back to the site — it is invisible in normal
+  `/admin/install` simply redirects back to the site - it is invisible in normal
   operation.
 
 ## Environment variables
@@ -139,22 +139,22 @@ Two features write ZIP archives: the **audit legal export** (a signed package, k
 They are not written and read by the same process. The GDPR archive is built by the **messenger
 worker**; the download is served by a **web** request. If `EXPORT_STORAGE_DSN` points at a directory
 that only one of them can see, the export is built successfully, the user is emailed a link, and the
-download then fails — because the file is on another container's disk.
+download then fails - because the file is on another container's disk.
 
 | Deployment                 | What to use                                                                                                            |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Single host, no containers | `local://var/exports` — one filesystem, nothing to do.                                                                 |
-| Docker Compose             | `local://var/exports` — `compose.prod.yaml` mounts the `export_data` volume into the app, worker and purge containers. |
-| **Kubernetes**             | **`s3://…` — required.** Pods share no filesystem; a `local://` DSN loses every archive at the next restart.           |
-| More than one app replica  | `s3://…` — required, for the same reason.                                                                              |
+| Single host, no containers | `local://var/exports` - one filesystem, nothing to do.                                                                 |
+| Docker Compose             | `local://var/exports` - `compose.prod.yaml` mounts the `export_data` volume into the app, worker and purge containers. |
+| **Kubernetes**             | **`s3://…` - required.** Pods share no filesystem; a `local://` DSN loses every archive at the next restart.           |
+| More than one app replica  | `s3://…` - required, for the same reason.                                                                              |
 
 Archives are private. They are only ever served through an authorization-checked controller, never
-from a public bucket URL — do not make the bucket public.
+from a public bucket URL - do not make the bucket public.
 
 ## Retention: schedule the purge
 
 Export archives must not accumulate. `app:gdpr:purge-exports` deletes GDPR archives once their
-24-hour window closes (data minimisation — the record is kept, the personal data is not), and
+24-hour window closes (data minimisation - the record is kept, the personal data is not), and
 `app:audit:purge-exports` deletes audit packages past their retention window. Both are idempotent, so
 a missed run catches up on the next one.
 
@@ -244,7 +244,7 @@ What happens on `up`:
    all-or-nothing, retried) and publishes compiled assets to the nginx volume.
 3. nginx serves the app on `http://localhost:${HTTP_PORT:-8080}`.
 
-Then create the first admin — either set `INSTALL_PASSWORD` and use the wizard at
+Then create the first admin - either set `INSTALL_PASSWORD` and use the wizard at
 `/admin/install`, or run it from the console:
 
 ```bash
@@ -263,7 +263,7 @@ Manifests live in `deploy/k8s/` (kustomize) and `deploy/argocd/`.
 ```text
 deploy/k8s/
   namespace.yaml      # critter namespace
-  secret.example.yaml # template — provide the real Secret out-of-band
+  secret.example.yaml # template - provide the real Secret out-of-band
   configmap.yaml      # nginx sidecar config (php-fpm over 127.0.0.1)
   postgres.yaml       # optional in-cluster PostgreSQL (use a managed DB in prod)
   app.yaml            # Deployment (initContainer migrate + app + nginx) + Service
@@ -278,7 +278,7 @@ Migration is run by an **initContainer** (`php bin/console app:migrate`):
 - It runs to completion before the app serves. With `replicas > 1`, the advisory
   lock means exactly one pod migrates and the others no-op.
 - If the database is not ready, the initContainer exits non-zero and Kubernetes
-  **retries it with back-off** until it succeeds — the rollout self-heals.
+  **retries it with back-off** until it succeeds - the rollout self-heals.
 - The main container sets `RUN_MIGRATIONS_ON_START=0` (migration already handled).
 
 Deploy directly:
@@ -363,8 +363,8 @@ deploy to keep the role catalog current.
 | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Site shows the **maintenance page**            | A migration is pending or the DB is unreachable. Check `app:migrate` logs / `DATABASE_URL`. It clears automatically once migrations complete.                           |
 | `/admin/install` says **"installer disabled"** | `INSTALL_PASSWORD` is empty. Set it, or finish setup from the console.                                                                                                  |
-| `/admin/install` **redirects to the site**     | Nothing to install — schema is current and an admin exists. This is expected.                                                                                           |
-| `app:migrate` keeps **retrying**               | The database is not reachable yet (still booting) or a migration is failing — inspect the logs. All-or-nothing means a failed attempt rolled back, so retries are safe. |
+| `/admin/install` **redirects to the site**     | Nothing to install - schema is current and an admin exists. This is expected.                                                                                           |
+| `app:migrate` keeps **retrying**               | The database is not reachable yet (still booting) or a migration is failing - inspect the logs. All-or-nothing means a failed attempt rolled back, so retries are safe. |
 | nginx serves the app but **assets 404**        | The app container hasn't published `public/` to the shared volume yet (a few seconds on cold start), or `PUBLIC_SYNC_DIR` isn't set.                                    |
-| Two replicas both **try to migrate**           | Expected and safe — the advisory lock serialises them; only one applies migrations.                                                                                     |
+| Two replicas both **try to migrate**           | Expected and safe - the advisory lock serialises them; only one applies migrations.                                                                                     |
 | Migration progress in the wizard               | The wizard streams `var/install/migration.log` live while `app:migrate` runs in the background.                                                                         |

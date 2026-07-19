@@ -4,7 +4,7 @@ namespace App\Exception;
 
 /**
  * Raised when a write is rejected because the underlying record changed since it
- * was loaded — e.g. a stale publication would overwrite newer planning changes.
+ * was loaded - e.g. a stale publication would overwrite newer planning changes.
  * Carries the versions for a helpful conflict message.
  */
 final class StaleWriteException extends \RuntimeException

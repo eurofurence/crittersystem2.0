@@ -19,10 +19,10 @@ final class UserInviteType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('username', TextType::class, ['constraints' => [new NotBlank()]])
-            ->add('email', EmailType::class, ['constraints' => [new NotBlank()]])
-            ->add('firstName', TextType::class, ['required' => false, 'label' => 'First name (optional)'])
-            ->add('lastName', TextType::class, ['required' => false, 'label' => 'Last name (optional)'])
+            ->add('username', TextType::class, ['label' => 'common.label.username', 'constraints' => [new NotBlank()]])
+            ->add('email', EmailType::class, ['label' => 'common.label.email', 'constraints' => [new NotBlank()]])
+            ->add('firstName', TextType::class, ['required' => false, 'label' => 'manage.user.field.first_name.label'])
+            ->add('lastName', TextType::class, ['required' => false, 'label' => 'manage.user.field.last_name.label'])
             ->add('groups', EntityType::class, [
                 'class' => Group::class,
                 'multiple' => true,
@@ -30,7 +30,7 @@ final class UserInviteType extends AbstractType
                 'required' => false,
                 'choice_label' => 'name',
                 'choices' => $options['available_groups'],
-                'label' => 'Groups',
+                'label' => 'manage.label.groups',
             ]);
     }
 

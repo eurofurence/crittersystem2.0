@@ -18,7 +18,17 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
+/**
+ * Staffing screens for a single shift.
+ *
+ * `shift:manage` is department-scoped, and PrivilegeVoter only enforces that
+ * scope when it is given the resource. The class-level attribute below passes
+ * none, so it means no more than "may reach the shift-management module" -
+ * every action here must additionally check against the shift it acts on, or a
+ * manager scoped to one department reaches every shift in the event.
+ */
 #[Route('/manage/shifts')]
 #[IsGranted('shift:manage')]
 final class ShiftStaffingController extends AbstractController
@@ -36,6 +46,8 @@ final class ShiftStaffingController extends AbstractController
     #[Route('/{id}/staffing', name: 'app_manage_shift_needs', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function staffing(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
+        $this->denyAccessUnlessGranted('shift:manage', $shift);
+
         $q = trim((string) $request->query->get('q', ''));
 
         return $this->render('manage/shift/staffing.html.twig', [
@@ -52,19 +64,21 @@ final class ShiftStaffingController extends AbstractController
     #[Route('/{id}/assign', name: 'app_manage_shift_assign', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function assign(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
+        $this->denyAccessUnlessGranted('shift:manage', $shift);
+
         if ($this->isCsrfTokenValid('assign'.$shift->getId(), (string) $request->request->get('_token'))) {
             $user = $this->users->find((int) $request->request->get('user'));
             $type = $this->volunteerTypes->find((int) $request->request->get('volunteer_type'));
 
             if ($user === null || $type === null) {
-                $this->addFlash('danger', 'Choose a volunteer and a role.');
+                $this->addFlash('danger', new TranslatableMessage('manage.shift.staffing.flash.choose_volunteer_role'));
             } elseif ($this->entries->findOneByShiftAndUser($shift, $user) !== null) {
-                $this->addFlash('warning', \sprintf('%s is already on this shift.', $user->getName()));
+                $this->addFlash('warning', new TranslatableMessage('manage.shift.staffing.flash.already_on_shift', ['%name%' => $user->getName()]));
             } else {
                 // Manager override: capacity/membership are not enforced here.
                 $this->em->persist(new ShiftEntry($shift, $type, $user));
                 $this->em->flush();
-                $this->addFlash('success', \sprintf('Assigned %s as %s.', $user->getName(), $type->getName()));
+                $this->addFlash('success', new TranslatableMessage('manage.shift.staffing.flash.assigned', ['%name%' => $user->getName(), '%role%' => $type->getName()]));
             }
         }
 
@@ -74,12 +88,14 @@ final class ShiftStaffingController extends AbstractController
     #[Route('/entries/{id}/unassign', name: 'app_manage_shift_entry_unassign', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function unassign(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftEntry $entry): Response
     {
+        $this->denyAccessUnlessGranted('shift:manage', $entry->getShift());
+
         $shiftId = $entry->getShift()->getUuid();
         if ($this->isCsrfTokenValid('unassign'.$entry->getId(), (string) $request->request->get('_token'))) {
             $name = $entry->getUser()->getName();
             $this->em->remove($entry);
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Removed %s from the shift.', $name));
+            $this->addFlash('success', new TranslatableMessage('manage.shift.staffing.flash.removed', ['%name%' => $name]));
         }
 
         return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shiftId]);
@@ -88,20 +104,22 @@ final class ShiftStaffingController extends AbstractController
     #[Route('/{id}/needs', name: 'app_manage_shift_need_add', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function addNeed(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
+        $this->denyAccessUnlessGranted('shift:manage', $shift);
+
         if ($this->isCsrfTokenValid('need-add'.$shift->getId(), (string) $request->request->get('_token'))) {
             $type = $this->volunteerTypes->find((int) $request->request->get('volunteer_type'));
             $count = max(1, (int) $request->request->get('count', 1));
 
             if ($type === null) {
-                $this->addFlash('danger', 'Choose a volunteer type.');
+                $this->addFlash('danger', new TranslatableMessage('manage.shift.staffing.flash.choose_type'));
             } elseif ($shift->getNeededVolunteerTypes()->exists(fn ($k, NeededVolunteerType $n) => $n->getVolunteerType() === $type)) {
-                $this->addFlash('warning', \sprintf('"%s" is already listed for this shift.', $type->getName()));
+                $this->addFlash('warning', new TranslatableMessage('manage.shift.staffing.flash.type_already_listed', ['%name%' => $type->getName()]));
             } else {
                 $need = new NeededVolunteerType($type, $count);
                 $shift->addNeededVolunteerType($need);
                 $this->em->persist($need);
                 $this->em->flush();
-                $this->addFlash('success', \sprintf('Added %d × %s.', $count, $type->getName()));
+                $this->addFlash('success', new TranslatableMessage('manage.shift.staffing.flash.need_added', ['%count%' => $count, '%name%' => $type->getName()]));
             }
         }
 
@@ -111,12 +129,14 @@ final class ShiftStaffingController extends AbstractController
     #[Route('/{id}/needs/{needId}/delete', name: 'app_manage_shift_need_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID, 'needId' => Requirement::UUID])]
     public function deleteNeed(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, string $needId): Response
     {
+        $this->denyAccessUnlessGranted('shift:manage', $shift);
+
         if ($this->isCsrfTokenValid('need-del'.$needId, (string) $request->request->get('_token'))) {
             $need = $this->em->getRepository(NeededVolunteerType::class)->findOneBy(['uuid' => $needId]);
             if ($need !== null && $need->getShift() === $shift) {
                 $this->em->remove($need);
                 $this->em->flush();
-                $this->addFlash('success', 'Staffing requirement removed.');
+                $this->addFlash('success', new TranslatableMessage('manage.shift.staffing.flash.requirement_removed'));
             }
         }
 
@@ -126,6 +146,10 @@ final class ShiftStaffingController extends AbstractController
     #[Route('/entries/{id}/noshow', name: 'app_manage_shift_entry_noshow', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function toggleNoshow(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftEntry $entry): Response
     {
+        // Scoped to the entry's own shift: a no-show can trigger the automatic
+        // ban, so this must never be reachable for another department's shift.
+        $this->denyAccessUnlessGranted('shift:manage', $entry->getShift());
+
         if ($this->isCsrfTokenValid('noshow'.$entry->getId(), (string) $request->request->get('_token'))) {
             $entry->setNoshow(!$entry->isNoshow());
             $entry->setNoshowComment($entry->isNoshow() ? (string) $request->request->get('comment') ?: null : null);
@@ -133,9 +157,11 @@ final class ShiftStaffingController extends AbstractController
 
             // Reaching the configured no-show threshold locks the account.
             if ($entry->isNoshow() && $this->noShowBans->evaluate($entry->getUser())) {
-                $this->addFlash('warning', 'This user reached the no-show threshold and has been automatically banned.');
+                $this->addFlash('warning', new TranslatableMessage('manage.shift.staffing.flash.auto_banned'));
             } else {
-                $this->addFlash('success', $entry->isNoshow() ? 'Marked as no-show.' : 'No-show cleared.');
+                $this->addFlash('success', $entry->isNoshow()
+                    ? new TranslatableMessage('manage.shift.staffing.flash.marked_noshow')
+                    : new TranslatableMessage('manage.shift.staffing.flash.noshow_cleared'));
             }
         }
 

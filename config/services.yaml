@@ -17,7 +17,10 @@ services:
             string $banPepper: '%env(APP_SECRET)%'
             # Comma-separated hosts allowed for embedded location maps (frame-src CSP).
             string $allowedDomains: '%env(LOCATION_EMBED_ALLOWED_DOMAINS)%'
-            # SSO / OIDC connection — configured via environment (Infisical).
+            # Shared service token the Telegram bot presents on /api/bot. Empty = the
+            # bot surface refuses every request.
+            string $botApiToken: '%env(BOT_API_TOKEN)%'
+            # SSO / OIDC connection - configured via environment (Infisical).
             bool $ssoEnabled: '%env(bool:SSO_ENABLED)%'
             string $ssoDiscoveryUrl: '%env(SSO_DISCOVERY_URL)%'
             string $ssoClientId: '%env(SSO_CLIENT_ID)%'
@@ -27,6 +30,8 @@ services:
             string $ssoUserinfoUrl: '%env(SSO_USERINFO_URL)%'
             string $ssoScopes: '%env(SSO_SCOPES)%'
             string $ssoProviderLabel: '%env(SSO_PROVIDER_LABEL)%'
+            # UI locales the app builds catalogs for and the LocaleSubscriber accepts.
+            array $enabledLocales: '%kernel.enabled_locales%'
 
     # src/Dev/ (the UI kit pages) is excluded here and registered below for non-prod only.
     # This exclusion is what keeps the kit out of production: `routing.controllers` derives
@@ -55,7 +60,7 @@ services:
             $uploads: '@app.uploads_filesystem'
 
     # Exports filesystem: audit legal packages and GDPR data exports. Separate from uploads so it can
-    # have its own bucket and lifecycle policy. It must be reachable by every process — the web
+    # have its own bucket and lifecycle policy. It must be reachable by every process - the web
     # request that serves a download and the messenger worker that writes the archive are different
     # containers, and in Kubernetes they do not share a disk at all.
     app.exports_filesystem:

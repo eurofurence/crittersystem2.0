@@ -1,50 +1,50 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Privacy & my data{% endblock %}
+{% block title %}{{ 'ui.user_menu.privacy'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Privacy & my data', {subtitle: 'Export your data or delete your account.'}) }}
+  {{ d.page_header('ui.user_menu.privacy'|trans, {subtitle: 'profile.privacy.page.subtitle'|trans}) }}
 
-  {{ d.card_start('Export my data', {class: 'mb-4', titleTag: 'strong', titleClass: ''}) }}
-      <p class="text-muted small">We prepare a downloadable archive of your data. You will get an email with a link valid for 24 hours.</p>
+  {{ d.card_start('profile.privacy.export.title'|trans, {class: 'mb-4', titleTag: 'strong', titleClass: ''}) }}
+      <p class="text-muted small">{{ 'profile.privacy.export.help'|trans }}</p>
       <form method="post" action="{{ path('app_profile_data_export') }}">
         <input type="hidden" name="_token" value="{{ csrf_token('data_export') }}">
-        <button class="btn btn-primary">Request data export</button>
+        <button class="btn btn-primary">{{ 'profile.privacy.export.button'|trans }}</button>
       </form>
       {% if exports %}
         <ul class="list-unstyled mt-3 mb-0">
           {% for ex in exports %}
             <li class="small">
-              {{ ex.createdAt|app_datetime }} — {{ ex.status }}
-              {% if ex.downloadable %}· <a href="{{ path('app_profile_data_download', {uuid: ex.uuid}) }}">download</a>{% endif %}
+              {{ ex.createdAt|app_datetime }} - {{ ex.status }}
+              {% if ex.downloadable %}· <a href="{{ path('app_profile_data_download', {uuid: ex.uuid}) }}">{{ 'profile.privacy.export.download'|trans }}</a>{% endif %}
             </li>
           {% endfor %}
         </ul>
       {% endif %}
   {{ d.card_end() }}
 
-  {{ d.card_start('Delete my account', {class: 'border-danger', headerClass: 'card-header text-danger', titleTag: 'strong', titleClass: ''}) }}
-      <p>This permanently deletes your account and data. <strong>This cannot be undone.</strong></p>
-      <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#confirm1">Delete my account…</button>
+  {{ d.card_start('profile.privacy.delete.title'|trans, {class: 'border-danger', headerClass: 'card-header text-danger', titleTag: 'strong', titleClass: ''}) }}
+      <p>{{ 'profile.privacy.delete.warning'|trans }} <strong>{{ 'profile.privacy.delete.warning_strong'|trans }}</strong></p>
+      <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#confirm1">{{ 'profile.privacy.delete.button'|trans }}</button>
 
       <div class="modal fade" id="confirm1" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Are you sure?</h5></div>
-        <div class="modal-body">Deleting your account is permanent. Do you want to continue?</div>
+        <div class="modal-header"><h5 class="modal-title">{{ 'common.confirm.generic'|trans }}</h5></div>
+        <div class="modal-body">{{ 'profile.privacy.delete.confirm1'|trans }}</div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button class="btn btn-outline-danger" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#confirm2">Continue</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">{{ 'common.action.cancel'|trans }}</button>
+          <button class="btn btn-outline-danger" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-target="#confirm2">{{ 'common.action.continue'|trans }}</button>
         </div>
       </div></div></div>
 
       <div class="modal fade" id="confirm2" tabindex="-1"><div class="modal-dialog"><div class="modal-content">
-        <div class="modal-header"><h5 class="modal-title">Final confirmation</h5></div>
-        <div class="modal-body">We will email you a confirmation link (valid 6 hours). Using it will permanently delete your account.</div>
+        <div class="modal-header"><h5 class="modal-title">{{ 'profile.privacy.delete.final_title'|trans }}</h5></div>
+        <div class="modal-body">{{ 'profile.privacy.delete.confirm2'|trans }}</div>
         <div class="modal-footer">
-          <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-secondary" data-bs-dismiss="modal">{{ 'common.action.cancel'|trans }}</button>
           <form method="post" action="{{ path('app_profile_erase_request') }}">
             <input type="hidden" name="_token" value="{{ csrf_token('erase_request') }}">
-            <button class="btn btn-danger">Send deletion email</button>
+            <button class="btn btn-danger">{{ 'profile.privacy.delete.send'|trans }}</button>
           </form>
         </div>
       </div></div></div>

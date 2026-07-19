@@ -28,7 +28,7 @@ class EventConfigStore
     /*
      * Identity-provider role IDs that lift an SSO user above plain staff in every department they are
      * mapped into. They hold raw IdP identifiers, so the page that edits them is admin-only and
-     * step-up guarded — see App\Controller\Admin\SsoRoleController.
+     * step-up guarded - see App\Controller\Admin\SsoRoleController.
      */
     public const KEY_SSO_ROLE_DEPARTMENT_MANAGER = 'sso.role.department_manager';
     public const KEY_SSO_ROLE_SHIFT_MANAGER = 'sso.role.shift_manager';
@@ -36,7 +36,7 @@ class EventConfigStore
     /*
      * Identity-provider role IDs that make an SSO user a global admin or sub admin across the whole
      * app (not scoped to a department). Holding the global-admin role wins over the sub-admin role.
-     * Same handling as the department role IDs above — raw IdP identifiers, admin-only, step-up
+     * Same handling as the department role IDs above - raw IdP identifiers, admin-only, step-up
      * guarded. See App\Sso\SsoGlobalRoles.
      */
     public const KEY_SSO_ROLE_GLOBAL_ADMIN = 'sso.role.global_admin';
@@ -45,7 +45,7 @@ class EventConfigStore
     /*
      * Endpoint of the external registration/attendee API queried (with the user's own OAuth token)
      * right after SSO login to learn their convention registration number. Blank disables the lookup.
-     * Edited on the step-up-guarded /admin/sso page — see App\Sso\RegistrationApiSettings.
+     * Edited on the step-up-guarded /admin/sso page - see App\Sso\RegistrationApiSettings.
      */
     public const KEY_SSO_BADGE_API_URL = 'sso.badge_number_api_url';
 
@@ -65,7 +65,7 @@ class EventConfigStore
     public const ACCESS_MODES = ['public', 'staff', 'admin'];
 
     // Operational configuration, all admin-editable via /manage/operations.
-    // Defaults must never be hard-coded at call sites — read them from here.
+    // Defaults must never be hard-coded at call sites - read them from here.
     public const KEY_BAN_NOSHOW_THRESHOLD = 'ban.noshow_threshold';
     public const KEY_BAN_SCREEN_MESSAGE = 'ban.screen_message';
     public const KEY_MESSAGES_ENABLED = 'messages.enabled';
@@ -134,7 +134,7 @@ class EventConfigStore
         try {
             // Normalise to the *named* UTC zone. Stored values are ISO-8601 with
             // a "+00:00" offset, which would otherwise yield a DateTimeImmutable
-            // whose timezone name is "+00:00" — that mismatches the UTC
+            // whose timezone name is "+00:00" - that mismatches the UTC
             // model_timezone of the event-config form fields and makes Symfony
             // Form throw. setTimezone() keeps the instant and fixes the name.
             return (new \DateTimeImmutable($value))->setTimezone(new \DateTimeZone('UTC'));

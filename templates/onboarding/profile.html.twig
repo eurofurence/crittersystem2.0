@@ -1,20 +1,20 @@
 {% extends 'onboarding/_layout.html.twig' %}
-{% block title %}Your details{% endblock %}
-{% block step_title %}Confirm your details{% endblock %}
+{% block title %}{{ 'onboarding.profile.title'|trans }}{% endblock %}
+{% block step_title %}{{ 'onboarding.profile.heading'|trans }}{% endblock %}
 {% block step_body %}
   <form method="post">
     {% if user.canEditFullName %}
       <div class="row g-3">
-        <div class="col-md-6"><label class="form-label">First name</label><input class="form-control" name="first_name" value="{{ personal.firstName }}"></div>
-        <div class="col-md-6"><label class="form-label">Last name</label><input class="form-control" name="last_name" value="{{ personal.lastName }}"></div>
+        <div class="col-md-6"><label class="form-label">{{ 'onboarding.profile.first_name'|trans }}</label><input class="form-control" name="first_name" value="{{ personal.firstName }}"></div>
+        <div class="col-md-6"><label class="form-label">{{ 'onboarding.profile.last_name'|trans }}</label><input class="form-control" name="last_name" value="{{ personal.lastName }}"></div>
       </div>
     {% else %}
-      <p class="text-muted small">Your name is managed by your organisation and cannot be changed here.</p>
+      <p class="text-muted small">{{ 'onboarding.profile.name_managed'|trans }}</p>
     {% endif %}
     <div class="row g-3 mt-1">
-      <div class="col-md-6"><label class="form-label">Pronoun <span class="text-muted">(optional)</span></label><input class="form-control" name="pronoun" value="{{ personal.pronoun }}"></div>
-      <div class="col-md-6"><label class="form-label">Mobile <span class="text-muted">(optional)</span></label><input class="form-control" name="mobile" value="{{ contact.mobile }}"></div>
+      <div class="col-md-6"><label class="form-label">{{ 'onboarding.profile.pronoun_label'|trans }} <span class="text-muted">{{ 'onboarding.optional'|trans }}</span></label><input class="form-control" name="pronoun" value="{{ personal.pronoun }}"></div>
+      <div class="col-md-6"><label class="form-label">{{ 'onboarding.profile.mobile_label'|trans }} <span class="text-muted">{{ 'onboarding.optional'|trans }}</span></label><input class="form-control" name="mobile" value="{{ contact.mobile }}"></div>
     </div>
-    <div class="mt-3"><button class="btn btn-primary">Continue</button></div>
+    <div class="mt-3"><button class="btn btn-primary">{{ 'common.action.continue'|trans }}</button></div>
   </form>
 {% endblock %}

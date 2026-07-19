@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Site-wide Telegram bot configuration. The API key is stored encrypted; it is
@@ -50,7 +51,7 @@ final class TelegramConfigController extends AbstractController
             }
             $this->em->flush();
             $this->audit->log(AuditEvents::CONFIGURATION, AuditEvents::UPDATE, ['resourceType' => 'TelegramConfiguration']);
-            $this->addFlash('success', 'Telegram configuration saved.');
+            $this->addFlash('success', new TranslatableMessage('manage.telegram.flash.saved'));
 
             return $this->redirectToRoute('app_manage_telegram');
         }

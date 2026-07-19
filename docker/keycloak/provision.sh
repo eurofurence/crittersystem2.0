@@ -68,7 +68,7 @@ for u in admin sub-admin staff volunteer; do
 done
 
 {
-  echo "# Keycloak dev credentials — DO NOT COMMIT"
+  echo "# Keycloak dev credentials - DO NOT COMMIT"
   echo "realm: $REALM"
   echo "realm_admin_password (master '${KEYCLOAK_ADMIN:-admin}'): ${KEYCLOAK_ADMIN_PASSWORD:-admin}"
   echo "generated_reserve_password: $REALM_ADMIN_PASS"

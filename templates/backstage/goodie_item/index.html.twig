@@ -1,26 +1,26 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Goodie Items{% endblock %}
+{% block title %}{{ 'backstage.goodie.item.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Goodie Items', {
-    subtitle: 'Rewards volunteers can claim once they reach the required hours.',
+  {{ d.page_header('backstage.goodie.item.title'|trans, {
+    subtitle: 'backstage.goodie.item.subtitle'|trans,
     actions: [
-      {label: '← Backstage', href: path('app_backstage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New item', href: path('app_backstage_goodie_item_new'), class: 'btn btn-primary'}
+      {label: 'backstage.action.back_to_backstage'|trans, href: path('app_backstage'), class: 'btn btn-outline-secondary'},
+      {label: 'backstage.goodie.item.action.new'|trans, href: path('app_backstage_goodie_item_new'), class: 'btn btn-primary'}
     ]
   }) }}
 
   {% if items is empty %}
-    {{ d.empty_state('No items yet', {
-      message: 'Add goodie items for volunteers to earn.',
-      actionLabel: '+ New item',
+    {{ d.empty_state('backstage.goodie.item.empty.title'|trans, {
+      message: 'backstage.goodie.item.empty.message'|trans,
+      actionLabel: 'backstage.goodie.item.action.new'|trans,
       actionHref: path('app_backstage_goodie_item_new')
     }) }}
   {% else %}
     {{ d.table_start() }}
-      <thead><tr><th>Item</th><th>Category</th><th>Required hours</th><th>Max / person</th><th>Status</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>{{ 'backstage.table.item'|trans }}</th><th>{{ 'backstage.goodie.label.category'|trans }}</th><th>{{ 'backstage.goodie.label.required_hours'|trans }}</th><th>{{ 'backstage.goodie.table.max_per_person'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
       <tbody>
         {% for i in items %}
           <tr class="{{ i.active ? '' : 'opacity-75' }}">
@@ -31,14 +31,14 @@
             <td>{{ i.category.name }}</td>
             <td>{{ i.requiredHours|round(2) }}</td>
             <td>{{ i.maxPerPerson ?? '∞' }}</td>
-            <td>{% if i.active %}{{ d.badge('Active', 'text-bg-success') }}{% else %}{{ d.badge('Inactive', 'text-bg-secondary') }}{% endif %}</td>
+            <td>{% if i.active %}{{ d.badge('common.state.active'|trans, 'text-bg-success') }}{% else %}{{ d.badge('common.state.inactive'|trans, 'text-bg-secondary') }}{% endif %}</td>
             {% set del %}
               {{ d.delete_form(path('app_backstage_goodie_item_delete', {id: i.uuid}), csrf_token('delete' ~ i.id), {
-                message: 'Delete "' ~ i.name ~ '"?'
+                message: 'backstage.goodie.item.confirm.delete'|trans({'%name%': i.name})
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'Edit', href: path('app_backstage_goodie_item_edit', {id: i.uuid})}
+              {label: 'common.action.edit'|trans, href: path('app_backstage_goodie_item_edit', {id: i.uuid})}
             ], {extraHtml: del}) }}
           </tr>
         {% endfor %}

@@ -1,6 +1,6 @@
 /*
  * Programmatic confirmation / notice dialogs rendered as Bootstrap (Tabler)
- * modals. Use these — never window.confirm() / window.alert(), which cannot be
+ * modals. Use these - never window.confirm() / window.alert(), which cannot be
  * styled, are not theme-aware, and block the main thread.
  *
  *   import { confirmModal, alertModal } from '../js/modal.js';

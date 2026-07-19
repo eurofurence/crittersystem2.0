@@ -9,8 +9,8 @@ use App\Tests\DatabaseWebTestCase;
 
 /**
  * The theme a user picked must survive being used. It is resolved on every render from the user's
- * Settings, and ThemeResolver falls back to the administrator's default when anything goes wrong —
- * silently — so a fault there shows up as the theme quietly reverting rather than as an error.
+ * Settings, and ThemeResolver falls back to the administrator's default when anything goes wrong -
+ * silently - so a fault there shows up as the theme quietly reverting rather than as an error.
  */
 final class ThemePersistenceTest extends DatabaseWebTestCase
 {
@@ -58,7 +58,7 @@ final class ThemePersistenceTest extends DatabaseWebTestCase
         self::assertSame(
             'eurofurence',
             $reloaded->getSettings()?->getTheme(),
-            'the theme form redirected but stored nothing — the write block was skipped',
+            'the theme form redirected but stored nothing - the write block was skipped',
         );
     }
 

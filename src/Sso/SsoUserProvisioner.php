@@ -142,7 +142,7 @@ final class SsoUserProvisioner
 
     /**
      * The mapping is authoritative, so the membership is confirmed straight away
-     * rather than queued for a supporter — no manual step is needed for anything
+     * rather than queued for a supporter - no manual step is needed for anything
      * SSO already tells us. A membership the user requested themselves and that
      * is still pending is confirmed too, once a mapping grants the same type.
      */

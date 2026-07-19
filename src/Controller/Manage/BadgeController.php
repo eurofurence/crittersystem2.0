@@ -14,6 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\String\Slugger\SluggerInterface;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/badges')]
 #[IsGranted('badge:manage')]
@@ -52,7 +53,7 @@ final class BadgeController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$badge->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($badge);
             $this->em->flush();
-            $this->addFlash('success', 'Badge deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.badge.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_badge_index');
@@ -71,14 +72,14 @@ final class BadgeController extends AbstractController
                 $this->em->persist($badge);
             }
             $this->em->flush();
-            $this->addFlash('success', \sprintf('Badge "%s" saved.', $badge->getName()));
+            $this->addFlash('success', new TranslatableMessage('manage.badge.flash.saved', ['%name%' => $badge->getName()]));
 
             return $this->redirectToRoute('app_manage_badge_index');
         }
 
         return $this->render('manage/badge/form.html.twig', [
             'form' => $form,
-            'heading' => $isNew ? 'New badge' : 'Edit badge',
+            'heading' => $isNew ? 'manage.badge.form.heading_new' : 'manage.badge.form.heading_edit',
         ]);
     }
 

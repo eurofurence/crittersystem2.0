@@ -2,55 +2,55 @@
 {% import 'components/data/_macros.twig' as d %}
 {% import 'components/icon/_macros.twig' as i %}
 
-{% block title %}Locate · {{ user.name }}{% endblock %}
+{% block title %}{{ 'backstage.locate.user.title'|trans({'%name%': user.name}) }}{% endblock %}
 
 {% block body %}
   {# Email is a mining vector: only admins see the raw address as an identity field. #}
-  {{ d.page_header('Locate — ' ~ user.name, {
-    subtitle: is_granted('ROLE_ADMIN') ? user.email : 'Volunteer',
+  {{ d.page_header('backstage.locate.user.heading'|trans({'%name%': user.name}), {
+    subtitle: is_granted('ROLE_ADMIN') ? user.email : 'backstage.locate.volunteer'|trans,
     actions: [
-      {label: '← Search', href: path('app_backstage_distribute'), class: 'btn btn-outline-secondary'},
-      {label: 'View full profile', href: path('app_profile_show', {id: user.uuid}), class: 'btn btn-outline-primary'}
+      {label: 'backstage.locate.action.back_to_search'|trans, href: path('app_backstage_distribute'), class: 'btn btn-outline-secondary'},
+      {label: 'backstage.locate.action.view_profile'|trans, href: path('app_profile_show', {id: user.uuid}), class: 'btn btn-outline-primary'}
     ]
   }) }}
 
   {{ d.card_start() }}
       <div class="row g-3 align-items-center">
         <div class="col-12 col-lg-4">
-          <div class="text-muted small">Registration number</div>
-          <div class="fs-4">{{ user.personalData and user.personalData.badgeNumber ? user.personalData.badgeNumber : '—' }}</div>
+          <div class="text-muted small">{{ 'backstage.locate.registration_number'|trans }}</div>
+          <div class="fs-4">{{ user.personalData and user.personalData.badgeNumber ? user.personalData.badgeNumber : '-' }}</div>
         </div>
 
         <div class="col-12 col-lg-4">
-          <div class="text-muted small">Checked in</div>
+          <div class="text-muted small">{{ 'backstage.locate.checked_in'|trans }}</div>
           {% set arrived = user.state and user.state.arrived %}
           <div class="d-flex align-items-center gap-2">
             {% if arrived %}
-              {{ d.badge('Yes' ~ (user.state.arrivalDate ? ' · ' ~ user.state.arrivalDate|app_datetime : ''), 'bg-green-lt') }}
+              {{ d.badge('common.state.yes'|trans ~ (user.state.arrivalDate ? ' · ' ~ user.state.arrivalDate|app_datetime : ''), 'bg-green-lt') }}
             {% else %}
-              {{ d.badge('Not yet', 'bg-secondary-lt') }}
+              {{ d.badge('backstage.locate.not_yet'|trans, 'bg-secondary-lt') }}
             {% endif %}
             {% if is_granted('user:arrive') %}
               <form method="post" action="{{ path('app_backstage_distribute_checkin', {id: user.uuid}) }}"
-                    {% if arrived %}data-controller="confirm" data-confirm-message-value="Remove the check-in for {{ user.name }}?"{% endif %}>
+                    {% if arrived %}data-controller="confirm" data-confirm-message-value="{{ 'backstage.locate.confirm.remove_checkin'|trans({'%name%': user.name}) }}"{% endif %}>
                 <input type="hidden" name="_token" value="{{ csrf_token('checkin' ~ user.id) }}">
                 <input type="hidden" name="arrived" value="{{ arrived ? '0' : '1' }}">
-                <button class="btn btn-sm {{ arrived ? 'btn-outline-danger' : 'btn-success' }}">{{ arrived ? 'Remove check-in' : 'Check in' }}</button>
+                <button class="btn btn-sm {{ arrived ? 'btn-outline-danger' : 'btn-success' }}">{{ arrived ? 'backstage.locate.action.remove_checkin'|trans : 'backstage.locate.action.check_in'|trans }}</button>
               </form>
             {% endif %}
           </div>
         </div>
 
         <div class="col-12 col-lg-4">
-          <div class="text-muted small">Contact</div>
+          <div class="text-muted small">{{ 'backstage.locate.contact'|trans }}</div>
           <div class="d-flex align-items-center gap-2 flex-wrap">
             {% if canDirectMessage %}
               <a class="btn btn-sm btn-primary" href="{{ path('app_messages_with', {id: user.uuid}) }}">
-                {{ i.icon('message', {class: 'icon-1 me-1'}) }}Message
+                {{ i.icon('message', {class: 'icon-1 me-1'}) }}{{ 'backstage.locate.action.message'|trans }}
               </a>
             {% endif %}
             <div class="dropdown">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">Contact options</button>
+              <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">{{ 'backstage.locate.contact_options'|trans }}</button>
               <div class="dropdown-menu dropdown-menu-end">
                 {% for m in contactMethods %}
                   {% if m.type == 'message' %}
@@ -70,22 +70,22 @@
 
   {{ d.card_start() }}
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <div><span class="fw-semibold">Credited hours:</span> <span class="fs-4">{{ cache.totalHours|round(2) }}</span></div>
+        <div><span class="fw-semibold">{{ 'backstage.locate.credited_hours'|trans }}</span> <span class="fs-4">{{ cache.totalHours|round(2) }}</span></div>
         {% if is_granted('goodie:distribute') %}
           <form method="post" action="{{ path('app_backstage_distribute_refresh', {id: user.uuid}) }}">
             <input type="hidden" name="_token" value="{{ csrf_token('refresh' ~ user.id) }}">
-            <button class="btn btn-sm btn-outline-secondary">↻ Recalculate</button>
+            <button class="btn btn-sm btn-outline-secondary">{{ 'backstage.locate.action.recalculate'|trans }}</button>
           </form>
         {% endif %}
       </div>
       <div class="row text-center small text-muted">
-        <div class="col"><div class="fw-bold text-dark">{{ cache.dayShiftsHours|round(2) }}</div>Day</div>
-        <div class="col"><div class="fw-bold text-dark">{{ cache.nightShiftsHours|round(2) }}</div>Night (×2)</div>
-        <div class="col"><div class="fw-bold text-dark">{{ cache.noshowPenaltyHours|round(2) }}</div>No-show</div>
-        <div class="col"><div class="fw-bold text-dark">{{ cache.worklogHours|round(2) }}</div>Worklog</div>
-        <div class="col"><div class="fw-bold text-dark">{{ cache.completedShiftsCount }}</div>Shifts</div>
+        <div class="col"><div class="fw-bold text-dark">{{ cache.dayShiftsHours|round(2) }}</div>{{ 'backstage.hours.day'|trans }}</div>
+        <div class="col"><div class="fw-bold text-dark">{{ cache.nightShiftsHours|round(2) }}</div>{{ 'backstage.hours.night'|trans }}</div>
+        <div class="col"><div class="fw-bold text-dark">{{ cache.noshowPenaltyHours|round(2) }}</div>{{ 'common.state.no_show'|trans }}</div>
+        <div class="col"><div class="fw-bold text-dark">{{ cache.worklogHours|round(2) }}</div>{{ 'backstage.hours.worklog'|trans }}</div>
+        <div class="col"><div class="fw-bold text-dark">{{ cache.completedShiftsCount }}</div>{{ 'ui.nav.shifts'|trans }}</div>
       </div>
-      <div class="text-muted small mt-2">Last calculated {{ cache.lastCalculatedAt|app_datetime }}</div>
+      <div class="text-muted small mt-2">{{ 'backstage.locate.last_calculated'|trans }} {{ cache.lastCalculatedAt|app_datetime }}</div>
   {{ d.card_end() }}
 
   {% set eligible = eligibility.rows|filter(r => r.tier == 'eligible') %}
@@ -93,9 +93,9 @@
   {% set claimed = eligibility.rows|filter(r => r.tier == 'claimed') %}
 
   {% if is_granted('goodie:view') %}
-    <h2 class="h5">Can claim now</h2>
+    <h2 class="h5">{{ 'backstage.locate.section.can_claim'|trans }}</h2>
     {% if eligible is empty %}
-      {{ d.empty_inline('No items available to claim.', {class: 'text-muted'}) }}
+      {{ d.empty_inline('backstage.locate.empty.no_claimable'|trans, {class: 'text-muted'}) }}
     {% else %}
       <div class="row g-2 mb-3">
         {% for r in eligible %}
@@ -103,7 +103,7 @@
             {{ d.card_start(null, {class: 'h-100'}) }}
               <div class="d-flex justify-content-between">
                 <div class="fw-semibold">{{ r.item.name }}</div>
-                <span class="text-muted small">{{ r.item.requiredHours|round(2) }}h{% if r.remaining is not null %} · {{ r.remaining }} left{% endif %}</span>
+                <span class="text-muted small">{{ r.item.requiredHours|round(2) }}h{% if r.remaining is not null %} · {{ 'backstage.locate.remaining'|trans({'%count%': r.remaining}) }}{% endif %}</span>
               </div>
               {% if r.item.description %}<div class="text-muted small mb-2">{{ r.item.description }}</div>{% endif %}
               {% if is_granted('goodie:distribute') %}
@@ -111,11 +111,11 @@
                   <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
                   <input type="hidden" name="item" value="{{ r.item.id }}">
                   <div class="col-4">
-                    <label class="form-label small mb-0">Qty</label>
+                    <label class="form-label small mb-0">{{ 'backstage.label.qty'|trans }}</label>
                     <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm">
                   </div>
                   <div class="col-8">
-                    <button class="btn btn-sm btn-primary w-100">Give</button>
+                    <button class="btn btn-sm btn-primary w-100">{{ 'backstage.locate.action.give'|trans }}</button>
                   </div>
                 </form>
               {% endif %}
@@ -125,12 +125,12 @@
       </div>
     {% endif %}
 
-    <h2 class="h5">Will be eligible</h2>
+    <h2 class="h5">{{ 'backstage.locate.section.will_be_eligible'|trans }}</h2>
     {% if pending is empty %}
-      {{ d.empty_inline('Nothing pending.', {class: 'text-muted'}) }}
+      {{ d.empty_inline('backstage.locate.empty.nothing_pending'|trans, {class: 'text-muted'}) }}
     {% else %}
       {{ d.table_start({hover: false}) }}
-        <thead><tr><th>Item</th><th>Required</th><th>Hours short</th></tr></thead>
+        <thead><tr><th>{{ 'backstage.table.item'|trans }}</th><th>{{ 'backstage.table.required'|trans }}</th><th>{{ 'backstage.table.hours_short'|trans }}</th></tr></thead>
         <tbody>
           {% for r in pending %}
             <tr><td>{{ r.item.name }}</td><td>{{ r.item.requiredHours|round(2) }}h</td><td>{{ d.badge(r.gap|round(2) ~ 'h', 'text-bg-warning') }}</td></tr>
@@ -140,9 +140,9 @@
     {% endif %}
 
     {% if claimed is not empty %}
-      <h2 class="h5">Already claimed (at limit)</h2>
+      <h2 class="h5">{{ 'backstage.locate.section.already_claimed'|trans }}</h2>
       {{ d.table_start({hover: false}) }}
-        <thead><tr><th>Item</th><th>Claimed</th></tr></thead>
+        <thead><tr><th>{{ 'backstage.table.item'|trans }}</th><th>{{ 'backstage.table.claimed'|trans }}</th></tr></thead>
         <tbody>
           {% for r in claimed %}<tr><td>{{ r.item.name }}</td><td>{{ r.claimed }}</td></tr>{% endfor %}
         </tbody>
@@ -151,22 +151,22 @@
   {% endif %}
 
   {% if is_granted('shift:view') %}
-    <h2 class="h5 mt-3">Shifts</h2>
+    <h2 class="h5 mt-3">{{ 'ui.nav.shifts'|trans }}</h2>
     {% if shifts is empty %}
-      {{ d.empty_inline('No shifts assigned.', {class: 'text-muted'}) }}
+      {{ d.empty_inline('backstage.locate.empty.no_shifts'|trans, {class: 'text-muted'}) }}
     {% else %}
       {{ d.table_start({hover: false}) }}
-        <thead><tr><th>When</th><th>Shift</th><th>Location</th><th>Status</th></tr></thead>
+        <thead><tr><th>{{ 'common.label.when'|trans }}</th><th>{{ 'backstage.table.shift'|trans }}</th><th>{{ 'common.label.location'|trans }}</th><th>{{ 'common.label.status'|trans }}</th></tr></thead>
         <tbody>
           {% for entry in shifts %}
             {% set shift = entry.shift %}
             <tr>
               <td class="small">{{ shift.startsAt|app_date }} · {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}</td>
               <td>{{ shift.title }}</td>
-              <td class="small text-muted">{{ shift.location ? shift.location.name : '—' }}</td>
+              <td class="small text-muted">{{ shift.location ? shift.location.name : '-' }}</td>
               <td>
-                {% if entry.noshow %}{{ d.badge('No-show', 'bg-red-lt') }}
-                {% else %}{{ d.badge(entry.assignment ? 'Assigned' : 'Applied', entry.assignment ? 'bg-green-lt' : 'bg-secondary-lt') }}{% endif %}
+                {% if entry.noshow %}{{ d.badge('common.state.no_show'|trans, 'bg-red-lt') }}
+                {% else %}{{ d.badge(entry.assignment ? 'backstage.state.assigned'|trans : 'backstage.state.applied'|trans, entry.assignment ? 'bg-green-lt' : 'bg-secondary-lt') }}{% endif %}
               </td>
             </tr>
           {% endfor %}
@@ -175,12 +175,12 @@
     {% endif %}
   {% endif %}
 
-  <h2 class="h5 mt-3">Distribution history</h2>
+  <h2 class="h5 mt-3">{{ 'backstage.locate.section.history'|trans }}</h2>
   {% if history is empty %}
-    {{ d.empty_inline('No goodies distributed yet.', {class: 'text-muted'}) }}
+    {{ d.empty_inline('backstage.locate.empty.no_history'|trans, {class: 'text-muted'}) }}
   {% else %}
     {{ d.table_start({hover: false}) }}
-      <thead><tr><th>When</th><th>Item</th><th>Qty</th><th>Hours then</th><th>By</th></tr></thead>
+      <thead><tr><th>{{ 'common.label.when'|trans }}</th><th>{{ 'backstage.table.item'|trans }}</th><th>{{ 'backstage.label.qty'|trans }}</th><th>{{ 'backstage.table.hours_then'|trans }}</th><th>{{ 'backstage.table.by'|trans }}</th></tr></thead>
       <tbody>
         {% for dist in history %}
           <tr>
@@ -188,7 +188,7 @@
             <td>{{ dist.itemName }}</td>
             <td>{{ dist.quantity }}</td>
             <td>{{ dist.hoursAtDistribution|round(2) }}</td>
-            <td class="small text-muted">{{ dist.distributedBy ? dist.distributedBy.name : '—' }}</td>
+            <td class="small text-muted">{{ dist.distributedBy ? dist.distributedBy.name : '-' }}</td>
           </tr>
         {% endfor %}
       </tbody>

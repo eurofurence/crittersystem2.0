@@ -7,12 +7,12 @@ use League\Flysystem\FilesystemOperator;
 /**
  * Application-facing wrapper over the uploads filesystem. Every user upload
  * (chat images, avatars, …) goes through here, so callers never depend on the
- * concrete backend — local folder in development, S3 in production, selected by
+ * concrete backend - local folder in development, S3 in production, selected by
  * the UPLOAD_STORAGE_DSN env var (see {@see FileStorageFactory}).
  *
  * Stored keys are backend-relative (e.g. "avatars/ab/cd.png"); the same key
  * resolves under either backend. Files are private and must be served through
- * an authorization-checked controller — never a public bucket URL.
+ * an authorization-checked controller - never a public bucket URL.
  */
 final class FileStorage
 {

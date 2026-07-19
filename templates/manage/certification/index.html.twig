@@ -1,32 +1,32 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Certifications{% endblock %}
+{% block title %}{{ 'manage.certification.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Certifications', {
-    subtitle: 'Skills and qualifications volunteers can hold.',
+  {{ d.page_header('manage.certification.page.title'|trans, {
+    subtitle: 'manage.certification.page.subtitle'|trans,
     actions: [
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New certification', href: path('app_manage_certification_new'), class: 'btn btn-primary'}
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.certification.action.new'|trans, href: path('app_manage_certification_new'), class: 'btn btn-primary'}
     ]
   }) }}
 
   {% if certifications is empty %}
-    {{ d.empty_state('No certifications yet', {
-      message: 'Create the first certification volunteers can apply for.',
-      actionLabel: '+ New certification',
+    {{ d.empty_state('manage.certification.empty.title'|trans, {
+      message: 'manage.certification.empty.message'|trans,
+      actionLabel: 'manage.certification.action.new'|trans,
       actionHref: path('app_manage_certification_new')
     }) }}
   {% else %}
     {{ d.table_start() }}
       <thead>
         <tr>
-          <th>Title</th>
-          <th>Validity</th>
-          <th>Flags</th>
-          <th>Status</th>
-          <th class="text-end">Actions</th>
+          <th>{{ 'common.label.title'|trans }}</th>
+          <th>{{ 'manage.certification.table.validity'|trans }}</th>
+          <th>{{ 'manage.certification.table.flags'|trans }}</th>
+          <th>{{ 'common.label.status'|trans }}</th>
+          <th class="text-end">{{ 'common.label.actions'|trans }}</th>
         </tr>
       </thead>
       <tbody>
@@ -37,28 +37,28 @@
               {% if cert.description %}<div class="text-muted small">{{ cert.description }}</div>{% endif %}
             </td>
             <td class="small">
-              {% if cert.perpetual %}Never expires
-              {% elseif cert.validityPeriodDays %}{{ cert.validityPeriodDays }} days
-              {% else %}—{% endif %}
+              {% if cert.perpetual %}{{ 'manage.certification.validity.never_expires'|trans }}
+              {% elseif cert.validityPeriodDays %}{{ 'manage.certification.validity.days'|trans({'%count%': cert.validityPeriodDays}) }}
+              {% else %}-{% endif %}
             </td>
             <td>
               <div class="d-flex flex-wrap gap-1">
-                {% if cert.allowSelfConfirmation %}{{ d.badge('Self-confirm', 'text-bg-info') }}{% endif %}
-                {% if cert.staffOnly %}{{ d.badge('Staff only', 'text-bg-warning') }}{% endif %}
+                {% if cert.allowSelfConfirmation %}{{ d.badge('manage.certification.badge.self_confirm'|trans, 'text-bg-info') }}{% endif %}
+                {% if cert.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'text-bg-warning') }}{% endif %}
               </div>
             </td>
             <td>
-              {% if cert.active %}{{ d.badge('Active', 'text-bg-success') }}
-              {% else %}{{ d.badge('Inactive', 'text-bg-secondary') }}{% endif %}
+              {% if cert.active %}{{ d.badge('common.state.active'|trans, 'text-bg-success') }}
+              {% else %}{{ d.badge('common.state.inactive'|trans, 'text-bg-secondary') }}{% endif %}
             </td>
             {% set del %}
               {{ d.delete_form(path('app_manage_certification_delete', {id: cert.uuid}), csrf_token('delete' ~ cert.id), {
-                message: 'Delete certification "' ~ cert.title ~ '"?'
+                message: 'manage.certification.confirm.delete'|trans({'%name%': cert.title})
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'QR', href: path('app_manage_certification_qr', {id: cert.uuid}), class: 'btn btn-sm btn-outline-secondary'},
-              {label: 'Edit', href: path('app_manage_certification_edit', {id: cert.uuid})}
+              {label: 'manage.certification.action.qr'|trans, href: path('app_manage_certification_qr', {id: cert.uuid}), class: 'btn btn-sm btn-outline-secondary'},
+              {label: 'common.action.edit'|trans, href: path('app_manage_certification_edit', {id: cert.uuid})}
             ], {extraHtml: del}) }}
           </tr>
         {% endfor %}

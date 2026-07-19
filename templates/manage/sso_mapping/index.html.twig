@@ -1,18 +1,18 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}SSO group mappings{% endblock %}
+{% block title %}{{ 'manage.sso_mapping.page.title'|trans }}{% endblock %}
 
 {% block body %}
   {% set porter %}
-    <a href="{{ path('app_manage_sso_mapping_export') }}" class="btn btn-outline-secondary">Export JSON</a>
-    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sso-mapping-import-modal">Import</button>
+    <a href="{{ path('app_manage_sso_mapping_export') }}" class="btn btn-outline-secondary">{{ 'manage.action.export_json'|trans }}</a>
+    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#sso-mapping-import-modal">{{ 'common.action.import'|trans }}</button>
   {% endset %}
-  {{ d.page_header('SSO group mappings', {
-    subtitle: 'Map SSO groups to departments, permission groups, volunteer types and badges.',
+  {{ d.page_header('manage.sso_mapping.page.title'|trans, {
+    subtitle: 'manage.sso_mapping.page.subtitle'|trans,
     actions: [
-      {label: 'New mapping', href: path('app_manage_sso_mapping_new'), class: 'btn btn-primary'},
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'}
+      {label: 'manage.sso_mapping.action.new'|trans, href: path('app_manage_sso_mapping_new'), class: 'btn btn-primary'},
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}
     ],
     actionsHtml: porter
   }) }}
@@ -21,56 +21,50 @@
     <div class="modal-dialog modal-lg">
       <form class="modal-content" method="post" action="{{ path('app_manage_sso_mapping_import') }}" enctype="multipart/form-data">
         <div class="modal-header">
-          <h5 class="modal-title">Import SSO mappings (JSON)</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">{{ 'manage.sso_mapping.import.title'|trans }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'ui.aria.close'|trans }}"></button>
         </div>
         <div class="modal-body">
           <input type="hidden" name="_token" value="{{ csrf_token('sso_import') }}">
-          <p class="text-muted small mb-3">
-            An array of mappings keyed by the SSO group <code>id</code>. <code>department</code> is a
-            department <em>slug</em>; if none with that slug exists it is created automatically (named
-            after the mapping). <code>badges</code>, <code>volunteertype</code> and
-            <code>permissiongroup</code> must reference existing records. Download the current mappings
-            with <strong>Export JSON</strong> to use as a template.
-          </p>
+          <p class="text-muted small mb-3">{{ 'manage.sso_mapping.import.help'|trans|raw }}</p>
           <div class="mb-3">
-            <label class="form-label" for="sso-mapping-import-file">Upload a file</label>
+            <label class="form-label" for="sso-mapping-import-file">{{ 'manage.import.upload_label'|trans }}</label>
             <input class="form-control" id="sso-mapping-import-file" type="file" name="file" accept=".json,application/json">
           </div>
           <div class="mb-1">
-            <label class="form-label" for="sso-mapping-import-json">…or paste JSON</label>
+            <label class="form-label" for="sso-mapping-import-json">{{ 'manage.import.paste_label'|trans }}</label>
             <textarea class="form-control font-monospace" id="sso-mapping-import-json" name="json" rows="8"
               placeholder='[{"id":"0RV39Y2PM21J4N6L","name":"Art Show","slug":"art-show","staffonly":1,"department":"art-show","badges":["security"],"volunteertype":["Volunteer"],"permissiongroup":["info-desk"]}]'></textarea>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-link" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Import mappings</button>
+          <button type="button" class="btn btn-link" data-bs-dismiss="modal">{{ 'common.action.cancel'|trans }}</button>
+          <button type="submit" class="btn btn-primary">{{ 'manage.sso_mapping.import.submit'|trans }}</button>
         </div>
       </form>
     </div>
   </div>
 
   {% if mappings is empty %}
-    {{ d.empty_state('No mappings yet', {message: 'Import SSO group mappings to provision users automatically.'}) }}
+    {{ d.empty_state('manage.sso_mapping.empty.title'|trans, {message: 'manage.sso_mapping.empty.message'|trans}) }}
   {% else %}
     {{ d.table_start() }}
-      <thead><tr><th>SSO group</th><th>Department</th><th>Groups</th><th>Volunteer types</th><th>Badges</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>{{ 'manage.sso_mapping.table.sso_group'|trans }}</th><th>{{ 'common.label.department'|trans }}</th><th>{{ 'manage.label.groups'|trans }}</th><th>{{ 'manage.label.volunteer_types'|trans }}</th><th>{{ 'manage.label.badges'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
       <tbody>
         {% for m in mappings %}
           <tr>
-            <td><div class="fw-semibold">{{ m.name }}</div><code class="small">{{ m.ssoGroupId }}</code>{% if m.staffOnly %} {{ d.badge('staff', 'text-bg-azure') }}{% endif %}</td>
-            <td class="small">{{ m.department ? m.department.name : '—' }}</td>
-            <td class="small">{{ m.permissionGroups|map(g => g.slug)|join(', ') ?: '—' }}</td>
-            <td class="small">{{ m.volunteerTypes|map(v => v.name)|join(', ') ?: '—' }}</td>
-            <td class="small">{{ m.badges|map(b => b.slug)|join(', ') ?: '—' }}</td>
+            <td><div class="fw-semibold">{{ m.name }}</div><code class="small">{{ m.ssoGroupId }}</code>{% if m.staffOnly %} {{ d.badge('manage.sso_mapping.badge.staff'|trans, 'text-bg-azure') }}{% endif %}</td>
+            <td class="small">{{ m.department ? m.department.name : '-' }}</td>
+            <td class="small">{{ m.permissionGroups|map(g => g.slug)|join(', ') ?: '-' }}</td>
+            <td class="small">{{ m.volunteerTypes|map(v => v.name)|join(', ') ?: '-' }}</td>
+            <td class="small">{{ m.badges|map(b => b.slug)|join(', ') ?: '-' }}</td>
             {% set del %}
               {{ d.delete_form(path('app_manage_sso_mapping_delete', {id: m.uuid}), csrf_token('delete' ~ m.id), {
-                message: 'Delete mapping?'
+                message: 'manage.sso_mapping.confirm.delete'|trans
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'Edit', href: path('app_manage_sso_mapping_edit', {id: m.uuid}), class: 'btn btn-sm btn-outline-secondary'}
+              {label: 'common.action.edit'|trans, href: path('app_manage_sso_mapping_edit', {id: m.uuid}), class: 'btn btn-sm btn-outline-secondary'}
             ], {class: 'text-end', extraHtml: del}) }}
           </tr>
         {% endfor %}

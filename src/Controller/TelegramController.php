@@ -11,6 +11,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /** Self-service Telegram account linking from the user profile. */
 #[Route('/profile/telegram')]
@@ -39,7 +40,7 @@ final class TelegramController extends AbstractController
     public function start(): Response
     {
         if (!($this->config->current()?->isEnabled() ?? false)) {
-            $this->addFlash('danger', 'Telegram linking is not enabled.');
+            $this->addFlash('danger', new TranslatableMessage('telegram.flash.not_enabled'));
 
             return $this->redirectToRoute('app_profile_telegram');
         }
@@ -59,7 +60,7 @@ final class TelegramController extends AbstractController
     {
         if ($this->isCsrfTokenValid('telegram_unlink', (string) $request->request->get('_token'))) {
             $this->links->unlink($this->user());
-            $this->addFlash('success', 'Telegram account unlinked.');
+            $this->addFlash('success', new TranslatableMessage('telegram.flash.unlinked'));
         }
 
         return $this->redirectToRoute('app_profile_telegram');

@@ -15,10 +15,10 @@ final class FaqType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('category', TextType::class, ['label' => 'Category'])
-            ->add('question', TextareaType::class, ['label' => 'Question', 'attr' => ['rows' => 2]])
-            ->add('answer', TextareaType::class, ['label' => 'Answer', 'attr' => ['rows' => 5]])
-            ->add('displayOrder', IntegerType::class, ['label' => 'Display order']);
+            ->add('category', TextType::class, ['label' => 'manage.faq.field.category.label'])
+            ->add('question', TextareaType::class, ['label' => 'manage.faq.field.question.label', 'attr' => ['rows' => 2]])
+            ->add('answer', TextareaType::class, ['label' => 'manage.faq.field.answer.label', 'attr' => ['rows' => 5]])
+            ->add('displayOrder', IntegerType::class, ['label' => 'manage.faq.field.display_order.label']);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

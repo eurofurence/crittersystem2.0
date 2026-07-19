@@ -1,22 +1,22 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
-{% block title %}Consent texts{% endblock %}
+{% block title %}{{ 'manage.consent_text.page.title'|trans }}{% endblock %}
 
 {% block body %}
-  {{ d.page_header('Consent texts', {
-    subtitle: 'The onboarding consent disclaimer, per language.',
+  {{ d.page_header('manage.consent_text.page.title'|trans, {
+    subtitle: 'manage.consent_text.page.subtitle'|trans,
     actions: [
-      {label: '← Manage', href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      {label: '+ New language', href: path('app_manage_consent_text_new'), class: 'btn btn-primary'}
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.consent_text.action.new'|trans, href: path('app_manage_consent_text_new'), class: 'btn btn-primary'}
     ]
   }) }}
 
   {% if texts is empty %}
-    {{ d.empty_state('No consent texts yet', {message: 'Add the consent disclaimer for at least one language.', actionLabel: '+ New language', actionHref: path('app_manage_consent_text_new')}) }}
+    {{ d.empty_state('manage.consent_text.empty.title'|trans, {message: 'manage.consent_text.empty.message'|trans, actionLabel: 'manage.consent_text.action.new'|trans, actionHref: path('app_manage_consent_text_new')}) }}
   {% else %}
     {{ d.table_start() }}
-      <thead><tr><th>Locale</th><th>Header title</th><th>Updated</th><th class="text-end">Actions</th></tr></thead>
+      <thead><tr><th>{{ 'manage.consent_text.table.locale'|trans }}</th><th>{{ 'manage.consent_text.table.header_title'|trans }}</th><th>{{ 'manage.consent_text.table.updated'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
       <tbody>
         {% for t in texts %}
           <tr>
@@ -25,11 +25,11 @@
             <td class="small text-muted">{{ t.updatedAt|app_datetime }}</td>
             {% set del %}
               {{ d.delete_form(path('app_manage_consent_text_delete', {id: t.uuid}), csrf_token('delete' ~ t.id), {
-                message: 'Delete consent text for ' ~ t.locale ~ '?'
+                message: 'manage.consent_text.confirm.delete'|trans({'%locale%': t.locale})
               }) }}
             {% endset %}
             {{ d.row_actions([
-              {label: 'Edit', href: path('app_manage_consent_text_edit', {id: t.uuid})}
+              {label: 'common.action.edit'|trans, href: path('app_manage_consent_text_edit', {id: t.uuid})}
             ], {extraHtml: del}) }}
           </tr>
         {% endfor %}

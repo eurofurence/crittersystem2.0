@@ -32,30 +32,30 @@ final class EventConfigType extends AbstractType
         ];
 
         $builder
-            ->add('name', TextType::class, ['label' => 'Event name', 'required' => false])
+            ->add('name', TextType::class, ['label' => 'manage.event_config.field.name.label', 'required' => false])
             ->add('welcomeMessage', TextareaType::class, [
-                'label' => 'Welcome message',
+                'label' => 'manage.event_config.field.welcome_message.label',
                 'required' => false,
                 'attr' => ['rows' => 3],
             ])
             ->add('accessMode', ChoiceType::class, [
-                'label' => 'Access mode',
+                'label' => 'manage.event_config.field.access_mode.label',
                 'choices' => [
-                    'Public' => 'public',
-                    'Staff only' => 'staff',
-                    'Admin only' => 'admin',
+                    'common.state.public' => 'public',
+                    'common.state.staff_only' => 'staff',
+                    'manage.event_config.access.admin_only' => 'admin',
                 ],
             ])
-            ->add('buildupStart', DateTimeType::class, ['label' => 'Buildup start'] + $dateOptions)
-            ->add('eventStart', DateTimeType::class, ['label' => 'Event start'] + $dateOptions)
-            ->add('eventEnd', DateTimeType::class, ['label' => 'Event end'] + $dateOptions)
-            ->add('teardownEnd', DateTimeType::class, ['label' => 'Teardown end'] + $dateOptions)
+            ->add('buildupStart', DateTimeType::class, ['label' => 'manage.event_config.field.buildup_start.label'] + $dateOptions)
+            ->add('eventStart', DateTimeType::class, ['label' => 'manage.event_config.field.event_start.label'] + $dateOptions)
+            ->add('eventEnd', DateTimeType::class, ['label' => 'manage.event_config.field.event_end.label'] + $dateOptions)
+            ->add('teardownEnd', DateTimeType::class, ['label' => 'manage.event_config.field.teardown_end.label'] + $dateOptions)
             ->add('defaultTheme', ChoiceType::class, [
-                'label' => 'Default theme',
+                'label' => 'manage.event_config.field.default_theme.label',
                 'required' => false,
-                'placeholder' => '— first available —',
+                'placeholder' => 'manage.event_config.field.default_theme.placeholder',
                 'choices' => $this->themes->choices(),
-                'help' => 'Applied to everyone who hasn\'t picked their own theme.',
+                'help' => 'manage.event_config.field.default_theme.help',
             ]);
     }
 

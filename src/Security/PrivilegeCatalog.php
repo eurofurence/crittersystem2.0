@@ -157,7 +157,7 @@ final class PrivilegeCatalog
      *
      * volunteertype:view and location:view are part of the baseline: both pages
      * are open to any signed-in user, and the navigation gates its entries on
-     * these privileges — without them a volunteer has no way to reach the page
+     * these privileges - without them a volunteer has no way to reach the page
      * where volunteer types are joined.
      *
      * @var string[]

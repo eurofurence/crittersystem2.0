@@ -15,6 +15,7 @@ use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/news')]
 #[IsGranted('news:manage')]
@@ -51,16 +52,16 @@ final class NewsController extends AbstractController
 
             if ($request->request->getBoolean('notify')) {
                 $sent = $this->notifier->newsPublished($news);
-                $this->addFlash('info', \sprintf('Notified %d subscriber(s).', $sent));
+                $this->addFlash('info', new TranslatableMessage('manage.news.flash.notified', ['%count%' => $sent]));
             }
-            $this->addFlash('success', \sprintf('News "%s" published.', $news->getTitle()));
+            $this->addFlash('success', new TranslatableMessage('manage.news.flash.published', ['%name%' => $news->getTitle()]));
 
             return $this->redirectToRoute('app_manage_news_index');
         }
 
         return $this->render('manage/news/form.html.twig', [
             'form' => $form,
-            'heading' => 'New news post',
+            'heading' => 'manage.news.form.heading_new',
             'showNotify' => true,
         ]);
     }
@@ -73,14 +74,14 @@ final class NewsController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $this->em->flush();
-            $this->addFlash('success', \sprintf('News "%s" updated.', $news->getTitle()));
+            $this->addFlash('success', new TranslatableMessage('manage.news.flash.updated', ['%name%' => $news->getTitle()]));
 
             return $this->redirectToRoute('app_manage_news_index');
         }
 
         return $this->render('manage/news/form.html.twig', [
             'form' => $form,
-            'heading' => 'Edit news post',
+            'heading' => 'manage.news.form.heading_edit',
             'showNotify' => false,
         ]);
     }
@@ -91,7 +92,7 @@ final class NewsController extends AbstractController
         if ($this->isCsrfTokenValid('delete'.$news->getId(), (string) $request->request->get('_token'))) {
             $this->em->remove($news);
             $this->em->flush();
-            $this->addFlash('success', 'News post deleted.');
+            $this->addFlash('success', new TranslatableMessage('manage.news.flash.deleted'));
         }
 
         return $this->redirectToRoute('app_manage_news_index');

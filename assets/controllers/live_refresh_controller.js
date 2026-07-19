@@ -4,10 +4,10 @@ import { backgroundFetch } from '../js/session.js';
 /*
  * Reusable near-real-time polling. Two modes, chosen by the values you set:
  *
- *   Frame mode  — data-live-refresh-frame-value="some_frame_id"
+ *   Frame mode  - data-live-refresh-frame-value="some_frame_id"
  *                 reloads that <turbo-frame> on each tick (optionally repointing
  *                 its src to data-live-refresh-url-value first).
- *   Fetch mode  — data-live-refresh-url-value="/path"
+ *   Fetch mode  - data-live-refresh-url-value="/path"
  *                 fetches the URL and replaces this element's innerHTML; a 304
  *                 response is treated as "no change" and left untouched.
  *
@@ -87,7 +87,7 @@ export default class extends Controller {
                 }
                 this.element.innerHTML = await response.text();
             } catch (error) {
-                /* transient network error — ignore and retry on the next tick */
+                /* transient network error - ignore and retry on the next tick */
             }
         }
     }

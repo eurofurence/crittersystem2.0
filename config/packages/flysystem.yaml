@@ -1,6 +1,6 @@
 # User uploads (chat images, avatars, …) are NOT configured through the bundle
 # here. They use a single pluggable backend selected by the UPLOAD_STORAGE_DSN
-# environment variable — a local folder in development, S3 in production — wired
+# environment variable - a local folder in development, S3 in production - wired
 # through App\Storage\FileStorage (see config/services.yaml). This keeps the
 # backend switchable by one env var with no code change.
 flysystem:

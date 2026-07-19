@@ -12,6 +12,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Translation\TranslatableMessage;
 
 /**
  * Mass badge assignment: filter users, select several, then apply or remove a
@@ -59,7 +60,10 @@ final class BadgeAssignmentController extends AbstractController
                 'resourceId' => $badge->getId(),
                 'details' => ['badge' => $badge->getSlug(), 'users' => $userIds, 'changed' => $changed],
             ]);
-            $this->addFlash('success', \sprintf('%s badge "%s" for %d user(s).', $action === 'add' ? 'Assigned' : 'Removed', $badge->getName(), $changed));
+            $this->addFlash('success', new TranslatableMessage(
+                $action === 'add' ? 'manage.badge.flash.assigned' : 'manage.badge.flash.removed',
+                ['%name%' => $badge->getName(), '%count%' => $changed],
+            ));
 
             return $this->redirectToRoute('app_manage_badge_assign', ['badge' => $badge->getUuid(), 'q' => $query]);
         }

@@ -104,7 +104,7 @@ final class AvailabilityService
 
     /**
      * Confirmed-assignment intervals that consume availability.
-     * Only published/confirmed assignments consume — applications and draft
+     * Only published/confirmed assignments consume - applications and draft
      * proposals do not. Optionally exclude a shift being (re)planned.
      *
      * @return list<array{0: \DateTimeImmutable, 1: \DateTimeImmutable}>
