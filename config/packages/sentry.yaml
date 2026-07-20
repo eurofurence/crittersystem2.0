@@ -2,9 +2,10 @@
 sentry:
     dsn: '%env(SENTRY_DSN)%'
     options:
+        # enable_logs: true
         # Add request headers, cookies, IP address and the authenticated user
         # see https://docs.sentry.io/platforms/php/data-management/data-collected/ for more info
-        # send_default_pii: true
+        send_default_pii: true
         ignore_exceptions:
             - 'Symfony\Component\ErrorHandler\Error\FatalError'
             - 'Symfony\Component\Debug\Exception\FatalErrorException'
