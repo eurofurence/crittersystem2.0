@@ -1,10 +1,19 @@
-# Minimal in-cluster PostgreSQL for evaluation. For production prefer a managed
-# database or an operator (CloudNativePG, Zalando) and delete this file.
+# In-cluster PostgreSQL for Critter. A StatefulSet with a per-replica
+# PersistentVolumeClaim: the data volume is bound to the database independently
+# of the pod, so it survives pod restarts, crashes, image updates and
+# rescheduling. For a large production event prefer a managed database or an
+# operator (CloudNativePG, Zalando); point DATABASE_URL at it and drop this file
+# from the kustomization.
 apiVersion: v1
 kind: Service
 metadata:
   name: critter-db
   namespace: critter
+  annotations:
+    # Never let a GitOps prune delete the database. Even if this file is removed
+    # from the kustomization, ArgoCD keeps the Service and StatefulSet (and so
+    # the data PVC) instead of deleting them.
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   selector:
     app: critter-db
@@ -17,9 +26,17 @@ kind: StatefulSet
 metadata:
   name: critter-db
   namespace: critter
+  annotations:
+    argocd.argoproj.io/sync-options: Prune=false
 spec:
   serviceName: critter-db
   replicas: 1
+  # Keep the data volume when the StatefulSet is deleted or scaled down. Without
+  # this, `kubectl delete statefulset` or a scale-to-zero can reclaim the PVC and
+  # take the database with it. (Requires Kubernetes 1.27+.)
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
   selector:
     matchLabels:
       app: critter-db
@@ -50,6 +67,9 @@ spec:
               command: ["pg_isready", "-U", "app", "-d", "app"]
             initialDelaySeconds: 5
             periodSeconds: 10
+          resources:
+            requests: { cpu: "100m", memory: "256Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
@@ -58,6 +78,12 @@ spec:
         name: data
       spec:
         accessModes: ["ReadWriteOnce"]
+        # The volume survives pod restarts regardless of the class, but whether it
+        # survives PVC *deletion* is decided by the StorageClass reclaimPolicy. Pin
+        # a class whose reclaimPolicy is Retain so a deleted claim keeps the disk;
+        # leaving this unset uses the cluster default, which on most clouds is
+        # reclaimPolicy: Delete - there, deleting the PVC destroys the data.
+        # storageClassName: your-retain-class
         resources:
           requests:
             storage: 5Gi

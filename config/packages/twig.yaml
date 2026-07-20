@@ -1,5 +1,7 @@
 twig:
     file_name_pattern: '*.twig'
+    globals:
+        sentry_loader_script: '%env(SENTRY_LOADER_SCRIPT)%'
 
 when@test:
     twig:

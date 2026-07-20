@@ -1,0 +1,56 @@
+# Nightly database backup to the dedicated backup bucket.
+#
+# Runs `app:backup:database` in the app image (which already ships
+# postgresql-client, so pg_dump matches the server version): dump -> upload to
+# BACKUP_S3_* -> prune dumps older than BACKUP_RETENTION_DAYS. Pruning happens
+# only after a confirmed upload, so a failed dump never deletes good backups.
+#
+# Credential isolation is the point of this file:
+#   - BACKUP_S3_* come from critter-backup-secrets, a Secret the app pods do NOT
+#     mount, bound to a separate bucket with a write-scoped policy.
+#   - Only DATABASE_URL and APP_SECRET are pulled from critter-secrets (pg_dump
+#     connection + kernel boot). The app's AWS_* / EXPORT_STORAGE_DSN are NOT
+#     injected here, so this pod cannot reach the export/upload buckets.
+# For even tighter separation, point DATABASE_URL at a read-only Postgres role.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: critter-db-backup
+  namespace: critter
+spec:
+  schedule: "23 2 * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 3600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: db-backup
+              image: ghcr.io/YOUR_ORG/critter:latest   # <-- replace with your image
+              command: ["php", "bin/console", "app:backup:database"]
+              envFrom:
+                - secretRef:
+                    name: critter-backup-secrets   # BACKUP_S3_* destination + retention
+              env:
+                - name: APP_ENV
+                  value: prod
+                - name: RUN_MIGRATIONS_ON_START
+                  value: "0"
+                - name: DATABASE_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: critter-secrets
+                      key: DATABASE_URL
+                - name: APP_SECRET
+                  valueFrom:
+                    secretKeyRef:
+                      name: critter-secrets
+                      key: APP_SECRET
+              resources:
+                requests: { cpu: "100m", memory: "128Mi" }
+                limits: { cpu: "1", memory: "512Mi" }

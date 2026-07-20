@@ -6,6 +6,7 @@ resources:
   - configmap.yaml
   - postgres.yaml        # remove when using an external/managed database
   - app.yaml
+  - backup.yaml          # nightly DB backup CronJob (needs critter-backup-secrets)
   - ingress.yaml
   # secret.example.yaml is intentionally NOT listed - provide the real Secret
   # out-of-band (kubectl create secret / Sealed Secrets / External Secrets).

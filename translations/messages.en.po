@@ -9,10 +9,10 @@ msgstr ""
 # ==========================================================================
 
 msgid "ui.app.title"
-msgstr "Volunteer Management System"
+msgstr "Critter Management System"
 
 msgid "ui.app.brand"
-msgstr "VMS"
+msgstr "Critter Management System"
 
 msgid "ui.aria.toggle_navigation"
 msgstr "Toggle navigation"
@@ -60,7 +60,7 @@ msgid "ui.nav.shift_manager"
 msgstr "Shift Manager"
 
 msgid "ui.nav.volunteer_types"
-msgstr "Volunteer Types"
+msgstr "Critter Types"
 
 msgid "ui.nav.locations"
 msgstr "Locations"
@@ -408,10 +408,10 @@ msgid "admin.sso.roles.back"
 msgstr "← Manage"
 
 msgid "admin.sso.roles.field.department_manager.help"
-msgstr "A user holding this role is a department manager of every department their group mappings place them in. Leave empty to disable."
+msgstr "A user holding this role is a department director of every department their group mappings place them in. Leave empty to disable."
 
 msgid "admin.sso.roles.field.department_manager.label"
-msgstr "Department manager role ID"
+msgstr "Department director role ID"
 
 msgid "admin.sso.roles.field.global_admin.help"
 msgstr "A user holding this role becomes a global admin across the whole app. Leave empty to disable."
@@ -420,7 +420,7 @@ msgid "admin.sso.roles.field.global_admin.label"
 msgstr "Global admin role ID"
 
 msgid "admin.sso.roles.field.shift_manager.help"
-msgstr "As above, for shift managers. A user holding both roles becomes a department manager."
+msgstr "As above, for shift managers. A user holding both roles becomes a department director."
 
 msgid "admin.sso.roles.field.shift_manager.label"
 msgstr "Shift manager role ID"
@@ -450,7 +450,7 @@ msgid "admin.sso.roles.positions.intro"
 msgstr "A group mapping puts a user <em>in</em> a department. These two roles decide <em>what they are</em> there - the same pair applies to every department."
 
 msgid "admin.sso.roles.positions.item.department_manager"
-msgstr "<strong>Department manager</strong> - holds the department manager role and a department role."
+msgstr "<strong>Department director</strong> - holds the department director role and a department role."
 
 msgid "admin.sso.roles.positions.item.department_staff"
 msgstr "<strong>Department staff</strong> - holds a department role only."
@@ -459,7 +459,7 @@ msgid "admin.sso.roles.positions.item.shift_manager"
 msgstr "<strong>Shift manager</strong> - holds the shift manager role and a department role."
 
 msgid "admin.sso.roles.positions.note"
-msgstr "Holding both roles makes the user a department manager. Positions are re-evaluated on every sign-in, so removing a role at the identity provider demotes the user on their next login."
+msgstr "Holding both roles makes the user a department director. Positions are re-evaluated on every sign-in, so removing a role at the identity provider demotes the user on their next login."
 
 msgid "admin.sso.roles.positions.title"
 msgstr "Department positions"
@@ -1497,7 +1497,7 @@ msgid "install.admin.password_label"
 msgstr "Password"
 
 msgid "install.admin.title"
-msgstr "Administrator · Setup · VMS"
+msgstr "Administrator · Setup · CMS"
 
 msgid "install.brand.tagline"
 msgstr "Volunteer & Staff Management - Setup"
@@ -1527,7 +1527,7 @@ msgid "install.config.timezone_label"
 msgstr "Timezone"
 
 msgid "install.config.title"
-msgstr "Configuration · Setup · VMS"
+msgstr "Configuration · Setup · CMS"
 
 msgid "install.database.cannot_connect_body"
 msgstr "The application could not open a connection using the configured %code%."
@@ -1578,7 +1578,7 @@ msgid "install.database.start_migration"
 msgstr "Start migration"
 
 msgid "install.database.title"
-msgstr "Database · Setup · VMS"
+msgstr "Database · Setup · CMS"
 
 msgid "install.database.up_to_date_title"
 msgstr "The database schema is up to date"
@@ -1599,7 +1599,7 @@ msgid "install.disabled.or_set_env"
 msgstr "Or set %code% in the environment and reload this page to use the wizard."
 
 msgid "install.disabled.title"
-msgstr "Installer disabled · VMS"
+msgstr "Installer disabled · CMS"
 
 msgid "install.field.event_name.label"
 msgstr "Event name"
@@ -1632,7 +1632,7 @@ msgid "install.flash.session_expired"
 msgstr "Your setup session expired. Please try again."
 
 msgid "install.layout.title"
-msgstr "Setup · VMS"
+msgstr "Setup · CMS"
 
 msgid "install.overview.check_fix"
 msgstr "Fix"
@@ -1647,7 +1647,7 @@ msgid "install.overview.intro"
 msgstr "Detected deployment: %deployment%. The checks below must all pass before you continue. Required dependency: a reachable %postgresql% database."
 
 msgid "install.overview.title"
-msgstr "System overview · Setup · VMS"
+msgstr "System overview · Setup · CMS"
 
 msgid "install.privacy.contact_email_label"
 msgstr "Privacy contact email"
@@ -1677,7 +1677,7 @@ msgid "install.privacy.save_finish"
 msgstr "Save & finish"
 
 msgid "install.privacy.title"
-msgstr "Privacy notice · Setup · VMS"
+msgstr "Privacy notice · Setup · CMS"
 
 msgid "install.progress.percent_complete"
 msgstr "%percent%% complete"
@@ -1686,7 +1686,7 @@ msgid "install.progress.step_counter"
 msgstr "Step %step% of %total%"
 
 msgid "install.welcome.heading"
-msgstr "Welcome to the VMS setup"
+msgstr "Welcome to the CMS setup"
 
 msgid "install.welcome.intro"
 msgstr "This guided wizard checks your environment, brings the database up to date and helps you create the first administrator. To continue, enter the installation password (the %code% environment variable set for this deployment)."
@@ -1698,7 +1698,7 @@ msgid "install.welcome.submit"
 msgstr "Unlock & continue"
 
 msgid "install.welcome.title"
-msgstr "Welcome · Setup · VMS"
+msgstr "Welcome · Setup · CMS"
 
 msgid "install.welcome.unlock_divider"
 msgstr "unlock setup"
@@ -1779,7 +1779,7 @@ msgid "login.title.event"
 msgstr "%name% · Sign in"
 
 msgid "maintenance.page.title"
-msgstr "Maintenance · VMS"
+msgstr "Maintenance · CMS"
 
 msgid "maintenance.retry"
 msgstr "Retry"
@@ -1812,7 +1812,7 @@ msgid "manage.applications.empty.title"
 msgstr "All caught up"
 
 msgid "manage.applications.page.subtitle"
-msgstr "Pending requests to join restricted volunteer types."
+msgstr "Pending requests to join restricted Critter types."
 
 msgid "manage.applications.page.title"
 msgstr "Membership Applications"
@@ -2580,7 +2580,7 @@ msgid "manage.index.card.volunteer_types.desc"
 msgstr "Role categories volunteers can join."
 
 msgid "manage.index.card.volunteer_types.title"
-msgstr "Volunteer Types"
+msgstr "Critter Types"
 
 msgid "manage.index.card.worklogs.desc"
 msgstr "Manual hour entries for volunteers."
@@ -2637,7 +2637,7 @@ msgid "manage.label.volunteer"
 msgstr "Volunteer"
 
 msgid "manage.label.volunteer_types"
-msgstr "Volunteer types"
+msgstr "Critter types"
 
 msgid "manage.location.action.back_to_index"
 msgstr "← Back to locations"
@@ -3189,7 +3189,7 @@ msgid "manage.shift.table.type_location"
 msgstr "Type / Location"
 
 msgid "manage.shift_task.action.back"
-msgstr "← Back to shift types"
+msgstr "← Back to critter types"
 
 msgid "manage.shift_task.action.new"
 msgstr "+ New shift type"
@@ -3201,7 +3201,7 @@ msgid "manage.shift_task.empty.message"
 msgstr "Create the first shift type to categorise shifts."
 
 msgid "manage.shift_task.empty.title"
-msgstr "No shift types yet"
+msgstr "No critter types yet"
 
 msgid "manage.shift_task.field.department.help"
 msgstr "Optional owning department"
@@ -3306,7 +3306,7 @@ msgid "manage.sso_mapping.multiselect_hint"
 msgstr "Ctrl/Cmd-click to select multiple."
 
 msgid "manage.sso_mapping.page.subtitle"
-msgstr "Map SSO groups to departments, permission groups, volunteer types and badges."
+msgstr "Map SSO groups to departments, permission groups, Critter types and badges."
 
 msgid "manage.sso_mapping.page.title"
 msgstr "SSO group mappings"
@@ -3456,7 +3456,7 @@ msgid "manage.volunteer_type.action.add_contact"
 msgstr "Add contact"
 
 msgid "manage.volunteer_type.action.back"
-msgstr "← Back to volunteer types"
+msgstr "← Back to Critter types"
 
 msgid "manage.volunteer_type.action.new"
 msgstr "+ New volunteer type"
@@ -3495,7 +3495,7 @@ msgid "manage.volunteer_type.empty.message"
 msgstr "Create the first volunteer type so people can join it."
 
 msgid "manage.volunteer_type.empty.title"
-msgstr "No volunteer types yet"
+msgstr "No Critter types yet"
 
 msgid "manage.volunteer_type.field.department_only.label"
 msgstr "Department only (requires Staff only)"
@@ -3540,7 +3540,7 @@ msgid "manage.volunteer_type.label.phone"
 msgstr "Phone %phone%"
 
 msgid "manage.volunteer_type.members.back"
-msgstr "← Volunteer types"
+msgstr "← Critter types"
 
 msgid "manage.volunteer_type.members.confirm_remove"
 msgstr "Remove %name%?"
@@ -3582,7 +3582,7 @@ msgid "manage.volunteer_type.page.subtitle"
 msgstr "Role categories volunteers can join."
 
 msgid "manage.volunteer_type.page.title"
-msgstr "Volunteer Types"
+msgstr "Critter Types"
 
 msgid "manage.volunteer_type.table.contact"
 msgstr "Contact"
@@ -3645,7 +3645,7 @@ msgid "membership.action_leave"
 msgstr "Leave"
 
 msgid "membership.back"
-msgstr "← Volunteer Types"
+msgstr "← Critter Types"
 
 msgid "membership.badge_member"
 msgstr "Member"
@@ -3660,10 +3660,10 @@ msgid "membership.confirm_leave"
 msgstr "Leave this volunteer type?"
 
 msgid "membership.empty.message"
-msgstr "There are no volunteer types to join yet."
+msgstr "There are no Critter types to join yet."
 
 msgid "membership.empty.title"
-msgstr "No volunteer types"
+msgstr "No Critter types"
 
 msgid "membership.flash.join_requested"
 msgstr "Request to join \"%name%\" submitted - awaiting confirmation."
@@ -3687,7 +3687,7 @@ msgid "membership.index.table_view"
 msgstr "Table view"
 
 msgid "membership.page.title"
-msgstr "Volunteer Types"
+msgstr "Critter Types"
 
 msgid "membership.show.awaiting_confirm"
 msgstr "Your membership is awaiting confirmation. You cannot apply to associated shifts until it is confirmed."
@@ -4116,7 +4116,7 @@ msgid "planner.empty.no_departments.title"
 msgstr "No planning departments"
 
 msgid "planner.empty.no_volunteer_types"
-msgstr "No volunteer types configured."
+msgstr "No Critter types configured."
 
 msgid "planner.field.audience"
 msgstr "Audience"
@@ -4134,7 +4134,7 @@ msgid "planner.field.ends_at"
 msgstr "Ends at"
 
 msgid "planner.field.needed_multi"
-msgstr "Required volunteer types"
+msgstr "Required Critter types"
 
 msgid "planner.field.needed_single"
 msgstr "Required volunteer type & quantity"
@@ -4263,7 +4263,7 @@ msgid "planner.matrix.title_department"
 msgstr "Matrix Planner - %name%"
 
 msgid "planner.modal_add.needed"
-msgstr "Required volunteer types & quantities"
+msgstr "Required Critter types & quantities"
 
 msgid "planner.modal_add.submit"
 msgstr "Create draft"
@@ -4365,7 +4365,7 @@ msgid "planner.wizard.field.days"
 msgstr "Days"
 
 msgid "planner.wizard.field.needed"
-msgstr "Required volunteer types & quantities (per slot)"
+msgstr "Required Critter types & quantities (per slot)"
 
 msgid "planner.wizard.field.slot_minutes"
 msgstr "Slot duration (min)"
@@ -4392,7 +4392,7 @@ msgid "profile.card.goodies"
 msgstr "Goodies"
 
 msgid "profile.card.volunteer_types"
-msgstr "Volunteer Types"
+msgstr "Critter Types"
 
 msgid "profile.card.work_history"
 msgstr "Work history"
