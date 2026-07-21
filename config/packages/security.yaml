@@ -58,6 +58,7 @@ security:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/unavailable$, roles: PUBLIC_ACCESS } # "system restricted" notice for access-mode-gated users
         - { path: ^/$, roles: PUBLIC_ACCESS }     # site root redirects (guest -> login, user -> dashboard)
+        - { path: ^/sentry-tunnel$, roles: PUBLIC_ACCESS }
         # Must precede ^/api: the bot surface is never public. Without this the
         # PUBLIC_ACCESS rule below would match it, and a request carrying no
         # Authorization header would never reach the authenticator at all.

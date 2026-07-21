@@ -3,12 +3,15 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+        {# Render Sentry.io #}
+        {% if sentry_dsn is not null and sentry_dsn is not empty %}
+        <meta name="app-sdn" content="{{ sentry_dsn }}">
+        {% endif %}
+
         <title>{% block title %}{{ 'ui.app.brand'|trans }}{% endblock %}</title>
 
         <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
-
-        {# Render Sentry.io HTML escaping #}
-        {{ sentry_loader_script|raw }}
 
         {% block stylesheets %}
         {% endblock %}
@@ -18,7 +21,6 @@
         {% endblock %}
 
         {# Theme stylesheet - loaded LAST so its `--tblr-*` / `--bs-*` overrides win the cascade.
-
            `data-turbo-track="reload"` is load-bearing, not decoration. Every theme scopes its rules under
            `[data-bs-theme=...]`, which lives on <html> - and Turbo replaces <body> and merges <head> but
            never touches attributes on <html>, nor removes a stylesheet it has already added. Without this,
@@ -161,5 +163,10 @@
             </div>
         </div>
         {% endblock %}
+
+        <!-- <button type="button" id="feedback-btn" class="btn btn-primary feedback-trigger">
+            {{ 'ui.feedback.button'|trans|default('Feedback') }}
+        </button> -->
+        <div id="feedback-permanent" data-turbo-permanent></div>
     </body>
 </html>

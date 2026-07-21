@@ -77,6 +77,11 @@ services:
     # services can autowire the native migration status API.
     Doctrine\Migrations\DependencyFactory: '@doctrine.migrations.dependency_factory'
 
+    # Sentry tunnel
+    App\Controller\SentryTunnelController:
+        arguments:
+            $sentryDsn: '%env(SENTRY_DSN)%'
+
 # The UI kit pages exist only outside production. Each one also carries #[IsGranted('global:admin')],
 # so a non-admin cannot reach them in dev/test either.
 when@dev:
