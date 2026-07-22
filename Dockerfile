@@ -53,9 +53,14 @@ ENV APP_ENV=prod \
     COMPOSER_ALLOW_SUPERUSER=1 \
     RUN_MIGRATIONS_ON_START=1
 
+# Deployed version string (git tag or short commit hash), supplied by CI. Baked
+# into a VERSION file that App\Service\AppVersion reads for display (e.g. /home).
+ARG APP_VERSION=dev
+
 # Vendor first (better layer caching), then the application source.
 COPY --from=vendor /app/vendor ./vendor
 COPY . .
+RUN printf '%s' "${APP_VERSION}" > VERSION
 
 # Finalize the autoloader and compile front-end assets (AssetMapper). A throwaway
 # APP_SECRET keeps the prod kernel bootable at build time; the real secret is

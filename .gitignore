@@ -27,3 +27,6 @@ docs/keycloak-credentials.txt
 
 ## Seeds used for testing
 /seeds/
+
+# Deployed version marker, written into the image by CI (see Dockerfile).
+/VERSION

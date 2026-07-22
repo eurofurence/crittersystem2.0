@@ -1458,7 +1458,7 @@ msgid "error.server.title"
 msgstr "Something went wrong"
 
 msgid "error.server.message"
-msgstr "An unexpected error occurred on our end. The team has been notified — please try again in a little while."
+msgstr "An unexpected error occurred on our end. The team has been notified - please try again in a little while."
 
 msgid "error.unavailable.title"
 msgstr "Temporarily unavailable"
@@ -1489,21 +1489,6 @@ msgstr "Frequently Asked Questions"
 
 msgid "faq.page.subtitle"
 msgstr "Answers to common questions."
-
-msgid "home.controller_at"
-msgstr "Your controller at"
-
-msgid "home.hello"
-msgstr "Hello %name%!"
-
-msgid "home.intro"
-msgstr "This friendly message is coming from:"
-
-msgid "home.page.title"
-msgstr "Hello HomeController!"
-
-msgid "home.template_at"
-msgstr "Your template at"
 
 msgid "install.admin.create_button"
 msgstr "Create administrator"

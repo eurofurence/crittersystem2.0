@@ -1,20 +1,54 @@
 {% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 
-{% block title %}{{ 'home.page.title'|trans }}{% endblock %}
+{# Intentionally untranslated. This page is a fixed reference/mural: the wording is
+   the same in every locale, so the text is written inline rather than through the
+   translation catalogs. #}
+
+{% block title %}About the Critter System{% endblock %}
 
 {% block body %}
-<style>
-    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
-    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
-</style>
+  {{ d.page_header('About the Critter System', {subtitle: 'Volunteer Management System (VMS)'}) }}
 
-<div class="example-wrapper">
-    <h1>{{ 'home.hello'|trans({'%name%': controller_name}) }} ✅</h1>
+  <div class="row g-3">
+    <div class="col-12 col-lg-8">
+      {{ d.card_start('What this is') }}
+        <p class="mb-2">
+          The Volunteer Management System (VMS) coordinates the people who make an event happen:
+          their accounts, roles, departments, shifts, and sign-ups.
+        </p>
+        <p class="mb-2">
+          At Eurofurence we call it: <strong>The Critter Management System (CMS)</strong>
+        </p>
+        <p class="mb-2">
+          This version is <strong>Critter 2.0</strong>, a ground-up rewrite of the original tool. It covers the
+          whole volunteer lifecycle: registration and onboarding, department and role management,
+          shift planning and sign-up, check-in, and reporting.
+        </p>
+        <p class="mb-2">
+          The goal is simple: give organisers a clear view of who is helping and when, and give volunteers an easy way to find and take the
+          shifts that fit them.
+        </p>
+      {{ d.card_end() }}
+    </div>
 
-    {{ 'home.intro'|trans }}
-    <ul>
-        <li>{{ 'home.controller_at'|trans }} <code>/home/fred/dev/my_project/src/Controller/HomeController.php</code></li>
-        <li>{{ 'home.template_at'|trans }} <code>/home/fred/dev/my_project/templates/home/index.html.twig</code></li>
-    </ul>
-</div>
+    <div class="col-12 col-lg-4">
+      {{ d.card_start('Credits') }}
+        <p class="mb-2">
+          Built by and for Eurofurence volunteers (Critters) and Staff Team, and for everyone who gives their time
+          to keep the event running.
+        </p>
+        <p class="mb-0">
+          Source code and contributions:
+          <a href="https://github.com/eurofurence/crittersystem2.0" target="_blank" rel="noopener noreferrer">github.com/eurofurence/crittersystem2.0</a>.
+        </p>
+      {{ d.card_end() }}
+
+      {{ d.card_start('Deployment') }}
+        <p class="mb-0 text-muted">
+          Version: <code>{{ version }}</code>
+        </p>
+      {{ d.card_end() }}
+    </div>
+  </div>
 {% endblock %}
