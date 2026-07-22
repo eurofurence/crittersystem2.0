@@ -25,6 +25,10 @@ class TelegramConfiguration
     #[ORM\Column(name: 'api_endpoint', length: 255)]
     private string $apiEndpoint = '';
 
+    /** The bot's public @username (without the @), used to build t.me deep links. */
+    #[ORM\Column(name: 'bot_username', length: 64, nullable: true)]
+    private ?string $botUsername = null;
+
     #[ORM\Column(name: 'api_key', type: 'encrypted_string', nullable: true)]
     private ?string $apiKey = null;
 
@@ -40,6 +44,8 @@ class TelegramConfiguration
     public function setEnabled(bool $enabled): static { $this->enabled = $enabled; return $this; }
     public function getApiEndpoint(): string { return $this->apiEndpoint; }
     public function setApiEndpoint(string $apiEndpoint): static { $this->apiEndpoint = $apiEndpoint; return $this; }
+    public function getBotUsername(): ?string { return $this->botUsername; }
+    public function setBotUsername(?string $botUsername): static { $this->botUsername = $botUsername; return $this; }
     public function getApiKey(): ?string { return $this->apiKey; }
     public function setApiKey(?string $apiKey): static { $this->apiKey = $apiKey; return $this; }
     public function hasApiKey(): bool { return $this->apiKey !== null && $this->apiKey !== ''; }

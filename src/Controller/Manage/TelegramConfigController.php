@@ -38,8 +38,10 @@ final class TelegramConfigController extends AbstractController
             if (!$this->isCsrfTokenValid('telegram_config', (string) $request->request->get('_token'))) {
                 return $this->redirectToRoute('app_manage_telegram');
             }
+            $botUsername = ltrim(trim((string) $request->request->get('bot_username')), '@');
             $config->setEnabled($request->request->getBoolean('enabled'))
-                ->setApiEndpoint(trim((string) $request->request->get('api_endpoint')));
+                ->setApiEndpoint(trim((string) $request->request->get('api_endpoint')))
+                ->setBotUsername($botUsername !== '' ? $botUsername : null);
 
             $apiKey = (string) $request->request->get('api_key');
             if ($apiKey !== '') {

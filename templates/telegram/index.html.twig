@@ -13,7 +13,17 @@
     {% elseif not enabled %}
       <p class="text-muted">{{ 'telegram.not_enabled'|trans }}</p>
     {% elseif pending %}
-      <p>{{ 'telegram.pending.instructions'|trans({'%time%': pending.expiresAt|app_time}) }}</p>
+      {% if bot_username %}
+        <p>{{ 'telegram.pending.deeplink_instructions'|trans }}</p>
+        <p>
+          <a class="btn btn-primary" href="https://t.me/{{ bot_username }}?start={{ pending.code }}" target="_blank" rel="noopener">
+            {{ 'telegram.action.open_in_telegram'|trans }}
+          </a>
+        </p>
+        <p class="text-muted small">{{ 'telegram.pending.manual_fallback'|trans({'%time%': pending.expiresAt|app_time}) }}</p>
+      {% else %}
+        <p>{{ 'telegram.pending.instructions'|trans({'%time%': pending.expiresAt|app_time}) }}</p>
+      {% endif %}
       <p class="display-6"><code>{{ pending.code }}</code></p>
       <p class="text-muted small" id="tg-wait">{{ 'telegram.pending.waiting'|trans }}</p>
       <form method="post" action="{{ path('app_profile_telegram_start') }}"><button class="btn btn-link">{{ 'telegram.action.generate_new_code'|trans }}</button></form>

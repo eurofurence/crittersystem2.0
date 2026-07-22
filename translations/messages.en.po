@@ -3326,6 +3326,12 @@ msgstr "API key"
 msgid "manage.telegram.field.api_key.set_hint"
 msgstr "(set - leave blank to keep)"
 
+msgid "manage.telegram.field.bot_username.label"
+msgstr "Bot username"
+
+msgid "manage.telegram.field.bot_username.help"
+msgstr "The bot's public @username, without the @. Required for the one-tap \"Open in Telegram\" link on the volunteer profile page."
+
 msgid "manage.telegram.field.enabled.label"
 msgstr "Enable Telegram linking"
 
@@ -5324,6 +5330,9 @@ msgstr "Generate a new code"
 msgid "telegram.action.link"
 msgstr "Link Telegram"
 
+msgid "telegram.action.open_in_telegram"
+msgstr "Open in Telegram"
+
 msgid "telegram.action.unlink"
 msgstr "Unlink Telegram"
 
@@ -5345,8 +5354,14 @@ msgstr "Telegram linking is not currently enabled by the administrators."
 msgid "telegram.page.subtitle"
 msgstr "Link your Telegram account to receive notifications via the bot."
 
+msgid "telegram.pending.deeplink_instructions"
+msgstr "Tap the button below to open the bot and finish linking automatically."
+
 msgid "telegram.pending.instructions"
 msgstr "Send this code to the bot to finish linking (valid %time%):"
+
+msgid "telegram.pending.manual_fallback"
+msgstr "If the button does not work, send this code to the bot yourself (valid %time%):"
 
 msgid "telegram.pending.waiting"
 msgstr "Waiting for confirmation…"

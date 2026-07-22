@@ -12,10 +12,11 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class TelegramLinkTest extends DatabaseWebTestCase
 {
-    private function enableTelegram(): void
+    private function enableTelegram(?string $botUsername = null): void
     {
         $config = new TelegramConfiguration();
-        $config->setEnabled(true)->setApiEndpoint('https://bot.example')->setApiKey('secret-key');
+        $config->setEnabled(true)->setApiEndpoint('https://bot.example')->setApiKey('secret-key')
+            ->setBotUsername($botUsername);
         $this->em->persist($config);
         $this->em->flush();
     }
@@ -75,6 +76,31 @@ final class TelegramLinkTest extends DatabaseWebTestCase
 
         $this->em->clear();
         self::assertFalse($this->em->getRepository(User::class)->find($user->getId())->isTelegramLinked());
+    }
+
+    public function testDeepLinkButtonRendersWhenBotUsernameConfigured(): void
+    {
+        $this->enableTelegram('MyEventBot');
+        $user = $this->makeVolunteer();
+        $this->client->loginUser($user);
+
+        $this->client->request('POST', '/profile/telegram/start');
+        $request = $this->em->getRepository(TelegramLinkRequest::class)->findOneBy(['user' => $user]);
+
+        $crawler = $this->client->request('GET', '/profile/telegram');
+        $href = $crawler->filter('a[href^="https://t.me/"]')->attr('href');
+        self::assertSame('https://t.me/MyEventBot?start='.$request->getCode(), $href);
+    }
+
+    public function testNoDeepLinkButtonWithoutBotUsername(): void
+    {
+        $this->enableTelegram();
+        $user = $this->makeVolunteer();
+        $this->client->loginUser($user);
+
+        $this->client->request('POST', '/profile/telegram/start');
+        $crawler = $this->client->request('GET', '/profile/telegram');
+        self::assertCount(0, $crawler->filter('a[href^="https://t.me/"]'));
     }
 
     public function testExpiredCodeDoesNotLink(): void

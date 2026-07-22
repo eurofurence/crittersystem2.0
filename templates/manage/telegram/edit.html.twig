@@ -14,6 +14,14 @@
       <input type="url" class="form-control" name="api_endpoint" value="{{ config.apiEndpoint }}" placeholder="https://bot.example/api">
     </div>
     <div class="mb-3">
+      <label class="form-label">{{ 'manage.telegram.field.bot_username.label'|trans }}</label>
+      <div class="input-group">
+        <span class="input-group-text">@</span>
+        <input type="text" class="form-control" name="bot_username" value="{{ config.botUsername }}" placeholder="MyEventBot">
+      </div>
+      <div class="form-text">{{ 'manage.telegram.field.bot_username.help'|trans }}</div>
+    </div>
+    <div class="mb-3">
       <label class="form-label">{{ 'manage.telegram.field.api_key.label'|trans }} {% if config.hasApiKey %}<span class="text-success small">{{ 'manage.telegram.field.api_key.set_hint'|trans }}</span>{% endif %}</label>
       <input type="password" class="form-control" name="api_key" autocomplete="new-password" placeholder="{{ config.hasApiKey ? '••••••••' : '' }}">
       <div class="form-text">{{ 'manage.telegram.field.api_key.help'|trans }}</div>

@@ -33,8 +33,8 @@ services:
     Sentry\Monolog\Handler:
         arguments:
             $hub: '@Sentry\State\HubInterface'
-            $level: !php/const Monolog\Logger::INFO
+            $level: !php/const Monolog\Logger::ERROR
             $fillExtraContext: true # Enables sending monolog context to Sentry
     Sentry\SentryBundle\Monolog\LogsHandler:
         arguments:
-            - !php/const Monolog\Logger::INFO
+            - !php/const Monolog\Logger::ERROR

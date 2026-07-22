@@ -31,6 +31,7 @@ final class TelegramController extends AbstractController
 
         return $this->render('telegram/index.html.twig', [
             'enabled' => $config?->isEnabled() ?? false,
+            'bot_username' => $config?->getBotUsername(),
             'pending' => $this->links->pendingFor($this->user()),
             'user' => $this->user(),
         ]);
