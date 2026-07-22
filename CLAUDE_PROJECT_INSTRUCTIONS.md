@@ -1,4 +1,4 @@
-# Claude Project Instructions — Critter System 2.0
+# Claude Project Instructions - Critter System 2.0
 
 Use the attached `SECURITY_AUDIT_INSTRUCTIONS.md` as the authoritative audit policy for this project.
 

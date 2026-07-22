@@ -1,4 +1,4 @@
-# AGENTS.md — Critter System 2.0
+# AGENTS.md - Critter System 2.0
 
 ## Mandatory security guidance
 

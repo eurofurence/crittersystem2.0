@@ -508,9 +508,9 @@ Report:
 
 Use one of these conclusions:
 
-- **Draft only — human implementation decisions required**
-- **Ready for human review — not approved or merge-ready**
-- **Blocked — requirements, tests, or security evidence missing**
-- **Analysis only — no code changed**
+- **Draft only - human implementation decisions required**
+- **Ready for human review - not approved or merge-ready**
+- **Blocked - requirements, tests, or security evidence missing**
+- **Analysis only - no code changed**
 
 Never use “production-ready” or “safe to merge” without explicit human review and the project's normal approval process.

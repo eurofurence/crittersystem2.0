@@ -98,6 +98,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(name: 'telegram_handle', length: 64, nullable: true)]
     private ?string $telegramHandle = null;
 
+    /**
+     * Opaque credential the bot presents (X-Acting-Token) to act as this user.
+     * Minted fresh on every link and nulled on unlink, so a revoked link's token
+     * is dead immediately and a re-link issues a new one - the bot cannot act on
+     * a stale link even if its own local record survives. Never PII-masked away:
+     * it is a secret, so it is never rendered or returned to any client but the
+     * bot at link time.
+     */
+    #[ORM\Column(name: 'telegram_acting_token', length: 128, nullable: true, unique: true)]
+    private ?string $telegramActingToken = null;
+
     #[ORM\Column(name: 'telegram_linked_at', nullable: true)]
     private ?\DateTimeImmutable $telegramLinkedAt = null;
 
@@ -469,6 +480,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->telegramId = $telegramId;
         $this->telegramHandle = $handle;
         $this->telegramLinkedAt = new \DateTimeImmutable();
+        // Rotate the acting token on every link so a prior link's token can never
+        // act again - even a re-link by the same account gets a fresh credential.
+        $this->telegramActingToken = bin2hex(random_bytes(32));
 
         return $this;
     }
@@ -478,8 +492,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->telegramId = null;
         $this->telegramHandle = null;
         $this->telegramLinkedAt = null;
+        $this->telegramActingToken = null;
 
         return $this;
+    }
+
+    public function getTelegramActingToken(): ?string
+    {
+        return $this->telegramActingToken;
     }
 
     public function getConsent(): ?UserConsent

@@ -1,4 +1,4 @@
-# CLAUDE.md — Critter System 2.0
+# CLAUDE.md - Critter System 2.0
 
 This is an AI-friendly project, not an agent-driven project.
 

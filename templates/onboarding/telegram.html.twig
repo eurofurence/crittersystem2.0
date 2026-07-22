@@ -1,9 +1,39 @@
 {% extends 'onboarding/_layout.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
 {% block title %}{{ 'onboarding.telegram.title'|trans }}{% endblock %}
 {% block step_title %}{{ 'onboarding.telegram.heading'|trans }}{% endblock %}
 {% block step_body %}
-  <p>{{ 'onboarding.telegram.body'|trans }}</p>
-  <form method="post">
-    <button class="btn btn-outline-secondary">{{ 'onboarding.telegram.skip'|trans }}</button>
-  </form>
+  {% if user.telegramLinked %}
+    <p>{{ d.badge('common.state.linked'|trans, 'text-bg-success') }}
+      {{ 'onboarding.telegram.linked_as'|trans }} <strong>{{ user.telegramHandle ?? ('telegram.linked.your_account'|trans) }}</strong>.</p>
+    <form method="post">
+      <button class="btn btn-primary">{{ 'onboarding.action.continue'|trans }}</button>
+    </form>
+  {% else %}
+    <p>{{ 'onboarding.telegram.body'|trans }}</p>
+    {% if bot_username and pending %}
+      <p>{{ 'telegram.pending.deeplink_instructions'|trans }}</p>
+      <p>
+        <a class="btn btn-primary" href="https://t.me/{{ bot_username }}?start={{ pending.code }}" target="_blank" rel="noopener">
+          {{ 'telegram.action.open_in_telegram'|trans }}
+        </a>
+      </p>
+      <p class="text-muted small">{{ 'telegram.pending.manual_fallback'|trans({'%time%': pending.expiresAt|app_time}) }}</p>
+      <p class="display-6"><code>{{ pending.code }}</code></p>
+    {% elseif pending %}
+      <p>{{ 'telegram.pending.instructions'|trans({'%time%': pending.expiresAt|app_time}) }}</p>
+      <p class="display-6"><code>{{ pending.code }}</code></p>
+    {% endif %}
+    <p class="text-muted small" id="tg-wait">{{ 'telegram.pending.waiting'|trans }}</p>
+    <form method="post">
+      <button class="btn btn-outline-secondary">{{ 'onboarding.telegram.skip'|trans }}</button>
+    </form>
+    <script>
+      (function poll(){
+        fetch('{{ path('app_onboarding_telegram_status') }}').then(r=>r.json()).then(d=>{
+          if (d.linked) { window.location.reload(); } else { setTimeout(poll, 3000); }
+        }).catch(()=>setTimeout(poll, 5000));
+      })();
+    </script>
+  {% endif %}
 {% endblock %}

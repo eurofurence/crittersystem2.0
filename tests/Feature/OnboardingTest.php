@@ -4,14 +4,25 @@ namespace App\Tests\Feature;
 
 use App\Entity\Group;
 use App\Entity\Settings;
+use App\Entity\TelegramConfiguration;
+use App\Entity\TelegramLinkRequest;
 use App\Entity\User;
 use App\Entity\UserVolunteerType;
 use App\Entity\VolunteerType;
 use App\Tests\DatabaseWebTestCase;
+use App\Telegram\TelegramLinkService;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class OnboardingTest extends DatabaseWebTestCase
 {
+    private function enableTelegram(?string $botUsername = null): void
+    {
+        $config = new TelegramConfiguration();
+        $config->setEnabled(true)->setApiEndpoint('https://bot.example')->setBotUsername($botUsername);
+        $this->em->persist($config);
+        $this->em->flush();
+    }
+
     private function makeUser(string $name, ?string $role): User
     {
         $group = new Group('G'.$name, 'g-'.$name, $role);
@@ -86,6 +97,52 @@ final class OnboardingTest extends DatabaseWebTestCase
 
         $groupSlugs = array_map(static fn (Group $g): string => $g->getSlug(), $reloaded->getGroups()->toArray());
         self::assertContains('volunteer', $groupSlugs, 'the Volunteer permission group is granted automatically');
+    }
+
+    public function testTelegramStepAutoSkipsWhenFeatureDisabled(): void
+    {
+        // No TelegramConfiguration persisted → feature off → the step is a dead
+        // screen, so onboarding must jump straight past it.
+        $this->client->loginUser($this->makeUser('nolink', null));
+        $this->client->request('GET', '/onboarding/telegram');
+        self::assertResponseRedirects('/onboarding/notifications');
+    }
+
+    public function testTelegramStepShowsDeepLinkButtonWhenEnabled(): void
+    {
+        $this->enableTelegram('MyEventBot');
+        $user = $this->makeUser('linker', null);
+        $this->client->loginUser($user);
+
+        $crawler = $this->client->request('GET', '/onboarding/telegram');
+        self::assertResponseIsSuccessful();
+
+        // A pending code was generated and the one-tap button points at it.
+        $pending = $this->em->getRepository(TelegramLinkRequest::class)->findOneBy(['user' => $user]);
+        self::assertNotNull($pending);
+        $href = $crawler->filter('a[href^="https://t.me/"]')->attr('href');
+        self::assertSame('https://t.me/MyEventBot?start='.$pending->getCode(), $href);
+    }
+
+    public function testLinkingDuringOnboardingIsReflectedByStatusEndpoint(): void
+    {
+        $this->enableTelegram('MyEventBot');
+        $user = $this->makeUser('midflow', null);
+        $this->client->loginUser($user);
+
+        // Visiting the step issues the code the volunteer would send to the bot.
+        $this->client->request('GET', '/onboarding/telegram');
+        $pending = $this->em->getRepository(TelegramLinkRequest::class)->findOneBy(['user' => $user]);
+
+        // The bot confirms it - exactly what POST /api/bot/users/link-telegram does.
+        static::getContainer()->get(TelegramLinkService::class)->confirm($pending->getCode(), '555777', '@midflow');
+
+        // The polling endpoint the step uses now reports linked, so the page advances.
+        $this->client->request('GET', '/onboarding/telegram/status');
+        self::assertJsonStringEqualsJsonString('{"linked":true}', $this->client->getResponse()->getContent());
+
+        $this->em->clear();
+        self::assertTrue($this->em->getRepository(User::class)->find($user->getId())->isTelegramLinked());
     }
 
     public function testStaffGetTheStaffTypeButNotTheVolunteerGroup(): void

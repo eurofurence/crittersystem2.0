@@ -1,0 +1,38 @@
+{# Branded error page. Overrides @Twig/Exception/error.html.twig, so it is used
+   for EVERY HTTP error status that has no more specific error{code} template.
+   It renders inside the normal site chrome (base.html.twig); only shown outside
+   dev, where Symfony's debug page takes over instead.
+
+   Variables provided by the framework: `status_code`, `status_text`. The
+   `exception` details are deliberately never shown - that is what the debug
+   page is for, and leaking a stack trace to end users is an information leak. #}
+{% extends 'base.html.twig' %}
+{% import 'components/icon/_macros.twig' as i %}
+
+{% set code = status_code|default(500) %}
+{% set known = {
+    403: {icon: 'lock',           key: 'forbidden'},
+    404: {icon: 'compass',        key: 'not_found'},
+    500: {icon: 'alert-triangle', key: 'server'},
+    503: {icon: 'alert-triangle', key: 'unavailable'},
+} %}
+{# default(null) keeps this safe under strict_variables when the code is unmapped. #}
+{% set entry = known[code]|default(null) %}
+{% set slug = entry ? entry.key : 'generic' %}
+{% set icon = entry ? entry.icon : 'alert-triangle' %}
+
+{% block title %}{{ ('error.' ~ slug ~ '.title')|trans({'%code%': code}) }}{% endblock %}
+
+{% block body %}
+  <div class="empty error-page" data-status="{{ code }}">
+    <div class="empty-icon text-secondary">{{ i.icon(icon, {class: 'icon-3'}) }}</div>
+    <p class="h1 mb-1 text-secondary">{{ code }}</p>
+    <p class="empty-title">{{ ('error.' ~ slug ~ '.title')|trans({'%code%': code}) }}</p>
+    <p class="empty-subtitle text-secondary">{{ ('error.' ~ slug ~ '.message')|trans }}</p>
+    <div class="empty-action">
+      <a href="{{ path('app_home') }}" class="btn btn-primary">
+        {{ i.icon('home', {class: 'icon-2 me-1'}) }}{{ 'error.action.home'|trans }}
+      </a>
+    </div>
+  </div>
+{% endblock %}

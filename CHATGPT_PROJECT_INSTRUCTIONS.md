@@ -1,4 +1,4 @@
-# ChatGPT Project Instructions — Critter System 2.0
+# ChatGPT Project Instructions - Critter System 2.0
 
 This repository is AI-friendly, but it does not permit agent-only or unreviewed vibe coding.
 

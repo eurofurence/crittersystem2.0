@@ -4,6 +4,7 @@ namespace App\Twig;
 
 use App\Entity\User;
 use App\Service\OperationalStatusService;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -17,6 +18,7 @@ final class OperationalStatusExtension extends AbstractExtension
     public function __construct(
         private readonly OperationalStatusService $status,
         private readonly Security $security,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -37,6 +39,18 @@ final class OperationalStatusExtension extends AbstractExtension
             return null;
         }
 
-        return $this->status->viewModel($user);
+        // Rendered by the shared layout on every page, error pages included. If
+        // the status lookup fails (e.g. the database is what broke), the widget
+        // must degrade to hidden rather than break the error page itself.
+        try {
+            return $this->status->viewModel($user);
+        } catch (\Throwable $e) {
+            $this->logger->warning('Operational status widget unavailable: {reason}', [
+                'reason' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return null;
+        }
     }
 }

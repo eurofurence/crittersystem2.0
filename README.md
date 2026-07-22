@@ -12,13 +12,13 @@ It is a from-scratch **Symfony 8 / PHP 8.4** rewrite of the original Critter (an
 
 ## What it does
 
-- **Shifts** — a drag-and-paint planner, a department grid, a shift wizard, auto-assignment
+- **Shifts** - a drag-and-paint planner, a department grid, a shift wizard, auto-assignment
   proposals, sign-up with eligibility rules, and a public schedule (with iCal export).
-- **Volunteers** — volunteer types with confirmation and supporters, certifications, badges,
+- **Volunteers** - volunteer types with confirmation and supporters, certifications, badges,
   worklogs, availability, and a scannable Digital ID.
-- **Operations** — an info desk with messaging, news and FAQ, a bounty board for open calls,
+- **Operations** - an info desk with messaging, news and FAQ, a bounty board for open calls,
   operational status ("on duty"), goodie distribution, and staff overview/live views.
-- **Platform** — fine-grained RBAC, SSO (OIDC), two-factor auth with step-up, Telegram
+- **Platform** - fine-grained RBAC, SSO (OIDC), two-factor auth with step-up, Telegram
   notifications, an audit log, and GDPR data export/erasure.
 
 ## Stack
@@ -90,10 +90,10 @@ A new component belongs in both.
 
 Full manual: **[`docs/deploy.md`](docs/deploy.md)**. Four supported paths:
 
-1. **Direct web server** — `composer install --no-dev`, point the vhost at `public/`.
-2. **Docker (single image)** — build from the included `Dockerfile`.
-3. **Docker Compose** — `compose.prod.yaml` (app + PostgreSQL + nginx).
-4. **Kubernetes / ArgoCD** — manifests included; replace the placeholder org/hosts and supply a real
+1. **Direct web server** - `composer install --no-dev`, point the vhost at `public/`.
+2. **Docker (single image)** - build from the included `Dockerfile`.
+3. **Docker Compose** - `compose.prod.yaml` (app + PostgreSQL + nginx).
+4. **Kubernetes / ArgoCD** - manifests included; replace the placeholder org/hosts and supply a real
    Secret.
 
 Migrations run through `php bin/console app:migrate`, which takes an advisory lock and is
@@ -102,7 +102,7 @@ default (`RUN_MIGRATIONS_ON_START=1`); set it to `0` to manage migrations yourse
 are pending the app serves a maintenance page rather than a half-broken one.
 
 First-run setup is either `php bin/console app:install` on the console, or the browser wizard at
-`/admin/install` — the wizard is **disabled unless `INSTALL_PASSWORD` is set**.
+`/admin/install` - the wizard is **disabled unless `INSTALL_PASSWORD` is set**.
 
 ### Environment
 
@@ -116,7 +116,7 @@ First-run setup is either `php bin/console app:install` on the console, or the b
 | `RUN_MIGRATIONS_ON_START` | no       | `1` (container default) auto-migrates on start.                                                                                                             |
 | `MAILER_DSN`              | no       | Defaults to discarding mail.                                                                                                                                |
 
-Put secrets in real environment variables or `.env.local` — never in `.env`, which is committed.
+Put secrets in real environment variables or `.env.local` - never in `.env`, which is committed.
 
 ---
 
@@ -142,9 +142,9 @@ crew rather than a plain volunteer. A user's roles come from the groups they bel
 `App\Security\PrivilegeVoter` against `App\Security\PrivilegeCatalog`.
 
 - **`global:admin` is the super-privilege** (`PrivilegeCatalog::SUPER`) and satisfies every check.
-  A bare `admin` is _not_ a privilege — `#[IsGranted('admin')]` would deny everyone.
-- **Department scoping.** Five privileges — `department:manage`, `shift:manage`, `shift:assign`,
-  `assignment:manage`, `volunteertype:assign` — are scoped: held through a department-scoped
+  A bare `admin` is _not_ a privilege - `#[IsGranted('admin')]` would deny everyone.
+- **Department scoping.** Five privileges - `department:manage`, `shift:manage`, `shift:assign`,
+  `assignment:manage`, `volunteertype:assign` - are scoped: held through a department-scoped
   assignment, they grant access only _within that department_. This is what makes a "delegated"
   shift manager safe to hand out.
 - **Step-up 2FA.** The most sensitive privileges require a recent second factor before the action is
@@ -161,7 +161,7 @@ Seeded by `app:install` and re-converged on every run, so the catalog stays the 
 | ------------------------------- | --------------- | ----------------------------------------------------- |
 | Global admin                    | `ROLE_ADMIN`    | Full, unrestricted access.                            |
 | Sub admin                       | `ROLE_SUBADMIN` | Everything except configuration, audit, PII and RBAC. |
-| Volunteer                       | —               | The default for a newly onboarded user.               |
+| Volunteer                       | -               | The default for a newly onboarded user.               |
 | Shift manager                   | `ROLE_STAFF`    | Plan, staff and publish shifts.                       |
 | Shift manager (delegated)       | `ROLE_STAFF`    | The same, but scoped to their department(s).          |
 | Department manager              | `ROLE_STAFF`    | Run a department and its people.                      |
@@ -170,8 +170,8 @@ Seeded by `app:install` and re-converged on every run, so the catalog stays the 
 | Certification Manager           | `ROLE_STAFF`    | Issue and approve certifications.                     |
 | Goodies Manager / Goodies Staff | `ROLE_STAFF`    | Manage / hand out goodies.                            |
 
-Users can also sign in via **SSO (OIDC)**, with SSO groups mapped onto Critter groups — optionally
-per department — at `/manage/sso-mappings`.
+Users can also sign in via **SSO (OIDC)**, with SSO groups mapped onto Critter groups - optionally
+per department - at `/manage/sso-mappings`.
 
 ---
 
@@ -186,5 +186,5 @@ per department — at `/manage/sso-mappings`.
 
 ## License
 
-Released under the **MIT License** — see [`LICENSE`](LICENSE). Copyright (c) 2026 Eurofurence.
+Released under the **MIT License** - see [`LICENSE`](LICENSE). Copyright (c) 2026 Eurofurence.
 

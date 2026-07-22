@@ -4,6 +4,7 @@ namespace App\Twig;
 
 use App\Entity\User;
 use App\Service\Notification\NotificationService;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFunction;
@@ -17,6 +18,7 @@ final class NotificationExtension extends AbstractExtension
     public function __construct(
         private readonly NotificationService $notifications,
         private readonly Security $security,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -37,9 +39,22 @@ final class NotificationExtension extends AbstractExtension
             return null;
         }
 
-        return [
-            'count' => $this->notifications->unreadCount($user),
-            'recent' => $this->notifications->recent($user, 8),
-        ];
+        // Rendered on every page via the shared layout - including the error
+        // pages, which are shown precisely when something (often the database)
+        // has failed. A broken bell must hide itself, not turn the friendly
+        // error page back into a 500.
+        try {
+            return [
+                'count' => $this->notifications->unreadCount($user),
+                'recent' => $this->notifications->recent($user, 8),
+            ];
+        } catch (\Throwable $e) {
+            $this->logger->warning('Notification bell unavailable: {reason}', [
+                'reason' => $e->getMessage(),
+                'exception' => $e,
+            ]);
+
+            return null;
+        }
     }
 }

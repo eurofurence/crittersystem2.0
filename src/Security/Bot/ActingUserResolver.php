@@ -24,6 +24,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 final class ActingUserResolver
 {
     public const HEADER = 'X-Acting-User';
+    public const TOKEN_HEADER = 'X-Acting-Token';
 
     public function __construct(
         private readonly UserRepository $users,
@@ -45,6 +46,25 @@ final class ActingUserResolver
 
         if ($this->bans->isUserBanned($user)) {
             throw new AccessDeniedHttpException('Acting user is banned.');
+        }
+
+        // The account may still exist after the volunteer unlinks in the web UI
+        // (unlink only nulls telegramId). Refuse it here so the bot cannot keep
+        // acting on a revoked link - this is the single choke point every
+        // acting-on-behalf endpoint passes through.
+        if (!$user->isTelegramLinked()) {
+            throw new ActingUserNotLinkedException();
+        }
+
+        // The uuid names who to act as, but is public and permanent. The acting
+        // token is the revocable proof that the link is *current*: it is rotated
+        // on every link and nulled on unlink, so a token from a since-revoked
+        // link (or from a different Telegram account linked before) no longer
+        // matches and is refused - even though the uuid is linked again.
+        $expected = $user->getTelegramActingToken();
+        $presented = (string) $request->headers->get(self::TOKEN_HEADER, '');
+        if ($expected === null || $presented === '' || !hash_equals($expected, $presented)) {
+            throw new ActingUserNotLinkedException();
         }
 
         return $user;

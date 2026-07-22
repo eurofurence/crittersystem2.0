@@ -57,10 +57,14 @@ final class BotAccountController extends AbstractController
             return $this->json(['error' => 'invalid_code'], Response::HTTP_FORBIDDEN);
         }
 
+        // The acting token leaves the server exactly once, here, to the bot that
+        // just proved the link with a valid code. It is the bot's credential for
+        // every subsequent call as this volunteer; it is never returned again.
         return $this->json([
             'id' => (string) $user->getUuid(),
             'display_name' => $user->getName(),
             'telegram_handle' => $user->getTelegramHandle(),
+            'acting_token' => $user->getTelegramActingToken(),
         ]);
     }
 

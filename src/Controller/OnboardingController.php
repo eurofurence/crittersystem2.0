@@ -13,12 +13,15 @@ use App\Entity\UserVolunteerType;
 use App\Repository\ConsentTextRepository;
 use App\Repository\GroupRepository;
 use App\Repository\PrivacyNoticeRepository;
+use App\Repository\TelegramConfigurationRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Repository\VolunteerTypeRepository;
 use App\Service\PrivacyNoticeProvider;
 use App\Service\TextVariables;
+use App\Telegram\TelegramLinkService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Translation\TranslatableMessage;
@@ -51,6 +54,8 @@ final class OnboardingController extends AbstractController
         private readonly GroupRepository $groups,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly AuditLogger $audit,
+        private readonly TelegramLinkService $telegramLinks,
+        private readonly TelegramConfigurationRepository $telegramConfig,
     ) {
     }
 
@@ -124,13 +129,43 @@ final class OnboardingController extends AbstractController
         if ($redirect = $this->redirectIfDone()) {
             return $redirect;
         }
+        // The step is always skippable, so onboarding is never blocked on it.
         if ($request->isMethod('POST')) {
-            // Linking itself is handled by the Telegram feature; this step is
-            // always skippable so onboarding is never blocked on it.
             return $this->redirectToRoute('app_onboarding_notifications');
         }
 
-        return $this->render('onboarding/telegram.html.twig');
+        $config = $this->telegramConfig->current();
+        $enabled = $config?->isEnabled() ?? false;
+        $user = $this->currentUser();
+
+        // With the feature off there is nothing to link: skip the dead step
+        // rather than show a screen whose only action is "continue".
+        if (!$enabled) {
+            return $this->redirectToRoute('app_onboarding_notifications');
+        }
+
+        // Prepare a fresh code so the "Open in Telegram" button is ready on load.
+        // Reuse a still-valid pending request instead of churning a new one on
+        // every reload (the polling script reloads once linking completes).
+        $pending = null;
+        if (!$user->isTelegramLinked()) {
+            $pending = $this->telegramLinks->pendingFor($user);
+            if ($pending === null || $pending->isExpired()) {
+                $pending = $this->telegramLinks->startLink($user);
+            }
+        }
+
+        return $this->render('onboarding/telegram.html.twig', [
+            'bot_username' => $config?->getBotUsername(),
+            'pending' => $pending,
+            'user' => $user,
+        ]);
+    }
+
+    #[Route('/telegram/status', name: 'app_onboarding_telegram_status', methods: ['GET'])]
+    public function telegramStatus(): JsonResponse
+    {
+        return new JsonResponse(['linked' => $this->currentUser()->isTelegramLinked()]);
     }
 
     #[Route('/notifications', name: 'app_onboarding_notifications', methods: ['GET', 'POST'])]

@@ -1,4 +1,4 @@
-# Critter System 2.0 — AI Security Audit Instructions
+# Critter System 2.0 - AI Security Audit Instructions
 
 ---
 applyTo: "**/*.php,**/*.twig,**/*.js,**/*.ts,config/**/*.yaml,config/**/*.yml,composer.json,composer.lock,importmap.php,migrations/**/*,tests/**/*,.github/workflows/**/*,compose*.yaml,Dockerfile*"
@@ -214,7 +214,7 @@ Verify that a proposed fix blocks the original attack path and does not introduc
 
 Do not jump directly to grep results. Build an application security map first.
 
-### Phase 1 — Establish the repository and runtime context
+### Phase 1 - Establish the repository and runtime context
 
 Inspect, when present:
 
@@ -253,7 +253,7 @@ Determine:
 - data export paths;
 - privileged state transitions.
 
-### Phase 2 — Inventory all entry points
+### Phase 2 - Inventory all entry points
 
 Use framework-generated information when the application can run:
 
@@ -288,7 +288,7 @@ Every state-changing endpoint must have an explicit result.
 
 A public endpoint is not automatically a finding, but it must have an intentional public-use rationale and safe behavior.
 
-### Phase 3 — Trace each sensitive action end to end
+### Phase 3 - Trace each sensitive action end to end
 
 For every action that reads or changes sensitive data, trace:
 
@@ -307,7 +307,7 @@ For every action that reads or changes sensitive data, trace:
 
 Do not stop after finding `ROLE_USER` or `#[IsGranted]`. Confirm that the actual target object, event, and department are authorized.
 
-### Phase 4 — Attempt role and object-boundary bypasses
+### Phase 4 - Attempt role and object-boundary bypasses
 
 For each sensitive action, reason through requests made by:
 
@@ -340,7 +340,7 @@ Change:
 - query parameters;
 - Turbo frame/stream requests.
 
-### Phase 5 — Validate findings
+### Phase 5 - Validate findings
 
 Before assigning severity:
 

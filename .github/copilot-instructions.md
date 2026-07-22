@@ -1,4 +1,4 @@
-# GitHub Copilot repository instructions — Critter System 2.0
+# GitHub Copilot repository instructions - Critter System 2.0
 
 This is a Symfony 8 / PHP 8.4+ volunteer-management system. Security-sensitive data includes identities, roles, permissions, department/event membership, shift applications and assignments, attendance, hours, rewards, training, certifications, availability, reports, notifications, account links, and QR/badge credentials.
 

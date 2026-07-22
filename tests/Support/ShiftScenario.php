@@ -80,6 +80,9 @@ final class ShiftScenario
         $user->setPassword($this->hasher->hashPassword($user, 'secret123'));
         $user->addGroup($group);
         $user->completeOnboarding();
+        // Telegram-linked by default: the /api/bot surface only ever acts for a
+        // linked volunteer, and the acting-user resolver now enforces that.
+        $user->linkTelegram('tg-'.$suffix, '@vol-'.$suffix);
         $this->em->persist($user);
 
         if ($memberOf !== null) {
