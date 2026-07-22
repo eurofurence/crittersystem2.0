@@ -16,6 +16,7 @@
   {% set actions = [
     {action: 'apply',    priv: null,             route: 'app_manage_shifts_apply',   icon: 'checklist', color: 'text-blue',  title: 'shift_manager.apply.title'|trans,           text: 'shift_manager.action.apply.text'|trans},
     {action: 'overview', priv: null,             route: 'app_my_shifts',             icon: 'clock',     color: 'text-blue',  title: 'shift_manager.action.overview.title'|trans, text: 'shift_manager.action.overview.text'|trans},
+    {action: 'duty',     priv: 'ROLE_STAFF',     route: 'app_staff_overview',        icon: 'shield',    color: 'text-blue',  title: 'shift_manager.action.duty.title'|trans,     text: 'shift_manager.action.duty.text'|trans},
     {action: 'manage',   priv: 'shift:manage',   route: 'app_manage_shifts_planner', icon: 'dashboard', color: 'text-green', title: 'shift_manager.action.manage.title'|trans,   text: 'shift_manager.action.manage.text'|trans},
     {action: 'create',   priv: 'shift:manage',   route: 'app_manage_shifts_planner', icon: 'plus',      color: 'text-green', title: 'shift_manager.action.create.title'|trans,   text: 'shift_manager.action.create.text'|trans},
     {action: 'grid',     priv: 'shift:manage',   route: 'app_department_grid',       icon: 'checklist', color: 'text-green', title: 'shift_manager.action.grid.title'|trans,     text: 'shift_manager.action.grid.text'|trans},

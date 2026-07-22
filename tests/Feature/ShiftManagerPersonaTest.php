@@ -59,6 +59,7 @@ final class ShiftManagerPersonaTest extends DatabaseWebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame(1, $crawler->filter('[data-action="apply"]')->count());
+        self::assertSame(1, $crawler->filter('[data-action="duty"]')->count(), 'staff must be able to reach the start-duty page');
         self::assertSame(0, $crawler->filter('[data-action="manage"]')->count(), 'ordinary staff must not see the manage action');
         self::assertSame(0, $crawler->filter('[data-action="create"]')->count());
     }

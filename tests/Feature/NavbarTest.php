@@ -52,7 +52,7 @@ final class NavbarTest extends DatabaseWebTestCase
         $this->login('volunteer', PrivilegeCatalog::VOLUNTEER);
         $titles = $this->navTitles();
 
-        foreach (['News', 'My Shifts', 'Shifts', 'Volunteer Types', 'Locations', 'Bounty Board', 'Ask Info Desk', 'Certifications', 'FAQ'] as $expected) {
+        foreach (['News', 'My Shifts', 'Shifts', 'Critter Types', 'Locations', 'Bounty Board', 'Ask Info Desk', 'Certifications', 'FAQ'] as $expected) {
             self::assertContains($expected, $titles, "Volunteer should see {$expected}");
         }
         // Dashboard and Development (the Navigation/Theme kits) are admin-only.

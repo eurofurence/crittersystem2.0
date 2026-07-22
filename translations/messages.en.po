@@ -1439,6 +1439,39 @@ msgstr "This link is no longer valid"
 msgid "erase.invalid.title"
 msgstr "Link expired"
 
+msgid "error.action.home"
+msgstr "Back to homepage"
+
+msgid "error.forbidden.title"
+msgstr "You don't have permission"
+
+msgid "error.forbidden.message"
+msgstr "Your account isn't allowed to view this page. If you think this is a mistake, contact an administrator."
+
+msgid "error.not_found.title"
+msgstr "Page not found"
+
+msgid "error.not_found.message"
+msgstr "The page you're looking for doesn't exist or may have moved."
+
+msgid "error.server.title"
+msgstr "Something went wrong"
+
+msgid "error.server.message"
+msgstr "An unexpected error occurred on our end. The team has been notified — please try again in a little while."
+
+msgid "error.unavailable.title"
+msgstr "Temporarily unavailable"
+
+msgid "error.unavailable.message"
+msgstr "The system is briefly unavailable. Please try again in a few moments."
+
+msgid "error.generic.title"
+msgstr "Something went wrong (%code%)"
+
+msgid "error.generic.message"
+msgstr "We couldn't complete your request. Please try again, or head back to the homepage."
+
 msgid "faq.action.ask"
 msgstr "Ask a question"
 
@@ -4031,8 +4064,14 @@ msgstr "Pronoun"
 msgid "onboarding.profile.title"
 msgstr "Your details"
 
+msgid "onboarding.action.continue"
+msgstr "Continue"
+
 msgid "onboarding.telegram.body"
 msgstr "You can link your Telegram account to receive shift notifications via the bot. You can also do this later from your profile."
+
+msgid "onboarding.telegram.linked_as"
+msgstr "Connected as"
 
 msgid "onboarding.telegram.heading"
 msgstr "Link Telegram (optional)"
@@ -4987,6 +5026,12 @@ msgstr "Paint new shifts on the grid or run the Shift Wizard."
 
 msgid "shift_manager.action.create.title"
 msgstr "Create shifts"
+
+msgid "shift_manager.action.duty.text"
+msgstr "Go on duty in a department and track the hours you work on the floor."
+
+msgid "shift_manager.action.duty.title"
+msgstr "Start duty"
 
 msgid "shift_manager.action.grid.text"
 msgstr "Fill status, assignments and open positions at a glance."
