@@ -10,6 +10,7 @@ use App\Repository\ShiftEntryRepository;
 use App\Repository\ShiftRepository;
 use App\Repository\ShiftTaskRepository;
 use App\Repository\UserVolunteerTypeRepository;
+use App\Service\DisplaySettings;
 use App\Service\HoursCalculator;
 use App\Service\Shift\ShiftVisibilityResolver;
 use App\Service\ShiftSignupService;
@@ -35,6 +36,7 @@ final class ShiftBrowseController extends AbstractController
         private readonly ShiftSignupService $signup,
         private readonly HoursCalculator $hours,
         private readonly ShiftVisibilityResolver $visibility,
+        private readonly DisplaySettings $display,
     ) {
     }
 
@@ -45,16 +47,16 @@ final class ShiftBrowseController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        $days = $this->shifts->findUpcomingDays();
-        $selectedDate = $this->resolveDate((string) $request->query->get('date', ''), $days);
-
-        $location = ($lid = $request->query->getInt('location')) ? $locationRepo->find($lid) : null;
-        $shiftTask = ($tid = $request->query->getInt('type')) ? $shiftTaskRepo->find($tid) : null;
+        $tz = $this->display->timezone();
+        $days = $this->shifts->findUpcomingDays($tz);
+        $selectedDate = $this->resolveDate((string) $request->query->get('date', ''), $days, $tz);
+        $location = ($lid = (int) $request->query->get('location')) > 0 ? $locationRepo->find($lid) : null;
+        $shiftTask = ($tid = (int) $request->query->get('type')) > 0 ? $shiftTaskRepo->find($tid) : null;
         $onlyAvailable = $request->query->getBoolean('available');
         $onlyMine = $request->query->getBoolean('mine');
 
         $byHour = [];
-        foreach ($this->shifts->findForDay($selectedDate, $location, $shiftTask) as $shift) {
+        foreach ($this->shifts->findForDay($selectedDate, $tz, $location, $shiftTask) as $shift) {
             $availability = $this->signup->availability($shift);
             $status = $this->signup->eligibilityStatus($shift, $user);
             $relevant = $this->isRelevant($availability, $user);
@@ -66,7 +68,7 @@ final class ShiftBrowseController extends AbstractController
                 continue;
             }
 
-            $hour = $shift->getStartsAt()->format('H:00');
+            $hour = $shift->getStartsAt()->setTimezone($tz)->format('H:00');
             $byHour[$hour][] = [
                 'shift' => $shift,
                 'availability' => $availability,
@@ -187,18 +189,24 @@ final class ShiftBrowseController extends AbstractController
         return $this->redirectToRefererOrShift($request, $entry->getShift());
     }
 
-    /** @param array<string, string> $days */
-    private function resolveDate(string $dateParam, array $days): \DateTimeImmutable
+    /**
+     * The selected calendar day, anchored at local noon in the display timezone so that
+     * both the day window ({@see ShiftRepository::findForDay()}) and the rendered date land
+     * on the intended day rather than drifting across a UTC midnight boundary.
+     *
+     * @param string[] $days
+     */
+    private function resolveDate(string $dateParam, array $days, \DateTimeZone $tz): \DateTimeImmutable
     {
         if ($dateParam !== '') {
             try {
-                return new \DateTimeImmutable($dateParam);
+                return (new \DateTimeImmutable($dateParam, $tz))->setTime(12, 0);
             } catch (\Exception) {
                 // fall through to defaults
             }
         }
 
-        return new \DateTimeImmutable($days[0] ?? 'today');
+        return (new \DateTimeImmutable($days[0] ?? 'today', $tz))->setTime(12, 0);
     }
 
     /**

@@ -140,12 +140,15 @@ class ShiftRepository extends ServiceEntityRepository
     }
 
     /** @return Shift[] published public shifts that start on the given calendar day, with optional filters */
-    public function findForDay(\DateTimeImmutable $day, ?Location $location = null, ?ShiftTask $shiftTask = null): array
+    public function findForDay(\DateTimeImmutable $day, \DateTimeZone $tz, ?Location $location = null, ?ShiftTask $shiftTask = null): array
     {
+        // Shifts are stored in UTC
+        $from = $day->setTimezone($tz)->setTime(0, 0);
+        $to = $from->modify('+1 day');
         $qb = $this->createQueryBuilder('s')
             ->andWhere('s.startsAt >= :from AND s.startsAt < :to')
-            ->setParameter('from', $day->setTime(0, 0))
-            ->setParameter('to', $day->setTime(0, 0)->modify('+1 day'))
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
             ->orderBy('s.startsAt', 'ASC');
         $this->applyPublicVisibility($qb);
 
@@ -165,7 +168,7 @@ class ShiftRepository extends ServiceEntityRepository
      *
      * @return string[]
      */
-    public function findUpcomingDays(int $limit = 30): array
+    public function findUpcomingDays(\DateTimeZone $tz, int $limit = 30): array
     {
         $qb = $this->createQueryBuilder('s')
             ->select('s.startsAt AS d')
@@ -177,9 +180,10 @@ class ShiftRepository extends ServiceEntityRepository
         /** @var array<int, array{d: \DateTimeImmutable}> $rows */
         $rows = $qb->getQuery()->getResult();
 
+        // Group by the local calendar day (stored instants are UTC)
         $days = [];
         foreach ($rows as $row) {
-            $days[$row['d']->format('Y-m-d')] = true;
+            $days[$row['d']->setTimezone($tz)->format('Y-m-d')] = true;
         }
 
         return \array_slice(array_keys($days), 0, $limit);

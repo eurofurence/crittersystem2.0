@@ -3,6 +3,7 @@
 namespace App\Tests\Feature;
 
 use App\Enum\ShiftState;
+use App\Service\EventConfigStore;
 use App\Tests\DatabaseWebTestCase;
 use App\Tests\Support\ShiftScenario;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -142,6 +143,57 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         $this->client->request('GET', '/shifts?date='.$date.'&location='.$elsewhere->getId());
         self::assertResponseIsSuccessful();
         self::assertSelectorTextNotContains('body', 'Here');
+    }
+
+    public function testSelectingAllInADropdownFilterDoesNotError(): void
+    {
+        $this->scenario->shift('Any Shift', 'tomorrow 10:00');
+        $this->client->loginUser($this->scenario->user(memberOf: $this->scenario->type));
+
+        // The "All" option in the location/type dropdowns submits an empty value; the list must
+        // treat that as "no filter", not reject the request.
+        $date = (new \DateTimeImmutable('tomorrow'))->format('Y-m-d');
+        $this->client->request('GET', '/shifts?date='.$date.'&location=&type=');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Any Shift');
+    }
+
+    public function testShiftsAreGroupedUnderTheirLocalStartHour(): void
+    {
+        $this->setDisplayTimezone('Asia/Tokyo'); // UTC+9, no DST
+        // Stored at 02:00 UTC, which is 11:00 the same day in Tokyo.
+        $this->scenario->shift('Tokyo Shift', '2026-08-01 02:00');
+        $this->client->loginUser($this->scenario->user(memberOf: $this->scenario->type));
+
+        $crawler = $this->client->request('GET', '/shifts?date=2026-08-01');
+
+        self::assertResponseIsSuccessful();
+        $text = $crawler->filter('body')->text();
+        self::assertStringContainsString('Tokyo Shift', $text);
+        // The hour heading must be the local start hour, not the stored UTC hour.
+        self::assertStringContainsString('11:00', $text);
+        self::assertStringNotContainsString('02:00', $text);
+    }
+
+    public function testAShiftIsListedUnderItsLocalCalendarDay(): void
+    {
+        $this->setDisplayTimezone('Asia/Tokyo');
+        // 20:00 UTC on 1 Aug is 05:00 on 2 Aug in Tokyo, so it belongs to the 2nd's tab.
+        $this->scenario->shift('Crosses Midnight', '2026-08-01 20:00');
+        $this->client->loginUser($this->scenario->user(memberOf: $this->scenario->type));
+
+        $this->client->request('GET', '/shifts?date=2026-08-02');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Crosses Midnight');
+    }
+
+    private function setDisplayTimezone(string $tz): void
+    {
+        $store = static::getContainer()->get(EventConfigStore::class);
+        $store->set(EventConfigStore::KEY_TIMEZONE, $tz);
+        $store->flush();
     }
 
     public function testADayWithNoShiftsRendersTheEmptyState(): void
