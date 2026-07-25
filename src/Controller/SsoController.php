@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
+use App\Entity\User;
 use App\Form\Model\RegistrationApiData;
 use App\Form\RegistrationApiType;
 use App\Sso\BannedIdentityException;
@@ -68,17 +69,33 @@ final class SsoController extends AbstractController
             throw $this->createNotFoundException('SSO is not enabled.');
         }
 
+        $session = $request->getSession();
+        // A userinfo probe (see probeUserinfo()) reuses this same callback and redirect URI so the
+        // diagnostic needs no extra registration at the provider. Consume the flag up front.
+        $isProbe = (bool) $session->get('sso_userinfo_probe', false);
+        $session->remove('sso_userinfo_probe');
+
         $state = $request->query->get('state');
-        if ($state === null || $state !== $request->getSession()->get('sso_state')) {
+        if ($state === null || $state !== $session->get('sso_state')) {
             $this->addFlash('danger', new TranslatableMessage('admin.sso.flash.invalid_state'));
 
-            return $this->redirectToRoute('app_login');
+            return $this->redirectToRoute($isProbe ? 'app_admin_sso' : 'app_login');
         }
 
         try {
             $provider = $this->providerFactory->create();
             $token = $provider->getAccessToken('authorization_code', ['code' => (string) $request->query->get('code')]);
-            $claims = SsoClaims::fromArray($provider->getResourceOwner($token)->toArray());
+            $rawClaims = $provider->getResourceOwner($token)->toArray();
+
+            // A probe only reads the provider's raw claims for display; it must not provision, mutate,
+            // or re-authenticate - the admin's existing session stays as it is.
+            if ($isProbe) {
+                $session->set('sso_userinfo_result', $rawClaims);
+
+                return $this->redirectToRoute('app_admin_sso');
+            }
+
+            $claims = SsoClaims::fromArray($rawClaims);
             $user = $this->provisioner->provision($claims);
             // The user's own access token authenticates the registration-API call; do it here where
             // the token is in scope. It self-guards on configuration and never throws out.
@@ -92,6 +109,11 @@ final class SsoController extends AbstractController
              * operator - never on the login page, for whoever happens to be at the browser.
              */
             $this->logger->error('SSO login failed: {reason}', ['reason' => $e->getMessage(), 'exception' => $e]);
+            if ($isProbe) {
+                $this->addFlash('danger', new TranslatableMessage('admin.sso.flash.userinfo_failed'));
+
+                return $this->redirectToRoute('app_admin_sso');
+            }
             $this->addFlash('danger', new TranslatableMessage('admin.sso.flash.login_failed'));
 
             return $this->redirectToRoute('app_login');
@@ -132,6 +154,11 @@ final class SsoController extends AbstractController
             return $this->redirectToRoute('app_admin_sso');
         }
 
+        // Pull-and-clear: the raw claims carry the admin's own PII (email, name), so they are shown
+        // once after a probe and never left lingering in the session.
+        $userinfo = $request->getSession()->get('sso_userinfo_result');
+        $request->getSession()->remove('sso_userinfo_result');
+
         return $this->render('admin/sso/status.html.twig', [
             'enabled' => $this->config->isEnabled(),
             'provider' => $this->config->providerLabel(),
@@ -141,6 +168,37 @@ final class SsoController extends AbstractController
             'usesDiscovery' => $this->config->usesDiscovery(),
             'discoveryUrl' => $this->config->discoveryUrl(),
             'registrationApiForm' => $form,
+            'userinfo' => is_array($userinfo) ? $userinfo : null,
         ]);
+    }
+
+    /**
+     * Diagnostic: re-runs the OIDC authorization flow for the signed-in SSO admin and, on return,
+     * shows the provider's raw userinfo claims on the status page (see check()). No token is stored,
+     * so this fresh round-trip is the only way to read them on demand.
+     */
+    #[Route('/admin/sso/userinfo', name: 'app_admin_sso_userinfo', methods: ['GET'])]
+    #[IsGranted('config:sso')]
+    public function probeUserinfo(Request $request): Response
+    {
+        if ($stepUp = $this->stepUp->guard($request)) {
+            return $stepUp;
+        }
+        if (!$this->config->isEnabled()) {
+            throw $this->createNotFoundException('SSO is not enabled.');
+        }
+
+        $user = $this->getUser();
+        if (!$user instanceof User || !$user->isSsoManaged()) {
+            throw $this->createNotFoundException('Userinfo lookup is only available for SSO-managed accounts.');
+        }
+
+        $provider = $this->providerFactory->create();
+        $url = $provider->getAuthorizationUrl(['scope' => implode(' ', $this->config->scopes())]);
+        $session = $request->getSession();
+        $session->set('sso_state', $provider->getState());
+        $session->set('sso_userinfo_probe', true);
+
+        return new RedirectResponse($url);
     }
 }

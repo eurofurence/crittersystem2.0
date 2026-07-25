@@ -404,6 +404,9 @@ msgstr "Registration API endpoint saved."
 msgid "admin.sso.flash.roles_saved"
 msgstr "SSO roles saved. They apply on each user's next sign-in."
 
+msgid "admin.sso.flash.userinfo_failed"
+msgstr "Could not read the userinfo from the provider. Check the log for details."
+
 msgid "admin.sso.roles.back"
 msgstr "← Manage"
 
@@ -517,6 +520,18 @@ msgstr "Registration number lookup"
 
 msgid "admin.sso.status.unavailable"
 msgstr "Unavailable"
+
+msgid "admin.sso.status.userinfo.empty"
+msgstr "The provider returned no claims."
+
+msgid "admin.sso.status.userinfo.fetch"
+msgstr "Fetch my userinfo"
+
+msgid "admin.sso.status.userinfo.help"
+msgstr "Runs the sign-in flow against the identity provider and shows the raw userinfo claims it returns for your account. Useful for diagnosing claim and group mappings. The result is shown once and not stored."
+
+msgid "admin.sso.status.userinfo.title"
+msgstr "Userinfo diagnostics"
 
 msgid "api_key.action.regenerate"
 msgstr "Regenerate key"
