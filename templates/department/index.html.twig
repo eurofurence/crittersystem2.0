@@ -18,9 +18,9 @@
             {{ d.card_start(dept.name, {class: 'h-100 shadow-sm ' ~ (row.member ? 'border-primary' : ''), bodyClass: ''}) }}
               {% if dept.description %}<div class="card-body">{{ dept.description }}</div>{% endif %}
               {% set deptFooter %}
-                {% if row.member %}<span class="badge bg-primary">{{ i.icon('users', {class: 'icon-1 me-1'}) }}{{ 'department.label.member'|trans }}</span>{% endif %}
-                {% if dept.organizational %}{{ d.badge('department.index.organizational'|trans, 'bg-secondary-lt') }}{% endif %}
-                {% if dept.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'bg-secondary-lt') }}{% endif %}
+                {% if row.member %}<span class="badge text-bg-primary">{{ i.icon('users', {class: 'icon-1 me-1'}) }}{{ 'department.label.member'|trans }}</span>{% endif %}
+                {% if dept.organizational %}{{ d.badge('department.index.organizational'|trans, 'text-bg-azure') }}{% endif %}
+                {% if dept.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'text-bg-yellow') }}{% endif %}
               {% endset %}
             {{ d.card_end({bodyClass: '', footer: deptFooter, footerClass: 'card-footer d-flex gap-2'}) }}
           </a>

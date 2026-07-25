@@ -9,9 +9,10 @@
 
 [data-bs-theme="dark"] {
   /* EF teal lightened for legibility on dark surfaces; buttons get dark text. */
-  --tblr-primary: #4fb3aa;
+  --tblr-primary: #005953;
   --tblr-primary-rgb: 79, 179, 170;
   --tblr-primary-fg: #06231f;
+  /* --tblr-badge-color: white; */
 
   --tblr-link-color: #6fc5bd;
   --tblr-link-color-rgb: 111, 197, 189;

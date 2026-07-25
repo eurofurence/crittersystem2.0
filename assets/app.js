@@ -8,6 +8,8 @@ import "@hotwired/turbo";
 import * as bootstrap from "bootstrap";
 window.bootstrap = bootstrap;
 
+bootstrap.Dropdown.Default.popperConfig = (config) => ({ ...config, strategy: 'fixed' });
+
 // Tabler 1.4 design system (Bootstrap 5 theme) - replaces stock Bootstrap CSS.
 import "@tabler/core/dist/css/tabler.min.css";
 
