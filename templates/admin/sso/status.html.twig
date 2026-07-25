@@ -38,7 +38,11 @@
           {% else %}
             <div>
               <pre>
-                {% userinfo|raw %}
+                {% if userinfo is iterable %}
+                  {{ userinfo|json_encode(constant('JSON_PRETTY_PRINT')) }}
+                {% else %}
+                  {{ userinfo }}
+                {% endif %}
               </pre>
             </div>
             <!-- <dl class="row mb-3">
