@@ -18,7 +18,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  */
 final class PlannerPageTest extends DatabaseWebTestCase
 {
-    private function manager(): User
+    private function managerGroup(): Group
     {
         $group = new Group('Managers', 'managers-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
         foreach (['manageshifts:view', 'shift:manage'] as $p) {
@@ -27,6 +27,13 @@ final class PlannerPageTest extends DatabaseWebTestCase
             $group->addPrivilege($priv);
         }
         $this->em->persist($group);
+
+        return $group;
+    }
+
+    private function manager(): User
+    {
+        $group = $this->managerGroup();
 
         $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
         $user = new User();
@@ -39,9 +46,9 @@ final class PlannerPageTest extends DatabaseWebTestCase
         return $user;
     }
 
-    private function department(): Department
+    private function department(string $name = 'Logistics', string $slug = 'logistics'): Department
     {
-        $dept = new Department('Logistics', 'logistics');
+        $dept = new Department($name, $slug);
         $this->em->persist($dept);
 
         return $dept;
@@ -91,6 +98,34 @@ final class PlannerPageTest extends DatabaseWebTestCase
             strpos($head->html(), 'planner-phase-tag'),
             'the phase tag renders above the date, not beside it',
         );
+    }
+
+    /**
+     * The department dropdown lists only departments the manager may plan. A manager scoped to one
+     * department must not see the others, since shift:manage is department-scoped and picking an
+     * out-of-scope department would 403.
+     */
+    public function testDropdownListsOnlyManageableDepartments(): void
+    {
+        $group = $this->managerGroup();
+        $mine = $this->department('Logistics', 'logistics');
+        $this->department('Security', 'security');
+
+        $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
+        $user = new User();
+        $user->setName('scoped')->setEmail('scoped@example.com')->setApiKey(bin2hex(random_bytes(16)));
+        $user->setPassword($hasher->hashPassword($user, 'secret123'));
+        $user->assignGroup($group, $mine);
+        $user->completeOnboarding();
+        $this->em->persist($user);
+        $this->em->flush();
+
+        $this->client->loginUser($this->em->getRepository(User::class)->findOneBy(['email' => 'scoped@example.com']));
+        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+
+        self::assertResponseIsSuccessful();
+        $options = $crawler->filter('#planner-department option')->each(static fn ($node) => trim($node->text()));
+        self::assertSame(['Logistics'], $options);
     }
 
     public function testPaintCreatesConsolidatedDraft(): void

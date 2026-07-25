@@ -10,10 +10,8 @@
     <div class="card h-100">
       <div class="card-header">
         <h3 class="card-title mb-0"><a href="{{ path('app_membership_show', {id: type.uuid}) }}" class="text-reset">{{ type.name }}</a></h3>
-        <div class="mt-1">
-          {% if type.requiresIntroduction %}{{ d.badge('membership.badge_requires_intro'|trans, 'text-bg-warning') }}{% endif %}
-          {% if type.staffOnly %}{{ d.badge('membership.badge_staff'|trans, 'text-bg-secondary') }}{% endif %}
-        </div>
+          {% if type.requiresIntroduction %}{{ d.badge('membership.badge_requires_intro'|trans, 'text-bg-warning ms-auto') }}{% endif %}
+          {% if type.staffOnly %}{{ d.badge('membership.badge_staff'|trans, 'text-bg-secondary ms-auto') }}{% endif %}
       </div>
       <div class="card-body">
         {% if type.description %}<div class="text-muted small mb-2">{{ type.description|striptags|slice(0, 160) }}</div>{% endif %}

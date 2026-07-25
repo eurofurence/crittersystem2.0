@@ -55,9 +55,12 @@ final class PlannerController extends AbstractController
     #[Route('', name: 'app_manage_shifts_planner', methods: ['GET'])]
     public function index(Request $request, VolunteerTypeRepository $types, LocationRepository $locations): Response
     {
+        // Only offer departments this manager may actually plan. shift:manage is scoped, so a
+        // manager assigned to one department must not see (and 403 on) the others; an unscoped
+        // holder or admin still sees them all.
         $planningDepartments = array_values(array_filter(
             $this->departments->findAllOrdered(),
-            static fn (Department $d) => !$d->isOrganizational(),
+            fn (Department $d) => !$d->isOrganizational() && $this->isGranted('shift:manage', $d),
         ));
         if ($planningDepartments === []) {
             return $this->render('planner/empty.html.twig');

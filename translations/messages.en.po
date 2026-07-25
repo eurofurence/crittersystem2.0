@@ -3699,7 +3699,7 @@ msgid "membership.badge_requires_intro"
 msgstr "Requires introduction"
 
 msgid "membership.badge_staff"
-msgstr "Staff"
+msgstr "Staff Only"
 
 msgid "membership.confirm_leave"
 msgstr "Leave this volunteer type?"
