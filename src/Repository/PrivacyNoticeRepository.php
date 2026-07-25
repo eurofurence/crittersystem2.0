@@ -20,4 +20,9 @@ class PrivacyNoticeRepository extends ServiceEntityRepository
     {
         return $this->findOneBy([], ['id' => 'ASC']);
     }
+
+    public function currentVersion(): ?string
+    {
+        return $this->current()?->getUpdatedAt()->format('Y-m-d\TH:i:sP');
+    }
 }

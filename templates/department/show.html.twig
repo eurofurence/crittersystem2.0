@@ -90,7 +90,8 @@
             {% for u in section.users %}
               <tr>
                 <td>
-                  <a href="{{ path('app_profile_show', {id: u.uuid}) }}">{{ u|display_name }}</a>
+                  {% set realName = real_name(u, department) %}
+                  <a href="{{ path('app_profile_show', {id: u.uuid}) }}">{{ realName ? realName ~ ' (' ~ u|display_name ~ ')' : u|display_name }}</a>
                   {% if u.ssoManaged %}<span class="badge bg-blue-lt ms-1" title="{{ 'department.show.sso_title'|trans }}">SSO</span>{% endif %}
                 </td>
                 <td class="text-secondary small">

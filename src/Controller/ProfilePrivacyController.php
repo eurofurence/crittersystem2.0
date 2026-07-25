@@ -2,11 +2,15 @@
 
 namespace App\Controller;
 
+use App\Audit\AuditEvents;
+use App\Audit\AuditLogger;
 use App\Entity\DataExport;
 use App\Entity\User;
+use App\Entity\UserConsent;
 use App\Gdpr\ErasureService;
 use App\Gdpr\GenerateDataExport;
 use App\Repository\DataExportRepository;
+use App\Repository\PrivacyNoticeRepository;
 use App\Storage\ExportStorage;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -31,6 +35,8 @@ final class ProfilePrivacyController extends AbstractController
         private readonly MessageBusInterface $bus,
         private readonly ErasureService $erasure,
         private readonly ExportStorage $storage,
+        private readonly PrivacyNoticeRepository $privacyNotices,
+        private readonly AuditLogger $audit,
     ) {
     }
 
@@ -39,10 +45,58 @@ final class ProfilePrivacyController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
+        $mobile = $user->getContact()?->getMobile();
 
         return $this->render('profile/privacy.html.twig', [
             'exports' => $this->exports->findBy(['user' => $user], ['createdAt' => 'DESC'], 10),
+            'consent' => $user->getConsent(),
+            'hasPhone' => $mobile !== null && $mobile !== '',
+            'hasTelegram' => $user->isTelegramLinked(),
         ]);
+    }
+
+    #[Route('/contact-visibility', name: 'app_profile_contact_visibility', methods: ['POST'])]
+    public function contactVisibility(Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('contact_visibility', (string) $request->request->get('_token'))) {
+            return $this->redirectToRoute('app_profile_privacy');
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+        $mobile = $user->getContact()?->getMobile();
+        $hasPhone = $mobile !== null && $mobile !== '';
+        $hasTelegram = $user->isTelegramLinked();
+        $hasEmail = $user->getEmail() !== '';
+
+        $showName = $request->request->getBoolean('show_name');
+        $showEmail = $request->request->getBoolean('show_email');
+        $showPhone = $request->request->getBoolean('show_phone');
+        $showTelegram = $request->request->getBoolean('show_telegram');
+
+        // Reachability is necessary to run shifts: withdrawing the last real
+        // channel is refused, not silently accepted, exactly as at onboarding.
+        $reachable = ($showEmail && $hasEmail) || ($showPhone && $hasPhone) || ($showTelegram && $hasTelegram);
+        if (!$reachable) {
+            $this->addFlash('danger', new TranslatableMessage('profile.privacy.visibility.flash.last_channel'));
+
+            return $this->redirectToRoute('app_profile_privacy');
+        }
+
+        $consent = $user->getConsent() ?? new UserConsent($user);
+        $consent->setFullNameVisible($showName);
+        $consent->setEmailVisible($showEmail);
+        $consent->setPhoneVisible($showPhone);
+        $consent->setTelegramVisible($showTelegram);
+        $consent->stampVisibilityProvenance($this->privacyNotices->currentVersion());
+        $user->setConsent($consent);
+        $this->em->flush();
+        $this->audit->log(AuditEvents::CONSENT, AuditEvents::UPDATE, ['details' => [
+            'scope' => 'visibility', 'name' => $showName, 'email' => $showEmail, 'phone' => $showPhone, 'telegram' => $showTelegram,
+        ]]);
+        $this->addFlash('success', new TranslatableMessage('profile.privacy.visibility.flash.saved'));
+
+        return $this->redirectToRoute('app_profile_privacy');
     }
 
     #[Route('/export', name: 'app_profile_data_export', methods: ['POST'])]

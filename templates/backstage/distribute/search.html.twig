@@ -28,8 +28,8 @@
           {% for u in results %}
             <tr>
               <td class="fw-semibold">{{ u.name }}</td>
-              {# Email is a mining vector: only admins see the raw address as an identity column. #}
-              <td class="small">{{ is_granted('ROLE_ADMIN') ? u.email : '-' }}</td>
+              {# Email is a mining vector: only a fresh-stepped-up PII viewer sees the raw address. #}
+              <td class="small">{{ can_see_pii() ? u.email : '-' }}</td>
               <td class="text-end">
                 <a class="btn btn-sm btn-primary" href="{{ path('app_backstage_distribute_user', {id: u.uuid}) }}">{{ 'backstage.action.open'|trans }}</a>
               </td>

@@ -109,8 +109,16 @@ final class LocateUserTest extends DatabaseWebTestCase
         self::assertStringNotContainsString('target-one@example.com', (string) $this->client->getResponse()->getContent());
         self::assertSelectorTextContains('td.small', '-');
 
-        // Admin: the address is shown.
+        // Admin without a fresh 2FA step-up: still redacted. Holding the privilege
+        // is not enough to unmask on its own.
         $this->client->loginUser($this->user('boss', 'ROLE_ADMIN', 'global:admin'));
+        $this->client->request('GET', '/backstage/distribute?q=target');
+        self::assertStringNotContainsString('target-one@example.com', (string) $this->client->getResponse()->getContent());
+
+        // Same admin, after a fresh step-up: the address is shown.
+        $session = $this->client->getRequest()->getSession();
+        $session->set('_mfa_verified_at', time());
+        $session->save();
         $this->client->request('GET', '/backstage/distribute?q=target');
         self::assertStringContainsString('target-one@example.com', (string) $this->client->getResponse()->getContent());
     }

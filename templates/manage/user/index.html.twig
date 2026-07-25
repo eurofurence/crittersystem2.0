@@ -26,6 +26,13 @@
     {% endif %}
   </div>
 
+  {% if can_reveal_pii() %}
+    <div class="alert alert-secondary d-flex align-items-center mb-3" role="status">
+      <span class="me-auto">{{ 'manage.user.pii.masked_notice'|trans }}</span>
+      <a class="btn btn-sm btn-outline-primary text-nowrap" href="{{ path('app_2fa_confirm', {return: app.request.requestUri}) }}">{{ 'manage.user.pii.reveal'|trans }}</a>
+    </div>
+  {% endif %}
+
   {{ d.table_start() }}
     <thead><tr><th>{{ 'common.label.user'|trans }}</th><th>{{ 'common.label.email'|trans }}</th><th>{{ 'manage.user.table.position'|trans }}</th><th>{{ 'manage.user.table.onboarded'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
     <tbody>

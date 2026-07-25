@@ -76,7 +76,7 @@ final class DepartmentController extends AbstractController
                 'hours' => $this->departments->plannedHours($user),
                 'over' => $this->departments->overThreshold($user),
             ];
-            $contactMethods[$user->getId()] = $this->contacts->methodsFor($user);
+            $contactMethods[$user->getId()] = $this->contacts->methodsFor($user, $department);
         }
 
         return $this->render('department/show.html.twig', [

@@ -3461,6 +3461,12 @@ msgstr "Force onboarding again?"
 msgid "manage.user.onboarding.rerun_queued"
 msgstr "Re-run queued"
 
+msgid "manage.user.pii.masked_notice"
+msgstr "Personal data is masked. Confirm your identity with two-factor to reveal it."
+
+msgid "manage.user.pii.reveal"
+msgstr "Reveal personal data"
+
 msgid "manage.user.page.subtitle"
 msgstr "Manage volunteer and staff accounts."
 
@@ -3992,8 +3998,14 @@ msgstr "Welcome aboard! Your onboarding is complete."
 msgid "onboarding.flash.consent_required"
 msgstr "You must consent to continue."
 
+msgid "onboarding.flash.contact_required"
+msgstr "Share at least one contact channel so your managers can reach you."
+
 msgid "onboarding.flash.password_mismatch"
 msgstr "Passwords must match and be at least 8 characters."
+
+msgid "onboarding.notifications.contact_required_note"
+msgstr "You must share at least one channel so managers and shift leads can reach you. You choose which."
 
 msgid "onboarding.notifications.critical_note"
 msgstr "Critical notifications (password reset, security, support) are always sent. We never share your email or send spam."
@@ -4018,6 +4030,9 @@ msgstr "My full name"
 
 msgid "onboarding.notifications.show_phone"
 msgstr "My phone number"
+
+msgid "onboarding.notifications.show_telegram"
+msgstr "My Telegram handle"
 
 msgid "onboarding.notifications.title"
 msgstr "Notifications"
@@ -4531,6 +4546,21 @@ msgstr "That export has expired or is not ready."
 
 msgid "profile.privacy.page.subtitle"
 msgstr "Export your data or delete your account."
+
+msgid "profile.privacy.visibility.title"
+msgstr "Contact visibility"
+
+msgid "profile.privacy.visibility.help"
+msgstr "Choose which of your details your department and shift managers may see. You can change this at any time."
+
+msgid "profile.privacy.visibility.last_channel_note"
+msgstr "You must keep at least one contact channel shared so managers can reach you."
+
+msgid "profile.privacy.visibility.flash.saved"
+msgstr "Your contact visibility was updated."
+
+msgid "profile.privacy.visibility.flash.last_channel"
+msgstr "Keep at least one contact channel shared so your managers can reach you."
 
 msgid "profile.table.appeal"
 msgstr "Appeal"

@@ -293,6 +293,36 @@ Limitations: no icon, no trend indicator, no link.
 
 ---
 
+#### `certification_card(cert, options = {})`
+
+One certification as a card (header title + description) with a caller-supplied control in the footer.
+Used both to pick certifications as requirements on the volunteer-type form (the control is a toggle
+switch over the form checkbox) and on the volunteer-facing certifications list (the control is the
+apply/self-confirm buttons). Wrap a set in `<div class="row">`.
+
+| Param | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `cert` | object | **yes** | - | Anything exposing `.title` and `.description` (the `Certification` entity). Both escaped. |
+| `options.col` | string | no | `'col-md-6 col-lg-3'` | |
+| `options.infoUrl` | string | no | - | When truthy, renders a "More information" link on the footer's left. |
+| `options.control` | markup | no | - | Trusted captured HTML shown on the footer's right (a switch, buttons). |
+| `options.bodyExtra` | markup | no | - | Trusted captured HTML appended under the description (status badge, validity). |
+
+The footer is omitted entirely when neither `control` nor `infoUrl` is given; the body is omitted when
+there is no description and no `bodyExtra`. `control` and `bodyExtra` are rendered with `|raw` - pass
+developer-authored markup only, never user input.
+
+```twig
+<div class="row">
+  {% for row in rows %}
+    {% set control %}<a href="{{ path('...apply...') }}" class="btn btn-sm btn-primary">Apply</a>{% endset %}
+    {{ d.certification_card(row.cert, {infoUrl: path('app_certifications_show', {id: row.cert.uuid}), control: control}) }}
+  {% endfor %}
+</div>
+```
+
+---
+
 #### `definition_list(items, options = {})`
 
 A `<dl class="row">` of label/value pairs.
@@ -555,7 +585,7 @@ the widget while preserving any classes the form type set.
 
 ```twig
 {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
-{{ f.field(form.dect, {help: 'Internal phone number.', prefix: '#'}) }}
+{{ f.field(form.phone, {help: 'Internal phone number.', prefix: '#'}) }}
 ```
 
 Limitations: `prefix`/`suffix` are plain text, not HTML. Errors render *below* the input group.
@@ -645,6 +675,22 @@ the work - do not set `label: ''`.
 
 ---
 
+#### `switch(row, options = {})`
+
+A checkbox rendered as a Bootstrap/Tabler toggle switch (`.form-check.form-switch`). Same contract and
+accessibility notes as `check()`; use it for on/off configuration flags where a switch reads better than
+a checkbox.
+
+| Param | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `row` | FormView | **yes** | - | |
+| `options.col` | string | no | `'col-12 col-md-6'` | |
+| `options.label` | string | no | (form's label) | |
+| `options.help` | string | no | - | |
+| `options.attr` | map | no | - | Extra input attributes merged onto the widget (e.g. Stimulus `data-*` wiring). |
+
+---
+
 #### `choice(row, options = {})`
 
 A single `<select>` (`ChoiceType`), styled `form-select`.
@@ -669,11 +715,45 @@ A `<select multiple>` (`ChoiceType` with `multiple: true`), rendered as a sized 
 | `options.size` | int | no | field's own `size`, else `6` | Visible rows. |
 
 It also emits `data-multiselect="1"`. **No JavaScript reads that attribute** - it is a leftover of the
-deleted `multi_select()` macro. Do not build anything on it; there is no tag/chips widget.
+deleted `multi_select()` macro. Do not build anything on it. For a tag/chips **user** picker, use
+`user_select` below.
 
 ```twig
 {{ f.choice_multiple(form.privileges, {size: 10, help: 'Ctrl/Cmd-click to select several.'}) }}
 ```
+
+#### `user_select(name, options = {})`
+
+A tag-style, type-ahead **user** picker: type a username, pick from a live dropdown (avatar + name,
+with a `(staff)` suffix for staff), and each pick becomes a removable chip. It submits one hidden
+`<name>[]` input per picked user, so it drops straight into a normal POST form - no JS submit needed.
+Behaviour is the `user_select` Stimulus controller (`assets/controllers/user_select_controller.js`);
+styling is `assets/styles/user-select.css`. Reusable anywhere: supply a JSON search endpoint.
+
+The endpoint receives `?q=<text>` and returns `{results: [{id, name, staff: bool, avatar: string|null}]}`.
+Search is username-only partial matching (`UserRepository::searchByName`); the caller's endpoint decides
+scope/authorization and which users to exclude (e.g. already-assigned).
+
+| Param | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `name` | string | **yes** | - | Hidden inputs are named `<name>[]`. |
+| `options.url` | string | **yes** | - | The JSON search endpoint. |
+| `options.label` | string\|false | no | `'Add users'` | `false` omits the label. |
+| `options.placeholder` / `options.help` / `options.col` | | no | | |
+| `options.minChars` | int | no | `1` | Characters typed before searching. |
+| `options.staffSuffix` | bool | no | `true` | Append `' (staff)'` to staff names. |
+| `options.selected` | list | no | `[]` | `{id, name, staff, avatar}` chips to pre-render (edit forms). |
+
+```twig
+<form method="post" action="{{ path('app_shift_staffing_assign', {id: shift.uuid}) }}">
+  <input type="hidden" name="_token" value="{{ csrf_token('staffing_assign' ~ shift.id) }}">
+  {{ f.user_select('users', {url: path('app_shift_staffing_search', {id: shift.uuid}), label: false}) }}
+  <button class="btn btn-primary">Assign</button>
+</form>
+```
+
+The macro never mints CSRF tokens or decides authorization - the caller supplies the token and the
+scoped search endpoint (mirrors the `d.delete_form()` convention).
 
 ---
 
@@ -835,11 +915,12 @@ An inline 24×24 Tabler SVG that inherits `currentColor` (so it follows the acti
 | `name` | string (slug) | **yes** | - | A key of the internal map. **An unknown slug silently renders a neutral dot (`point`)** - a typo never breaks layout, and never errors either. |
 | `options.class` | string | no | `''` | Extra classes; `icon` is always present. `icon-1`, `icon-2` size it. |
 
-Available slugs (31):
+Available slugs (33):
 
 `activity`, `award`, `bell`, `building`, `calendar`, `checklist`, `chevron-down`, `clock`, `code`,
 `compass`, `dashboard`, `gift`, `help`, `home`, `id`, `lock`, `login`, `logout`, `mail`, `map-pin`,
-`news`, `palette`, `plus`, `point`, `puzzle`, `send`, `settings`, `shield`, `tools`, `user`, `users`.
+`message`, `news`, `palette`, `plus`, `point`, `puzzle`, `send`, `settings`, `shield`, `tools`,
+`user`, `user-search`, `users`.
 
 Add an icon by pasting its inner `<path>` markup from <https://tabler.io/icons> into the map inside
 the macro (the map lives inside the macro because Twig macros are isolated).
@@ -1024,7 +1105,7 @@ Every component is rendered, with its variants and edge cases, on one of six kit
 |---|---|---|---|
 | **Navigation Kit (hub)** | `/dev/ui/navigation-kit` | `src/Dev/Controller/NavigationKitController.php` | Index of all kits; `nav_item`, `sidebar_item`, `sidebar` |
 | Data Kit | `/dev/ui/data-kit` | `DataKitController.php` | `page_header`, `section_header`, cards, `message_card_*`, `action_card`, `stat_card`, `definition_list`, badges, empty states, tables, `delete_form`, `row_actions` |
-| Form Kit | `/dev/kit` | `FormKitController.php` | `field`, `datetime_local`, `range_slider`, `search_input`, `check`, `choice`, `choice_multiple` |
+| Form Kit | `/dev/kit` | `FormKitController.php` | `field`, `datetime_local`, `range_slider`, `search_input`, `check`, `switch`, `choice`, `choice_multiple` |
 | Modal Kit | `/dev/ui/modal-kit` | `ModalKitController.php` | The **supported** dialog mechanism: `data-controller="confirm"` and `confirmModal()`/`alertModal()` |
 | Notification Kit | `/dev/ui/notification-kit` | `NotificationKitController.php` | `alert`, `flash_messages`, `toast` |
 | Theme Kit | `/dev/kit/themes` | `ThemeKitController.php` | The registered themes and their Tabler variables |

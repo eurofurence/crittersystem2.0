@@ -178,19 +178,46 @@ final class OnboardingController extends AbstractController
         $settings = $user->getSettings() ?? new Settings($user);
         $consent = $user->getConsent() ?? new UserConsent($user);
 
-        if ($request->isMethod('POST')) {
-            $settings->setEmailShiftinfo($request->request->getBoolean('email_shifts'));
-            $settings->setEmailGoodie($request->request->getBoolean('email_goodies'));
-            $consent->setFullNameVisible($request->request->getBoolean('show_name'));
-            $consent->setEmailVisible($request->request->getBoolean('show_email'));
-            $consent->setPhoneVisible($request->request->getBoolean('show_phone'));
-            $user->setSettings($settings)->setConsent($consent);
-            $this->em->flush();
+        $mobile = $user->getContact()?->getMobile();
+        $hasPhone = $mobile !== null && $mobile !== '';
+        $hasTelegram = $user->isTelegramLinked();
+        $hasEmail = $user->getEmail() !== '';
 
-            return $this->redirectToRoute('app_onboarding_finish');
+        if ($request->isMethod('POST')) {
+            $showName = $request->request->getBoolean('show_name');
+            $showEmail = $request->request->getBoolean('show_email');
+            $showPhone = $request->request->getBoolean('show_phone');
+            $showTelegram = $request->request->getBoolean('show_telegram');
+
+            // Reachability is necessary to run shifts: the volunteer chooses which
+            // channel to share, but at least one real, existing channel must be.
+            $reachable = ($showEmail && $hasEmail) || ($showPhone && $hasPhone) || ($showTelegram && $hasTelegram);
+            if (!$reachable) {
+                $this->addFlash('danger', new TranslatableMessage('onboarding.flash.contact_required'));
+            } else {
+                $settings->setEmailShiftinfo($request->request->getBoolean('email_shifts'));
+                $settings->setEmailGoodie($request->request->getBoolean('email_goodies'));
+                $consent->setFullNameVisible($showName);
+                $consent->setEmailVisible($showEmail);
+                $consent->setPhoneVisible($showPhone);
+                $consent->setTelegramVisible($showTelegram);
+                $consent->stampVisibilityProvenance($this->privacyNotices->currentVersion());
+                $user->setSettings($settings)->setConsent($consent);
+                $this->em->flush();
+                $this->audit->log(AuditEvents::CONSENT, AuditEvents::UPDATE, ['details' => [
+                    'scope' => 'visibility', 'name' => $showName, 'email' => $showEmail, 'phone' => $showPhone, 'telegram' => $showTelegram,
+                ]]);
+
+                return $this->redirectToRoute('app_onboarding_finish');
+            }
         }
 
-        return $this->render('onboarding/notifications.html.twig', ['settings' => $settings, 'consent' => $consent]);
+        return $this->render('onboarding/notifications.html.twig', [
+            'settings' => $settings,
+            'consent' => $consent,
+            'hasPhone' => $hasPhone,
+            'hasTelegram' => $hasTelegram,
+        ]);
     }
 
     #[Route('/finish', name: 'app_onboarding_finish', methods: ['GET', 'POST'])]

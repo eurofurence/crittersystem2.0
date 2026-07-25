@@ -12,3 +12,28 @@
     font-style: normal;
     line-height: 1;
 }
+
+.table {
+    --tblr-table-bg: var(--tblr-bg-surface);
+}
+
+.badge.text-bg-warning,
+.badge.text-bg-yellow,
+.badge.text-bg-orange,
+.badge.text-bg-success,
+.badge.text-bg-green,
+.badge.text-bg-lime,
+.badge.text-bg-teal,
+.badge.text-bg-cyan,
+.badge.text-bg-info,
+.badge.text-bg-azure {
+    color: #1f2937 !important;
+}
+
+.badge.text-bg-primary {
+    color: var(--tblr-primary-fg) !important;
+}
+
+.badge.text-bg-secondary {
+    background-color: var(--tblr-gray-600) !important;
+}

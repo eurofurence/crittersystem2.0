@@ -47,8 +47,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Partial, case-insensitive username search - no email/id matching. Used by the
-     * type-ahead user pickers, where only the username should be searchable.
+     * Partial, case-insensitive username search.
      *
      * @return User[]
      */
@@ -153,11 +152,7 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Info-desk user lookup. Deliberately narrow to resist account mining: an email
-     * only ever matches EXACTLY (never a substring), a digit string is treated as a
-     * registration number and matched exactly, and the internal database id is never
-     * searchable. Only plain names fall back to a substring match. Badge-scan tokens
-     * are resolved by the caller (they need the digital-id service), not here.
+     * Info-desk user lookup
      *
      * @return User[]
      */
@@ -212,16 +207,32 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             return [];
         }
 
-        $qb = $this->createQueryBuilder('u')
-            ->andWhere('LOWER(u.name) LIKE :like OR LOWER(u.email) LIKE :like')
-            ->setParameter('like', '%'.mb_strtolower($query).'%')
-            ->orderBy('u.name', 'ASC')
-            ->setMaxResults($limit);
-
-        if (ctype_digit($query)) {
-            $qb->orWhere('u.id = :id')->setParameter('id', (int) $query);
+        if (str_contains($query, '@')) {
+            return $this->createQueryBuilder('u')
+                ->andWhere('LOWER(u.email) = :email')
+                ->setParameter('email', mb_strtolower($query))
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getResult();
         }
 
-        return $qb->getQuery()->getResult();
+        if (ctype_digit($query)) {
+            return $this->createQueryBuilder('u')
+                ->join('u.personalData', 'p')
+                ->andWhere('p.badgeNumber = :regnum')
+                ->setParameter('regnum', (int) $query)
+                ->orderBy('u.name', 'ASC')
+                ->setMaxResults($limit)
+                ->getQuery()
+                ->getResult();
+        }
+
+        return $this->createQueryBuilder('u')
+            ->andWhere('LOWER(u.name) LIKE :like')
+            ->setParameter('like', '%'.mb_strtolower($query).'%')
+            ->orderBy('u.name', 'ASC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
     }
 }

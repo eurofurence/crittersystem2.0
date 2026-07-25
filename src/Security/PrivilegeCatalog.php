@@ -79,6 +79,7 @@ final class PrivilegeCatalog
         'user:pii:view' => ['View unmasked personal data', 'Users', self::LEVEL_ADMIN, true],
         'user:arrive' => ['Check users in / mark as arrived', 'Users', self::LEVEL_SUBADMIN, false],
         'user:locate' => ['Locate a user at the info desk (exact email, registration number, or badge scan)', 'Users', self::LEVEL_SUBADMIN, false],
+        'user:contact:view' => ["View a volunteer's consented contact details", 'Users', self::LEVEL_SUBADMIN, false],
         'user:worklog:edit' => ['Edit user worklog hours', 'Users', self::LEVEL_SUBADMIN, false],
         'profile:view' => ['View any user profile', 'Users', self::LEVEL_SUBADMIN, false],
         'profile:history:view' => ["View another user's shift history", 'Users', self::LEVEL_SUBADMIN, false],
@@ -236,7 +237,7 @@ final class PrivilegeCatalog
             'name' => 'Info Desk',
             'role' => 'ROLE_STAFF',
             'permissions' => [
-                'manageshifts:view', 'user:view', 'user:arrive', 'user:locate', 'message:use', 'chat:claim', 'chat:restricted', 'call:trigger', 'call:cancel', 'shift:view', 'shift:assign',
+                'manageshifts:view', 'user:view', 'user:arrive', 'user:locate', 'user:contact:view', 'message:use', 'chat:claim', 'chat:restricted', 'call:trigger', 'call:cancel', 'shift:view', 'shift:assign',
                 'goodie:view', 'goodie:distribute', 'certification:view', 'news:view', 'faq:view',
                 'profile:view', 'profile:history:view', 'worklog:self',
             ],

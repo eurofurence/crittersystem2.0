@@ -37,11 +37,25 @@ class UserConsent
     #[ORM\Column(name: 'phone_visible')]
     private bool $phoneVisible = false;
 
+    #[ORM\Column(name: 'telegram_visible')]
+    private bool $telegramVisible = false;
+
     #[ORM\Column(name: 'consent_locale', length: 10, nullable: true)]
     private ?string $consentLocale = null;
 
     #[ORM\Column(name: 'consented_at', nullable: true)]
     private ?\DateTimeImmutable $consentedAt = null;
+
+    /**
+     * Provenance for the visibility opt-ins, kept separate from the
+     * data-processing grant above: when the volunteer last set who may see their
+     * contact details, and under which privacy-notice version.
+     */
+    #[ORM\Column(name: 'visibility_consented_at', nullable: true)]
+    private ?\DateTimeImmutable $visibilityConsentedAt = null;
+
+    #[ORM\Column(name: 'visibility_notice_version', length: 40, nullable: true)]
+    private ?string $visibilityNoticeVersion = null;
 
     #[ORM\Column(name: 'updated_at')]
     private \DateTimeImmutable $updatedAt;
@@ -124,6 +138,46 @@ class UserConsent
         $this->phoneVisible = $v;
 
         return $this;
+    }
+
+    public function isTelegramVisible(): bool
+    {
+        return $this->telegramVisible;
+    }
+
+    public function setTelegramVisible(bool $v): static
+    {
+        $this->telegramVisible = $v;
+
+        return $this;
+    }
+
+    /** Whether at least one reachable channel is shared, so a manager can contact the volunteer. */
+    public function hasVisibleChannel(): bool
+    {
+        return $this->emailVisible || $this->phoneVisible || $this->telegramVisible;
+    }
+
+    /**
+     * Stamp when and under which notice version the visibility opt-ins were last
+     * set. Call after changing the flags, in onboarding and on the edit screen.
+     */
+    public function stampVisibilityProvenance(?string $noticeVersion): static
+    {
+        $this->visibilityConsentedAt = new \DateTimeImmutable();
+        $this->visibilityNoticeVersion = $noticeVersion;
+
+        return $this;
+    }
+
+    public function getVisibilityConsentedAt(): ?\DateTimeImmutable
+    {
+        return $this->visibilityConsentedAt;
+    }
+
+    public function getVisibilityNoticeVersion(): ?string
+    {
+        return $this->visibilityNoticeVersion;
     }
 
     public function getConsentLocale(): ?string

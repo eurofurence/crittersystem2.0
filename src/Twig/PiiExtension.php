@@ -32,6 +32,7 @@ final class PiiExtension extends AbstractExtension
     {
         return [
             new TwigFunction('can_see_pii', $this->masker->canSeePii(...)),
+            new TwigFunction('can_reveal_pii', $this->masker->canRevealPii(...)),
         ];
     }
 }

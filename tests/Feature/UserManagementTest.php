@@ -103,8 +103,17 @@ final class UserManagementTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
         self::assertStringNotContainsString('victim@example.com', $this->client->getResponse()->getContent());
 
-        // Global admin: sees raw email.
+        // Global admin WITHOUT a fresh 2FA step-up: still masked, reveal offered.
+        // Holding user:pii:view is not enough to unmask on its own.
         $this->client->loginUser($this->makeUser('root', 'ROLE_ADMIN', ['global:admin']));
+        $this->client->request('GET', '/manage/users?q=victim');
+        self::assertResponseIsSuccessful();
+        self::assertStringNotContainsString('victim@example.com', $this->client->getResponse()->getContent());
+
+        // Same admin, after a fresh step-up: sees the raw email.
+        $session = $this->client->getRequest()->getSession();
+        $session->set('_mfa_verified_at', time());
+        $session->save();
         $this->client->request('GET', '/manage/users?q=victim');
         self::assertStringContainsString('victim@example.com', $this->client->getResponse()->getContent());
     }

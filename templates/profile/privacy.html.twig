@@ -6,6 +6,23 @@
 {% block body %}
   {{ d.page_header('ui.user_menu.privacy'|trans, {subtitle: 'profile.privacy.page.subtitle'|trans}) }}
 
+  {{ d.card_start('profile.privacy.visibility.title'|trans, {class: 'mb-4', titleTag: 'strong', titleClass: ''}) }}
+      <p class="text-muted small">{{ 'profile.privacy.visibility.help'|trans }}</p>
+      <form method="post" action="{{ path('app_profile_contact_visibility') }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('contact_visibility') }}">
+        <label class="form-check"><input type="checkbox" class="form-check-input" name="show_name" value="1" {{ consent and consent.fullNameVisible ? 'checked' }}><span class="form-check-label">{{ 'onboarding.notifications.show_name'|trans }}</span></label>
+        <label class="form-check"><input type="checkbox" class="form-check-input" name="show_email" value="1" {{ consent and consent.emailVisible ? 'checked' }}><span class="form-check-label">{{ 'onboarding.notifications.show_email'|trans }}</span></label>
+        {% if hasPhone %}
+          <label class="form-check"><input type="checkbox" class="form-check-input" name="show_phone" value="1" {{ consent and consent.phoneVisible ? 'checked' }}><span class="form-check-label">{{ 'onboarding.notifications.show_phone'|trans }}</span></label>
+        {% endif %}
+        {% if hasTelegram %}
+          <label class="form-check"><input type="checkbox" class="form-check-input" name="show_telegram" value="1" {{ consent and consent.telegramVisible ? 'checked' }}><span class="form-check-label">{{ 'onboarding.notifications.show_telegram'|trans }}</span></label>
+        {% endif %}
+        <p class="text-muted small mt-2">{{ 'profile.privacy.visibility.last_channel_note'|trans }}</p>
+        <button class="btn btn-primary mt-2">{{ 'common.action.save'|trans }}</button>
+      </form>
+  {{ d.card_end() }}
+
   {{ d.card_start('profile.privacy.export.title'|trans, {class: 'mb-4', titleTag: 'strong', titleClass: ''}) }}
       <p class="text-muted small">{{ 'profile.privacy.export.help'|trans }}</p>
       <form method="post" action="{{ path('app_profile_data_export') }}">

@@ -64,7 +64,10 @@ final class DataExportBuilder
             'full_name_visible' => $consent->isFullNameVisible(),
             'email_visible' => $consent->isEmailVisible(),
             'phone_visible' => $consent->isPhoneVisible(),
+            'telegram_visible' => $consent->isTelegramVisible(),
             'consented_at' => $consent->getConsentedAt()?->format(\DATE_ATOM),
+            'visibility_consented_at' => $consent->getVisibilityConsentedAt()?->format(\DATE_ATOM),
+            'visibility_notice_version' => $consent->getVisibilityNoticeVersion(),
         ];
     }
 

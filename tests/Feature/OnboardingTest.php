@@ -77,7 +77,7 @@ final class OnboardingTest extends DatabaseWebTestCase
         $this->client->request('POST', '/onboarding/telegram');
         self::assertResponseRedirects('/onboarding/notifications');
 
-        $this->client->request('POST', '/onboarding/notifications', ['email_shifts' => '1', 'show_name' => '1']);
+        $this->client->request('POST', '/onboarding/notifications', ['email_shifts' => '1', 'show_name' => '1', 'show_email' => '1']);
         self::assertResponseRedirects('/onboarding/finish');
 
         $this->client->request('POST', '/onboarding/finish', ['password' => 'newpassword1', 'password_confirm' => 'newpassword1']);
@@ -88,6 +88,9 @@ final class OnboardingTest extends DatabaseWebTestCase
         self::assertTrue($reloaded->isOnboardingCompleted());
         self::assertTrue($reloaded->getConsent()?->hasDataProcessing());
         self::assertTrue($reloaded->getConsent()?->isFullNameVisible());
+        self::assertTrue($reloaded->getConsent()?->isEmailVisible());
+        // Visibility provenance is stamped when the flags are set.
+        self::assertNotNull($reloaded->getConsent()?->getVisibilityConsentedAt());
         self::assertSame('they/them', $reloaded->getPersonalData()?->getPronoun());
 
         $membership = $this->em->getRepository(UserVolunteerType::class)
@@ -97,6 +100,22 @@ final class OnboardingTest extends DatabaseWebTestCase
 
         $groupSlugs = array_map(static fn (Group $g): string => $g->getSlug(), $reloaded->getGroups()->toArray());
         self::assertContains('volunteer', $groupSlugs, 'the Volunteer permission group is granted automatically');
+    }
+
+    public function testNotificationsStepRequiresAtLeastOneSharedChannel(): void
+    {
+        $user = $this->makeUser('unreachable', null);
+        $this->client->loginUser($user);
+        $this->client->request('POST', '/onboarding', ['consent' => '1']);
+
+        // Sharing nothing (only a notification pref) leaves the volunteer
+        // unreachable, so the step re-renders instead of advancing to finish.
+        $this->client->request('POST', '/onboarding/notifications', ['email_shifts' => '1']);
+        self::assertResponseIsSuccessful();
+
+        $this->em->clear();
+        $reloaded = $this->em->getRepository(User::class)->find($user->getId());
+        self::assertFalse($reloaded->isOnboardingCompleted());
     }
 
     public function testTelegramStepAutoSkipsWhenFeatureDisabled(): void
@@ -159,7 +178,7 @@ final class OnboardingTest extends DatabaseWebTestCase
         $this->client->request('POST', '/onboarding', ['consent' => '1']);
         $this->client->request('POST', '/onboarding/profile');
         $this->client->request('POST', '/onboarding/telegram');
-        $this->client->request('POST', '/onboarding/notifications');
+        $this->client->request('POST', '/onboarding/notifications', ['show_email' => '1']);
         $this->client->request('POST', '/onboarding/finish', ['password' => 'newpassword1', 'password_confirm' => 'newpassword1']);
         self::assertResponseRedirects('/dashboard');
 

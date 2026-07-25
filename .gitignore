@@ -30,3 +30,6 @@ docs/keycloak-credentials.txt
 
 # Deployed version marker, written into the image by CI (see Dockerfile).
 /VERSION
+
+# Backup files and shit files not need to be kept or sent to repo
+*.bak
