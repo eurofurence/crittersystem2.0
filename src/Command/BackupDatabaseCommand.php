@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Backup\BackupRetention;
+use App\Backup\DatabaseDumper;
 use App\Backup\S3BackupStore;
-use Doctrine\DBAL\Connection;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Process\Process;
 
 /**
  * Dumps the database with pg_dump and uploads it to the backup bucket, then
@@ -32,7 +31,7 @@ use Symfony\Component\Process\Process;
 )]
 final class BackupDatabaseCommand extends Command
 {
-    public function __construct(private readonly Connection $connection)
+    public function __construct(private readonly DatabaseDumper $dumper)
     {
         parent::__construct();
     }
@@ -62,7 +61,7 @@ final class BackupDatabaseCommand extends Command
         $key = 'critter-' . gmdate('Ymd-His') . '.dump';
 
         try {
-            $this->dump($dumpFile);
+            $this->dumper->dumpTo($dumpFile);
 
             $stream = fopen($dumpFile, 'rb');
             if ($stream === false) {
@@ -108,33 +107,6 @@ final class BackupDatabaseCommand extends Command
         $io->writeln(sprintf('Pruned %d dump(s) older than %d day(s).', $pruned, $retentionDays));
 
         return Command::SUCCESS;
-    }
-
-    /**
-     * pg_dump straight to a custom-format archive. Custom format is compressed
-     * and restores with `pg_restore -d "$DATABASE_URL" --clean --if-exists`.
-     * The password is passed via PGPASSWORD, never on the argv.
-     */
-    private function dump(string $toFile): void
-    {
-        $params = $this->connection->getParams();
-
-        $process = new Process(
-            [
-                'pg_dump',
-                '--no-owner',
-                '--no-privileges',
-                '--format=custom',
-                '--file=' . $toFile,
-                '--host=' . (string) ($params['host'] ?? 'localhost'),
-                '--port=' . (string) ($params['port'] ?? 5432),
-                '--username=' . (string) ($params['user'] ?? ''),
-                '--dbname=' . (string) ($params['dbname'] ?? ''),
-            ],
-            env: ['PGPASSWORD' => (string) ($params['password'] ?? '')],
-            timeout: 3600.0,
-        );
-        $process->mustRun();
     }
 
     private function env(string $key): string

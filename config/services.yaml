@@ -72,6 +72,15 @@ services:
         arguments:
             $exports: '@app.exports_filesystem'
 
+    # Admin storage diagnostics need the raw filesystems (to round-trip a probe
+    # object) plus the DSNs (to describe each backend without touching credentials).
+    App\Storage\StorageDiagnostics:
+        arguments:
+            $uploads: '@app.uploads_filesystem'
+            $exports: '@app.exports_filesystem'
+            $uploadDsn: '%env(UPLOAD_STORAGE_DSN)%'
+            $exportDsn: '%env(EXPORT_STORAGE_DSN)%'
+
     # The Doctrine Migrations bundle registers the DependencyFactory privately
     # under "doctrine.migrations.dependency_factory"; alias it so our install
     # services can autowire the native migration status API.

@@ -1,0 +1,107 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'admin.storage.page.title'|trans }}{% endblock %}
+
+{% macro backend_summary(info) %}
+  {% import 'components/data/_macros.twig' as d %}
+  {% if info.scheme == 'local' or info.scheme == 'file' %}
+    {{ d.badge('admin.storage.backend.local'|trans, 'text-bg-secondary') }}
+    <code class="small">{{ info.path }}</code>
+  {% elseif info.scheme == 's3' %}
+    {{ d.badge('admin.storage.backend.s3'|trans, 'text-bg-azure') }}
+    <dl class="row mb-0 mt-2">
+      <dt class="col-sm-3">{{ 'admin.storage.field.bucket'|trans }}</dt><dd class="col-sm-9"><code>{{ info.bucket }}</code></dd>
+      {% if info.prefix %}<dt class="col-sm-3">{{ 'admin.storage.field.prefix'|trans }}</dt><dd class="col-sm-9"><code>{{ info.prefix }}</code></dd>{% endif %}
+      {% if info.endpoint %}<dt class="col-sm-3">{{ 'admin.storage.field.endpoint'|trans }}</dt><dd class="col-sm-9"><code class="small">{{ info.endpoint }}</code></dd>{% endif %}
+      <dt class="col-sm-3">{{ 'admin.storage.field.path_style'|trans }}</dt><dd class="col-sm-9">{{ info.path_style ? 'common.state.yes'|trans : 'common.state.no'|trans }}</dd>
+    </dl>
+  {% else %}
+    {{ d.badge(info.scheme ?: 'admin.storage.backend.unknown'|trans, 'text-bg-warning') }}
+  {% endif %}
+{% endmacro %}
+
+{% macro steps(result) %}
+  {% import 'components/data/_macros.twig' as d %}
+  <div class="mt-2">
+    {% for step in result.steps %}
+      <div class="d-flex align-items-start gap-2 mb-1">
+        {% if step.ok %}{{ d.badge('admin.storage.result.ok'|trans, 'text-bg-success') }}
+        {% else %}{{ d.badge('admin.storage.result.failed'|trans, 'text-bg-danger') }}{% endif %}
+        <div>
+          <span>{{ step.key|trans }}</span>
+          {% if step.detail %}<div class="text-muted small">{{ step.detail }}</div>{% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endmacro %}
+
+{% import _self as self %}
+
+{% block body %}
+  {{ d.page_header('admin.storage.page.heading'|trans, {subtitle: 'admin.storage.page.subtitle'|trans}) }}
+
+  {{ d.card_start('admin.storage.app.title'|trans, {class: ''}) }}
+    <p class="text-muted">{{ 'admin.storage.app.help'|trans }}</p>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <h4>{{ 'admin.storage.app.uploads'|trans }}</h4>
+        {{ self.backend_summary(uploads) }}
+        {% if appResult %}{{ self.steps(appResult.uploads) }}{% endif %}
+      </div>
+      <div class="col-md-6">
+        <h4>{{ 'admin.storage.app.exports'|trans }}</h4>
+        {{ self.backend_summary(exports) }}
+        {% if appResult %}{{ self.steps(appResult.exports) }}{% endif %}
+      </div>
+    </div>
+    <form method="post" class="mt-3">
+      <input type="hidden" name="action" value="app_test">
+      <input type="hidden" name="_token" value="{{ csrf_token('storage_app_test') }}">
+      <button class="btn btn-primary">{{ 'admin.storage.action.run'|trans }}</button>
+    </form>
+  {{ d.card_end() }}
+
+  {{ d.card_start('admin.storage.backup.title'|trans, {class: 'mt-3'}) }}
+    <div class="alert alert-info">{{ 'admin.storage.backup.help'|trans }}</div>
+    <p class="text-muted small">{{ 'admin.storage.backup.note.read'|trans }}</p>
+
+    {{ form_start(backupForm) }}
+      <div class="row g-3">
+        <div class="col-md-6">{{ form_row(backupForm.bucket) }}</div>
+        <div class="col-md-6">{{ form_row(backupForm.region) }}</div>
+        <div class="col-md-6">{{ form_row(backupForm.endpoint) }}</div>
+        <div class="col-md-6">{{ form_row(backupForm.prefix) }}</div>
+        <div class="col-md-6">{{ form_row(backupForm.accessKeyId) }}</div>
+        <div class="col-md-6">{{ form_row(backupForm.secretAccessKey) }}</div>
+      </div>
+      {{ form_row(backupForm.pathStyle) }}
+      {{ form_row(backupForm.runPgDump) }}
+      <button class="btn btn-primary">{{ 'admin.storage.backup.action'|trans }}</button>
+    {{ form_end(backupForm) }}
+
+    {% if backupResult %}
+      <hr>
+      <h4>
+        {{ 'admin.storage.result.title'|trans }}:
+        {% if backupResult.ok %}{{ d.badge('admin.storage.result.ok'|trans, 'text-bg-success') }}
+        {% else %}{{ d.badge('admin.storage.result.failed'|trans, 'text-bg-danger') }}{% endif %}
+      </h4>
+      {{ self.steps(backupResult) }}
+
+      {% if backupResult.latestBackup.listed %}
+        <div class="mt-3">
+          <strong>{{ 'admin.storage.backup.latest.title'|trans }}:</strong>
+          {% if backupResult.latestBackup.key %}
+            {{ backupResult.latestBackup.at ? backupResult.latestBackup.at|app_datetime : '' }}
+            <div class="text-muted small"><code>{{ backupResult.latestBackup.key }}</code></div>
+            <div class="text-muted small">{{ 'admin.storage.backup.latest.count'|trans({'%count%': backupResult.latestBackup.count}) }}</div>
+          {% else %}
+            <span class="text-warning">{{ 'admin.storage.backup.latest.none'|trans }}</span>
+          {% endif %}
+        </div>
+      {% endif %}
+    {% endif %}
+  {{ d.card_end() }}
+{% endblock %}

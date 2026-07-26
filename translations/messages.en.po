@@ -5684,3 +5684,135 @@ msgstr "The upload is no longer available. Please upload the file again."
 
 msgid "manage.preseed.flash.done"
 msgstr "Pre-seed complete: %created% created, %updated% updated, %skipped% skipped."
+
+msgid "admin.storage.page.title"
+msgstr "Storage & backups"
+
+msgid "admin.storage.page.heading"
+msgstr "Storage & backup status"
+
+msgid "admin.storage.page.subtitle"
+msgstr "Check S3 connectivity for uploads, exports, and database backups."
+
+msgid "admin.storage.app.title"
+msgstr "Application storage"
+
+msgid "admin.storage.app.help"
+msgstr "Uploads and exports use the app's own S3 credentials (AWS_* or an instance role). The test writes a small file, confirms it, reads it back, then deletes it on each configured backend."
+
+msgid "admin.storage.app.uploads"
+msgstr "Uploads"
+
+msgid "admin.storage.app.exports"
+msgstr "Exports"
+
+msgid "admin.storage.backend.local"
+msgstr "Local filesystem"
+
+msgid "admin.storage.backend.s3"
+msgstr "S3"
+
+msgid "admin.storage.backend.unknown"
+msgstr "Unknown backend"
+
+msgid "admin.storage.field.bucket"
+msgstr "Bucket"
+
+msgid "admin.storage.field.prefix"
+msgstr "Prefix"
+
+msgid "admin.storage.field.endpoint"
+msgstr "Endpoint"
+
+msgid "admin.storage.field.path_style"
+msgstr "Path-style"
+
+msgid "admin.storage.action.run"
+msgstr "Run storage test"
+
+msgid "admin.storage.result.ok"
+msgstr "OK"
+
+msgid "admin.storage.result.failed"
+msgstr "Failed"
+
+msgid "admin.storage.result.title"
+msgstr "Result"
+
+msgid "admin.storage.step.write"
+msgstr "Write file"
+
+msgid "admin.storage.step.exists"
+msgstr "Confirm present"
+
+msgid "admin.storage.step.read"
+msgstr "Read back and compare"
+
+msgid "admin.storage.step.delete"
+msgstr "Delete file"
+
+msgid "admin.storage.step.pg_dump"
+msgstr "Database dump (pg_dump)"
+
+msgid "admin.storage.backup.title"
+msgstr "Database backup bucket"
+
+msgid "admin.storage.backup.help"
+msgstr "By design, the app does not hold the backup bucket credentials; only the nightly backup job does. Enter the backup S3 configuration below to test it once. Nothing you enter here is saved. On success, pg_dump runs against this app's own database to verify a dump can be produced."
+
+msgid "admin.storage.backup.note.read"
+msgstr "Read-back is skipped for the backup bucket: the backup key is write/list/delete-scoped by design, so downloading an object is not permitted even when backups are healthy."
+
+msgid "admin.storage.backup.action"
+msgstr "Test backup"
+
+msgid "admin.storage.backup.step.dummy"
+msgstr "Connect to backup bucket"
+
+msgid "admin.storage.backup.field.endpoint"
+msgstr "Endpoint URL"
+
+msgid "admin.storage.backup.field.endpoint_help"
+msgstr "Full URL including https://. Leave empty for Amazon S3."
+
+msgid "admin.storage.backup.field.region"
+msgstr "Region"
+
+msgid "admin.storage.backup.field.bucket"
+msgstr "Bucket"
+
+msgid "admin.storage.backup.field.prefix"
+msgstr "Key prefix"
+
+msgid "admin.storage.backup.field.path_style"
+msgstr "Path-style addressing (self-hosted S3 such as MinIO / Ceph / Garage)"
+
+msgid "admin.storage.backup.field.access_key"
+msgstr "Access key ID"
+
+msgid "admin.storage.backup.field.secret_key"
+msgstr "Secret access key"
+
+msgid "admin.storage.backup.field.pg_dump"
+msgstr "Also run pg_dump against this app's database"
+
+msgid "admin.storage.backup.field.pg_dump_help"
+msgstr "After the bucket test succeeds, verify the database can actually be dumped. Requires pg_dump to be installed in this container."
+
+msgid "manage.index.card.storage.title"
+msgstr "Storage & backups"
+
+msgid "manage.index.card.storage.desc"
+msgstr "Test S3 connectivity for uploads, exports, and database backups."
+
+msgid "admin.storage.backup.step.list"
+msgstr "List existing backups"
+
+msgid "admin.storage.backup.latest.title"
+msgstr "Most recent backup"
+
+msgid "admin.storage.backup.latest.none"
+msgstr "No backups found in this bucket yet."
+
+msgid "admin.storage.backup.latest.count"
+msgstr "%count% dump(s) in the bucket."

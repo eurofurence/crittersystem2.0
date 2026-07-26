@@ -38,4 +38,46 @@ final class BackupRetention
 
         return $expired;
     }
+
+    /**
+     * The most recent dump, or null if the bucket holds none of ours. Uses the
+     * same naming rule as {@see expired()} so a bucket that also holds unrelated
+     * objects is not mistaken for a backup. Keys embed a sortable UTC timestamp,
+     * so the lexically greatest key is the newest; the reported instant is the
+     * stored modification time, or that encoded in the key when the store has none.
+     *
+     * @param list<array{key: string, lastModified: ?int}> $entries
+     *
+     * @return array{key: string, at: ?\DateTimeImmutable, count: int}|null
+     */
+    public static function latest(array $entries): ?array
+    {
+        $dumps = array_values(array_filter(
+            $entries,
+            static fn (array $e): bool => preg_match(self::NAME_PATTERN, basename($e['key'])) === 1,
+        ));
+        if ($dumps === []) {
+            return null;
+        }
+
+        usort($dumps, static fn (array $a, array $b): int => strcmp($a['key'], $b['key']));
+        $newest = $dumps[array_key_last($dumps)];
+
+        return ['key' => $newest['key'], 'at' => self::timeOf($newest), 'count' => count($dumps)];
+    }
+
+    /** @param array{key: string, lastModified: ?int} $entry */
+    private static function timeOf(array $entry): ?\DateTimeImmutable
+    {
+        if ($entry['lastModified'] !== null) {
+            return (new \DateTimeImmutable())->setTimestamp($entry['lastModified']);
+        }
+        if (preg_match('/(\d{8})-(\d{6})\.dump$/', $entry['key'], $m) === 1) {
+            $parsed = \DateTimeImmutable::createFromFormat('Ymd His', $m[1] . ' ' . $m[2], new \DateTimeZone('UTC'));
+
+            return $parsed !== false ? $parsed : null;
+        }
+
+        return null;
+    }
 }

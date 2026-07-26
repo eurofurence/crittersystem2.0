@@ -43,4 +43,41 @@ final class BackupRetentionTest extends TestCase
 
         $this->assertSame([], BackupRetention::expired($entries, new \DateTimeImmutable('now')));
     }
+
+    public function testLatestReturnsNullWhenNoDumpsPresent(): void
+    {
+        $entries = [
+            ['key' => 'unrelated.txt', 'lastModified' => $this->ts('-1 day')],
+            ['key' => 'critter-connectivity-test-abcd.txt', 'lastModified' => $this->ts('-1 hour')],
+        ];
+
+        $this->assertNull(BackupRetention::latest($entries));
+    }
+
+    public function testLatestPicksNewestDumpAndCountsOnlyDumps(): void
+    {
+        $entries = [
+            ['key' => 'critter-20260101-000000.dump', 'lastModified' => $this->ts('-30 days')],
+            ['key' => 'critter-20260725-022300.dump', 'lastModified' => $this->ts('-1 day')],
+            ['key' => 'critter-connectivity-test-abcd.txt', 'lastModified' => $this->ts('-1 hour')],
+        ];
+
+        $latest = BackupRetention::latest($entries);
+
+        $this->assertNotNull($latest);
+        $this->assertSame('critter-20260725-022300.dump', $latest['key']);
+        $this->assertSame(2, $latest['count']);
+    }
+
+    public function testLatestFallsBackToTheTimestampInTheKey(): void
+    {
+        // A store that reports no modification time still yields an instant from the key.
+        $entries = [['key' => 'critter-20260725-022300.dump', 'lastModified' => null]];
+
+        $latest = BackupRetention::latest($entries);
+
+        $this->assertNotNull($latest);
+        $this->assertInstanceOf(\DateTimeImmutable::class, $latest['at']);
+        $this->assertSame('2026-07-25T02:23:00+00:00', $latest['at']->format('c'));
+    }
 }
