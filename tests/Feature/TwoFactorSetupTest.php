@@ -52,6 +52,38 @@ final class TwoFactorSetupTest extends DatabaseWebTestCase
         self::assertTrue($reloaded->isTwoFactorEnabled());
     }
 
+    public function testSetupWithWrongCodeRedirectsBackAndDoesNotEnable(): void
+    {
+        $user = $this->makeUser();
+        $this->client->loginUser($user);
+        $this->client->request('GET', '/2fa/setup');
+
+        $this->client->request('POST', '/2fa/setup', ['code' => '000000']);
+
+        // A wrong code must redirect (Post/Redirect/Get); a rendered 200 response to a
+        // form submission is silently discarded by Turbo, so the error would never show.
+        self::assertResponseRedirects('/2fa/setup');
+
+        $this->em->clear();
+        self::assertFalse($this->em->getRepository(User::class)->find($user->getId())->isTwoFactorEnabled());
+    }
+
+    public function testConfirmWithWrongCodeRedirectsBackPreservingReturn(): void
+    {
+        $user = $this->makeUser();
+        $user->setTotpSecret('SECRET')->setTwoFactorEnabled(true);
+        $this->em->flush();
+        $this->client->loginUser($user);
+
+        $this->client->request('POST', '/2fa/confirm?return=/dashboard', ['code' => '000000']);
+
+        self::assertResponseRedirects();
+        self::assertStringContainsString(
+            '/2fa/confirm',
+            (string) $this->client->getResponse()->headers->get('Location'),
+        );
+    }
+
     public function testRecoveryCodesAreShownOnlyOnce(): void
     {
         $user = $this->makeUser();

@@ -1766,6 +1766,9 @@ msgstr "Departments"
 msgid "location.show.map_title"
 msgstr "Map for %name%"
 
+msgid "location.show.phone"
+msgstr "Phone"
+
 msgid "location.show.open_map"
 msgstr "Open map"
 

@@ -40,7 +40,7 @@ enum DepartmentPosition: string
         return match ($this) {
             self::MANAGER => 'Department manager',
             self::SHIFT_MANAGER => 'Shift manager',
-            self::STAFF => 'Department staff',
+            self::STAFF => 'Staff',
         };
     }
 

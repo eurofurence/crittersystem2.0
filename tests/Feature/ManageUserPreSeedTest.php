@@ -101,6 +101,15 @@ final class ManageUserPreSeedTest extends DatabaseWebTestCase
         $form['file']->upload($this->dumpFile());
         $this->client->submit($form);
 
+        // The upload must redirect to a GET preview (Post/Redirect/Get); a rendered
+        // response to the POST is silently dropped by Turbo in the browser.
+        self::assertResponseRedirects();
+        self::assertMatchesRegularExpression(
+            '#/manage/user-preseed/preview/[0-9a-f]{32}$#',
+            (string) $this->client->getResponse()->headers->get('Location'),
+        );
+        $this->client->followRedirect();
+
         self::assertResponseIsSuccessful();
         self::assertNull(
             $this->em->getRepository(User::class)->findOneBy(['ssoUserId' => 'SUB-1']),
@@ -116,7 +125,8 @@ final class ManageUserPreSeedTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/manage/user-preseed');
         $form = $crawler->selectButton('Preview import')->form();
         $form['file']->upload($this->dumpFile());
-        $previewCrawler = $this->client->submit($form);
+        $this->client->submit($form);
+        $previewCrawler = $this->client->followRedirect();
 
         $applyForm = $previewCrawler->selectButton('Create users')->form();
         $this->client->submit($applyForm);

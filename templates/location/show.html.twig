@@ -11,6 +11,11 @@
   {{ d.card_start(null, {class: ''}) }}
       {% if location.description %}<p>{{ location.description }}</p>{% endif %}
 
+      {% if location.phone %}
+        <p class="mb-2"><strong>{{ 'location.show.phone'|trans }}:</strong>
+          <a href="tel:{{ location.phone|replace({' ': ''}) }}">{{ location.phone }}</a></p>
+      {% endif %}
+
       {% if location.departments is not empty %}
         <h3 class="h6">{{ 'location.show.departments'|trans }}</h3>
         {% for dept in location.departments %}{{ d.badge(dept.name, 'bg-secondary-lt', {class: 'me-1'}) }}{% endfor %}

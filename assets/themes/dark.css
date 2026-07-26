@@ -35,9 +35,11 @@
   --tblr-navbar-brand-color: #ffffff;
   --tblr-navbar-brand-hover-color: #ffffff;
 }
+/* background-color, not the `background` shorthand: the shorthand would reset
+   background-size/position/repeat and break the uploaded avatar image. */
 [data-bs-theme="dark"] .navbar .avatar {
   color: #00413c;
-  background: #cfeae7;
+  background-color: #cfeae7;
 }
 
 /* Same editorial serif headings as the light EF theme. */

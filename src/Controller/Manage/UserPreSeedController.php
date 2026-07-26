@@ -37,7 +37,7 @@ final class UserPreSeedController extends AbstractController
     }
 
     #[Route('/preview', name: 'app_manage_user_preseed_preview', methods: ['POST'])]
-    public function preview(Request $request): Response
+    public function upload(Request $request): Response
     {
         if (!$this->isCsrfTokenValid('preseed_upload', (string) $request->request->get('_token'))) {
             return $this->redirectToRoute('app_manage_user_preseed_index');
@@ -63,12 +63,27 @@ final class UserPreSeedController extends AbstractController
             return $this->redirectToRoute('app_manage_user_preseed_index');
         }
 
-        $preview = $this->importer->preview($rows);
         $token = bin2hex(random_bytes(16));
         $this->storage->write($this->bufferKey($token), $contents, 'application/json');
 
+        // Post/Redirect/Get: the preview is rendered by the GET below. Turbo drops a
+        // non-redirecting response to a form submission, so the upload must redirect
+        // rather than render the preview directly. It also makes the preview refreshable.
+        return $this->redirectToRoute('app_manage_user_preseed_preview_show', ['token' => $token]);
+    }
+
+    #[Route('/preview/{token}', name: 'app_manage_user_preseed_preview_show', methods: ['GET'], requirements: ['token' => '[0-9a-f]{32}'])]
+    public function preview(string $token): Response
+    {
+        $rows = $this->readBufferedRows($token);
+        if ($rows === null) {
+            $this->addFlash('danger', new TranslatableMessage('manage.preseed.flash.expired'));
+
+            return $this->redirectToRoute('app_manage_user_preseed_index');
+        }
+
         return $this->render('manage/user_preseed/preview.html.twig', [
-            'preview' => $preview,
+            'preview' => $this->importer->preview($rows),
             'token' => $token,
         ]);
     }
@@ -81,35 +96,15 @@ final class UserPreSeedController extends AbstractController
         }
 
         $token = (string) $request->request->get('token');
-        if (!ctype_xdigit($token)) {
+        $rows = ctype_xdigit($token) ? $this->readBufferedRows($token) : null;
+        if ($rows === null) {
             $this->addFlash('danger', new TranslatableMessage('manage.preseed.flash.expired'));
-
-            return $this->redirectToRoute('app_manage_user_preseed_index');
-        }
-
-        $key = $this->bufferKey($token);
-        try {
-            if (!$this->storage->exists($key)) {
-                $this->addFlash('danger', new TranslatableMessage('manage.preseed.flash.expired'));
-
-                return $this->redirectToRoute('app_manage_user_preseed_index');
-            }
-            $contents = $this->storage->read($key);
-        } catch (FilesystemException) {
-            $this->addFlash('danger', new TranslatableMessage('manage.preseed.flash.expired'));
-
-            return $this->redirectToRoute('app_manage_user_preseed_index');
-        }
-
-        $rows = json_decode($contents, true);
-        if (!\is_array($rows) || !array_is_list($rows)) {
-            $this->addFlash('danger', new TranslatableMessage('manage.preseed.flash.invalid_json'));
 
             return $this->redirectToRoute('app_manage_user_preseed_index');
         }
 
         $result = $this->importer->import($rows);
-        $this->discard($key);
+        $this->discard($this->bufferKey($token));
 
         $this->addFlash('success', new TranslatableMessage('manage.preseed.flash.done', [
             '%created%' => $result['created'],
@@ -126,6 +121,33 @@ final class UserPreSeedController extends AbstractController
     private function bufferKey(string $token): string
     {
         return sprintf('preseed/%s.json', $token);
+    }
+
+    /**
+     * Decode the buffered upload for a token, or null if it is gone, unreadable or
+     * not a JSON list. Only validated JSON lists are ever written, so a null here
+     * means an expired or tampered buffer, not a bad original upload.
+     *
+     * @return list<mixed>|null
+     */
+    private function readBufferedRows(string $token): ?array
+    {
+        $key = $this->bufferKey($token);
+        try {
+            if (!$this->storage->exists($key)) {
+                return null;
+            }
+            $contents = $this->storage->read($key);
+        } catch (FilesystemException) {
+            return null;
+        }
+
+        $rows = json_decode($contents, true);
+        if (!\is_array($rows) || !array_is_list($rows)) {
+            return null;
+        }
+
+        return $rows;
     }
 
     private function discard(string $key): void

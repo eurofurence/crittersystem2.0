@@ -69,15 +69,20 @@ final class TwoFactorController extends AbstractController
             $codes = $this->twoFactor->tryEnable($user, $secret, (string) $request->request->get('code'));
             if ($codes === null) {
                 $this->addFlash('danger', new TranslatableMessage('two_factor.flash.code_incorrect'));
-            } else {
-                $session->remove(self::PENDING_SECRET);
-                $this->stepUp->markVerified();
-                $this->notify($user, 'Two-factor authentication enabled', 'Two-factor authentication was just enabled on your account. If this was not you, contact an administrator immediately.');
-                $this->audit->log(AuditEvents::SECURITY, AuditEvents::UPDATE, ['details' => ['two_factor' => 'enabled']]);
-                $session->set(self::SHOW_CODES, ['codes' => $codes, 'regenerated' => false]);
 
-                return $this->redirectToRoute('app_2fa_recovery_show');
+                // Redirect rather than render: Turbo discards a non-redirect response to a
+                // form submission, so a rendered error here would show nothing at all. The
+                // pending secret lives in the session, so the same secret/QR is re-shown.
+                return $this->redirectToRoute('app_2fa_setup');
             }
+
+            $session->remove(self::PENDING_SECRET);
+            $this->stepUp->markVerified();
+            $this->notify($user, 'Two-factor authentication enabled', 'Two-factor authentication was just enabled on your account. If this was not you, contact an administrator immediately.');
+            $this->audit->log(AuditEvents::SECURITY, AuditEvents::UPDATE, ['details' => ['two_factor' => 'enabled']]);
+            $session->set(self::SHOW_CODES, ['codes' => $codes, 'regenerated' => false]);
+
+            return $this->redirectToRoute('app_2fa_recovery_show');
         }
 
         return $this->render('two_factor/setup.html.twig', [
@@ -171,6 +176,10 @@ final class TwoFactorController extends AbstractController
                 return $this->redirect($return);
             }
             $this->addFlash('danger', new TranslatableMessage('two_factor.flash.incorrect_code'));
+
+            // Redirect rather than render: Turbo discards a non-redirect response to a
+            // form submission, so a rendered error here would show nothing at all.
+            return $this->redirectToRoute('app_2fa_confirm', ['return' => $return]);
         }
 
         return $this->render('two_factor/confirm.html.twig', ['return' => $return]);
