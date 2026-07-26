@@ -14,6 +14,7 @@ final readonly class SsoClaims
         public ?string $preferredUsername,
         public ?string $name,
         public array $groups,
+        public ?string $avatar = null,
     ) {
     }
 
@@ -22,12 +23,34 @@ final readonly class SsoClaims
     {
         $groups = $data['groups'] ?? $data['roles'] ?? [];
 
+        $preferredUsername = match (true) {
+            isset($data['preferred_username']) => (string) $data['preferred_username'],
+            isset($data['username']) => (string) $data['username'],
+            isset($data['name']) => (string) $data['name'],
+            default => null,
+        };
+
+        $name = match (true) {
+            isset($data['first_name']) => trim(
+                (string) $data['first_name'] . ' ' . (string) ($data['last_name'] ?? '')
+            ),
+            isset($data['name']) => (string) $data['name'],
+            default => null,
+        };
+
+        $avatar = match (true) {
+            isset($data['avatar']) => (string) $data['avatar'],
+            isset($data['picture']) => (string) $data['picture'],
+            default => null,
+        };
+
         return new self(
             sub: (string) ($data['sub'] ?? ''),
             email: (string) ($data['email'] ?? ''),
-            preferredUsername: isset($data['name']) ? (string) $data['name'] : null,
-            name: isset($data['first-name']) ? (string) $data['first-name'] . (isset($data['last-name']) ? ' ' . (string) $data['last-name'] : null ) : null,
+            preferredUsername: $preferredUsername,
+            name: $name,
             groups: array_values(array_map('strval', (array) $groups)),
+            avatar: $avatar,
         );
         // Works well with KEYCLOAK
         // return new self(

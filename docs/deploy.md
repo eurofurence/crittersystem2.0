@@ -106,7 +106,10 @@ GET /health  → 200 {"status":"ok","database":"up","migrationsPending":0}
   site is sealed behind a **maintenance page** (HTTP 503). `/api/*` returns a
   JSON 503 instead of HTML. Only `/admin/install` and `/health` stay reachable.
 - **`/admin/install`** is a guided wizard (welcome → system checks → database &
-  migration → create admin → optional config → finish). It is protected by the
+  migration → create admin → optional config → privacy notice → finish). The
+  privacy step captures the essentials for the GDPR notice (event name, data
+  controller, contact email, retention period); the full notice body keeps its
+  shipped default and is edited later at _Manage → Privacy notice_. It is protected by the
   **`INSTALL_PASSWORD`** environment variable, _not_ by a login (it must work
   before any user exists). Leave `INSTALL_PASSWORD` empty to disable the wizard
   entirely and manage setup from the console.
@@ -116,20 +119,41 @@ GET /health  → 200 {"status":"ok","database":"up","migrationsPending":0}
 
 ## Environment variables
 
-| Variable                  | Required | Purpose                                                                                                                             |
-| ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_ENV`                 | yes      | `prod` for production, `dev` for development.                                                                                       |
-| `APP_SECRET`              | yes      | Symfony secret. Generate: `php -r 'echo bin2hex(random_bytes(16));'`.                                                               |
-| `DATABASE_URL`            | yes      | `postgresql://user:pass@host:5432/db?serverVersion=16&charset=utf8`.                                                                |
-| `APP_ENCRYPTION_KEY`      | yes      | Encrypts secrets at rest. Generate: `php bin/console app:encryption:generate-key`. Losing it makes encrypted data unrecoverable.    |
-| `INSTALL_PASSWORD`        | no       | Unlocks `/admin/install`. Empty = wizard disabled.                                                                                  |
-| `RUN_MIGRATIONS_ON_START` | no       | `1` (container default) auto-migrates on start; `0` to manage migrations yourself.                                                  |
-| `MAILER_DSN`              | no       | e.g. `smtp://…`; defaults to discarding mail.                                                                                       |
-| `PUBLIC_SYNC_DIR`         | no       | Container-internal: where the entrypoint publishes `public/` for an nginx sidecar.                                                  |
-| `UPLOAD_STORAGE_DSN`      | no       | Where user uploads live. `local://var/uploads` (default) or `s3://bucket?region=…`.                                                 |
-| `EXPORT_STORAGE_DSN`      | no       | Where export archives live. `local://var/exports` (default) or `s3://bucket?region=…`. **Read the section below before deploying.** |
+| Variable                  | Required | Purpose                                                                                                                                                                                                                   |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_ENV`                 | yes      | `prod` for production, `dev` for development.                                                                                                                                                                             |
+| `APP_SECRET`              | yes      | Symfony secret. Generate: `php -r 'echo bin2hex(random_bytes(16));'`.                                                                                                                                                     |
+| `DATABASE_URL`            | yes      | `postgresql://user:pass@host:5432/db?serverVersion=16&charset=utf8`.                                                                                                                                                      |
+| `APP_ENCRYPTION_KEY`      | yes      | Encrypts secrets at rest. Generate: `php bin/console app:encryption:generate-key`. Losing it makes encrypted data unrecoverable.                                                                                          |
+| `INSTALL_PASSWORD`        | no       | Unlocks `/admin/install`. Empty = wizard disabled.                                                                                                                                                                        |
+| `BOT_API_TOKEN`           | no       | Shared service token the Telegram bot presents on `/api/bot`. Empty = the bot surface refuses every request. Generate: `php -r 'echo bin2hex(random_bytes(32));'`. Give the same value to the bot as its `VMS_API_TOKEN`. |
+| `RUN_MIGRATIONS_ON_START` | no       | `1` (container default) auto-migrates on start; `0` to manage migrations yourself.                                                                                                                                        |
+| `MAILER_DSN`              | no       | e.g. `smtp://…`; defaults to discarding mail.                                                                                                                                                                             |
+| `TRUSTED_PROXIES`         | no       | Behind a TLS-terminating reverse proxy. Trusts the proxy's `X-Forwarded-*` so generated URLs use `https`. `private_ranges` (default) or a comma-separated IP/CIDR list. See "HTTPS behind a reverse proxy" below.         |
+| `PUBLIC_SYNC_DIR`         | no       | Container-internal: where the entrypoint publishes `public/` for an nginx sidecar.                                                                                                                                        |
+| `UPLOAD_STORAGE_DSN`      | no       | Where user uploads live. `local://var/uploads` (default) or `s3://bucket?region=…`.                                                                                                                                       |
+| `EXPORT_STORAGE_DSN`      | no       | Where export archives live. `local://var/exports` (default) or `s3://bucket?region=…`. **Read the section below before deploying.**                                                                                       |
 
 ---
+
+## HTTPS behind a reverse proxy (required for SSO)
+
+When TLS is terminated at a reverse proxy (nginx, traefik, a Kubernetes ingress) the app is reached
+over plain HTTP internally. Left uncorrected, every absolute URL it generates carries the `http`
+scheme it sees - including the **OIDC SSO `redirect_uri`**. The identity provider then rejects the
+login, because that value must match the `https://…` redirect URI registered for the client
+byte-for-byte. The redirect URI shown on `/admin/sso` (which you copy into the provider) is affected
+the same way.
+
+The app already derives scheme and host from the incoming request; it only needs to trust the proxy's
+`X-Forwarded-Proto` header to see the real `https`. Set **`TRUSTED_PROXIES`** (prod only):
+
+- `private_ranges` (the shipped default) trusts any RFC1918/loopback upstream - correct when the
+  container or pod is only reachable through the proxy.
+- Narrow it to the proxy's actual address/CIDR if the app is otherwise directly reachable, so a
+  client on the same private network cannot spoof the forwarded scheme.
+
+After setting it, confirm `/admin/sso` shows an `https://…` redirect URI before registering it.
 
 ## ⚠ Export storage must be shared by every process
 
@@ -299,6 +323,50 @@ kubectl apply -k deploy/k8s
 Or via **ArgoCD** (GitOps): edit `deploy/argocd/application.yaml` (`repoURL`),
 provide the Secret in-cluster, then `kubectl apply -f deploy/argocd/application.yaml`.
 ArgoCD keeps the cluster in sync; each rollout re-runs the migration initContainer.
+
+### Database persistence
+
+`postgres.yaml` is a **StatefulSet** whose data lives on a **PersistentVolumeClaim**
+(`volumeClaimTemplate`). The volume is bound to the database independently of the
+pod, so the data survives pod restarts, crashes, app image updates and
+rescheduling - an app rollout does not touch the DB pod at all.
+
+Three settings guard against _deletion_ (a PVC alone does not):
+
+- `persistentVolumeClaimRetentionPolicy: Retain/Retain` keeps the volume when the
+  StatefulSet is deleted or scaled to zero.
+- `argocd.argoproj.io/sync-options: Prune=false` on the Service and StatefulSet
+  stops ArgoCD from ever pruning the database, even if the manifest leaves Git.
+- **You must still verify the StorageClass.** Data survives PVC _deletion_ only if
+  the class has `reclaimPolicy: Retain`; most cloud defaults are `Delete`. Pin a
+  Retain class via `storageClassName` in the `volumeClaimTemplate`.
+
+A PVC is not a backup: it protects against restarts, not against corruption, an
+accidental `DROP`, or a destroyed volume.
+
+### Off-cluster database backups
+
+`backup.yaml` is a nightly CronJob (`app:backup:database`) that runs `pg_dump` in
+the app image, uploads the dump to an S3-compatible bucket, and prunes dumps older
+than the retention window. Pruning runs **only after a confirmed upload**, so a
+failed dump never deletes the good backups.
+
+The destination is its **own** parameter group, `BACKUP_S3_*`, in a **separate**
+Secret (`critter-backup-secrets`) - see `backup-secret.example.yaml`. Keep it apart
+from `critter-secrets` on purpose: a different bucket, a different write-scoped key,
+a different policy. The backup pod mounts `critter-backup-secrets` for the
+destination and pulls only `DATABASE_URL` + `APP_SECRET` from `critter-secrets`, so
+it never receives the app's `AWS_*` / export-bucket credentials. Point `DATABASE_URL`
+at a read-only Postgres role for tighter separation.
+
+Self-hosted S3 (MinIO/Ceph/Garage) needs `BACKUP_S3_PATH_STYLE=1` and a full
+`https://` endpoint URL; `BACKUP_S3_REGION` is required but its value is ignored.
+
+Restore a dump with:
+
+```bash
+pg_restore --clean --if-exists -d "$DATABASE_URL" critter-YYYYMMDD-HHMMSS.dump
+```
 
 Create the first admin once the rollout is healthy:
 

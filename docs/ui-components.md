@@ -93,6 +93,29 @@ side from user input.
 
 ---
 
+#### `avatar(user, options = {})`
+
+A user's round avatar: the stored profile picture when they have one, otherwise a monogram of the
+first two letters of the display name. The picture is served through the authorization-checked
+`app_media_avatar` route (never hot-linked), so an SSO-provided avatar is downloaded and served
+locally like an upload. Used in the navbar, profile header, settings and user-search chips.
+
+| Param | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `user` | `App\Entity\User` | **yes** | - | Must expose `personalData`, `uuid`, `name`. |
+| `options.size` | `xs`\|`sm`\|`md`\|`lg`\|`xl` | no | `'sm'` | Tabler avatar size suffix. |
+| `options.class` | string | no | - | Extra classes on the `<span>` (e.g. `mt-1`). |
+
+The macro makes **no** authorization decision: the caller must already be entitled to show the user,
+and the media route independently re-checks who may load the file.
+
+```twig
+{{ d.avatar(app.user, {size: 'sm'}) }}
+{{ d.avatar(header.user, {size: 'xl'}) }}
+```
+
+---
+
 #### `page_header(title, options = {})`
 
 The page's `<h1>` plus its right-hand action buttons. The most-used macro in the app (~108 call sites).

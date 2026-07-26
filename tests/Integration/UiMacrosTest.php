@@ -32,10 +32,16 @@ final class UiMacrosTest extends KernelTestCase
 
     private function render(string $body): string
     {
+        return $this->renderWith($body, []);
+    }
+
+    /** @param array<string, mixed> $vars */
+    private function renderWith(string $body, array $vars): string
+    {
         $tpl = "{% import 'components/data/_macros.twig' as d %}"
             ."{% import 'components/navigation/_macros.twig' as nav %}".$body;
 
-        return $this->twig->createTemplate($tpl)->render();
+        return $this->twig->createTemplate($tpl)->render($vars);
     }
 
     public function testCardWithoutMarginClassDoesNotGetTheDefaultMargin(): void
@@ -125,6 +131,30 @@ final class UiMacrosTest extends KernelTestCase
         self::assertStringNotContainsString('<script>', $html);
         self::assertStringNotContainsString('<img src=x', $html);
         self::assertStringContainsString('&lt;script&gt;', $html);
+    }
+
+    public function testAvatarFallsBackToAMonogramWhenTheUserHasNoPicture(): void
+    {
+        $user = (new \App\Entity\User())->setName('Robin Hood');
+        $html = $this->renderWith("{{ d.avatar(u, {size: 'xl'}) }}", ['u' => $user]);
+
+        self::assertStringContainsString('avatar avatar-xl', $html);
+        self::assertStringContainsString('>RO<', $html, 'first two letters, upper-cased');
+        self::assertStringNotContainsString('background-image', $html);
+    }
+
+    public function testAvatarUsesTheAuthorizationCheckedMediaRouteWhenAPictureExists(): void
+    {
+        $user = (new \App\Entity\User())->setName('Robin Hood');
+        $personal = new \App\Entity\PersonalData($user);
+        $personal->setAvatarPath('avatars/x/y.png');
+        $user->setPersonalData($personal);
+
+        $html = $this->renderWith("{{ d.avatar(u, {size: 'sm', class: 'mt-1'}) }}", ['u' => $user]);
+
+        self::assertStringContainsString('avatar avatar-sm mt-1', $html);
+        self::assertStringContainsString('/media/avatar/'.$user->getUuid()->toRfc4122(), $html, 'served through app_media_avatar, never hot-linked');
+        self::assertStringNotContainsString('avatars/x/y.png', $html, 'the raw storage key never leaves the server');
     }
 
     public function testCertificationCardRendersTitleDescriptionInfoLinkAndControl(): void

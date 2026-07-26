@@ -1,0 +1,83 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'manage.preseed.preview.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('manage.preseed.preview.title'|trans, {
+    subtitle: 'manage.preseed.preview.subtitle'|trans,
+    actions: [
+      {label: 'common.action.cancel'|trans, href: path('app_manage_user_preseed_index'), class: 'btn btn-outline-secondary'}
+    ]
+  }) }}
+
+  <div class="row row-cards mb-3">
+    {{ d.stat_card(preview.usersToCreate, 'manage.preseed.stat.create'|trans) }}
+    {{ d.stat_card(preview.usersToUpdate, 'manage.preseed.stat.update'|trans) }}
+    {{ d.stat_card(preview.usersSkipped, 'manage.preseed.stat.skipped_users'|trans) }}
+    {{ d.stat_card(preview.entriesSkipped|length, 'manage.preseed.stat.skipped_entries'|trans) }}
+  </div>
+
+  {% if preview.warnings is not empty %}
+    <div class="alert alert-warning">
+      <div class="fw-semibold">{{ 'manage.preseed.preview.warnings'|trans }}</div>
+      <ul class="mb-0">
+        {% for warning in preview.warnings|slice(0, 50) %}<li>{{ warning }}</li>{% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {{ d.card_start('manage.preseed.preview.recognized'|trans({'%count%': preview.entriesRecognized}), {bodyClass: ''}) }}
+    {{ d.table_start() }}
+      <thead><tr>
+        <th>{{ 'common.label.name'|trans }}</th>
+        <th>{{ 'manage.sso_mapping.table.sso_group'|trans }}</th>
+        <th>{{ 'manage.preseed.table.grants'|trans }}</th>
+        <th class="text-end">{{ 'manage.preseed.table.members'|trans }}</th>
+      </tr></thead>
+      <tbody>
+        {% for entry in preview.recognized %}
+          <tr>
+            <td>{{ entry.name }}</td>
+            <td><code class="small">{{ entry.id }}</code></td>
+            <td class="small">{{ entry.target }}</td>
+            <td class="text-end">{{ entry.users }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {{ d.card_end() }}
+
+  {% if preview.entriesSkipped is not empty %}
+    {{ d.card_start('manage.preseed.preview.skipped'|trans({'%count%': preview.entriesSkipped|length}), {bodyClass: ''}) }}
+      {{ d.table_start() }}
+        <thead><tr>
+          <th>{{ 'common.label.name'|trans }}</th>
+          <th>{{ 'manage.sso_mapping.table.sso_group'|trans }}</th>
+          <th>{{ 'common.label.type'|trans }}</th>
+          <th class="text-end">{{ 'manage.preseed.table.members'|trans }}</th>
+        </tr></thead>
+        <tbody>
+          {% for entry in preview.entriesSkipped %}
+            <tr>
+              <td>{{ entry.name }}</td>
+              <td><code class="small">{{ entry.id }}</code></td>
+              <td class="small">{{ entry.type }}</td>
+              <td class="text-end">{{ entry.users }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      {{ d.table_end() }}
+    {{ d.card_end() }}
+  {% endif %}
+
+  <form method="post" action="{{ path('app_manage_user_preseed_apply') }}" class="mt-3"
+        data-controller="confirm"
+        data-confirm-message-value="{{ 'manage.preseed.confirm.message'|trans({'%create%': preview.usersToCreate, '%update%': preview.usersToUpdate}) }}"
+        data-confirm-confirm-label-value="{{ 'manage.preseed.confirm.submit'|trans }}">
+    <input type="hidden" name="_token" value="{{ csrf_token('preseed_apply') }}">
+    <input type="hidden" name="token" value="{{ token }}">
+    <button type="submit" class="btn btn-primary">{{ 'manage.preseed.confirm.submit'|trans }}</button>
+    <a href="{{ path('app_manage_user_preseed_index') }}" class="btn btn-link">{{ 'common.action.cancel'|trans }}</a>
+  </form>
+{% endblock %}

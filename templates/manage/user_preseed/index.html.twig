@@ -1,0 +1,27 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'manage.preseed.page.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('manage.preseed.page.title'|trans, {
+    subtitle: 'manage.preseed.page.subtitle'|trans,
+    actions: [
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}
+    ]
+  }) }}
+
+  {{ d.card_start('manage.preseed.upload.title'|trans, {tag: 'form', attrs: {
+    method: 'post',
+    action: path('app_manage_user_preseed_preview'),
+    enctype: 'multipart/form-data'
+  }}) }}
+    <input type="hidden" name="_token" value="{{ csrf_token('preseed_upload') }}">
+    <p class="text-muted">{{ 'manage.preseed.upload.help'|trans|raw }}</p>
+    <div class="mb-3">
+      <label class="form-label" for="preseed-file">{{ 'manage.import.upload_label'|trans }}</label>
+      <input class="form-control" id="preseed-file" type="file" name="file" accept=".json,application/json" required>
+    </div>
+    <button type="submit" class="btn btn-primary">{{ 'manage.preseed.upload.submit'|trans }}</button>
+  {{ d.card_end() }}
+{% endblock %}

@@ -45,12 +45,6 @@
                 {% endif %}
               </pre>
             </div>
-            <!-- <dl class="row mb-3">
-              {% for key, value in userinfo %}
-                <dt class="col-sm-4"><code>{{ key }}</code></dt>
-                <dd class="col-sm-8"><code class="small">{% if value is iterable %}{{ value|json_encode }}{% else %}{{ value }}{% endif %}</code></dd>
-              {% endfor %}
-            </dl> -->
           {% endif %}
         {% endif %}
         <a href="{{ path('app_admin_sso_userinfo') }}" class="btn btn-primary">{{ 'admin.sso.status.userinfo.fetch'|trans }}</a>

@@ -42,6 +42,9 @@ class PersonalData
     #[ORM\Column(name: 'avatar_path', length: 255, nullable: true)]
     private ?string $avatarPath = null;
 
+    #[ORM\Column(name: 'avatar_source', length: 1024, nullable: true)]
+    private ?string $avatarSource = null;
+
     public function __construct(User $user)
     {
         $this->user = $user;
@@ -72,6 +75,18 @@ class PersonalData
     public function setAvatarPath(?string $avatarPath): static
     {
         $this->avatarPath = $avatarPath;
+
+        return $this;
+    }
+
+    public function getAvatarSource(): ?string
+    {
+        return $this->avatarSource;
+    }
+
+    public function setAvatarSource(?string $avatarSource): static
+    {
+        $this->avatarSource = $avatarSource;
 
         return $this;
     }

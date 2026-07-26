@@ -52,7 +52,7 @@
               <div class="col-md-6">
                 {{ form_row(form.avatar) }}
                 {% if hasAvatar %}
-                  <span class="avatar avatar-lg mt-1" style="background-image: url('{{ path('app_media_avatar', {id: user.uuid}) }}')"></span>
+                  {{ d.avatar(user, {size: 'lg', class: 'mt-1'}) }}
                 {% endif %}
               </div>
             </div>

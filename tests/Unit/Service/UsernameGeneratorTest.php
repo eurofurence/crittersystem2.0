@@ -11,7 +11,7 @@ final class UsernameGeneratorTest extends TestCase
 {
     public function testUniqueWhenFree(): void
     {
-        $repo = $this->createMock(UserRepository::class);
+        $repo = $this->createStub(UserRepository::class);
         $repo->method('findOneBy')->willReturn(null);
 
         self::assertSame('alice', (new UsernameGenerator($repo))->unique('alice'));
@@ -19,7 +19,7 @@ final class UsernameGeneratorTest extends TestCase
 
     public function testSuffixesOnCollision(): void
     {
-        $repo = $this->createMock(UserRepository::class);
+        $repo = $this->createStub(UserRepository::class);
         $repo->method('findOneBy')->willReturnCallback(
             static fn (array $criteria) => $criteria['name'] === 'taken' ? new User() : null,
         );

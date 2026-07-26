@@ -14,6 +14,7 @@ use App\Gdpr\BanChecker;
 use App\Repository\SsoGroupMappingRepository;
 use App\Repository\UserRepository;
 use App\Service\UsernameGenerator;
+use App\Storage\FileStorage;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -32,6 +33,8 @@ final class SsoUserProvisioner
         private readonly BanChecker $bans,
         private readonly SsoDepartmentPositions $positions,
         private readonly SsoGlobalRoles $globalRoles,
+        private readonly SsoAvatarFetcher $avatars,
+        private readonly FileStorage $storage,
         private readonly string $providerLabel = 'oidc',
     ) {
     }
@@ -49,14 +52,64 @@ final class SsoUserProvisioner
             // The provider is authoritative for these fields.
             $user->setEmail($claims->email);
             $this->applyName($user, $claims->name);
+            $this->applyAvatar($user, $claims->avatar);
         }
 
-        $departments = $this->applyMappings($user, $claims->groups);
-        $this->positions->apply($user, $claims->groups, $departments);
-        $this->globalRoles->apply($user, $claims->groups);
+        $this->applyGroups($user, $claims->groups);
         $this->em->flush();
 
         return $user;
+    }
+
+    /**
+     * Applies the SSO group memberships to an already-created/matched user: department memberships
+     * and their permission-group/volunteer-type/badge grants, the derived department position, and
+     * the global admin / sub-admin roles. Shared by live login and the pre-seed importer so both
+     * produce an identical membership state for the same set of group ids. Does not flush.
+     *
+     * @param string[] $groupIds the user's full set of identity-provider group ids
+     */
+    public function applyGroups(User $user, array $groupIds): void
+    {
+        $departments = $this->applyMappings($user, $groupIds);
+        $this->positions->apply($user, $groupIds, $departments);
+        $this->globalRoles->apply($user, $groupIds);
+    }
+
+    public function findBySub(string $sub): ?User
+    {
+        return $this->users->findOneBy(['ssoUserId' => $sub]);
+    }
+
+    /**
+     * Creates an SSO-managed user shell for a pre-seed, before the provider has supplied an email,
+     * real name, or avatar. The email is a unique, guaranteed-undeliverable placeholder that the
+     * provider overwrites on the user's first login (matched by sub); the username is the dump's
+     * username, collision-suffixed and kept stable thereafter. Does not flush.
+     */
+    public function createPreSeedShell(string $sub, string $username): User
+    {
+        $user = new User();
+        $user->setAccountSource(User::SOURCE_SSO)
+            ->setSsoUserId($sub)
+            ->setSsoProvider($this->providerLabel)
+            ->setName($this->usernames->unique($username !== '' ? $username : $sub))
+            ->setEmail(sprintf('preseed+%s@pre-seed.invalid', strtolower($sub)))
+            ->setApiKey(bin2hex(random_bytes(16)))
+            ->setPassword(bin2hex(random_bytes(16)))
+            ->setPersonalData(new PersonalData($user))
+            ->setContact(new Contact($user))
+            ->setSettings(new Settings($user))
+            ->setState(new State($user));
+
+        $this->em->persist($user);
+
+        return $user;
+    }
+
+    public function isBanned(string $sub): bool
+    {
+        return $this->bans->isBanned(null, $sub);
     }
 
     private function create(SsoClaims $claims): User
@@ -76,6 +129,7 @@ final class SsoUserProvisioner
 
         $this->applyName($user, $claims->name);
         $this->em->persist($user);
+        $this->applyAvatar($user, $claims->avatar);
 
         return $user;
     }
@@ -87,8 +141,40 @@ final class SsoUserProvisioner
         }
         $personal = $user->getPersonalData() ?? new PersonalData($user);
         $parts = preg_split('/\s+/', trim($name), 2) ?: [];
-        $personal->setFirstName($parts[0] ?? null)->setLastName($parts[1] ?? null);
+        $personal->setFirstName($parts[0] ?? null)
+            ->setLastName($parts[1] ?? null);
         $user->setPersonalData($personal);
+    }
+
+    /**
+     * The provider owns the avatar: every login re-asserts the SSO picture over any local upload.
+     * The picture is downloaded once and served locally (see {@see SsoAvatarFetcher}); a repeat
+     * login with the same URL and an intact file skips the fetch. An absent SSO picture leaves the
+     * current avatar untouched rather than wiping it.
+     */
+    private function applyAvatar(User $user, ?string $url): void
+    {
+        if ($url === null || $url === '') {
+            return;
+        }
+
+        $personal = $user->getPersonalData() ?? new PersonalData($user);
+        $currentKey = $personal->getAvatarPath();
+        if ($personal->getAvatarSource() === $url && $currentKey !== null && $this->storage->exists($currentKey)) {
+            return;
+        }
+
+        $newKey = $this->avatars->fetchAndStore($url, $user);
+        if ($newKey === null) {
+            return;
+        }
+
+        $personal->setAvatarPath($newKey)->setAvatarSource($url);
+        $user->setPersonalData($personal);
+
+        if ($currentKey !== null && $currentKey !== $newKey && $this->storage->exists($currentKey)) {
+            $this->storage->delete($currentKey);
+        }
     }
 
     /**

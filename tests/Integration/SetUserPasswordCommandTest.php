@@ -24,7 +24,7 @@ final class SetUserPasswordCommandTest extends DatabaseTestCase
         return $user;
     }
 
-    private function runCommand(array $input): CommandTester
+    private function runPasswordCommand(array $input): CommandTester
     {
         $application = new Application(self::$kernel);
         $tester = new CommandTester($application->find('app:user:password'));
@@ -37,7 +37,7 @@ final class SetUserPasswordCommandTest extends DatabaseTestCase
     {
         $this->makeUser('pwtest', 'old-password');
 
-        $tester = $this->runCommand(['username' => 'pwtest', '--password' => 'new-secret']);
+        $tester = $this->runPasswordCommand(['username' => 'pwtest', '--password' => 'new-secret']);
         $tester->assertCommandIsSuccessful();
 
         $this->em->clear();
@@ -53,7 +53,7 @@ final class SetUserPasswordCommandTest extends DatabaseTestCase
     {
         $this->makeUser('byemail', 'old-password');
 
-        $tester = $this->runCommand(['username' => 'byemail@example.com', '--password' => 'changed']);
+        $tester = $this->runPasswordCommand(['username' => 'byemail@example.com', '--password' => 'changed']);
         $tester->assertCommandIsSuccessful();
 
         $this->em->clear();
@@ -64,7 +64,7 @@ final class SetUserPasswordCommandTest extends DatabaseTestCase
 
     public function testFailsForUnknownUser(): void
     {
-        $tester = $this->runCommand(['username' => 'ghost', '--password' => 'whatever']);
+        $tester = $this->runPasswordCommand(['username' => 'ghost', '--password' => 'whatever']);
 
         self::assertSame(1, $tester->getStatusCode());
     }

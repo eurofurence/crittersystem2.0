@@ -72,7 +72,7 @@ final class ShiftManagerPersonaTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
         self::assertSame(1, $crawler->filter('[data-action="apply"]')->count());
         self::assertSame(1, $crawler->filter('[data-action="manage"]')->count());
-        self::assertSame(1, $crawler->filter('[data-action="create"]')->count());
+        self::assertSame(1, $crawler->filter('[data-action="grid"]')->count(), 'a manager reaches the department grid');
     }
 
     public function testOrdinaryStaffCannotOpenPlanner(): void

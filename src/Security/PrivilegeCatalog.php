@@ -77,6 +77,7 @@ final class PrivilegeCatalog
         'user:delete' => ['Delete or deactivate users', 'Users', self::LEVEL_ADMIN, false],
         'user:promote' => ['Assign groups and roles to users', 'Users', self::LEVEL_SUBADMIN, true],
         'user:pii:view' => ['View unmasked personal data', 'Users', self::LEVEL_ADMIN, true],
+        'user:preseed' => ['Bulk pre-seed users from an identity-provider dump', 'Users', self::LEVEL_ADMIN, true],
         'user:arrive' => ['Check users in / mark as arrived', 'Users', self::LEVEL_SUBADMIN, false],
         'user:locate' => ['Locate a user at the info desk (exact email, registration number, or badge scan)', 'Users', self::LEVEL_SUBADMIN, false],
         'user:contact:view' => ["View a volunteer's consented contact details", 'Users', self::LEVEL_SUBADMIN, false],

@@ -5600,3 +5600,84 @@ msgstr "Edit worklog entry"
 msgid "worklog.page.edit_title"
 msgstr "Edit worklog"
 
+msgid "ui.feedback.button"
+msgstr "Feedback"
+
+
+msgid "manage.index.card.preseed.title"
+msgstr "Pre-seed users"
+
+msgid "manage.index.card.preseed.desc"
+msgstr "Bulk-create users from an identity-provider dump before their first login."
+
+msgid "manage.preseed.page.title"
+msgstr "Pre-seed users"
+
+msgid "manage.preseed.page.subtitle"
+msgstr "Create users from an identity-provider group dump and apply their memberships ahead of first login."
+
+msgid "manage.preseed.upload.title"
+msgstr "Upload dump"
+
+msgid "manage.preseed.upload.help"
+msgstr "A JSON array of identity-provider groups, each with its member list. Users are matched and created by their SSO subject (<code>user_id</code>); emails are left blank and filled in by SSO on first login. Only entries whose <code>id</code> matches a configured SSO group mapping or role are applied; the rest are skipped. Nothing is written until you confirm the preview."
+
+msgid "manage.preseed.upload.submit"
+msgstr "Preview import"
+
+msgid "manage.preseed.preview.title"
+msgstr "Pre-seed preview"
+
+msgid "manage.preseed.preview.subtitle"
+msgstr "Review what will be created and applied. Nothing has been written yet."
+
+msgid "manage.preseed.preview.warnings"
+msgstr "Warnings"
+
+msgid "manage.preseed.preview.recognized"
+msgstr "Applied entries (%count%)"
+
+msgid "manage.preseed.preview.skipped"
+msgstr "Skipped entries — no matching mapping or role (%count%)"
+
+msgid "manage.preseed.stat.create"
+msgstr "Users to create"
+
+msgid "manage.preseed.stat.update"
+msgstr "Existing users to update"
+
+msgid "manage.preseed.stat.skipped_users"
+msgstr "Users skipped"
+
+msgid "manage.preseed.stat.skipped_entries"
+msgstr "Entries skipped"
+
+msgid "manage.preseed.table.grants"
+msgstr "Grants"
+
+msgid "manage.preseed.table.members"
+msgstr "Members"
+
+msgid "manage.preseed.confirm.message"
+msgstr "This will create %create% user(s) and update %update% existing user(s). Continue?"
+
+msgid "manage.preseed.confirm.submit"
+msgstr "Create users"
+
+msgid "manage.preseed.flash.no_file"
+msgstr "No file was uploaded."
+
+msgid "manage.preseed.flash.too_large"
+msgstr "That file is too large to import."
+
+msgid "manage.preseed.flash.unreadable"
+msgstr "The uploaded file could not be read."
+
+msgid "manage.preseed.flash.invalid_json"
+msgstr "The file is not a valid JSON array of group entries."
+
+msgid "manage.preseed.flash.expired"
+msgstr "The upload is no longer available. Please upload the file again."
+
+msgid "manage.preseed.flash.done"
+msgstr "Pre-seed complete: %created% created, %updated% updated, %skipped% skipped."

@@ -20,6 +20,21 @@
   {%- for name, value in attrs %} {{ name }}="{{ value }}"{% endfor -%}
 {% endmacro %}
 
+{# Round user avatar: the stored picture when the user has one - served through the
+   authorization-checked media route, never hot-linked - otherwise a monogram of the display name.
+   Options: `size` a Tabler suffix (xs|sm|md|lg|xl, default sm); `class` extra classes.
+   The caller decides whether the user may be shown; the media route re-checks who may see the file. #}
+{% macro avatar(user, options = {}) %}
+  {%- set size = options.size is defined ? options.size : 'sm' -%}
+  {%- set extra = options.class is defined ? ' ' ~ options.class : '' -%}
+  {%- set key = user.personalData is not null ? user.personalData.avatarPath : null -%}
+  {%- if key is not null -%}
+    <span class="avatar avatar-{{ size }}{{ extra }}" style="background-image: url('{{ path('app_media_avatar', {id: user.uuid}) }}')"></span>
+  {%- else -%}
+    <span class="avatar avatar-{{ size }}{{ extra }}">{{ user.name|slice(0, 2)|upper }}</span>
+  {%- endif -%}
+{% endmacro %}
+
 {# ------------------------------------------------------------------------------------------------------------------ #}
 
 {% macro page_header(title, options = {}) %}

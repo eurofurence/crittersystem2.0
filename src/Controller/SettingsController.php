@@ -151,7 +151,7 @@ final class SettingsController extends AbstractController
         if (\is_resource($stream)) {
             fclose($stream);
         }
-        $personalData->setAvatarPath($key);
+        $personalData->setAvatarPath($key)->setAvatarSource(null);
 
         if ($old !== null && $old !== $key && $this->storage->exists($old)) {
             $this->storage->delete($old);

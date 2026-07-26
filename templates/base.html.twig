@@ -33,6 +33,7 @@
         {% import 'components/navigation/_macros.twig' as nav %}
         {% import 'components/notification/_macros.twig' as n %}
         {% import 'components/icon/_macros.twig' as i %}
+        {% import 'components/data/_macros.twig' as d %}
 
         {% block navbar %}
         <div class="page">
@@ -58,10 +59,10 @@
                             <div class="nav-item dropdown">
                                 <a href="#" class="nav-link d-flex lh-1 p-0 px-2" data-bs-toggle="dropdown"
                                    aria-label="{{ 'ui.aria.open_user_menu'|trans }}" aria-expanded="false">
-                                    <span class="avatar avatar-sm">{{ app.user.userIdentifier|slice(0, 2)|upper }}</span>
+                                    {{ d.avatar(app.user, {size: 'sm'}) }}
                                     <div class="d-none d-xl-block ps-2">
                                         <div>{{ app.user.userIdentifier }}</div>
-                                        <div class="mt-1 small text-secondary">{{ 'ui.user_menu.signed_in'|trans }}</div>
+                                        <!-- <div class="mt-1 small text-secondary">{{ 'ui.user_menu.signed_in'|trans }}</div> -->
                                     </div>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
@@ -164,9 +165,6 @@
         </div>
         {% endblock %}
 
-        <!-- <button type="button" id="feedback-btn" class="btn btn-primary feedback-trigger">
-            {{ 'ui.feedback.button'|trans|default('Feedback') }}
-        </button> -->
         <div id="feedback-permanent" data-turbo-permanent></div>
     </body>
 </html>

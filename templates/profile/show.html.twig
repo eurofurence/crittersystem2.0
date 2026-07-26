@@ -8,11 +8,7 @@
   {{ d.card_start() }}
       <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
         <div>
-          {% if header.hasAvatar %}
-            <span class="avatar avatar-xl" style="background-image: url('{{ path('app_media_avatar', {id: u.uuid}) }}')"></span>
-          {% else %}
-            <span class="avatar avatar-xl">{{ u.name|slice(0, 2)|upper }}</span>
-          {% endif %}
+          {{ d.avatar(u, {size: 'xl'}) }}
         </div>
 
         <div class="flex-grow-1">

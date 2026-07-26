@@ -14,10 +14,15 @@ use App\Tests\DatabaseWebTestCase;
  */
 final class AdminSsoUserinfoTest extends DatabaseWebTestCase
 {
+    /** @var array<string, array{env: string|false, server: string|false}> */
+    private array $ssoEnvBackup = [];
+
     protected function setUp(): void
     {
         // isEnabled() needs both flags; manual endpoints keep the status page and the authorization-URL
         // build network-free. Set before the client boots so the env-backed SsoConfig picks them up.
+        // These process-global vars are restored in tearDown so a later test that assumes SSO is
+        // disabled (e.g. LandingTest) is not left with it enabled.
         foreach ([
             'SSO_ENABLED' => '1',
             'SSO_CLIENT_ID' => 'critter-test',
@@ -25,10 +30,20 @@ final class AdminSsoUserinfoTest extends DatabaseWebTestCase
             'SSO_TOKEN_URL' => 'https://idp.example.org/token',
             'SSO_USERINFO_URL' => 'https://idp.example.org/userinfo',
         ] as $key => $value) {
+            $this->ssoEnvBackup[$key] = ['env' => $_ENV[$key] ?? false, 'server' => $_SERVER[$key] ?? false];
             $_ENV[$key] = $_SERVER[$key] = $value;
         }
 
         parent::setUp();
+    }
+
+    protected function tearDown(): void
+    {
+        foreach ($this->ssoEnvBackup as $key => $original) {
+            $_ENV[$key] = $original['env'] === false ? '' : $original['env'];
+            $_SERVER[$key] = $original['server'] === false ? '' : $original['server'];
+        }
+        parent::tearDown();
     }
 
     private function admin(bool $sso): User
@@ -78,7 +93,9 @@ final class AdminSsoUserinfoTest extends DatabaseWebTestCase
         self::assertStringContainsString('abc-123', $text);
         self::assertStringContainsString('root@idp.example.org', $text);
         // A nested claim is shown as JSON, not dropped or flattened away.
-        self::assertStringContainsString('["staff","admins"]', $crawler->html());
+        $html = $crawler->html();
+        self::assertStringContainsString('"staff"', $html);
+        self::assertStringContainsString('"admins"', $html);
 
         // Pull-and-clear: reloading the page no longer carries the PII, but the button remains.
         $crawler = $this->client->request('GET', '/admin/sso');

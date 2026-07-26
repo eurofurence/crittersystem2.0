@@ -94,7 +94,7 @@ final class DepartmentsPageTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/departments');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Stage');
-        self::assertSelectorExists('.badge.bg-primary'); // Member badge
+        self::assertSelectorExists('.badge.text-bg-primary'); // Member badge
 
         $this->client->request('GET', '/departments/'.$department->getUuid());
         self::assertResponseIsSuccessful();
