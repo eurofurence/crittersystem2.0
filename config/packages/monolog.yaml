@@ -5,9 +5,12 @@ monolog:
 when@dev:
     monolog:
         handlers:
+            # Rotating, because debug-level logging here grows unbounded (it reached 1 GB once).
+            # The file is var/log/dev-<date>.log, not var/log/dev.log - tail the dated one.
             main:
-                type: stream
+                type: rotating_file
                 path: "%kernel.logs_dir%/%kernel.environment%.log"
+                max_files: 7
                 level: debug
                 channels: ["!event"]
             console:
@@ -25,8 +28,9 @@ when@test:
                 excluded_http_codes: [404, 405]
                 channels: ["!event"]
             nested:
-                type: stream
+                type: rotating_file
                 path: "%kernel.logs_dir%/%kernel.environment%.log"
+                max_files: 3
                 level: debug
 
 when@prod:

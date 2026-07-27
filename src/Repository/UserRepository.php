@@ -47,6 +47,29 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
+     * Hydrate the group assignments (and their groups) of many users in one query, so that a
+     * membership list can call getRoles()/isStaff() per row without a lazy load each time.
+     * The result is discarded: Doctrine keeps the hydrated collections on the managed entities.
+     *
+     * @param User[] $users
+     */
+    public function preloadGroupAssignments(array $users): void
+    {
+        if ($users === []) {
+            return;
+        }
+
+        $this->createQueryBuilder('u')
+            ->addSelect('ga', 'g')
+            ->leftJoin('u.groupAssignments', 'ga')
+            ->leftJoin('ga.group', 'g')
+            ->andWhere('u IN (:users)')
+            ->setParameter('users', $users)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Partial, case-insensitive username search.
      *
      * @return User[]

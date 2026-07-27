@@ -8,6 +8,7 @@ use App\Enum\DepartmentPosition;
 use App\Repository\DepartmentRepository;
 use App\Repository\ShiftRepository;
 use App\Repository\UserGroupAssignmentRepository;
+use App\Repository\UserRepository;
 
 /**
  * Derives department membership and staffing views. Membership is
@@ -16,12 +17,16 @@ use App\Repository\UserGroupAssignmentRepository;
  */
 class DepartmentService
 {
+    /** Members shown per page in one section of the department dashboard. */
+    public const MEMBERS_PER_PAGE = 25;
+
     public function __construct(
         private readonly DepartmentRepository $departments,
         private readonly UserGroupAssignmentRepository $assignments,
         private readonly ShiftRepository $shifts,
         private readonly HoursCacheService $hours,
         private readonly EventConfigStore $config,
+        private readonly UserRepository $users,
     ) {
     }
 
@@ -75,6 +80,8 @@ class DepartmentService
             }
         }
 
+        $this->users->preloadGroupAssignments(array_values($users));
+
         $managers = $shiftManagers = $staff = $nonStaff = [];
         foreach ($users as $uid => $user) {
             match ($positions[$uid] ?? null) {
@@ -107,15 +114,64 @@ class DepartmentService
         ];
     }
 
-    public function plannedHours(User $user): float
+    /**
+     * One page of a member section, narrowed by an optional username search.
+     *
+     * Matching is on the username only, never the real name: a real name is shown only where the
+     * subject consented to it, so matching on it would let a viewer confirm a name they may not see.
+     *
+     * @param User[] $users a whole section, already classified
+     *
+     * @return array{items: User[], total: int, totalAll: int, page: int, pages: int, query: string, perPage: int}
+     */
+    public function paginateMembers(array $users, string $query = '', int $page = 1, int $perPage = self::MEMBERS_PER_PAGE): array
     {
-        return $this->hours->get($user)->getTotalHours();
+        $totalAll = \count($users);
+        $query = trim($query);
+        if ($query !== '') {
+            $needle = mb_strtolower($query);
+            $users = array_values(array_filter(
+                $users,
+                static fn (User $user): bool => str_contains(mb_strtolower($user->getName()), $needle),
+            ));
+        }
+
+        $total = \count($users);
+        $pages = max(1, (int) ceil($total / $perPage));
+        $page = max(1, min($page, $pages));
+
+        return [
+            'items' => \array_slice($users, ($page - 1) * $perPage, $perPage),
+            'total' => $total,
+            'totalAll' => $totalAll,
+            'page' => $page,
+            'pages' => $pages,
+            'query' => $query,
+            'perPage' => $perPage,
+        ];
     }
 
-    public function overThreshold(User $user): bool
+    /**
+     * Planned hours and the over-threshold flag for the given users, keyed by user id.
+     *
+     * Batched deliberately: the threshold is read once rather than per user, and the hours caches
+     * come from one query. Call it with the rows of a single page, not a whole department.
+     *
+     * @param User[] $users
+     *
+     * @return array<int, array{hours: float, over: bool}>
+     */
+    public function statsFor(array $users): array
     {
         $max = $this->config->getInt(EventConfigStore::KEY_HOURS_RECOMMENDED_MAX, EventConfigStore::DEFAULT_HOURS_RECOMMENDED_MAX);
+        $caches = $this->hours->getMany($users);
 
-        return $this->plannedHours($user) > $max;
+        $stats = [];
+        foreach ($users as $user) {
+            $hours = $caches[$user->getId()]->getTotalHours();
+            $stats[$user->getId()] = ['hours' => $hours, 'over' => $hours > $max];
+        }
+
+        return $stats;
     }
 }

@@ -37,8 +37,12 @@ export default class extends Controller {
             }
             const data = await response.json().catch(() => ({}));
             if (!response.ok || data.ok === false) {
+                this.markInvalid(data.invalid);
                 await alertModal(data.error || (data.errors ? data.errors.join('\n') : 'The change could not be saved.'));
                 return;
+            }
+            if (data.published !== undefined) {
+                this.markInvalid([]);
             }
             if (Array.isArray(data.warnings) && data.warnings.length > 0) {
                 await alertModal('Published with warnings:\n' + data.warnings.join('\n'));
@@ -57,6 +61,13 @@ export default class extends Controller {
                 button.disabled = false;
             }
         }
+    }
+
+    markInvalid(uuids) {
+        if (!Array.isArray(uuids)) {
+            return;
+        }
+        window.dispatchEvent(new CustomEvent('planner:invalid', { detail: { uuids } }));
     }
 
     closeModalIfAny() {

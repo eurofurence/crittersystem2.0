@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
 
 {% block title %}{{ 'staff.stats.page.title'|trans }}{% endblock %}
 
@@ -10,13 +11,16 @@
   }) }}
 
   {% if canSwitch %}
-    <form method="get" action="{{ path('app_staff_stats') }}" class="row g-2 mb-3">
-      <div class="col-12 col-md-6">
-        <select name="user" class="form-select" onchange="this.form.submit()">
-          {% for u in allUsers %}<option value="{{ u.uuid }}" {{ u.uuid == target.uuid ? 'selected' }}>{{ u.name }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="col-auto"><noscript><button class="btn btn-primary">{{ 'common.action.view'|trans }}</button></noscript></div>
+    <form method="get" action="{{ path('app_staff_stats') }}" class="row g-2 mb-3 align-items-start">
+      {{ f.user_select('user', {
+        url: path('app_staff_stats_user_search'),
+        label: false,
+        multiple: false,
+        col: 'col-12 col-md-6',
+        placeholder: 'staff.stats.switch_placeholder'|trans,
+        selected: [{id: target.uuid, name: target.name, staff: target.staff}],
+      }) }}
+      <div class="col-auto"><button class="btn btn-primary">{{ 'common.action.view'|trans }}</button></div>
     </form>
   {% endif %}
 

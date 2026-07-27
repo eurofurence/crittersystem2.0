@@ -39,6 +39,34 @@ final class HoursCacheService
         return $this->recalculate($user, $cache);
     }
 
+    /**
+     * Same contract as {@see get()} for a whole set of users, but the fresh ones are fetched in a
+     * single query rather than one per user. Stale entries still recalculate individually, so a
+     * list screen pays that cost only for the rows it actually shows.
+     *
+     * @param User[] $users
+     *
+     * @return array<int, UserHoursCache> keyed by user id
+     */
+    public function getMany(array $users): array
+    {
+        if ($users === []) {
+            return [];
+        }
+
+        $existing = $this->caches->findByUsers($users);
+
+        $result = [];
+        foreach ($users as $user) {
+            $cache = $existing[$user->getId()] ?? null;
+            $result[$user->getId()] = ($cache !== null && $this->isFresh($cache))
+                ? $cache
+                : $this->recalculate($user, $cache);
+        }
+
+        return $result;
+    }
+
     public function recalculate(User $user, ?UserHoursCache $cache = null): UserHoursCache
     {
         $cache ??= $this->caches->findOneByUser($user) ?? new UserHoursCache($user);

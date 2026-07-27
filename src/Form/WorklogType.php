@@ -2,10 +2,8 @@
 
 namespace App\Form;
 
-use App\Entity\User;
 use App\Entity\Worklog;
 use App\Service\DisplaySettings;
-use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\DateTimeType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
@@ -24,10 +22,8 @@ final class WorklogType extends AbstractType
         $tz = $this->display->timezone()->getName();
 
         $builder
-            ->add('user', EntityType::class, [
+            ->add('user', UserPickerType::class, [
                 'label' => 'manage.label.volunteer',
-                'class' => User::class,
-                'choice_label' => 'name',
             ])
             ->add('hours', NumberType::class, [
                 'label' => 'manage.worklog.field.hours.label',

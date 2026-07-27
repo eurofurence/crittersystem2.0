@@ -26,7 +26,19 @@ export default class extends Controller {
         audience: { type: String, default: 'public_volunteer' },
         task: { type: Number, default: 0 },
         location: { type: Number, default: 0 },
+        mode: { type: String, default: 'select' },
     };
+
+    /*
+     * Stimulus fires the *TargetConnected callbacks BEFORE connect(), so any state they read has to
+     * exist by the end of initialize(). Setting these up in connect() instead threw on the first
+     * block of a populated grid, and the exception aborted the controller's connection - taking
+     * painting, dragging and the grid refresh down with it on every department that had shifts.
+     */
+    initialize() {
+        this.selected = new Set();
+        this.invalid = new Set();
+    }
 
     connect() {
         this.selected = new Set();
@@ -36,6 +48,7 @@ export default class extends Controller {
         this.onKeyDown = this.handleKeyDown.bind(this);
         this.onChanged = () => this.reloadGrid();
         this.onSetPaint = (event) => this.applyPaintDefaults(event.detail);
+        this.onInvalid = (event) => this.applyInvalid(event.detail?.uuids ?? []);
 
         this.element.addEventListener('pointerdown', this.onPointerDown);
         window.addEventListener('pointermove', this.onPointerMove);
@@ -44,6 +57,7 @@ export default class extends Controller {
         // Toolbar/modal/panel forms ask us to reload the grid or adjust paint defaults.
         window.addEventListener('planner:changed', this.onChanged);
         window.addEventListener('planner:paint-defaults', this.onSetPaint);
+        window.addEventListener('planner:invalid', this.onInvalid);
     }
 
     disconnect() {
@@ -53,6 +67,7 @@ export default class extends Controller {
         this.element.removeEventListener('keydown', this.onKeyDown);
         window.removeEventListener('planner:changed', this.onChanged);
         window.removeEventListener('planner:paint-defaults', this.onSetPaint);
+        window.removeEventListener('planner:invalid', this.onInvalid);
         this.clearGesture();
     }
 
@@ -66,6 +81,15 @@ export default class extends Controller {
         if (detail.location !== undefined) {
             this.locationValue = Number(detail.location) || 0;
         }
+        if (detail.mode !== undefined) {
+            this.modeValue = detail.mode === 'paint' ? 'paint' : 'select';
+        }
+    }
+
+    // The class lives on the controller element, not on the grid: reloadGrid() replaces the grid
+    // wholesale after every edit, which would drop it.
+    modeValueChanged() {
+        this.element.classList.toggle('is-painting', this.modeValue === 'paint');
     }
 
     // ---- geometry helpers -------------------------------------------------
@@ -99,6 +123,19 @@ export default class extends Controller {
         if (event.button !== 0) {
             return;
         }
+        // Creating a shift is exclusive to paint mode, including over an existing block: a drag in
+        // select mode never creates anything, so an imprecise drag on empty grid cannot leave a
+        // stray shift behind. The block under the pointer is ignored here, which is the only way to
+        // start a shift running in parallel with one already there. Blocks live inside the day body,
+        // so the body is still resolvable from a pointer that landed on a block.
+        const body = event.target.closest('.planner-day-body');
+        if (this.modeValue === 'paint') {
+            if (body) {
+                this.startPaint(event, body);
+            }
+            return;
+        }
+
         const block = event.target.closest('.planner-block');
         if (block) {
             if (event.target.closest('.planner-block-resize')) {
@@ -106,11 +143,6 @@ export default class extends Controller {
             } else {
                 this.startMove(event, block);
             }
-            return;
-        }
-        const body = event.target.closest('.planner-day-body');
-        if (body) {
-            this.startPaint(event, body);
         }
     }
 
@@ -226,6 +258,15 @@ export default class extends Controller {
 
     blockTargetConnected(block) {
         block.addEventListener('click', (event) => this.toggleSelect(event, block));
+        // Runs for every block the reloaded grid brings in, which is what re-applies the outlines.
+        block.classList.toggle('planner-block-invalid', this.invalid.has(block.dataset.shiftId));
+    }
+
+    applyInvalid(uuids) {
+        this.invalid = new Set(uuids);
+        this.blockTargets.forEach((block) => {
+            block.classList.toggle('planner-block-invalid', this.invalid.has(block.dataset.shiftId));
+        });
     }
 
     toggleSelect(event, block) {
@@ -321,11 +362,19 @@ export default class extends Controller {
                 fresh.scrollTop = top;
                 window.scrollTo(pageX, pageY);
             }
+
+            this.refreshPublishBar(parsed);
         } catch (e) {
-            // A bug in the swap above would otherwise surface only as the page mysteriously reloading -
-            // and, if it throws again on the way back, as a reload loop with an empty console.
             console.error('Refresh failed; falling back to a full page load.', e);
             window.location.reload();
+        }
+    }
+
+    refreshPublishBar(parsed) {
+        const fresh = parsed.querySelector('#planner-publish-bar');
+        const current = document.querySelector('#planner-publish-bar');
+        if (fresh && current) {
+            current.replaceWith(fresh);
         }
     }
 }

@@ -9,8 +9,9 @@ import { backgroundFetch } from '../js/session.js';
  *
  *   data-controller="user-select"
  *   data-user-select-url-value="/…/search"
- *   data-user-select-name-value="users"        // hidden inputs are named users[]
+ *   data-user-select-name-value="users"        // hidden inputs are named users[] (or users when single)
  *   data-user-select-min-chars-value="1"
+ *   data-user-select-multiple-value="true"     // false = single-user field, a new pick replaces the old
  *   data-user-select-staff-suffix-value="true" // append " (staff)" to staff usernames
  */
 export default class extends Controller {
@@ -19,6 +20,7 @@ export default class extends Controller {
         url: String,
         name: String,
         minChars: { type: Number, default: 1 },
+        multiple: { type: Boolean, default: true },
         staffSuffix: { type: Boolean, default: true },
     };
 
@@ -127,11 +129,15 @@ export default class extends Controller {
         if (this.selected.has(id)) {
             return;
         }
+        // Single-user field: a new pick replaces the current one, so only one chip is ever held.
+        if (!this.multipleValue) {
+            this.clearSelection();
+        }
         this.selected.add(id);
 
         const hidden = document.createElement('input');
         hidden.type = 'hidden';
-        hidden.name = `${this.nameValue}[]`;
+        hidden.name = this.multipleValue ? `${this.nameValue}[]` : this.nameValue;
         hidden.value = id;
         this.hiddenTarget.appendChild(hidden);
 
@@ -179,6 +185,12 @@ export default class extends Controller {
         if (chips.length > 0) {
             chips[chips.length - 1].click();
         }
+    }
+
+    clearSelection() {
+        this.chipsTarget.querySelectorAll('.user-select-chip').forEach((chip) => chip.remove());
+        this.hiddenTarget.replaceChildren();
+        this.selected.clear();
     }
 
     renderMenu() {

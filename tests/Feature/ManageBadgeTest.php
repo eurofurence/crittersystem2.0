@@ -70,7 +70,7 @@ final class ManageBadgeTest extends DatabaseWebTestCase
         $this->em->flush();
 
         $this->client->request('POST', '/manage/badges/assign', [
-            'badge' => $badge->getUuid(), 'action' => 'add', 'users' => [$target->getId()],
+            'badge' => $badge->getUuid(), 'action' => 'add', 'users' => [(string) $target->getUuid()],
         ]);
         self::assertResponseRedirects();
         $this->em->clear();

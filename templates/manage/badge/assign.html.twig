@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
 
 {% block title %}{{ 'manage.badge.assign.title'|trans }}{% endblock %}
 
@@ -9,39 +10,26 @@
   <form method="get" class="row g-2 align-items-end mb-3">
     <div class="col-auto">
       <label class="form-label">{{ 'manage.label.badge'|trans }}</label>
-      <select name="badge" class="form-select">
+      <select name="badge" class="form-select" onchange="this.form.submit()">
         <option value="">{{ 'manage.badge.assign.choose_placeholder'|trans }}</option>
         {% for b in badges %}<option value="{{ b.uuid }}" {{ badge and badge.uuid == b.uuid ? 'selected' }}>{{ b.name }}</option>{% endfor %}
       </select>
     </div>
-    <div class="col-auto">
-      <label class="form-label">{{ 'manage.badge.assign.search_users_label'|trans }}</label>
-      <input type="text" name="q" value="{{ query }}" class="form-control" placeholder="{{ 'manage.badge.assign.search_placeholder'|trans }}">
-    </div>
-    <div class="col-auto"><button class="btn btn-outline-primary">{{ 'common.action.search'|trans }}</button></div>
+    <div class="col-auto"><noscript><button class="btn btn-outline-primary">{{ 'common.action.select'|trans }}</button></noscript></div>
   </form>
 
-  {% if badge and results %}
+  {% if badge %}
     <form method="post" action="{{ path('app_manage_badge_assign') }}">
       <input type="hidden" name="badge" value="{{ badge.uuid }}">
-      <input type="hidden" name="q" value="{{ query }}">
-      {{ d.table_start() }}
-        <thead><tr><th></th><th>{{ 'common.label.user'|trans }}</th><th>{{ 'manage.badge.assign.has_badge'|trans }}</th></tr></thead>
-        <tbody>
-          {% for u in results %}
-            <tr>
-              <td><input type="checkbox" name="users[]" value="{{ u.id }}" class="form-check-input"></td>
-              <td>{{ u.name }} <span class="text-muted small">#{{ u.id }}</span></td>
-              <td>{% if u.hasBadge(badge) %}{{ d.badge(badge.name, 'text-bg-' ~ badge.color) }}{% else %}<span class="text-muted">-</span>{% endif %}</td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      {{ d.table_end() }}
+      {{ f.user_select('users', {
+        url: path('app_manage_badge_user_search'),
+        label: 'manage.badge.assign.search_users_label'|trans,
+        placeholder: 'manage.badge.assign.search_placeholder'|trans,
+        help: 'manage.badge.assign.pick_help'|trans({'%name%': badge.name}),
+      }) }}
       <button class="btn btn-primary" name="action" value="add">{{ 'manage.badge.assign.assign_selected'|trans }}</button>
       <button class="btn btn-outline-danger" name="action" value="remove">{{ 'manage.badge.assign.remove_selected'|trans }}</button>
     </form>
-  {% elseif badge %}
-    <p class="text-muted">{{ 'manage.badge.assign.prompt_badge'|trans({'%name%': badge.name})|raw }}</p>
   {% else %}
     <p class="text-muted">{{ 'manage.badge.assign.prompt_choose'|trans }}</p>
   {% endif %}

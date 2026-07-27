@@ -10,7 +10,9 @@ use App\Repository\ShiftEntryRepository;
 use App\Repository\UserRepository;
 use App\Service\DutyService;
 use App\Service\StaffStatsService;
+use App\Service\UserSearchResultFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -134,7 +136,15 @@ final class StaffController extends AbstractController
             'dutyHistory' => $this->duty->getHistory($target),
             'shiftEntries' => $this->entries->findByUserOrdered($target),
             'canSwitch' => $this->isGranted('global:admin'),
-            'allUsers' => $this->isGranted('global:admin') ? $users->findBy([], ['name' => 'ASC']) : [],
         ]);
+    }
+
+    #[Route('/stats/user-search', name: 'app_staff_stats_user_search', methods: ['GET'])]
+    #[IsGranted('global:admin')]
+    public function statsUserSearch(Request $request, UserRepository $users, UserSearchResultFormatter $formatter): JsonResponse
+    {
+        $q = trim((string) $request->query->get('q', ''));
+
+        return new JsonResponse($formatter->results($q === '' ? [] : $users->searchByName($q)));
     }
 }

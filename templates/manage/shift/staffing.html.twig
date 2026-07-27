@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
 
 {% block title %}{{ 'manage.shift.staffing.page_title'|trans({'%name%': shift.title}) }}{% endblock %}
 
@@ -102,39 +103,25 @@
   {% endif %}
 
   <h2 class="h5 mt-4">{{ 'manage.shift.staffing.assign_heading'|trans }}</h2>
-  <form method="get" action="{{ path('app_manage_shift_needs', {id: shift.uuid}) }}" class="row g-2 mb-2">
-    <div class="col-12 col-md-8">
-      <input type="search" name="q" value="{{ q }}" class="form-control" placeholder="{{ 'manage.shift.staffing.search_placeholder'|trans }}">
+  <form method="post" action="{{ path('app_manage_shift_assign', {id: shift.uuid}) }}" class="row g-2 align-items-start">
+    <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ shift.id) }}">
+    {{ f.user_select('user', {
+      url: path('app_manage_shift_staff_search', {id: shift.uuid}),
+      label: 'manage.label.volunteer'|trans,
+      multiple: false,
+      col: 'col-12 col-md-6',
+      placeholder: 'manage.shift.staffing.search_placeholder'|trans,
+    }) }}
+    <div class="col-12 col-md-4">
+      <label class="form-label" for="assign-role">{{ 'manage.shift.staffing.assign_as'|trans }}</label>
+      <select id="assign-role" name="volunteer_type" class="form-select" required>
+        <option value="">{{ 'manage.shift.staffing.role_placeholder'|trans }}</option>
+        {% for vt in volunteerTypes %}<option value="{{ vt.id }}">{{ vt.name }}</option>{% endfor %}
+      </select>
     </div>
-    <div class="col-12 col-md-4"><button class="btn btn-outline-primary w-100">{{ 'common.action.search'|trans }}</button></div>
+    <div class="col-12 col-md-2">
+      <label class="form-label d-none d-md-block">&nbsp;</label>
+      <button class="btn btn-primary w-100">{{ 'manage.shift.staffing.assign'|trans }}</button>
+    </div>
   </form>
-
-  {% if q != '' %}
-    {% if searchResults is empty %}
-      {{ d.empty_inline('manage.shift.staffing.no_matches'|trans({'%query%': q}), {class: 'text-muted'}) }}
-    {% else %}
-      {{ d.table_start({hover: false}) }}
-        <thead><tr><th>{{ 'manage.label.volunteer'|trans }}</th><th>{{ 'common.label.email'|trans }}</th><th class="text-end">{{ 'manage.shift.staffing.assign_as'|trans }}</th></tr></thead>
-        <tbody>
-          {% for u in searchResults %}
-            <tr>
-              <td>{{ u.name }}</td>
-              <td class="small">{{ u.email }}</td>
-              <td class="text-end">
-                <form method="post" action="{{ path('app_manage_shift_assign', {id: shift.uuid}) }}" class="d-flex gap-2 justify-content-end">
-                  <input type="hidden" name="_token" value="{{ csrf_token('assign' ~ shift.id) }}">
-                  <input type="hidden" name="user" value="{{ u.id }}">
-                  <select name="volunteer_type" class="form-select form-select-sm" style="width:auto" required>
-                    <option value="">{{ 'manage.shift.staffing.role_placeholder'|trans }}</option>
-                    {% for vt in volunteerTypes %}<option value="{{ vt.id }}">{{ vt.name }}</option>{% endfor %}
-                  </select>
-                  <button class="btn btn-sm btn-primary">{{ 'manage.shift.staffing.assign'|trans }}</button>
-                </form>
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      {{ d.table_end() }}
-    {% endif %}
-  {% endif %}
 {% endblock %}

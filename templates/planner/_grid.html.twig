@@ -11,10 +11,22 @@
 
   {% for day in grid.days %}
     {% set dayIndex = loop.index0 %}
-    <div class="planner-day planner-phase-{{ day.phase }}">
+    {# A day hiding shifts is marked on the column border rather than with a box in the grid, which
+       would compete for space with the shifts it is describing. #}
+    <div class="planner-day planner-phase-{{ day.phase }}{{ day.hidden > 0 ? ' planner-day-has-hidden' : '' }}{{ day.expanded ? ' planner-day-expanded' : '' }}">
       <div class="planner-day-head">
         {% if day.phase != 'main' %}<span class="planner-phase-tag">{{ day.phase }}</span>{% endif %}
         <span class="planner-day-label">{{ day.label }}</span>
+        {% if day.expanded %}
+          <a class="planner-day-toggle"
+             href="{{ path('app_manage_shifts_planner', app.request.query.all|merge({department: department.uuid, expand: null})) }}"
+          >{{ 'planner.grid.collapse'|trans }}</a>
+        {% elseif day.hidden > 0 %}
+          <a class="planner-day-toggle planner-day-toggle-expand"
+             href="{{ path('app_manage_shifts_planner', app.request.query.all|merge({department: department.uuid, expand: day.iso})) }}"
+             title="{{ 'planner.grid.overflow_title'|trans({'%count%': day.hidden}) }}"
+          >{{ 'planner.grid.overflow'|trans({'%count%': day.hidden}) }}</a>
+        {% endif %}
       </div>
       <div
         class="planner-day-body"
@@ -23,9 +35,13 @@
       >
         {% for block in grid.blocks|filter(b => b.dayIndex == dayIndex) %}
           {% set shift = block.shift %}
+          {# left/width come from the lane assignment: shifts running at the same time share the
+             column instead of covering each other. A lone shift is lane 0 of 1, so full width. #}
           <div
-            class="planner-block {{ shift.audience.isPublic ? 'planner-audience-public' : 'planner-audience-staff' }} {{ shift.draft ? 'planner-block-draft' : 'planner-block-published' }}"
-            style="top: {{ block.top }}%; height: {{ block.height }}%;"
+            class="planner-block {{ shift.audience.isPublic ? 'planner-audience-public' : 'planner-audience-staff' }} {{ shift.draft ? 'planner-block-draft' : 'planner-block-published' }}{{ block.lanes > 1 ? ' planner-block-shared' : '' }}"
+            style="top: {{ block.top }}%; height: {{ block.height }}%; left: {{ block.left }}%; width: calc({{ block.width }}% - 4px);"
+            data-lane="{{ block.lane }}"
+            data-lanes="{{ block.lanes }}"
             data-shift-id="{{ shift.uuid }}"
             data-planner-target="block"
             data-start="{{ shift.startsAt|date('c') }}"

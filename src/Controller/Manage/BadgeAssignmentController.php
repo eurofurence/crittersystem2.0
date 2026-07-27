@@ -6,8 +6,10 @@ use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
 use App\Repository\BadgeRepository;
 use App\Repository\UserRepository;
+use App\Service\UserSearchResultFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -35,14 +37,13 @@ final class BadgeAssignmentController extends AbstractController
     {
         $badgeId = $request->query->get('badge') ?: $request->request->get('badge');
         $badge = $badgeId ? $this->badges->findOneByUuid((string) $badgeId) : null;
-        $query = trim((string) ($request->query->get('q') ?? $request->request->get('q', '')));
 
         if ($request->isMethod('POST') && $badge !== null) {
             $action = $request->request->get('action');
-            $userIds = array_map('intval', (array) $request->request->all('users'));
+            $userUuids = array_values(array_unique(array_filter(array_map('strval', (array) $request->request->all('users')))));
             $changed = 0;
-            foreach ($userIds as $id) {
-                $user = $this->users->find($id);
+            foreach ($userUuids as $uuid) {
+                $user = $this->users->findOneByUuid($uuid);
                 if ($user === null) {
                     continue;
                 }
@@ -58,23 +59,27 @@ final class BadgeAssignmentController extends AbstractController
             $this->audit->log(AuditEvents::USER_MANAGEMENT, $action === 'add' ? AuditEvents::GRANT : AuditEvents::REVOKE, [
                 'resourceType' => 'Badge',
                 'resourceId' => $badge->getId(),
-                'details' => ['badge' => $badge->getSlug(), 'users' => $userIds, 'changed' => $changed],
+                'details' => ['badge' => $badge->getSlug(), 'users' => $userUuids, 'changed' => $changed],
             ]);
             $this->addFlash('success', new TranslatableMessage(
                 $action === 'add' ? 'manage.badge.flash.assigned' : 'manage.badge.flash.removed',
                 ['%name%' => $badge->getName(), '%count%' => $changed],
             ));
 
-            return $this->redirectToRoute('app_manage_badge_assign', ['badge' => $badge->getUuid(), 'q' => $query]);
+            return $this->redirectToRoute('app_manage_badge_assign', ['badge' => $badge->getUuid()]);
         }
-
-        $results = $query !== '' ? $this->users->search($query, 50) : [];
 
         return $this->render('manage/badge/assign.html.twig', [
             'badges' => $this->badges->findAllOrdered(),
             'badge' => $badge,
-            'query' => $query,
-            'results' => $results,
         ]);
+    }
+
+    #[Route('/search', name: 'app_manage_badge_user_search', methods: ['GET'])]
+    public function userSearch(Request $request, UserSearchResultFormatter $formatter): JsonResponse
+    {
+        $q = trim((string) $request->query->get('q', ''));
+
+        return new JsonResponse($formatter->results($q === '' ? [] : $this->users->searchByName($q)));
     }
 }

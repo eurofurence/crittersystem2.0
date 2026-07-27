@@ -135,6 +135,9 @@ msgstr "Confirm"
 msgid "common.action.search"
 msgstr "Search"
 
+msgid "common.action.select"
+msgstr "Select"
+
 msgid "common.action.apply"
 msgstr "Apply"
 
@@ -1896,10 +1899,13 @@ msgid "manage.badge.assign.remove_selected"
 msgstr "Remove from selected"
 
 msgid "manage.badge.assign.search_placeholder"
-msgstr "name, email or id"
+msgstr "Search by username"
+
+msgid "manage.badge.assign.pick_help"
+msgstr "Picked users receive or lose the %name% badge when you use the buttons below."
 
 msgid "manage.badge.assign.search_users_label"
-msgstr "Search users"
+msgstr "Users"
 
 msgid "manage.badge.assign.title"
 msgstr "Assign badges"
@@ -3204,7 +3210,7 @@ msgid "manage.shift.staffing.role_placeholder"
 msgstr "- Role -"
 
 msgid "manage.shift.staffing.search_placeholder"
-msgstr "Search volunteers by name, email, or ID…"
+msgstr "Search volunteers by username…"
 
 msgid "manage.shift.staffing.shift_level"
 msgstr "Shift-level requirements"
@@ -5222,6 +5228,9 @@ msgstr "No notes"
 msgid "staff.notes.field.about"
 msgstr "About"
 
+msgid "staff.notes.subject_placeholder"
+msgstr "Search by username"
+
 msgid "staff.notes.field.category"
 msgstr "Category"
 
@@ -5341,6 +5350,9 @@ msgstr "Viewing another volunteer (admin)."
 
 msgid "staff.stats.subtitle_self"
 msgstr "Your hours and history."
+
+msgid "staff.stats.switch_placeholder"
+msgstr "Search by username"
 
 msgid "staff.team.action.export"
 msgstr "Export CSV"
@@ -5816,3 +5828,42 @@ msgstr "No backups found in this bucket yet."
 
 msgid "admin.storage.backup.latest.count"
 msgstr "%count% dump(s) in the bucket."
+
+msgid "common.pagination.summary"
+msgstr "%first%-%last% of %total%"
+
+msgid "common.pagination.previous"
+msgstr "Previous"
+
+msgid "common.pagination.next"
+msgstr "Next"
+
+msgid "department.show.search.label"
+msgstr "Search %section%"
+
+msgid "department.show.search.placeholder"
+msgstr "Search by username"
+
+msgid "department.show.no_matches"
+msgstr "No members match this search."
+
+msgid "planner.field.mode"
+msgstr "Drag mode"
+
+msgid "planner.mode.select"
+msgstr "Select"
+
+msgid "planner.mode.paint"
+msgstr "Paint"
+
+msgid "planner.mode.paint_title"
+msgstr "Drag anywhere to create a shift, including on top of an existing one."
+
+msgid "planner.grid.overflow"
+msgstr "+%count% more"
+
+msgid "planner.grid.overflow_title"
+msgstr "%count% more shifts run at this time. Open this day to see them all."
+
+msgid "planner.grid.collapse"
+msgstr "collapse"

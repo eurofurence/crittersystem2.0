@@ -443,3 +443,80 @@
     </div>
   </div>
 {% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro pagination(options = {}) %}
+  {# Tabler pager plus a "1-25 of 213" summary, for a list paginated server-side.
+     Renders nothing when there is a single page, so callers need no guard.
+
+     Page numbers travel in their own query parameter, so several independently paginated
+     tables can share one page (managers/staff/non-staff each pass a different `param`).
+
+     options:
+     - route: string (required)   -- route the links point at
+     - routeParams: map           -- path parameters for that route (e.g. {id: department.uuid})
+     - param: string              -- query parameter carrying the page number, default 'page'
+     - page: int, pages: int, total: int
+     - keep: map                  -- query parameters to carry across (searches, other sections' pages)
+     - perPage: int               -- only used for the summary line
+     - window: int                -- page links shown either side of the current one, default 2
+     - frame: string              -- id of the turbo-frame the page links should swap. Required when
+                                     the list sits in a frame marked target="_top" (the safe way to
+                                     wrap a table, so its row links still navigate the whole page).
+  #}
+  {% set param = options.param|default('page') %}
+  {% set frame = options.frame is defined ? options.frame : null %}
+  {% set page = options.page|default(1) %}
+  {% set pages = options.pages|default(1) %}
+  {% set keep = options.keep|default({}) %}
+  {% set routeParams = options.routeParams|default({}) %}
+  {% set total = options.total|default(0) %}
+  {% set perPage = options.perPage|default(25) %}
+
+  {% if pages > 1 %}
+    {% set window = options.window|default(2) %}
+    {% set from = max(1, page - window) %}
+    {% set to = min(pages, page + window) %}
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <p class="m-0 text-secondary small">
+        {{ 'common.pagination.summary'|trans({
+          '%first%': (page - 1) * perPage + 1,
+          '%last%': min(page * perPage, total),
+          '%total%': total,
+        }) }}
+      </p>
+      <ul class="pagination m-0 ms-auto">
+        {# A disabled control renders as a span, never a link: an <a> pointing at page 0 is a real
+           URL that keyboard users and crawlers can still reach. #}
+        <li class="page-item{{ page <= 1 ? ' disabled' : '' }}">
+          {% if page <= 1 %}
+            <span class="page-link" aria-disabled="true">{{ 'common.pagination.previous'|trans }}</span>
+          {% else %}
+            <a class="page-link"{% if frame %} data-turbo-frame="{{ frame }}"{% endif %} href="{{ path(options.route, routeParams|merge(keep)|merge({(param): page - 1})) }}">{{ 'common.pagination.previous'|trans }}</a>
+          {% endif %}
+        </li>
+        {% if from > 1 %}
+          <li class="page-item"><a class="page-link"{% if frame %} data-turbo-frame="{{ frame }}"{% endif %} href="{{ path(options.route, routeParams|merge(keep)|merge({(param): 1})) }}">1</a></li>
+          {% if from > 2 %}<li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}
+        {% endif %}
+        {% for n in from..to %}
+          <li class="page-item{{ n == page ? ' active' : '' }}">
+            <a class="page-link"{% if frame %} data-turbo-frame="{{ frame }}"{% endif %} href="{{ path(options.route, routeParams|merge(keep)|merge({(param): n})) }}">{{ n }}</a>
+          </li>
+        {% endfor %}
+        {% if to < pages %}
+          {% if to < pages - 1 %}<li class="page-item disabled"><span class="page-link">&hellip;</span></li>{% endif %}
+          <li class="page-item"><a class="page-link"{% if frame %} data-turbo-frame="{{ frame }}"{% endif %} href="{{ path(options.route, routeParams|merge(keep)|merge({(param): pages})) }}">{{ pages }}</a></li>
+        {% endif %}
+        <li class="page-item{{ page >= pages ? ' disabled' : '' }}">
+          {% if page >= pages %}
+            <span class="page-link" aria-disabled="true">{{ 'common.pagination.next'|trans }}</span>
+          {% else %}
+            <a class="page-link"{% if frame %} data-turbo-frame="{{ frame }}"{% endif %} href="{{ path(options.route, routeParams|merge(keep)|merge({(param): page + 1})) }}">{{ 'common.pagination.next'|trans }}</a>
+          {% endif %}
+        </li>
+      </ul>
+    </div>
+  {% endif %}
+{% endmacro %}

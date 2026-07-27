@@ -7,8 +7,10 @@ use App\Entity\User;
 use App\Repository\DepartmentRepository;
 use App\Repository\InternalNoteRepository;
 use App\Repository\UserRepository;
+use App\Service\UserSearchResultFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
@@ -42,8 +44,15 @@ final class InternalNoteController extends AbstractController
             'categories' => InternalNote::CATEGORIES,
             'filterCategory' => $category,
             'departments' => $this->departments->findAllOrdered(),
-            'users' => $this->users->findBy([], ['name' => 'ASC']),
         ]);
+    }
+
+    #[Route('/subject-search', name: 'app_staff_notes_subject_search', methods: ['GET'])]
+    public function subjectSearch(Request $request, UserSearchResultFormatter $formatter): JsonResponse
+    {
+        $q = trim((string) $request->query->get('q', ''));
+
+        return new JsonResponse($formatter->results($q === '' ? [] : $this->users->searchByName($q)));
     }
 
     #[Route('/new', name: 'app_staff_notes_new', methods: ['POST'])]
@@ -63,8 +72,8 @@ final class InternalNoteController extends AbstractController
             if ($deptId = $request->request->get('department')) {
                 $note->setDepartment($this->departments->findOneByUuid((string) $deptId));
             }
-            if ($subjectId = $request->request->getInt('subject')) {
-                $note->setSubjectUser($this->users->find($subjectId));
+            if ($subjectUuid = trim((string) $request->request->get('subject'))) {
+                $note->setSubjectUser($this->users->findOneByUuid($subjectUuid));
             }
 
             $this->em->persist($note);

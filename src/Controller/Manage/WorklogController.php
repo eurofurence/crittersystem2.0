@@ -5,9 +5,12 @@ namespace App\Controller\Manage;
 use App\Entity\User;
 use App\Entity\Worklog;
 use App\Form\WorklogType;
+use App\Repository\UserRepository;
 use App\Repository\WorklogRepository;
+use App\Service\UserSearchResultFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
@@ -32,6 +35,14 @@ final class WorklogController extends AbstractController
         return $this->render('manage/worklog/index.html.twig', [
             'worklogs' => $this->worklogs->findAllOrdered(),
         ]);
+    }
+
+    #[Route('/user-search', name: 'app_manage_worklog_user_search', methods: ['GET'])]
+    public function userSearch(Request $request, UserRepository $users, UserSearchResultFormatter $formatter): JsonResponse
+    {
+        $q = trim((string) $request->query->get('q', ''));
+
+        return new JsonResponse($formatter->results($q === '' ? [] : $users->searchByName($q)));
     }
 
     #[Route('/new', name: 'app_manage_worklog_new', methods: ['GET', 'POST'])]

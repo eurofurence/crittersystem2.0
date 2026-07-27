@@ -26,6 +26,21 @@
     data-controller="planner-defaults"
   >
     <div>
+      <span class="form-label mb-1 small d-block">{{ 'planner.field.mode'|trans }}</span>
+      {# Select is the default: making Paint the default would turn every existing drag-to-move
+         into a new shift. #}
+      <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'planner.field.mode'|trans }}">
+        <input type="radio" class="btn-check" name="planner-mode" id="planner-mode-select" value="select"
+               checked data-action="change->planner-defaults#mode">
+        <label class="btn btn-outline-secondary" for="planner-mode-select">{{ 'planner.mode.select'|trans }}</label>
+
+        <input type="radio" class="btn-check" name="planner-mode" id="planner-mode-paint" value="paint"
+               data-action="change->planner-defaults#mode">
+        <label class="btn btn-outline-secondary" for="planner-mode-paint"
+               title="{{ 'planner.mode.paint_title'|trans }}">{{ 'planner.mode.paint'|trans }}</label>
+      </div>
+    </div>
+    <div>
       <label class="form-label mb-1 small" for="paint-audience">{{ 'planner.field.paint_as'|trans }}</label>
       <select id="paint-audience" class="form-select form-select-sm" data-action="change->planner-defaults#audience">
         <option value="public_volunteer">{{ 'planner.audience.public_volunteer'|trans }}</option>
@@ -79,7 +94,7 @@
     </div>
   </div>
 
-  <div class="ms-auto d-flex align-items-center gap-2">
+  <div id="planner-publish-bar" class="ms-auto d-flex align-items-center gap-2">
     {% set draftCount = grid.blocks|filter(b => b.shift.draft)|length %}
     <span class="text-secondary small">{{ draftCount }} {{ (draftCount == 1 ? 'planner.toolbar.draft_one' : 'planner.toolbar.draft_other')|trans }}</span>
     {% if is_granted('shift:publish') %}

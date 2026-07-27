@@ -123,6 +123,8 @@ class ShiftRepository extends ServiceEntityRepository
             ->setParameter('from', $from)
             ->setParameter('to', $to)
             ->orderBy('s.startsAt', 'ASC')
+            ->addOrderBy('s.endsAt', 'DESC')
+            ->addOrderBy('s.id', 'ASC')
             ->getQuery()
             ->getResult();
     }

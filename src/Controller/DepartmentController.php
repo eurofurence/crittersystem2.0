@@ -9,7 +9,10 @@ use App\Repository\DelegatedManagerRequestRepository;
 use App\Repository\UserRepository;
 use App\Service\ContactMethodResolver;
 use App\Service\DepartmentService;
+use App\Service\UserSearchResultFormatter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Component\Routing\Attribute\Route;
@@ -31,27 +34,6 @@ final class DepartmentController extends AbstractController
     ) {
     }
 
-    /**
-     * Users who can still be placed in the department: everyone who is not already a member, minus
-     * SSO-managed accounts, whose membership the identity provider owns.
-     *
-     * @param array{managers: User[], shiftManagers: User[], staff: User[], nonStaff: User[]} $members
-     *
-     * @return User[]
-     */
-    private function assignableUsers(array $members): array
-    {
-        $seen = [];
-        foreach (array_merge($members['managers'], $members['shiftManagers'], $members['staff'], $members['nonStaff']) as $member) {
-            $seen[$member->getId()] = true;
-        }
-
-        return array_values(array_filter(
-            $this->users->findBy([], ['name' => 'ASC']),
-            static fn (User $user): bool => !isset($seen[$user->getId()]) && !$user->isSsoManaged(),
-        ));
-    }
-
     #[Route('/departments', name: 'app_departments', methods: ['GET'])]
     public function index(): Response
     {
@@ -61,7 +43,7 @@ final class DepartmentController extends AbstractController
     }
 
     #[Route('/departments/{id}', name: 'app_department_show', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
-    public function show(#[MapEntity(mapping: ['id' => 'uuid'])] Department $department): Response
+    public function show(#[MapEntity(mapping: ['id' => 'uuid'])] Department $department, Request $request): Response
     {
         // Organizational departments are admin-only.
         if ($department->isOrganizational() && !$this->isGranted('global:admin')) {
@@ -69,27 +51,86 @@ final class DepartmentController extends AbstractController
         }
 
         $members = $this->departments->members($department);
-        $stats = [];
+        $everyone = array_merge($members['managers'], $members['shiftManagers'], $members['staff'], $members['nonStaff']);
+
+        $this->contacts->primeMembership($department, array_map(static fn (User $u): int => $u->getId(), $everyone));
+
+        $bySection = [
+            'managers' => array_merge($members['managers'], $members['shiftManagers']),
+            'staff' => $members['staff'],
+            'nonstaff' => $members['nonStaff'],
+        ];
+
+        // Each section owns a `<key>_q` and a `<key>_page` parameter. Links and forms carry the
+        // other sections' parameters through, so paging or searching one table leaves the rest of
+        // the page exactly where the viewer left it. Only the known parameters are carried, so an
+        // arbitrary query string cannot be reflected back into the page's own links.
+        $carried = [];
+        foreach (array_keys($bySection) as $key) {
+            foreach ([$key.'_q', $key.'_page'] as $name) {
+                $value = $request->query->get($name);
+                if (\is_string($value) && $value !== '') {
+                    $carried[$name] = $value;
+                }
+            }
+        }
+
+        $sections = [];
+        $visible = [];
+        foreach ($bySection as $key => $users) {
+            $sections[$key] = $this->departments->paginateMembers(
+                $users,
+                (string) $request->query->get($key.'_q', ''),
+                $request->query->getInt($key.'_page', 1),
+            );
+
+            $sections[$key]['key'] = $key;
+            $sections[$key]['keep'] = array_diff_key($carried, [$key.'_page' => true]);
+            $sections[$key]['formKeep'] = array_diff_key($carried, [$key.'_page' => true, $key.'_q' => true]);
+
+            $visible = array_merge($visible, $sections[$key]['items']);
+        }
+
+        $stats = $this->departments->statsFor($visible);
         $contactMethods = [];
-        foreach (array_merge($members['managers'], $members['shiftManagers'], $members['staff'], $members['nonStaff']) as $user) {
-            $stats[$user->getId()] = [
-                'hours' => $this->departments->plannedHours($user),
-                'over' => $this->departments->overThreshold($user),
-            ];
+        foreach ($visible as $user) {
             $contactMethods[$user->getId()] = $this->contacts->methodsFor($user, $department);
         }
 
         return $this->render('department/show.html.twig', [
             'department' => $department,
             'members' => $members,
+            'sections' => $sections,
             'staffing' => $this->departments->staffing($department),
             'stats' => $stats,
             'contactMethods' => $contactMethods,
             'pending' => $this->delegatedRequests->findPendingByDepartment($department),
             'positions' => DepartmentPosition::cases(),
-            'assignable' => $this->isGranted('department:member:manage')
-                ? $this->assignableUsers($members)
-                : [],
         ]);
+    }
+
+    #[Route('/departments/{id}/assignable-search', name: 'app_department_assignable_search', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    #[IsGranted('department:member:manage')]
+    public function assignableSearch(#[MapEntity(mapping: ['id' => 'uuid'])] Department $department, Request $request, UserSearchResultFormatter $formatter): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('department:member:manage', $department);
+
+        $q = trim((string) $request->query->get('q', ''));
+        if ($q === '') {
+            return new JsonResponse(['results' => []]);
+        }
+
+        $members = $this->departments->members($department);
+        $seen = [];
+        foreach (array_merge($members['managers'], $members['shiftManagers'], $members['staff'], $members['nonStaff']) as $member) {
+            $seen[$member->getId()] = true;
+        }
+
+        $matches = array_filter(
+            $this->users->searchByName($q),
+            static fn (User $user): bool => !isset($seen[$user->getId()]) && !$user->isSsoManaged(),
+        );
+
+        return new JsonResponse($formatter->results($matches));
     }
 }

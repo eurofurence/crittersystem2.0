@@ -101,7 +101,7 @@
             transparent 1px,
             transparent var(--planner-hour-height)
         );
-    cursor: crosshair;
+    cursor: default;
     touch-action: none;
 }
 
@@ -124,8 +124,9 @@
 
 .planner-block {
     position: absolute;
-    left: 3px;
-    right: 3px;
+    box-sizing: border-box;
+    margin-left: 2px;
+    min-width: 14px;
     min-height: 16px;
     border-radius: 4px;
     padding: 2px 5px;
@@ -163,6 +164,12 @@
 .planner-audience-staff {
     background-color: color-mix(in srgb, var(--tblr-purple) 18%, var(--tblr-bg-surface));
     border-color: var(--tblr-purple);
+}
+
+.planner-block-invalid {
+    border: 2px solid var(--tblr-red) !important;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--tblr-red) 25%, transparent);
+    z-index: 3;
 }
 
 /* Draft shifts read differently from published (dashed, not colour alone). */
@@ -437,3 +444,38 @@ label.avail-swatch-unavailable.active,
 .chat-bubble-body { white-space: pre-wrap; word-break: break-word; }
 .chat-bubble-image { max-width: 240px; border-radius: 6px; margin-top: 4px; }
 .chat-typing { padding: 4px 10px; }
+
+.planner-day-has-hidden {
+    border-left: 2px solid var(--tblr-orange);
+    border-right: 2px solid var(--tblr-orange);
+}
+
+.planner-day.planner-day-has-hidden:last-child {
+    border-right: 2px solid var(--tblr-orange);
+}
+
+.planner-day-expanded {
+    border-left: 2px dashed var(--tblr-orange);
+    border-right: 2px dashed var(--tblr-orange);
+}
+
+.planner-day.planner-day-expanded:last-child {
+    border-right: 2px dashed var(--tblr-orange);
+}
+
+.planner-day-toggle {
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+    text-decoration: underline;
+}
+
+.planner-day-toggle-expand {
+    color: var(--tblr-orange);
+}
+
+.planner.is-painting .planner-day-body,
+.planner.is-painting .planner-block,
+.planner.is-painting .planner-block-resize {
+    cursor: crosshair;
+}

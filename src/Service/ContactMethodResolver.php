@@ -17,11 +17,35 @@ use Symfony\Bundle\SecurityBundle\Security;
  */
 class ContactMethodResolver
 {
+    /**
+     * Department id => [user id => true] for departments whose membership has been primed.
+     *
+     * @var array<int, array<int, true>>
+     */
+    private array $primedMembership = [];
+
     public function __construct(
         private readonly Security $security,
         private readonly PiiMasker $pii,
         private readonly UserGroupAssignmentRepository $assignments,
     ) {
+    }
+
+    /**
+     * Answer the membership half of the contact-visibility check from a set already in memory,
+     * instead of one query per subject. Intended for list screens that have just loaded a
+     * department's members anyway.
+     *
+     * The set MUST be the complete active membership of that department, from the same read that
+     * decided which rows to show. Priming a set that contains a non-member would hand that
+     * non-member's consented contact details to the viewer - an over-broad set fails open, whereas
+     * an incomplete one merely hides channels the viewer could have seen.
+     *
+     * @param int[] $memberIds
+     */
+    public function primeMembership(Department $department, array $memberIds): void
+    {
+        $this->primedMembership[$department->getId()] = array_fill_keys($memberIds, true);
     }
 
     /**
@@ -110,11 +134,20 @@ class ContactMethodResolver
         // subject is actually a member of it.
         if ($context !== null
             && ($this->security->isGranted('department:manage', $context) || $this->security->isGranted('shift:manage', $context))
-            && $this->assignments->userIsMember($subject, $context)
+            && $this->isMember($subject, $context)
         ) {
             return true;
         }
 
         return false;
+    }
+
+    private function isMember(User $subject, Department $department): bool
+    {
+        $primed = $this->primedMembership[$department->getId()] ?? null;
+
+        return $primed !== null
+            ? isset($primed[$subject->getId()])
+            : $this->assignments->userIsMember($subject, $department);
     }
 }

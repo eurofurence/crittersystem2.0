@@ -51,16 +51,18 @@ final class PublicationService
         // Validate first; a hard error blocks the entire publish (atomic).
         $errors = [];
         $warnings = [];
+        $invalidUuids = [];
         foreach ($drafts as $draft) {
-            foreach ($this->validate($draft) as $error) {
-                $errors[] = $error;
+            $shiftErrors = $this->validate($draft);
+            if ($shiftErrors !== []) {
+                $invalidUuids[] = (string) $draft->getUuid();
             }
-            if ($draft->getShiftTask() === null) {
-                $warnings[] = \sprintf('"%s" has no Shift Task set.', $draft->getTitle());
+            foreach ($shiftErrors as $error) {
+                $errors[] = $error;
             }
         }
         if ($errors !== []) {
-            return new PublicationResult([], $warnings, $errors);
+            return new PublicationResult([], $warnings, $errors, $invalidUuids);
         }
 
         // Reject a stale publish before mutating anything.
@@ -108,6 +110,9 @@ final class PublicationService
         }
         if ($shift->getEndsAt() <= $shift->getStartsAt()) {
             $errors[] = \sprintf('"%s" must end after it starts.', $shift->getTitle());
+        }
+        if ($shift->getShiftTask() === null) {
+            $errors[] = \sprintf('"%s" has no Shift Task set.', $shift->getTitle());
         }
 
         return $errors;

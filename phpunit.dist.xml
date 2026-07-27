@@ -9,17 +9,38 @@
          failOnWarning="true"
          bootstrap="tests/bootstrap.php"
          cacheDirectory=".phpunit.cache"
+         defaultTestSuite="Project Test Suite"
 >
     <php>
         <ini name="display_errors" value="1" />
         <ini name="error_reporting" value="-1" />
         <server name="APP_ENV" value="test" force="true" />
         <server name="SHELL_VERBOSITY" value="-1" />
+
+        <!-- Browser tests (tests/Browser) drive a real Chrome through Panther. The binaries live in
+             ./drivers and are not committed; see docs/testing.md for how to fetch them. Panther
+             serves the app itself, in the same env as these tests so both share one database.
+             Panther finds chromedriver by name in ./drivers, so that path is a convention, not a
+             setting. -->
+        <server name="PANTHER_APP_ENV" value="test" />
+        <server name="PANTHER_CHROME_BINARY" value="./drivers/chrome-linux64/chrome" />
+        <!-- Chrome cannot use its sandbox inside an unprivileged container. -->
+        <server name="PANTHER_NO_SANDBOX" value="1" />
     </php>
 
     <testsuites>
+        <!-- The default run, named in defaultTestSuite above. Both the exclude here AND that
+             attribute are needed: without the exclude the directory sweep picks up tests/Browser,
+             and without the attribute a bare `phpunit` runs every declared suite and adds them
+             straight back. Browser tests need a downloaded Chrome and cost seconds per test, and
+             this suite is already ~19 minutes; see docs/testing.md. -->
         <testsuite name="Project Test Suite">
             <directory>tests</directory>
+            <exclude>tests/Browser</exclude>
+        </testsuite>
+
+        <testsuite name="Browser">
+            <directory>tests/Browser</directory>
         </testsuite>
     </testsuites>
 
@@ -40,5 +61,6 @@
     </source>
 
     <extensions>
+        <bootstrap class="Symfony\Component\Panther\ServerExtension" />
     </extensions>
 </phpunit>

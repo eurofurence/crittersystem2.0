@@ -14,11 +14,13 @@ final readonly class PublicationResult
      * @param list<Shift>  $published
      * @param list<string> $warnings
      * @param list<string> $errors
+     * @param list<string> $invalidUuids
      */
     public function __construct(
         public array $published,
         public array $warnings,
         public array $errors,
+        public array $invalidUuids = [],
     ) {
     }
 

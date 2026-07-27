@@ -10,9 +10,11 @@ use App\Repository\UserRepository;
 use App\Repository\VolunteerTypeRepository;
 use App\Service\NoShowBanService;
 use App\Service\ShiftSignupService;
+use App\Service\UserSearchResultFormatter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -48,17 +50,23 @@ final class ShiftStaffingController extends AbstractController
     {
         $this->denyAccessUnlessGranted('shift:manage', $shift);
 
-        $q = trim((string) $request->query->get('q', ''));
-
         return $this->render('manage/shift/staffing.html.twig', [
             'shift' => $shift,
             'availability' => $this->signup->availability($shift),
             'shiftNeeds' => $shift->getNeededVolunteerTypes(),
             'entries' => $shift->getEntries(),
             'volunteerTypes' => $this->volunteerTypes->findAllOrdered(),
-            'q' => $q,
-            'searchResults' => $q !== '' ? $this->users->search($q) : [],
         ]);
+    }
+
+    #[Route('/{id}/staffing/search', name: 'app_manage_shift_staff_search', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function staffingSearch(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, UserSearchResultFormatter $formatter): JsonResponse
+    {
+        $this->denyAccessUnlessGranted('shift:manage', $shift);
+
+        $q = trim((string) $request->query->get('q', ''));
+
+        return new JsonResponse($formatter->results($q === '' ? [] : $this->users->searchByName($q)));
     }
 
     #[Route('/{id}/assign', name: 'app_manage_shift_assign', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
@@ -67,7 +75,7 @@ final class ShiftStaffingController extends AbstractController
         $this->denyAccessUnlessGranted('shift:manage', $shift);
 
         if ($this->isCsrfTokenValid('assign'.$shift->getId(), (string) $request->request->get('_token'))) {
-            $user = $this->users->find((int) $request->request->get('user'));
+            $user = $this->users->findOneByUuid(trim((string) $request->request->get('user')));
             $type = $this->volunteerTypes->find((int) $request->request->get('volunteer_type'));
 
             if ($user === null || $type === null) {

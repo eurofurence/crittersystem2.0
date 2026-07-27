@@ -70,8 +70,14 @@ final class SecretCipherTest extends TestCase
         $cipher = $this->cipher();
         $encrypted = $cipher->encrypt('value');
 
-        // Flip a character in the encoded body.
-        $tampered = substr($encrypted, 0, -2) . (str_ends_with($encrypted, 'a') ? 'b' : 'a') . substr($encrypted, -1);
+        // Flip the second-to-last character of the encoded body. The replacement must be chosen by
+        // looking at THAT character: picking it from the last one instead left the string unchanged
+        // whenever the second-to-last was already an 'a', so the value still decrypted and the test
+        // failed for roughly one run in 64.
+        $secondToLast = $encrypted[\strlen($encrypted) - 2];
+        $tampered = substr($encrypted, 0, -2).($secondToLast === 'a' ? 'b' : 'a').substr($encrypted, -1);
+
+        self::assertNotSame($encrypted, $tampered, 'the tamper must actually change the ciphertext');
 
         $this->expectException(\RuntimeException::class);
         $cipher->decrypt($tampered);

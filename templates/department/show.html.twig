@@ -1,6 +1,7 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 {% import 'components/icon/_macros.twig' as i %}
+{% import 'components/forms/_macros.twig' as f %}
 
 {% block title %}{{ department.name }}{% endblock %}
 
@@ -45,17 +46,16 @@
 
   {% if canManage %}
     {{ d.card_start('department.show.card.add_member'|trans) }}
-        <form method="post" action="{{ path('app_department_add_member', {id: department.uuid}) }}" class="row g-2 align-items-end">
+        <form method="post" action="{{ path('app_department_add_member', {id: department.uuid}) }}" class="row g-2 align-items-start">
           <input type="hidden" name="_token" value="{{ csrf_token('addmember' ~ department.id) }}">
-          <div class="col-12 col-md-6">
-            <label class="form-label" for="add-member-user">{{ 'common.label.user'|trans }}</label>
-            <select class="form-select" id="add-member-user" name="user" required>
-              <option value="">{{ 'department.show.choose_user'|trans }}</option>
-              {% for u in assignable %}
-                <option value="{{ u.uuid }}">{{ u|display_name }}</option>
-              {% endfor %}
-            </select>
-          </div>
+          {{ f.user_select('user', {
+            url: path('app_department_assignable_search', {id: department.uuid}),
+            label: 'common.label.user'|trans,
+            multiple: false,
+            col: 'col-12 col-md-6',
+            id: 'add-member-user',
+            placeholder: 'department.show.choose_user'|trans,
+          }) }}
           <div class="col-12 col-md-4">
             <label class="form-label" for="add-member-position">{{ 'department.show.position'|trans }}</label>
             <select class="form-select" id="add-member-position" name="position" required>
@@ -65,29 +65,56 @@
             </select>
           </div>
           <div class="col-12 col-md-2">
-            <button class="btn btn-primary w-100" {{ assignable is empty ? 'disabled' : '' }}>{{ 'common.action.add'|trans }}</button>
+            <button class="btn btn-primary w-100">{{ 'common.action.add'|trans }}</button>
           </div>
         </form>
-        {% if assignable is empty %}
-          <p class="text-secondary small mb-0 mt-2">{{ 'department.show.all_members'|trans }}</p>
-        {% endif %}
     {{ d.card_end() }}
   {% endif %}
 
   {% for section in [
-    {title: 'department.show.section.managers'|trans, users: members.managers|merge(members.shiftManagers)},
-    {title: 'department.show.section.staff'|trans, users: members.staff},
-    {title: 'department.show.section.non_staff'|trans, users: members.nonStaff}
+    sections.managers|merge({title: 'department.show.section.managers'|trans}),
+    sections.staff|merge({title: 'department.show.section.staff'|trans}),
+    sections.nonstaff|merge({title: 'department.show.section.non_staff'|trans})
   ] %}
+    {% set frameId = 'dept-members-' ~ section.key %}
     <div class="card mb-3">
-      <div class="card-header"><h3 class="card-title">{{ section.title }} <span class="text-secondary">({{ section.users|length }})</span></h3></div>
-      {% if section.users is empty %}
-        {{ d.empty_inline('department.show.none'|trans, {tag: 'div', class: 'card-body text-secondary'}) }}
+      <div class="card-header">
+        <h3 class="card-title">{{ section.title }} <span class="text-secondary">({{ section.totalAll }})</span></h3>
+        {% if section.totalAll > 0 %}
+          <div class="card-actions">
+            {# Plain GET form so the search still works with JS disabled; with JS the debounced
+               handler swaps only this section's frame instead of reloading the page. #}
+            <form method="get" action="{{ path('app_department_show', {id: department.uuid}) }}" role="search">
+              {% for name, value in section.formKeep %}
+                <input type="hidden" name="{{ name }}" value="{{ value }}">
+              {% endfor %}
+              {{ f.search_input(section.key ~ '_q', {
+                col: '',
+                id: 'search-' ~ section.key,
+                label: 'department.show.search.label'|trans({'%section%': section.title}),
+                hideLabel: true,
+                placeholder: 'department.show.search.placeholder'|trans,
+                value: section.query,
+                param: section.key ~ '_q',
+                resetParams: [section.key ~ '_page'],
+                url: path('app_department_show', {id: department.uuid}),
+                turboFrame: frameId,
+              }) }}
+            </form>
+          </div>
+        {% endif %}
+      </div>
+      {# target="_top" so the rows behave normally: a link or form inside a frame navigates THAT
+         frame by default, which sent every profile link to a page with no such frame ("Content
+         missing"). Only the pager opts back in, via data-turbo-frame. #}
+      <turbo-frame id="{{ frameId }}" target="_top">
+      {% if section.items is empty %}
+        {{ d.empty_inline(section.query ? 'department.show.no_matches'|trans : 'department.show.none'|trans, {tag: 'div', class: 'card-body text-secondary'}) }}
       {% else %}
         {{ d.table_start() }}
           <thead><tr><th>{{ 'common.label.user'|trans }}</th><th>{{ 'department.show.position'|trans }}</th><th class="text-end">{{ 'department.show.col.planned_hours'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
           <tbody>
-            {% for u in section.users %}
+            {% for u in section.items %}
               <tr>
                 <td>
                   {% set realName = real_name(u, department) %}
@@ -145,7 +172,23 @@
             {% endfor %}
           </tbody>
         {{ d.table_end() }}
+        {% if section.pages > 1 %}
+          <div class="card-footer">
+            {{ d.pagination({
+              route: 'app_department_show',
+              routeParams: {id: department.uuid},
+              param: section.key ~ '_page',
+              page: section.page,
+              pages: section.pages,
+              total: section.total,
+              perPage: section.perPage,
+              keep: section.keep,
+              frame: frameId,
+            }) }}
+          </div>
+        {% endif %}
       {% endif %}
+      </turbo-frame>
     </div>
   {% endfor %}
 {% endblock %}

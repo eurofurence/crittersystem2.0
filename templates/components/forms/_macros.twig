@@ -93,10 +93,24 @@
 {# ------------------------------------------------------------------------------------------------------------------ #}
 
 {% macro search_input(name, options = {}) %}
+  {# options:
+     - col: string             -- wrapper column classes, default 'col-12'
+     - id, label, placeholder, help
+     - hideLabel: bool         -- keep the label for screen readers only (table-header searches)
+     - turboFrame: string      -- id of the frame to swap; without it the input does nothing on its own
+     - url: string             -- base URL for the request; needed when the frame has no src yet
+     - param: string           -- query parameter to carry the term, default 'q'. Give each search on
+                                  a page its own so several tables can be searched independently.
+     - resetParams: list       -- query parameters dropped on every search, e.g. that table's page
+                                  number, so a new term always lands on page 1
+     - value: string           -- current term, so the box survives a reload
+     - debounceMs: int         -- default 250
+  #}
   {% set col = options.col|default('col-12') %}
   {% set id = options.id|default('search_' ~ name) %}
-  <div class="{{ col }} mb-3">
-    <label class="form-label" for="{{ id }}">{{ options.label|default('common.action.search'|trans) }}</label>
+  {% set marginClass = options.col is defined and options.col == '' ? '' : ' mb-3' %}
+  <div class="{{ col }}{{ marginClass }}">
+    <label class="form-label{{ options.hideLabel|default(false) ? ' visually-hidden' : '' }}" for="{{ id }}">{{ options.label|default('common.action.search'|trans) }}</label>
     <input
       id="{{ id }}"
       name="{{ name }}"
@@ -104,7 +118,11 @@
       class="form-control"
       placeholder="{{ options.placeholder|default('common.search.placeholder'|trans) }}"
       autocomplete="off"
+      value="{{ options.value|default('') }}"
       data-search-debounce="{{ options.debounceMs|default(250) }}"
+      data-search-param="{{ options.param|default('q') }}"
+      {% if options.resetParams is defined %}data-search-reset-params="{{ options.resetParams|join(',') }}"{% endif %}
+      {% if options.url is defined %}data-search-url="{{ options.url }}"{% endif %}
       {% if options.turboFrame is defined %}data-search-turbo-frame="{{ options.turboFrame }}"{% endif %}
     />
     {% if options.help is defined %}
@@ -209,27 +227,34 @@
        - placeholder, help, col
        - minChars: characters before searching (default 1)
        - staffSuffix: append " (staff)" to staff names (default true)
+       - multiple: allow several picks and submit `name[]` (default true). Pass false for a
+         single-user field: one slot, a new pick replaces the current one, submits a single `name`.
        - selected: [{id, name, staff, avatar}] to pre-render as chips
   #}
   {% set col = options.col|default('col-12') %}
   {% set id = options.id|default('user-select-' ~ name) %}
   {% set withSuffix = options.staffSuffix is defined ? options.staffSuffix : true %}
+  {% set multiple = options.multiple is defined ? options.multiple : true %}
+  {% set label = options.label is defined ? options.label : ('common.user_select.label'|trans) %}
   <div class="{{ col }} mb-3">
-    {% if options.label is not same as(false) %}
-      <label class="form-label" for="{{ id }}-input">{{ options.label|default('common.user_select.label'|trans) }}</label>
+    {% if label is not same as(false) %}
+      <label class="form-label" for="{{ id }}-input">{{ label }}</label>
     {% endif %}
     <div class="user-select"
          data-controller="user-select"
          data-user-select-url-value="{{ options.url }}"
          data-user-select-name-value="{{ name }}"
          data-user-select-min-chars-value="{{ options.minChars|default(1) }}"
+         data-user-select-multiple-value="{{ multiple ? 'true' : 'false' }}"
          data-user-select-staff-suffix-value="{{ withSuffix ? 'true' : 'false' }}">
       <div class="form-control user-select-control" data-user-select-target="control" data-action="click->user-select#focusInput">
         <span data-user-select-target="chips" class="d-contents">
           {% for u in options.selected|default([]) %}
+            {% set uAvatar = u.avatar is defined ? u.avatar : null %}
+            {% set uStaff = u.staff is defined ? u.staff : false %}
             <span class="user-select-chip badge d-inline-flex align-items-center gap-1" data-user-select-id="{{ u.id }}">
-              <span class="avatar avatar-xs"{% if u.avatar %} style="background-image: url('{{ u.avatar }}')"{% endif %}>{% if not u.avatar %}{{ u.name|slice(0, 2)|upper }}{% endif %}</span>
-              <span>{{ u.name }}{{ withSuffix and u.staff ? ' (staff)' : '' }}</span>
+              <span class="avatar avatar-xs"{% if uAvatar %} style="background-image: url('{{ uAvatar }}')"{% endif %}>{% if not uAvatar %}{{ u.name|slice(0, 2)|upper }}{% endif %}</span>
+              <span>{{ u.name }}{{ withSuffix and uStaff ? ' (staff)' : '' }}</span>
               <button type="button" class="btn-close" aria-label="{{ 'common.user_select.remove_aria'|trans({'%name%': u.name}) }}"></button>
             </span>
           {% endfor %}
@@ -242,7 +267,7 @@
       <div class="dropdown-menu user-select-menu" data-user-select-target="menu" role="listbox"></div>
       <span data-user-select-target="hidden">
         {% for u in options.selected|default([]) %}
-          <input type="hidden" name="{{ name }}[]" value="{{ u.id }}">
+          <input type="hidden" name="{{ name }}{{ multiple ? '[]' : '' }}" value="{{ u.id }}">
         {% endfor %}
       </span>
     </div>
