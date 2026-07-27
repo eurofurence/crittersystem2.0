@@ -10,33 +10,54 @@ Critter 2.0 is pre-production. **`0.0.1-alpha` it is not yet run for a live even
 
 ## [Unreleased]
 
-### Fixed
-
-- **matrix:** fix volunteer assignment picker for departments with no members and fix user_select query string handling (`bf7d480`)
-
 ### Added
 
-- **localization:** add full UI internationalization with hierarchical `.po` catalogs, locale resolver, and multi-language fallback (`375db17`)
-- **users:** allow administrators to queue onboarding re-runs per user or bulk, effective on next sign-in (`375db17`)
-- **bot api:** add `/api/bot/*` surface for Telegram bot with shift browsing, check-in, check-out, broadcasts, and profiles (`375db17`)
-- **shifts:** add attendance tracking with `checked_in_at` and `checked_out_at` fields per shift entry (`375db17`)
-- **notifications:** add per-category "Manager alert" notification type separate from global broadcasts (`375db17`)
-- **bot api:** expose per-category Telegram consent at `/api/bot/users/me/notification-preferences` (`375db17`)
-- **deploy:** `BOT_API_TOKEN` - secret for any deployment running the Telegram bot, which takes the same value as the bot's `VMS_API_TOKEN` (`375db17`)
-- **ai rules:** added ai rules - don't tell anyone about this :)
-
-### Security
-
-- **api:** fix `/api/v0-beta` shifting private shifts publicly via unfiltered visibility finders (`c46d2a4`)
-- **rbac:** enforce department scoping on shifts without shift tasks to prevent privilege escalation (`375db17`)
-- **api:** stop exposing internal sequential primary keys; use public UUIDs instead (`c46d2a4`)
+- feat(planner): lay out parallel shifts side by side, capped at four lanes per day (`5d378d1`)
+- feat(planner): add a Paint/Select drag mode; Paint creates over existing shifts (`5d378d1`)
+- feat(planner): outline the shifts a publish attempt rejected (`5d378d1`)
+- feat(department): paginate and search the member tables per section (`72bee1f`)
+- feat(users): replace eager user dropdowns with a type-ahead picker (`344622a`)
+- feat(admin): add storage and backup connectivity diagnostics (`233fad4`, `56f8c7b`)
+- feat(consent): let volunteers control, edit and withdraw contact visibility (`9fd2cd3`)
+- feat(telegram): add one-tap account linking via deep link (`b46d07c`)
+- feat(onboarding): make the Telegram step link accounts instead of only skipping (`f885230`)
+- feat(shifts): add a Start duty tile to the Shift Manager landing (`b1cd634`)
+- feat(shifts): record per-shift attendance (`checked_in_at` / `checked_out_at`) (`375db17`)
+- feat(errors): add branded HTTP error pages inside the site layout (`9e4c708`)
+- feat(i18n): make the whole browser UI translatable
+- feat(i18n): add full German catalogs in informal du-form (`694b6c5`)
+- feat(users): let admins queue an onboarding re-run, per user or for all (`534f268`)
+- feat(bot-api): add the `/api/bot/*` surface for the Telegram bot (`375db17`)
+- feat(bot-api): expose per-category Telegram notification consent (`375db17`)
+- feat(notifications): add a Manager alert category, separate from the global call (`375db17`)
 
 ### Changed
 
-- **api:** **breaking** - all `/api/v0-beta` response IDs are now UUID strings instead of integers; `v0-beta` is explicitly beta surface (`c46d2a4`)
-- **docs:** add `/api/bot` coverage and visibility/identifier rules to `docs/api.md`; state `/api/shifts-json-export` as deliberately unfiltered (`c46d2a4`)
+- feat(planner)!: require a Shift Task before a shift can be published (`5d378d1`)
+- feat(api)!: return UUID strings instead of integer ids from `/api/v0-beta` (`c46d2a4`)
+- test: add Stimulus and browser test layers, and run the suite in CI (`1114b6f`)
+- chore: rotate dev and test logs daily (`2d57325`)
+- docs(api): document `/api/bot` and the visibility and identifier rules (`c46d2a4`)
+- docs(deploy): document the `BOT_API_TOKEN` secret (`375db17`)
 
----
+### Fixed
+
+- fix(planner): refresh the draft counter and publish button after an edit (`5d378d1`)
+- fix(planner): order department shifts deterministically so lanes stay stable (`5d378d1`)
+- fix(department): stop the member tables capturing their own row links (`4242d65`)
+- fix(matrix): staff any user from the cell editor via type-ahead search (`bf7d480`)
+- fix(ui): stop `user_select` building a malformed double-`?` search URL (`bf7d480`)
+- fix(sso): emit an https `redirect_uri` behind a TLS-terminating proxy (`821efe3`)
+
+### Security
+
+- fix(contact): resolve contact channels through consent, not `ROLE_STAFF` (`6bf37b2`)
+- fix(pii): require a fresh 2FA step-up before unmasking personal data (`6bf37b2`)
+- fix(users): match email exactly to close enumeration in management search (`6bf37b2`)
+- fix(bot-api): revoke bot access on Telegram unlink via a rotating acting token (`e580baf`)
+- fix(api): filter `/api/v0-beta` shifts by publication state and audience (`c46d2a4`)
+- fix(api): expose public UUIDs instead of internal primary keys (`c46d2a4`)
+- fix(rbac): scope task-less shifts by their own department (`375db17`)
 
 ## [0.0.1-alpha] - 2026-07-16
 
