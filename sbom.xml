@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1" serialNumber="urn:uuid:6532a87d-8b8d-4df8-b6f7-d854c394da0e">
+<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1" serialNumber="urn:uuid:b792d64a-2949-4a5e-8b18-a4c37f24036a">
   <metadata>
-    <timestamp><![CDATA[2026-07-27T22:20:31Z]]></timestamp>
+    <timestamp><![CDATA[2026-07-28T17:55:23Z]]></timestamp>
     <tools>
       <tool>
         <name><![CDATA[composer]]></name>
@@ -76,8 +76,8 @@
       </licenses>
       <purl><![CDATA[pkg:composer/__root__@dev-main]]></purl>
       <properties>
-        <property name="cdx:composer:package:distReference"><![CDATA[bbab7984a525dba6abdc1f76e39419c6393a98ac]]></property>
-        <property name="cdx:composer:package:sourceReference"><![CDATA[bbab7984a525dba6abdc1f76e39419c6393a98ac]]></property>
+        <property name="cdx:composer:package:distReference"><![CDATA[3250d1cdded3c3ae19afab099cc1b85ec393aab6]]></property>
+        <property name="cdx:composer:package:sourceReference"><![CDATA[3250d1cdded3c3ae19afab099cc1b85ec393aab6]]></property>
         <property name="cdx:composer:package:type"><![CDATA[project]]></property>
       </properties>
     </component>
@@ -7266,6 +7266,7 @@
       <dependency ref="sentry/sentry-symfony-5.11.0.0"/>
       <dependency ref="symfony/asset-8.1.0.0"/>
       <dependency ref="symfony/asset-mapper-8.1.1.0"/>
+      <dependency ref="symfony/clock-8.1.0.0"/>
       <dependency ref="symfony/console-8.1.1.0"/>
       <dependency ref="symfony/doctrine-messenger-8.1.1.0"/>
       <dependency ref="symfony/dotenv-8.1.0.0"/>

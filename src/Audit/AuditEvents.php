@@ -31,6 +31,8 @@ final class AuditEvents
     public const LOGIN = 'LOGIN';
     public const LOGIN_FAILED = 'LOGIN_FAILED';
     public const LOGOUT = 'LOGOUT';
+    public const LOGIN_LOCKED = 'LOGIN_LOCKED';
+    public const LOGIN_LOCKOUT_CLEARED = 'LOGIN_LOCKOUT_CLEARED';
     public const CREATE = 'CREATE';
     public const READ = 'READ';
     public const UPDATE = 'UPDATE';

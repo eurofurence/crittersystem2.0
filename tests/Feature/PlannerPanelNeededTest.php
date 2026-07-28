@@ -6,6 +6,7 @@ use App\Entity\Department;
 use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\Shift;
+use App\Entity\ShiftTask;
 use App\Entity\User;
 use App\Entity\VolunteerType;
 use App\Tests\DatabaseWebTestCase;
@@ -38,6 +39,9 @@ final class PlannerPanelNeededTest extends DatabaseWebTestCase
         $this->em->persist($dept);
         $vt = new VolunteerType('Runner');
         $this->em->persist($vt);
+        $task = new ShiftTask('Briefing');
+        $task->setDepartment($dept);
+        $this->em->persist($task);
         $this->em->flush();
         $vtId = $vt->getId();
         $this->client->loginUser($user);
@@ -53,6 +57,7 @@ final class PlannerPanelNeededTest extends DatabaseWebTestCase
             'end_time' => '12:00',
             'slot_minutes' => 120,
             'audience' => 'department_staff',
+            'task' => $task->getId(),
             'needed' => [(string) $vtId => '3'],
         ]);
 

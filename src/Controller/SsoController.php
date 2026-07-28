@@ -5,8 +5,11 @@ namespace App\Controller;
 use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
 use App\Entity\User;
+use App\Form\LocalLoginType;
+use App\Form\Model\LocalLoginData;
 use App\Form\Model\RegistrationApiData;
 use App\Form\RegistrationApiType;
+use App\Service\EventConfigStore;
 use App\Sso\BannedIdentityException;
 use App\Sso\OidcDiscovery;
 use App\Sso\OidcProviderFactory;
@@ -45,6 +48,7 @@ final class SsoController extends AbstractController
         private readonly RegistrationApiSettings $registrationApi,
         private readonly RegistrationNumberFetcher $registrationNumbers,
         private readonly AccessModeGate $accessModeGate,
+        private readonly EventConfigStore $configStore,
     ) {
     }
 
@@ -154,6 +158,19 @@ final class SsoController extends AbstractController
             return $this->redirectToRoute('app_admin_sso');
         }
 
+        $localLoginData = new LocalLoginData();
+        $localLoginData->passwordLoginEnabled = $this->configStore->getBool(EventConfigStore::KEY_PASSWORD_LOGIN_ENABLED, true);
+        $localLoginForm = $this->createForm(LocalLoginType::class, $localLoginData);
+        $localLoginForm->handleRequest($request);
+
+        if ($localLoginForm->isSubmitted() && $localLoginForm->isValid()) {
+            $this->configStore->set(EventConfigStore::KEY_PASSWORD_LOGIN_ENABLED, $localLoginData->passwordLoginEnabled);
+            $this->configStore->flush();
+            $this->addFlash('success', new TranslatableMessage('admin.sso.flash.local_login_saved'));
+
+            return $this->redirectToRoute('app_admin_sso');
+        }
+
         // Pull-and-clear: the raw claims carry the admin's own PII (email, name), so they are shown
         // once after a probe and never left lingering in the session.
         $userinfo = $request->getSession()->get('sso_userinfo_result');
@@ -168,6 +185,7 @@ final class SsoController extends AbstractController
             'usesDiscovery' => $this->config->usesDiscovery(),
             'discoveryUrl' => $this->config->discoveryUrl(),
             'registrationApiForm' => $form,
+            'localLoginForm' => $localLoginForm,
             'userinfo' => is_array($userinfo) ? $userinfo : null,
         ]);
     }

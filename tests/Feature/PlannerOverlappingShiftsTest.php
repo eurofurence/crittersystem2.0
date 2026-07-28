@@ -6,6 +6,7 @@ use App\Entity\Department;
 use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\Shift;
+use App\Entity\ShiftTask;
 use App\Entity\User;
 use App\Enum\ShiftState;
 use App\Repository\ShiftRepository;
@@ -92,6 +93,9 @@ final class PlannerOverlappingShiftsTest extends DatabaseWebTestCase
         $this->manager();
         $dept = $this->department();
         $existing = $this->seedShift($dept, '2026-06-01 22:00', '2026-06-01 23:30', 'Door');
+        $task = new ShiftTask('Briefing');
+        $task->setDepartment($dept);
+        $this->em->persist($task);
         $this->setRange();
         $this->em->flush();
         $deptId = $dept->getUuid();
@@ -111,6 +115,7 @@ final class PlannerOverlappingShiftsTest extends DatabaseWebTestCase
                 '_token' => $token,
                 'department' => $deptId,
                 'audience' => 'department_staff',
+                'task' => $task->getId(),
                 'intervals' => [['start' => '2026-06-01T22:00:00', 'end' => '2026-06-01T23:30:00']],
             ], JSON_THROW_ON_ERROR),
         );
@@ -268,12 +273,12 @@ final class PlannerOverlappingShiftsTest extends DatabaseWebTestCase
     public function testThePlannerOffersAPaintModeAndDefaultsToSelect(): void
     {
         $this->manager();
-        $this->department();
+        $dept = $this->department();
         $this->setRange();
         $this->em->flush();
 
         $this->login();
-        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
 
         self::assertResponseIsSuccessful();
         self::assertCount(1, $crawler->filter('#planner-mode-paint'));

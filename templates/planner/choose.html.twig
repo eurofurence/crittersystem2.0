@@ -1,0 +1,29 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'planner.page.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('planner.page.title'|trans, {
+    subtitle: 'planner.page.subtitle'|trans,
+    actions: [{label: 'planner.action.shift_manager'|trans, href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ d.card_start('planner.choose.title'|trans) }}
+    <p class="text-secondary">{{ 'planner.choose.help'|trans }}</p>
+    <form method="get" action="{{ path('app_manage_shifts_planner') }}" class="row g-2 align-items-end">
+      <div class="col-12 col-md-6">
+        <label class="form-label required" for="planner-department">{{ 'common.label.department'|trans }}</label>
+        <select id="planner-department" name="department" class="form-select" required>
+          <option value="">{{ 'planner.choose.placeholder'|trans }}</option>
+          {% for dept in departments %}
+            <option value="{{ dept.uuid }}">{{ dept.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12 col-md-auto">
+        <button type="submit" class="btn btn-primary">{{ 'planner.choose.submit'|trans }}</button>
+      </div>
+    </form>
+  {{ d.card_end() }}
+{% endblock %}

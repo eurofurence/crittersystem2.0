@@ -10,8 +10,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Symfony\Component\Security\Core\Exception\BadCredentialsException;
+use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Http\Authenticator\AbstractLoginFormAuthenticator;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\CsrfTokenBadge;
+use Symfony\Component\Security\Http\Authenticator\Passport\Badge\PasswordUpgradeBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Authenticator\Passport\Credentials\PasswordCredentials;
 use Symfony\Component\Security\Http\Authenticator\Passport\Passport;
@@ -31,6 +34,9 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
         private readonly UrlGeneratorInterface $urlGenerator,
         private readonly EntityManagerInterface $entityManager,
         private readonly AccessModeGate $accessModeGate,
+        private readonly LoginThrottle $throttle,
+        private readonly LocalLoginPolicy $localLogin,
+        private readonly UserProvider $userProvider,
     ) {
     }
 
@@ -42,13 +48,40 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
 
         $request->getSession()->set(SecurityRequestAttributes::LAST_USERNAME, $username);
 
+        // Before the password is looked at, so that a correct guess arriving inside a brute-force
+        // timeout is refused exactly like a wrong one.
+        $this->throttle->assertNotLocked($username, $request->getClientIp());
+
         return new Passport(
-            new UserBadge($username),
+            new UserBadge($username, $this->loadPermittedUser(...)),
             new PasswordCredentials($password),
             [
                 new CsrfTokenBadge('authenticate', $csrfToken),
+                // Named explicitly because the user loader above is a closure bound to this class.
+                // Symfony otherwise infers the upgrader from whatever object the loader is bound to,
+                // finds no PasswordUpgraderInterface there, and silently stops rehashing passwords
+                // whose algorithm or cost has since been raised.
+                new PasswordUpgradeBadge($password, $this->userProvider),
             ],
         );
+    }
+
+    /**
+     * Resolves the account and refuses it when password sign-in is switched off for that user.
+     *
+     * The refusal is a plain BadCredentialsException so the page shows the ordinary "invalid
+     * credentials" message: telling an anonymous caller "password login is disabled for this
+     * account" would confirm the account exists.
+     */
+    private function loadPermittedUser(string $identifier): UserInterface
+    {
+        $user = $this->userProvider->loadUserByIdentifier($identifier);
+
+        if (!$this->localLogin->permits($user)) {
+            throw new BadCredentialsException();
+        }
+
+        return $user;
     }
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response

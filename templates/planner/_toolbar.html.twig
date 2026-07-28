@@ -50,12 +50,16 @@
       </select>
     </div>
     <div>
-      <label class="form-label mb-1 small" for="paint-task">{{ 'planner.label.task'|trans }}</label>
+      <label class="form-label mb-1 small required" for="paint-task">{{ 'planner.label.task'|trans }}</label>
       <div class="d-flex align-items-center gap-1">
-        <select id="paint-task" class="form-select form-select-sm" data-action="change->planner-defaults#task">
-          <option value="0">{{ 'planner.option.none'|trans }}</option>
+        {# A painted shift is saved immediately, and a shift cannot be saved without a task, so the
+           picker carries the first one rather than an empty default the drag would fail on. #}
+        <select id="paint-task" class="form-select form-select-sm" data-action="change->planner-defaults#task"
+                {{ shiftTasks is empty ? 'disabled' : '' }}>
           {% for task in shiftTasks %}
             <option value="{{ task.id }}">{{ task.displayName }}</option>
+          {% else %}
+            <option value="0">{{ 'planner.task_picker.placeholder'|trans }}</option>
           {% endfor %}
         </select>
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#planner-new-task"
@@ -106,5 +110,17 @@
         </button>
       </form>
     {% endif %}
+
+    {# Clears a planning run that went wrong. Only drafts: published shifts may already be assigned.
+       The count is in the confirmation because this cannot be undone. #}
+    <form method="post" action="{{ path('app_manage_shifts_planner_discard_drafts') }}"
+          data-controller="planner-form"
+          data-planner-form-confirm-value="{{ 'planner.confirm.discard_drafts'|trans({'%count%': draftCount}) }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('planner_discard') }}">
+      <input type="hidden" name="department" value="{{ department.uuid }}">
+      <button type="submit" class="btn btn-outline-danger" data-action="planner-form#submit" {{ draftCount == 0 ? 'disabled' : '' }}>
+        {{ 'planner.action.discard_drafts'|trans }}
+      </button>
+    </form>
   </div>
 </div>

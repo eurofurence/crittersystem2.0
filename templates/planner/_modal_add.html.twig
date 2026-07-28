@@ -31,13 +31,7 @@
               <input type="datetime-local" class="form-control" id="add-end" name="end" required>
             </div>
             <div class="col-6">
-              <label class="form-label" for="add-task">{{ 'planner.field.shift_task'|trans }}</label>
-              <select class="form-select" id="add-task" name="task">
-                <option value="0">{{ 'planner.option.none'|trans }}</option>
-                {% for task in shiftTasks %}
-                  <option value="{{ task.id }}">{{ task.displayName }}</option>
-                {% endfor %}
-              </select>
+              {% include 'planner/_task_picker.html.twig' with {id: 'add-task', tasks: shiftTasks, department: department} only %}
             </div>
             <div class="col-6">
               <label class="form-label" for="add-audience">{{ 'planner.field.audience'|trans }}</label>

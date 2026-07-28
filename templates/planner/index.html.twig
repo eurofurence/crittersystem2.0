@@ -10,16 +10,20 @@
   }) }}
 
   {{ d.card_start(null, {bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
-      <form method="get" class="d-flex align-items-end gap-2">
+      {# Switching departments is an explicit step: the grid, the publish bar and the discard
+         button all act on whichever department is loaded, so a stray change on the select must
+         not swap it underneath the manager. #}
+      <form method="get" action="{{ path('app_manage_shifts_planner') }}" class="d-flex align-items-end gap-2">
         <div>
           <label class="form-label mb-1 required" for="planner-department">{{ 'common.label.department'|trans }}</label>
-          <select id="planner-department" name="department" class="form-select" onchange="this.form.submit()">
+          <select id="planner-department" name="department" class="form-select" required>
             {% for dept in departments %}
               <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
             {% endfor %}
           </select>
-          <div class="form-hint">Select only the deparment you are Director</div>
+          <div class="form-hint">{{ 'planner.field.department_hint'|trans }}</div>
         </div>
+        <button type="submit" class="btn btn-outline-primary">{{ 'planner.choose.submit'|trans }}</button>
       </form>
 
       <div class="ms-auto text-secondary small">
@@ -33,10 +37,15 @@
     <div class="col-12 col-lg-8 col-xl-9">
       {% include 'planner/_toolbar.html.twig' %}
 
+      {# The paint defaults are seeded from the server rather than waited for on the toolbar's
+         change event: until the manager touches a picker no event fires, so a first paint would
+         otherwise use the controller's own defaults instead of what the toolbar is showing. #}
       <div
         class="planner"
         data-controller="planner"
         data-planner-department-value="{{ department.uuid }}"
+        data-planner-audience-value="department_staff"
+        data-planner-task-value="{{ shiftTasks is not empty ? shiftTasks|first.id : 0 }}"
         data-planner-timezone-value="{{ timezone }}"
         data-planner-raster-value="{{ grid.rasterMinutes }}"
         data-planner-paint-url-value="{{ path('app_manage_shifts_planner_paint') }}"

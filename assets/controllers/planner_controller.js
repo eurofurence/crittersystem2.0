@@ -356,7 +356,13 @@ export default class extends Controller {
                 const pageY = window.scrollY;
 
                 current.replaceWith(fresh);
+                /*
+                 * The blocks the panel was editing are gone with the old grid - after a batch delete
+                 * they no longer exist at all - so the panel has to be told the selection is empty,
+                 * or it keeps offering to act on shifts that are not there.
+                 */
                 this.selected = new Set();
+                this.dispatch('selection', { target: window, detail: { ids: [] } });
 
                 fresh.scrollLeft = left;
                 fresh.scrollTop = top;

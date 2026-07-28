@@ -9,6 +9,7 @@ use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\CollectionType;
 use Symfony\Component\Form\Extension\Core\Type\EmailType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
@@ -19,6 +20,13 @@ final class VolunteerTypeType extends AbstractType
     {
         $builder
             ->add('name', TextType::class, ['label' => 'common.label.name'])
+            ->add('sortOrder', IntegerType::class, [
+                'label' => 'manage.volunteer_type.field.sort_order.label',
+                'help' => 'manage.volunteer_type.field.sort_order.help',
+                'attr' => ['min' => 0, 'max' => 9999],
+                'required' => false,
+                'empty_data' => (string) VolunteerType::SORT_ORDER_DEFAULT,
+            ])
             ->add('description', RichTextType::class, [
                 'label' => 'common.label.description',
                 'required' => false,

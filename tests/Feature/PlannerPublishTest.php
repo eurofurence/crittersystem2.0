@@ -48,9 +48,9 @@ final class PlannerPublishTest extends DatabaseWebTestCase
         return $dept;
     }
 
-    private function publishToken(): string
+    private function publishToken(Department $dept): string
     {
-        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
 
         return $crawler->filter('form[action*="/publish"] input[name="_token"]')->attr('value');
     }
@@ -58,7 +58,7 @@ final class PlannerPublishTest extends DatabaseWebTestCase
     public function testManagerCanPublishDrafts(): void
     {
         $dept = $this->login(['manageshifts:view', 'shift:manage', 'shift:publish']);
-        $token = $this->publishToken();
+        $token = $this->publishToken($dept);
 
         $this->client->request('POST', '/manage-shifts/planner/publish', [
             '_token' => $token,

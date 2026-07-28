@@ -24,6 +24,23 @@ class VolunteerTypeRepository extends ServiceEntityRepository
     /** @return VolunteerType[] */
     public function findAllOrdered(): array
     {
-        return $this->findBy([], ['name' => 'ASC']);
+        return $this->findBy([], ['sortOrder' => 'ASC', 'name' => 'ASC']);
+    }
+
+    /**
+     * The same list, with each type's departments already hydrated. Callers that scope types to a
+     * department read `getDepartments()` on every row, which is one query per type without the join.
+     *
+     * @return VolunteerType[]
+     */
+    public function findAllOrderedWithDepartments(): array
+    {
+        return $this->createQueryBuilder('t')
+            ->leftJoin('t.departments', 'd')
+            ->addSelect('d')
+            ->orderBy('t.sortOrder', 'ASC')
+            ->addOrderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }

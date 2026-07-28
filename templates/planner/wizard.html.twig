@@ -60,13 +60,7 @@
           </select>
         </div>
         <div class="col-6 col-md-4">
-          <label class="form-label" for="wiz-task">{{ 'planner.field.shift_task'|trans }}</label>
-          <select class="form-select" id="wiz-task" name="task">
-            <option value="0">{{ 'planner.option.none'|trans }}</option>
-            {% for task in shiftTasks %}
-              <option value="{{ task.id }}">{{ task.displayName }}</option>
-            {% endfor %}
-          </select>
+          {% include 'planner/_task_picker.html.twig' with {id: 'wiz-task', tasks: shiftTasks, department: department} only %}
         </div>
         <div class="col-6 col-md-4">
           <label class="form-label" for="wiz-location">{{ 'common.label.location'|trans }}</label>

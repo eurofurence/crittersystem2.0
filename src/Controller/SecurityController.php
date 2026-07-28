@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Security\LocalLoginPolicy;
 use App\Service\EventConfigStore;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -19,8 +20,12 @@ final class SecurityController extends AbstractController
      * welcome message and timeline above the sign-in form
      */
     #[Route('/login', name: 'app_login')]
-    public function login(Request $request, AuthenticationUtils $authenticationUtils, EventConfigStore $config): Response
-    {
+    public function login(
+        Request $request,
+        AuthenticationUtils $authenticationUtils,
+        EventConfigStore $config,
+        LocalLoginPolicy $localLogin,
+    ): Response {
         if ($this->getUser() !== null) {
             return $this->redirectToRoute('app_dashboard');
         }
@@ -30,6 +35,7 @@ final class SecurityController extends AbstractController
         return $this->render('security/login.html.twig', [
             'last_username' => $authenticationUtils->getLastUsername(),
             'error' => $authenticationUtils->getLastAuthenticationError(),
+            'passwordLoginEnabled' => $localLogin->isPasswordLoginOffered(),
             'eventName' => $config->get(EventConfigStore::KEY_NAME),
             'welcomeMessage' => $config->get(EventConfigStore::KEY_WELCOME_MESSAGE),
             'timeline' => [

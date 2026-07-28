@@ -36,6 +36,17 @@
         <input type="number" min="30" step="30" class="form-control" id="batch-duration" name="duration_minutes" placeholder="{{ 'planner.field.duration_placeholder'|trans }}">
       </div>
 
+      <div class="mb-2">
+        <label class="form-label" for="batch-task">{{ 'planner.field.shift_task'|trans }}</label>
+        <select class="form-select" id="batch-task" name="task">
+          <option value="0">{{ 'planner.panel.batch.task_unchanged'|trans }}</option>
+          {% for task in shiftTasks %}
+            <option value="{{ task.id }}">{{ task.displayName }}</option>
+          {% endfor %}
+        </select>
+        <small class="text-secondary">{{ 'planner.panel.batch.task_help'|trans }}</small>
+      </div>
+
       <fieldset class="mb-2">
         <legend class="form-label">{{ 'planner.field.needed_single'|trans }}</legend>
         <div class="d-flex gap-2">
@@ -51,6 +62,20 @@
       </fieldset>
 
       <button type="submit" class="btn btn-primary w-100" data-action="planner-form#submit">{{ 'planner.panel.batch.apply'|trans }}</button>
+    </form>
+
+    {# A separate form: nesting one inside the batch form is invalid markup, and deleting must not
+       be reachable by pressing Enter in the fields above. #}
+    <form
+      method="post"
+      action="{{ path('app_manage_shifts_planner_batch_delete') }}"
+      class="mt-2"
+      data-controller="planner-form"
+      data-planner-form-confirm-value="{{ 'planner.confirm.delete_selected'|trans }}"
+    >
+      <input type="hidden" name="_token" value="{{ csrf_token('planner_edit') }}">
+      <span data-planner-panel-target="ids"></span>
+      <button type="submit" class="btn btn-outline-danger w-100" data-action="planner-form#submit">{{ 'planner.panel.batch.delete'|trans }}</button>
     </form>
   </div>
 </div>

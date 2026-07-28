@@ -398,8 +398,26 @@ msgstr "Audit log"
 msgid "admin.sso.flash.invalid_state"
 msgstr "Invalid SSO state. Please try again."
 
+msgid "admin.sso.flash.local_login_saved"
+msgstr "Password sign-in setting saved."
+
 msgid "admin.sso.flash.login_failed"
 msgstr "SSO login failed. Please try again, or contact an administrator."
+
+msgid "admin.sso.local_login.field.enabled.help"
+msgstr "Turn this off once everyone signs in through the identity provider. Administrators keep password access regardless, so an unreachable provider cannot lock you out of your own installation."
+
+msgid "admin.sso.local_login.field.enabled.label"
+msgstr "Offer username and password sign-in"
+
+msgid "admin.sso.local_login.help"
+msgstr "Controls whether the login page offers the username and password form at all. Switching it off refuses password sign-in outright, not merely the form, so nothing can post credentials past it."
+
+msgid "admin.sso.local_login.requires_sso"
+msgstr "This setting only takes effect while SSO is enabled. Without a working identity provider there would be no other way in, so password sign-in stays available."
+
+msgid "admin.sso.local_login.title"
+msgstr "Password sign-in"
 
 msgid "admin.sso.flash.registration_saved"
 msgstr "Registration API endpoint saved."
@@ -1787,11 +1805,11 @@ msgstr "Volunteer & Staff Management"
 msgid "login.sign_in"
 msgstr "Sign in"
 
-msgid "login.sso.or"
-msgstr "or"
-
 msgid "login.sso.sign_in_with"
 msgstr "Sign in with %provider%"
+
+msgid "login.use_username_password"
+msgstr "Use a username and password instead"
 
 msgid "login.timeline.buildup_start"
 msgstr "Buildup starts"
@@ -2552,6 +2570,12 @@ msgstr "Physical areas where shifts take place."
 msgid "manage.index.card.locations.title"
 msgstr "Locations"
 
+msgid "manage.index.card.login_lockouts.desc"
+msgstr "Sign-in timeouts raised by the brute-force protection."
+
+msgid "manage.index.card.login_lockouts.title"
+msgstr "Login Lockouts"
+
 msgid "manage.index.card.news.desc"
 msgstr "Publish and edit announcements."
 
@@ -2680,6 +2704,60 @@ msgstr "Volunteer"
 
 msgid "manage.label.volunteer_types"
 msgstr "Critter types"
+
+msgid "manage.login_lockout.action.release"
+msgstr "Lift"
+
+msgid "manage.login_lockout.confirm.release"
+msgstr "Lift this timeout? Sign-in attempts for it will be accepted again immediately."
+
+msgid "manage.login_lockout.empty.message"
+msgstr "No account or address is currently timed out."
+
+msgid "manage.login_lockout.empty.title"
+msgstr "No active lockouts"
+
+msgid "manage.login_lockout.page.subtitle"
+msgstr "Accounts and client addresses currently refused by the brute-force protection."
+
+msgid "manage.login_lockout.page.title"
+msgstr "Login Lockouts"
+
+msgid "manage.login_lockout.policy"
+msgstr "%failures% failed password attempts within %window% minutes trigger a %minutes%-minute timeout. An address is locked on its own; an account is locked only once the failures come from more than one address, so nobody can lock a volunteer out on purpose. SSO sign-in is never affected."
+
+msgid "manage.login_lockout.scope.account"
+msgstr "Account"
+
+msgid "manage.login_lockout.scope.ip"
+msgstr "Address"
+
+msgid "manage.login_lockout.subject.hidden"
+msgstr "not stored"
+
+msgid "manage.login_lockout.table.action"
+msgstr "Action"
+
+msgid "manage.login_lockout.table.failures"
+msgstr "Failures"
+
+msgid "manage.login_lockout.table.locked_at"
+msgstr "Locked at"
+
+msgid "manage.login_lockout.table.scope"
+msgstr "Scope"
+
+msgid "manage.login_lockout.table.sources"
+msgstr "Sources"
+
+msgid "manage.login_lockout.table.subject"
+msgstr "Subject"
+
+msgid "manage.login_lockout.table.until"
+msgstr "Until"
+
+msgid "manage.login_lockout.flash.released"
+msgstr "Lockout lifted."
 
 msgid "manage.location.action.back_to_index"
 msgstr "← Back to locations"
@@ -3572,6 +3650,12 @@ msgstr "Self sign-up for shifts (no approval needed)"
 msgid "manage.volunteer_type.field.show_on_dashboard.label"
 msgstr "Show on public dashboard"
 
+msgid "manage.volunteer_type.field.sort_order.help"
+msgstr "Lower numbers come first in every picker; equal numbers sort by name. The base types use 10 and 20."
+
+msgid "manage.volunteer_type.field.sort_order.label"
+msgstr "Sort order"
+
 msgid "manage.volunteer_type.field.telegram.label"
 msgstr "Telegram (@handle)"
 
@@ -4136,6 +4220,9 @@ msgstr "Auto-assign…"
 msgid "planner.action.delete_shift"
 msgstr "Delete shift"
 
+msgid "planner.action.discard_drafts"
+msgstr "Remove draft shifts"
+
 msgid "planner.action.manage_staffing"
 msgstr "Manage staffing (%count%)"
 
@@ -4169,8 +4256,26 @@ msgstr "draft"
 msgid "planner.badge.published"
 msgstr "published"
 
+msgid "planner.choose.help"
+msgstr "Pick the department you are planning for. The grid, publishing and removing drafts all act on that department alone."
+
+msgid "planner.choose.placeholder"
+msgstr "Choose a department"
+
+msgid "planner.choose.submit"
+msgstr "Load planner"
+
+msgid "planner.choose.title"
+msgstr "Which department are you planning?"
+
+msgid "planner.confirm.delete_selected"
+msgstr "Delete every selected shift? Published shifts and their assignments go with them. This cannot be undone."
+
 msgid "planner.confirm.delete_shift"
 msgstr "Delete this shift?"
+
+msgid "planner.confirm.discard_drafts"
+msgstr "Remove all %count% draft shifts of this department? Published shifts are kept. This cannot be undone."
 
 msgid "planner.confirm.published_save"
 msgstr "This shift is published and has %count% assignment(s). Save changes?"
@@ -4189,6 +4294,9 @@ msgstr "No Critter types configured."
 
 msgid "planner.field.audience"
 msgstr "Audience"
+
+msgid "planner.field.department_hint"
+msgstr "Only the departments you may plan for are listed."
 
 msgid "planner.field.duration"
 msgstr "Duration (minutes)"
@@ -4358,6 +4466,9 @@ msgstr "Shift Planner - %name%"
 msgid "planner.panel.batch.apply"
 msgstr "Apply to selection"
 
+msgid "planner.panel.batch.delete"
+msgstr "Delete selected shifts"
+
 msgid "planner.panel.batch.edit"
 msgstr "Batch edit"
 
@@ -4366,6 +4477,12 @@ msgstr "Applied to every selected shift. Quantity 0 removes the requirement."
 
 msgid "planner.panel.batch.shifts"
 msgstr "shifts"
+
+msgid "planner.panel.batch.task_help"
+msgstr "Replaces the shift task on every selected shift, including those that already have one."
+
+msgid "planner.panel.batch.task_unchanged"
+msgstr "Leave unchanged"
 
 msgid "planner.panel.overview.help"
 msgstr "Drag on the grid to paint a shift, or click a shift to edit it. Hold Shift/Ctrl (or tap several) to select multiple shifts for batch changes."
@@ -4393,6 +4510,18 @@ msgstr "Staffing matrix - %name%"
 
 msgid "planner.table.shift"
 msgstr "Shift"
+
+msgid "planner.task_picker.blank"
+msgstr "Give the new shift task a name."
+
+msgid "planner.task_picker.failed"
+msgstr "The shift task could not be created."
+
+msgid "planner.task_picker.none_yet"
+msgstr "This department has no shift tasks yet. Create one with + before adding shifts."
+
+msgid "planner.task_picker.placeholder"
+msgstr "Select a shift task"
 
 msgid "planner.toolbar.aria"
 msgstr "Planner actions"
@@ -5158,6 +5287,9 @@ msgstr "%count% draft shift(s) created. Review and publish them in the planner."
 
 msgid "shift_manager.wizard.flash.invalid_token"
 msgstr "Invalid form token."
+
+msgid "shift_manager.wizard.flash.task_required"
+msgstr "Pick a shift task; the wizard cannot generate shifts without one."
 
 msgid "staff.action.back_overview"
 msgstr "← Staff overview"

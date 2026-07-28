@@ -134,4 +134,116 @@ final class PlannerBrowserTest extends BrowserTestCase
         );
         $this->assertNoConsoleErrors('the planner after switching to paint mode');
     }
+
+    /**
+     * The shift times on a grid block must actually be readable.
+     *
+     * They were not: the range had no nowrap, so on a narrow lane it broke across lines that the
+     * block's own `overflow: hidden` then cut off - a half-hour shift is 20px tall and showed
+     * "10:00-" and nothing more - while the draft badge sat on top of what was left. None of that is
+     * visible to a test that only renders markup; it takes a laid-out browser to measure.
+     */
+    public function testShiftTimesOnTheGridAreNeverCutOff(): void
+    {
+        $dept = $this->seed();
+        $store = static::getContainer()->get(EventConfigStore::class);
+        $store->set(EventConfigStore::KEY_EVENT_END, '2026-06-07T00:00:00+00:00');
+        $store->set(EventConfigStore::KEY_TEARDOWN_END, '2026-06-08T00:00:00+00:00');
+
+        // The hard cases: shifts sharing a column two and three ways, and half-hour blocks that are
+        // only 20px tall. seed() already contributes a 2-lane pair and a full-width shift.
+        $task = $this->em->getRepository(ShiftTask::class)->findOneBy(['name' => 'General']);
+        foreach ([['10:00', '12:00'], ['18:00', '20:00'], ['18:00', '20:00'], ['21:00', '21:30'], ['21:00', '21:30']] as [$from, $to]) {
+            $shift = (new Shift())->setTitle('Parallel '.$from)
+                ->setStartsAt(new \DateTimeImmutable('2026-06-01 '.$from, new \DateTimeZone('UTC')))
+                ->setEndsAt(new \DateTimeImmutable('2026-06-01 '.$to, new \DateTimeZone('UTC')))
+                ->setDepartment($dept)->setShiftTask($task)->setState(ShiftState::DRAFT);
+            $this->em->persist($shift);
+        }
+        $this->em->flush();
+
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'planner-mgr@example.com']);
+        $this->browse();
+        $this->signIn($user, self::PASSWORD);
+        $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
+        $this->client->waitFor('.planner-block', 10);
+
+        $blocks = $this->client->executeScript(
+            'return Array.from(document.querySelectorAll(".planner-block")).map((b) => {'
+            .'const box = b.getBoundingClientRect();'
+            .'const time = b.querySelector(".planner-block-time").getBoundingClientRect();'
+            .'const end = b.querySelector(".planner-block-to");'
+            .'return {lanes: Number(b.dataset.lanes), width: Math.round(box.width),'
+            .' overflowsX: time.right > box.right - 3, overflowsY: time.bottom > box.bottom - 1,'
+            .' endShown: getComputedStyle(end).display !== "none"};'
+            .'});'
+        );
+
+        self::assertGreaterThanOrEqual(3, \count($blocks), 'the fixture must produce shared columns');
+
+        foreach ($blocks as $block) {
+            self::assertFalse($block['overflowsX'], \sprintf('a %d-lane block cuts its time off sideways', $block['lanes']));
+            self::assertFalse($block['overflowsY'], \sprintf('a %d-lane block cuts its time off below', $block['lanes']));
+        }
+
+        // A block with a column to itself has no excuse for hiding half the range.
+        $wide = array_values(array_filter($blocks, static fn (array $b) => $b['lanes'] === 1));
+        self::assertNotEmpty($wide);
+        foreach ($wide as $block) {
+            self::assertTrue($block['endShown'], 'a full-width block shows the end time, not just the start');
+        }
+
+        $this->assertNoConsoleErrors('the planner grid blocks');
+    }
+
+    /**
+     * A shift now needs a task to be saved, so the Add Shift modal offers to create one inline. It
+     * has to graft the new task into the picker and select it: sending the manager to the management
+     * screen instead would throw away the half-filled form they are standing in.
+     */
+    public function testANewShiftTaskIsCreatedFromTheAddShiftModalAndSelected(): void
+    {
+        $dept = $this->seed();
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'planner-mgr@example.com']);
+
+        $this->browse();
+        $this->signIn($user, self::PASSWORD);
+        $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
+        $this->client->waitFor('#add-task', 10);
+
+        $this->client->executeScript(
+            'document.querySelector(\'[data-action="shift-task-create#open"]\').click();'
+        );
+        $this->client->executeScript(
+            'const el = document.querySelector(\'[data-shift-task-create-target="name"]\');'
+            .'el.value = "Gate briefing";'
+        );
+        $this->client->executeScript(
+            'document.querySelector(\'[data-action="shift-task-create#create"]\').click();'
+        );
+
+        // The picker lives inside a modal that is closed on load, so it is present but not visible;
+        // Panther's element waits require visibility, hence polling the DOM directly.
+        $options = [];
+        for ($i = 0; $i < 40; ++$i) {
+            $options = $this->client->executeScript(
+                'return Array.from(document.querySelectorAll("#add-task option")).map((o) => o.textContent.trim());'
+            );
+            if (\in_array('Gate briefing', $options, true)) {
+                break;
+            }
+            usleep(250_000);
+        }
+
+        self::assertContains('Gate briefing', $options, 'the new task is grafted into the picker');
+        self::assertSame(
+            'Gate briefing',
+            $this->client->executeScript(
+                'const s = document.querySelector("#add-task");'
+                .'return s.options[s.selectedIndex].textContent.trim();'
+            ),
+            'the new task is selected, so the form the manager is filling stays usable',
+        );
+        $this->assertNoConsoleErrors('the planner after creating a shift task inline');
+    }
 }

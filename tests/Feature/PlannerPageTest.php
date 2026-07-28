@@ -5,6 +5,7 @@ namespace App\Tests\Feature;
 use App\Entity\Department;
 use App\Entity\Group;
 use App\Entity\Privilege;
+use App\Entity\ShiftTask;
 use App\Entity\User;
 use App\Enum\ShiftState;
 use App\Repository\ShiftRepository;
@@ -57,11 +58,11 @@ final class PlannerPageTest extends DatabaseWebTestCase
     public function testPlannerGridRenders(): void
     {
         $this->manager();
-        $this->department();
+        $dept = $this->department();
         $this->em->flush();
 
         $this->client->loginUser($this->em->getRepository(User::class)->findOneBy(['email' => 'mgr@example.com']));
-        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
 
         self::assertResponseIsSuccessful();
         self::assertSame(1, $crawler->filter('.planner-grid')->count());
@@ -75,7 +76,7 @@ final class PlannerPageTest extends DatabaseWebTestCase
     public function testDayHeaderShowsPhaseAboveTheDate(): void
     {
         $this->manager();
-        $this->department();
+        $dept = $this->department();
         $this->em->flush();
 
         $store = static::getContainer()->get(EventConfigStore::class);
@@ -85,7 +86,7 @@ final class PlannerPageTest extends DatabaseWebTestCase
         $store->set(EventConfigStore::KEY_TEARDOWN_END, '2026-08-19T00:00:00+00:00');
 
         $this->client->loginUser($this->em->getRepository(User::class)->findOneBy(['email' => 'mgr@example.com']));
-        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
 
         self::assertResponseIsSuccessful();
         self::assertGreaterThan(0, $crawler->filter('.planner-phase-teardown')->count());
@@ -124,7 +125,10 @@ final class PlannerPageTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/manage-shifts/planner');
 
         self::assertResponseIsSuccessful();
-        $options = $crawler->filter('#planner-department option')->each(static fn ($node) => trim($node->text()));
+        // The placeholder carries no value; only the real departments are being asserted here.
+        $options = array_values(array_filter($crawler->filter('#planner-department option')->each(
+            static fn ($node) => $node->attr('value') === '' ? null : trim($node->text()),
+        )));
         self::assertSame(['Logistics'], $options);
     }
 
@@ -132,13 +136,16 @@ final class PlannerPageTest extends DatabaseWebTestCase
     {
         $this->manager();
         $dept = $this->department();
+        $task = new ShiftTask('Briefing');
+        $task->setDepartment($dept);
+        $this->em->persist($task);
         $this->em->flush();
         $deptId = $dept->getUuid();
 
         $this->client->loginUser($this->em->getRepository(User::class)->findOneBy(['email' => 'mgr@example.com']));
 
         // Fetch the planner to obtain a valid paint CSRF token.
-        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$deptId);
         $token = $crawler->filter('.planner')->attr('data-planner-paint-token-value');
 
         $this->client->request(
@@ -151,6 +158,7 @@ final class PlannerPageTest extends DatabaseWebTestCase
                 '_token' => $token,
                 'department' => $deptId,
                 'audience' => 'department_staff',
+                'task' => $task->getId(),
                 'intervals' => [
                     ['start' => '2026-06-01T10:00:00', 'end' => '2026-06-01T11:00:00'],
                     ['start' => '2026-06-01T11:00:00', 'end' => '2026-06-01T12:00:00'],

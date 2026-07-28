@@ -36,35 +36,57 @@
 
     <div class="row justify-content-center">
         <div class="col-12 col-md-9 col-lg-6">
+            {# With an identity provider connected, SSO is the way in for nearly everyone; the
+               credential form is collapsed behind a link so it stops competing for attention.
+               It stays expanded after a failed attempt, so the person retrying is not left
+               hunting for the fields they just used. #}
+            {% set sso = sso_enabled() %}
+            {% set collapse_password = sso and passwordLoginEnabled and not error and last_username is empty %}
+
             {{ d.card_start('login.sign_in'|trans, {class: 'shadow-sm'}) }}
                     {% if error %}
                         {{ n.alert('danger', error.messageKey|trans(error.messageData, 'security'), { icon: '⚠️' }) }}
                     {% endif %}
 
-                    <form method="post" action="{{ path('app_login') }}">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">{{ 'login.field.username.label'|trans }}</label>
-                            <input type="text" id="username" name="_username"
-                                   value="{{ last_username }}" class="form-control"
-                                   autocomplete="username" required autofocus>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="password" class="form-label">{{ 'login.field.password.label'|trans }}</label>
-                            <input type="password" id="password" name="_password"
-                                   class="form-control" autocomplete="current-password" required>
-                        </div>
-
-                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
-
-                        <button class="btn btn-primary w-100" type="submit">{{ 'login.sign_in'|trans }}</button>
-                    </form>
-
-                    {% if sso_enabled() %}
-                        <div class="hr-text">{{ 'login.sso.or'|trans }}</div>
-                        <a href="{{ path('app_sso_start') }}" class="btn btn-outline-secondary w-100">
+                    {% if sso %}
+                        <a href="{{ path('app_sso_start') }}" class="btn btn-primary btn-lg w-100">
                             🔐 {{ 'login.sso.sign_in_with'|trans({'%provider%': sso_provider_label()}) }}
                         </a>
+
+                        {% if passwordLoginEnabled %}
+                            <div class="text-center mt-3">
+                                <a class="small text-muted" data-bs-toggle="collapse" href="#password-login"
+                                   role="button" aria-expanded="{{ collapse_password ? 'false' : 'true' }}"
+                                   aria-controls="password-login">
+                                    {{ 'login.use_username_password'|trans }}
+                                </a>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if passwordLoginEnabled %}
+                        <div id="password-login" class="{{ collapse_password ? 'collapse' : (sso ? 'collapse show' : '') }}">
+                            <form method="post" action="{{ path('app_login') }}" class="{{ sso ? 'mt-3' : '' }}">
+                                <div class="mb-3">
+                                    <label for="username" class="form-label">{{ 'login.field.username.label'|trans }}</label>
+                                    <input type="text" id="username" name="_username"
+                                           value="{{ last_username }}" class="form-control"
+                                           autocomplete="username" required {% if not sso %}autofocus{% endif %}>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="password" class="form-label">{{ 'login.field.password.label'|trans }}</label>
+                                    <input type="password" id="password" name="_password"
+                                           class="form-control" autocomplete="current-password" required>
+                                </div>
+
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                                <button class="btn {{ sso ? 'btn-outline-secondary' : 'btn-primary' }} w-100" type="submit">
+                                    {{ 'login.sign_in'|trans }}
+                                </button>
+                            </form>
+                        </div>
                     {% endif %}
             {{ d.card_end() }}
         </div>

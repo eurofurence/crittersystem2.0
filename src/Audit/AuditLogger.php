@@ -77,13 +77,13 @@ final class AuditLogger
             actorType: $actorType,
             actorUserId: $actorUserId,
             actorSsoId: $actorSsoId,
-            actorUsername: $actorUsername,
+            actorUsername: self::fit($actorUsername, 128),
             actorRole: $actorRole,
             actorIp: $request?->getClientIp(),
             actorUserAgent: $request?->headers->get('User-Agent'),
-            resourceType: $options['resourceType'] ?? null,
-            resourceId: isset($options['resourceId']) ? (string) $options['resourceId'] : null,
-            resourceOwnerId: isset($options['resourceOwnerId']) ? (string) $options['resourceOwnerId'] : null,
+            resourceType: self::fit($options['resourceType'] ?? null, 64),
+            resourceId: self::fit(isset($options['resourceId']) ? (string) $options['resourceId'] : null, 128),
+            resourceOwnerId: self::fit(isset($options['resourceOwnerId']) ? (string) $options['resourceOwnerId'] : null, 128),
             resource: $options['resource'] ?? [],
             details: $options['details'] ?? [],
             sessionId: $this->sessionId($request),
@@ -92,6 +92,20 @@ final class AuditLogger
             httpStatus: isset($options['httpStatus']) ? (int) $options['httpStatus'] : null,
             errorMessage: $options['errorMessage'] ?? null,
         );
+    }
+
+    /**
+     * Caps a value at its column width.
+     *
+     * Some of these fields carry unvalidated caller input - actorUsername is whatever identifier was
+     * typed into the login form, and a resourceId can be a user-supplied key. Overflowing the column
+     * throws while the audit record is being handled, which takes down the request that was being
+     * audited. An over-long value is never a real identifier, so keeping the record beats losing
+     * both it and the response. DO NOT CHANGE THIS
+     */
+    private static function fit(?string $value, int $length): ?string
+    {
+        return $value === null ? null : mb_substr($value, 0, $length);
     }
 
     private function sessionId(?\Symfony\Component\HttpFoundation\Request $request): ?string

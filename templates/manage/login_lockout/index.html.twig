@@ -1,0 +1,61 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/notification/_macros.twig' as n %}
+
+{% block title %}{{ 'manage.login_lockout.page.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('manage.login_lockout.page.title'|trans, {
+    subtitle: 'manage.login_lockout.page.subtitle'|trans,
+    actions: [{label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ n.alert('info', 'manage.login_lockout.policy'|trans({
+    '%failures%': maxFailures,
+    '%window%': windowMinutes,
+    '%minutes%': lockoutMinutes,
+  })) }}
+
+  {% if lockouts is empty %}
+    {{ d.empty_state('manage.login_lockout.empty.title'|trans, {message: 'manage.login_lockout.empty.message'|trans}) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead><tr>
+        <th>{{ 'manage.login_lockout.table.scope'|trans }}</th>
+        <th>{{ 'manage.login_lockout.table.subject'|trans }}</th>
+        <th>{{ 'manage.login_lockout.table.failures'|trans }}</th>
+        <th>{{ 'manage.login_lockout.table.sources'|trans }}</th>
+        <th>{{ 'manage.login_lockout.table.locked_at'|trans }}</th>
+        <th>{{ 'manage.login_lockout.table.until'|trans }}</th>
+        <th class="text-end">{{ 'manage.login_lockout.table.action'|trans }}</th>
+      </tr></thead>
+      <tbody>
+        {% for lockout in lockouts %}
+          <tr>
+            <td>
+              {% if lockout.accountScope %}
+                {{ d.badge('manage.login_lockout.scope.account'|trans, 'bg-red-lt') }}
+              {% else %}
+                {{ d.badge('manage.login_lockout.scope.ip'|trans, 'bg-orange-lt') }}
+              {% endif %}
+            </td>
+            {# An address lockout stores a salted hash, never the address, so there is nothing
+               meaningful to print for it. #}
+            <td>{% if lockout.accountScope %}{{ lockout.subject }}{% else %}<span class="text-secondary">{{ 'manage.login_lockout.subject.hidden'|trans }}</span>{% endif %}</td>
+            <td>{{ lockout.failureCount }}</td>
+            <td>{{ lockout.sourceCount }}</td>
+            <td class="small">{{ lockout.lockedAt|app_datetime }}</td>
+            <td class="small">{{ lockout.lockedUntil|app_datetime }}</td>
+            <td class="text-end">
+              <form method="post" action="{{ path('app_manage_login_lockout_release', {uuid: lockout.uuid}) }}" class="d-inline"
+                    data-controller="confirm" data-confirm-message-value="{{ 'manage.login_lockout.confirm.release'|trans }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('release' ~ lockout.uuid) }}">
+                <button class="btn btn-sm btn-outline-success">{{ 'manage.login_lockout.action.release'|trans }}</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

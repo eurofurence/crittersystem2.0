@@ -50,11 +50,19 @@
             data-delete-url="{{ path('app_manage_shifts_planner_delete', {id: shift.uuid}) }}"
             tabindex="0"
             role="button"
+            {# A block sharing its column with three others is too narrow for the whole range, so the
+               full times stay reachable on hover as well as in the accessible name. #}
+            title="{{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }} {{ shift.shiftTask ? shift.shiftTask.name : shift.title }}"
             aria-label="{{ shift.title }} {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}{{ shift.draft ? ('planner.grid.draft_suffix'|trans) : '' }}"
           >
-            <span class="planner-block-time">{{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}</span>
+            {# Time and badge share a row rather than the badge floating over the time: absolutely
+               positioned, it covered the end time on every narrow block. #}
+            <span class="planner-block-head">
+              <span class="planner-block-time"
+                >{{ shift.startsAt|app_time }}<span class="planner-block-to">–{{ shift.endsAt|app_time }}</span></span>
+              {% if shift.draft %}<span class="planner-block-badge">{{ 'planner.badge.draft'|trans }}</span>{% endif %}
+            </span>
             <span class="planner-block-title">{{ shift.shiftTask ? shift.shiftTask.name : shift.title }}</span>
-            {% if shift.draft %}<span class="planner-block-badge">{{ 'planner.badge.draft'|trans }}</span>{% endif %}
             {% if block.overnight %}<span class="planner-block-overnight" title="{{ 'planner.grid.overnight_title'|trans }}">▾</span>{% endif %}
             <span class="planner-block-resize" data-planner-target="resizeHandle" aria-hidden="true"></span>
           </div>

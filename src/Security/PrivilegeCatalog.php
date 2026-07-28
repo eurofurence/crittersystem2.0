@@ -64,6 +64,10 @@ final class PrivilegeCatalog
         'config:sso' => ['Manage SSO and view the connection status', 'Configuration', self::LEVEL_ADMIN, true],
         'config:telegram' => ['Manage the Telegram bot configuration', 'Configuration', self::LEVEL_ADMIN, false],
 
+        // Security operations. Step-up guarded: releasing a lockout is the one action that can hand
+        // an in-progress brute force its allowance back.
+        'security:lockout:manage' => ['View and lift login lockouts', 'Access control', self::LEVEL_ADMIN, true],
+
         // Roles & access control
         'rbac:group:view' => ['View groups and permissions', 'Access control', self::LEVEL_SUBADMIN, false],
         'rbac:group:manage' => ['Create/edit groups and assign permissions', 'Access control', self::LEVEL_ADMIN, true],

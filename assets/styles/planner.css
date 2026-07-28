@@ -48,9 +48,14 @@
     transform: translateY(-7px);
 }
 
+/*
+ * Wide enough that a column split between two simultaneous shifts still shows each one's full
+ * "10:00-12:00" rather than falling back to the start time alone. The grid scrolls horizontally and
+ * the hour axis is sticky precisely so days may be wider than the viewport.
+ */
 .planner-day {
-    flex: 1 1 130px;
-    min-width: 130px;
+    flex: 1 1 170px;
+    min-width: 170px;
     border-right: 1px solid var(--tblr-border-color);
 }
 
@@ -122,9 +127,21 @@
         );
 }
 
+/*
+ * A column laid out so the time survives the worst case. The block clips its overflow and a
+ * half-hour shift is only 20px tall, so a wrapped time range lost its second line entirely - the
+ * manager saw "10:00-" and nothing else. The time is therefore a nowrap row that never shrinks, and
+ * the title takes whatever height is left.
+ *
+ * The block is also a query container so the range can adapt to how narrow its lane is.
+ */
 .planner-block {
     position: absolute;
     box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    /* size, not inline-size: how the range is laid out depends on the block's height as well. */
+    container-type: size;
     margin-left: 2px;
     min-width: 14px;
     min-height: 16px;
@@ -178,27 +195,69 @@
     opacity: .9;
 }
 
+.planner-block-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 4px;
+    /* Never give up height to the title: the time is what the block exists to tell you. */
+    flex: 0 0 auto;
+}
+
 .planner-block-time {
-    display: block;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
     font-weight: 600;
 }
 
 .planner-block-title {
     display: block;
+    flex: 1 1 auto;
+    min-height: 0;
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
 }
 
 .planner-block-badge {
-    position: absolute;
-    top: 2px;
-    right: 4px;
+    flex: 0 0 auto;
     font-size: 9px;
     text-transform: uppercase;
     letter-spacing: .03em;
     opacity: .75;
+}
+
+/*
+ * Lanes split a day column between simultaneous shifts, so a block can get far too narrow for
+ * "10:00-12:00" on one line - the range needs about 76px and two lanes leave under 70px. Rather
+ * than clip it mid-digit:
+ *
+ *   - a block with the height to spare stacks the end time under the start, keeping both;
+ *   - a short one (under two lines' worth) falls back to the start time, which is what orients the
+ *     manager, and then drops the draft badge;
+ *
+ * and the full range stays in the title tooltip and the accessible name throughout.
+ */
+@container (max-width: 80px) and (min-height: 32px) {
+    /*
+     * A block box starts its own line while the inherited nowrap keeps each time whole. Letting the
+     * range wrap normally instead broke after the dash and cost a third line.
+     */
+    .planner-block-to {
+        display: block;
+    }
+}
+
+@container (max-width: 80px) and (max-height: 31.99px) {
+    .planner-block-to {
+        display: none;
+    }
+}
+
+@container (max-width: 44px) {
+    .planner-block-badge {
+        display: none;
+    }
 }
 
 .planner-block-overnight {

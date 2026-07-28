@@ -2,6 +2,15 @@ import { Controller } from '@hotwired/stimulus';
 import { backgroundFetch } from '../js/session.js';
 
 /*
+ * The ids come from the grid's own markup rather than from a user, but they are interpolated into an
+ * attribute, so they are escaped anyway: an unescaped value would let any future source of block ids
+ * close the attribute and inject markup into the panel.
+ */
+function escapeAttribute(value) {
+    return String(value).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
+
+/*
  * Selection-driven planner side panel. Listens for the planner's
  * selection event and swaps between three states:
  *   - none:  the planning overview;
@@ -51,10 +60,15 @@ export default class extends Controller {
         if (this.hasCountTarget) {
             this.countTarget.textContent = String(ids.length);
         }
-        if (this.hasIdsTarget) {
-            this.idsTarget.innerHTML = ids
-                .map((id) => `<input type="hidden" name="ids[]" value="${Number(id)}">`)
+        /*
+         * The grid identifies a block by the shift's public uuid, and the server resolves ids[] the
+         * same way. Coercing to a number here silently sent NaN and every batch action became a
+         * no-op, which nothing on screen reported.
+         */
+        this.idsTargets.forEach((container) => {
+            container.innerHTML = ids
+                .map((id) => `<input type="hidden" name="ids[]" value="${escapeAttribute(id)}">`)
                 .join('');
-        }
+        });
     }
 }

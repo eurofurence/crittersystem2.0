@@ -1,0 +1,45 @@
+{# Required shift-task picker with an inline "new task" panel.
+   Params: id, tasks, department, selected (id or null). The surrounding page is itself a form, so
+   the create panel posts on its own rather than nesting a second one. A task belongs to a
+   department, so a shift without one gets the picker but not the "new task" affordance. #}
+<div
+  data-controller="shift-task-create"
+  data-shift-task-create-url-value="{{ path('app_manage_shifts_planner_task_create') }}"
+  data-shift-task-create-department-value="{{ department ? department.uuid : '' }}"
+  data-shift-task-create-token-value="{{ csrf_token('planner_edit') }}"
+  data-shift-task-create-blank-message-value="{{ 'planner.task_picker.blank'|trans }}"
+  data-shift-task-create-failed-message-value="{{ 'planner.task_picker.failed'|trans }}"
+>
+  <label class="form-label required" for="{{ id }}">{{ 'planner.field.shift_task'|trans }}</label>
+  <div class="d-flex align-items-center gap-1">
+    <select class="form-select" id="{{ id }}" name="task" required
+            data-shift-task-create-target="select"
+            {{ tasks is empty and department is null ? 'disabled' : '' }}>
+      <option value="">{{ 'planner.task_picker.placeholder'|trans }}</option>
+      {% for task in tasks %}
+        <option value="{{ task.id }}" {{ selected is defined and selected == task.id ? 'selected' : '' }}>{{ task.displayName }}</option>
+      {% endfor %}
+    </select>
+    {% if department %}
+      <button type="button" class="btn btn-outline-secondary" data-action="shift-task-create#open"
+              title="{{ 'planner.toolbar.new_task_aria'|trans }}" aria-label="{{ 'planner.toolbar.new_task_aria'|trans }}">+</button>
+    {% endif %}
+  </div>
+
+  {% if tasks is empty and department %}
+    <div class="form-text text-warning">{{ 'planner.task_picker.none_yet'|trans }}</div>
+  {% endif %}
+
+  <div class="mt-2" data-shift-task-create-target="panel" hidden>
+    <div class="input-group input-group-sm">
+      <input type="text" class="form-control" data-shift-task-create-target="name"
+             data-action="keydown->shift-task-create#keydown"
+             placeholder="{{ 'planner.toolbar.new_task_placeholder'|trans }}"
+             aria-label="{{ 'planner.toolbar.new_task_title'|trans({'%name%': department ? department.name : ''}) }}">
+      <button type="button" class="btn btn-primary" data-action="shift-task-create#create">{{ 'planner.toolbar.new_task_submit'|trans }}</button>
+      <button type="button" class="btn btn-outline-secondary" data-action="shift-task-create#close">{{ 'common.action.cancel'|trans }}</button>
+    </div>
+    <div class="form-text">{{ 'planner.toolbar.new_task_help'|trans }}</div>
+    <div class="invalid-feedback d-block" data-shift-task-create-target="error" hidden></div>
+  </div>
+</div>

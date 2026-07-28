@@ -7,6 +7,7 @@ namespace App\EventSubscriber;
 use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
 use App\Entity\User;
+use App\Security\Exception\AccountLockedOutException;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\Security\Http\Authenticator\Passport\Badge\UserBadge;
 use Symfony\Component\Security\Http\Event\LoginFailureEvent;
@@ -47,6 +48,12 @@ final class AuthenticationAuditSubscriber implements EventSubscriberInterface
 
     public function onLoginFailure(LoginFailureEvent $event): void
     {
+        // A refusal by the brute-force throttle is already recorded once, as LOGIN_LOCKED, and the
+        // lockout row carries the failure count.
+        if ($event->getException() instanceof AccountLockedOutException) {
+            return;
+        }
+
         $passport = $event->getPassport();
         $username = $passport?->hasBadge(UserBadge::class)
             ? $passport->getBadge(UserBadge::class)->getUserIdentifier()

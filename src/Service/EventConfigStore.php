@@ -49,6 +49,13 @@ class EventConfigStore
      */
     public const KEY_SSO_BADGE_API_URL = 'sso.badge_number_api_url';
 
+    /*
+     * Whether the login page still offers username+password sign-in once SSO is carrying the flow.
+     * Read through App\Security\LocalLoginPolicy, never directly: the policy keeps the setting from
+     * locking everyone out (it is ignored while SSO is off, and admins always keep password access).
+     */
+    public const KEY_PASSWORD_LOGIN_ENABLED = 'login.password_enabled';
+
     // Display / regional settings. These control how dates and
     // times are rendered for everyone, server-side, regardless of the viewer's
     // browser locale or timezone. See {@see \App\Service\DisplaySettings}.

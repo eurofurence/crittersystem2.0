@@ -8,6 +8,7 @@ use App\Entity\Shift;
 use App\Entity\ShiftTask;
 use App\Entity\User;
 use App\Enum\ShiftAudience;
+use App\Enum\ShiftState;
 use App\Repository\DepartmentRepository;
 use App\Entity\VolunteerType;
 use App\Repository\LocationRepository;
@@ -38,6 +39,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('shift:manage')]
 final class PlannerController extends AbstractController
 {
+    private const TASK_REQUIRED = 'Pick a shift task; a shift cannot be saved without one.';
+
     public function __construct(
         private readonly DepartmentRepository $departments,
         private readonly ShiftRepository $shifts,
@@ -48,6 +51,7 @@ final class PlannerController extends AbstractController
         private readonly EventConfigStore $config,
         private readonly ShiftTaskRepository $tasks,
         private readonly \App\Service\Shift\ShiftTaskAccess $taskAccess,
+        private readonly \App\Service\Shift\VolunteerTypeAccess $typeAccess,
         private readonly \Doctrine\ORM\EntityManagerInterface $em,
     ) {
     }
@@ -66,9 +70,19 @@ final class PlannerController extends AbstractController
             return $this->render('planner/empty.html.twig');
         }
 
+        /*
+         * Planning is department-wide and destructive (publish, discard drafts, mass delete), so the
+         * grid only loads once the manager has named the department. Defaulting to the first one and
+         * rendering it immediately invited edits against a department nobody chose.
+         */
         $department = ($id = $request->query->get('department'))
-            ? ($this->departments->findOneByUuid((string) $id) ?? $planningDepartments[0])
-            : $planningDepartments[0];
+            ? $this->departments->findOneByUuid((string) $id)
+            : null;
+        if ($department === null) {
+            return $this->render('planner/choose.html.twig', [
+                'departments' => $planningDepartments,
+            ]);
+        }
         $this->denyAccessUnlessGranted('shift:manage', $department);
 
         [$rangeStart, $rangeEnd] = $this->range();
@@ -90,7 +104,7 @@ final class PlannerController extends AbstractController
             'departments' => $planningDepartments,
             'grid' => $grid,
             'shiftTasks' => $this->taskAccess->forDepartment($this->tasks->findAllOrdered(), $department),
-            'volunteerTypes' => $types->findAllOrdered(),
+            'volunteerTypes' => $this->typeAccess->forDepartment($types->findAllOrderedWithDepartments(), $department),
             'locations' => $locations->findAllOrdered(),
             'audiences' => ShiftAudience::cases(),
             'timezone' => $tz->getName(),
@@ -166,7 +180,10 @@ final class PlannerController extends AbstractController
         }
 
         $audience = ShiftAudience::tryFrom((string) ($data['audience'] ?? '')) ?? ShiftAudience::PUBLIC_VOLUNTEER;
-        $task = ($tid = (int) ($data['task'] ?? 0)) ? $this->tasks->find($tid) : null;
+        $task = $this->requiredTask((int) ($data['task'] ?? 0), $department);
+        if (!$task instanceof ShiftTask) {
+            return $this->fail(self::TASK_REQUIRED);
+        }
         $location = ($lid = (int) ($data['location'] ?? 0)) ? $locations->find($lid) : null;
 
         try {
@@ -174,7 +191,7 @@ final class PlannerController extends AbstractController
                 $department,
                 $intervals,
                 $audience,
-                $task instanceof ShiftTask ? $task : null,
+                $task,
                 $location instanceof Location ? $location : null,
                 $this->user(),
             );
@@ -206,7 +223,10 @@ final class PlannerController extends AbstractController
         }
 
         $audience = ShiftAudience::tryFrom((string) $request->request->get('audience', '')) ?? ShiftAudience::PUBLIC_VOLUNTEER;
-        $task = ($tid = $request->request->getInt('task')) ? $this->tasks->find($tid) : null;
+        $task = $this->requiredTask($request->request->getInt('task'), $department);
+        if (!$task instanceof ShiftTask) {
+            return $this->fail(self::TASK_REQUIRED);
+        }
         $location = ($lid = $request->request->getInt('location')) ? $locations->find($lid) : null;
 
         try {
@@ -215,7 +235,7 @@ final class PlannerController extends AbstractController
                 $start,
                 $end,
                 $audience,
-                $task instanceof ShiftTask ? $task : null,
+                $task,
                 $location instanceof Location ? $location : null,
                 $this->user(),
                 trim((string) $request->request->get('title')) ?: null,
@@ -243,7 +263,7 @@ final class PlannerController extends AbstractController
             'audiences' => ShiftAudience::cases(),
             'shiftTasks' => $this->taskAccess->forDepartment($this->tasks->findAllOrdered(), $shift->getDepartment()),
             'locations' => $locations->findAllOrdered(),
-            'volunteerTypes' => $types->findAllOrdered(),
+            'volunteerTypes' => $this->typeAccess->forDepartment($types->findAllOrderedWithDepartments(), $shift->getDepartment()),
             'timezone' => $this->display->timezone()->getName(),
         ]);
     }
@@ -265,7 +285,11 @@ final class PlannerController extends AbstractController
             $fields['audience'] = ShiftAudience::tryFrom((string) $request->request->get('audience')) ?? $shift->getAudience();
         }
         if ($request->request->has('task')) {
-            $fields['task'] = ($tid = $request->request->getInt('task')) ? $this->tasks->find($tid) : null;
+            $task = $this->requiredTask($request->request->getInt('task'), $shift->getDepartment());
+            if (!$task instanceof ShiftTask) {
+                return $this->fail(self::TASK_REQUIRED);
+            }
+            $fields['task'] = $task;
         }
         if ($request->request->has('location')) {
             $fields['location'] = ($lid = $request->request->getInt('location')) ? $locations->find($lid) : null;
@@ -327,20 +351,34 @@ final class PlannerController extends AbstractController
             return $this->fail('Invalid token.', 419);
         }
 
-        /** @var int[] $ids */
-        $ids = array_map('intval', (array) $request->request->all('ids'));
+        $selection = $this->selectedShifts($request);
         $duration = $request->request->getInt('duration_minutes');
         $needType = ($ntid = $request->request->getInt('needed_type')) ? $types->find($ntid) : null;
         $needCount = $request->request->getInt('needed_count');
+        $taskId = $request->request->getInt('task');
+
+        /*
+         * Everything is validated against the whole selection first. Rejecting halfway through would
+         * leave the shifts already visited changed and the rest not, with nothing on screen saying
+         * which were which.
+         */
+        foreach ($selection as $shift) {
+            // A blank picker leaves each shift's own task alone; choosing one replaces it.
+            if ($taskId !== 0 && !$this->requiredTask($taskId, $shift->getDepartment()) instanceof ShiftTask) {
+                return $this->fail(self::TASK_REQUIRED);
+            }
+            if ($needType instanceof VolunteerType && !$this->typeAccess->isAvailableTo($needType, $shift->getDepartment())) {
+                return $this->fail('That Critter type is not available to this department.');
+            }
+        }
 
         $applied = 0;
-        foreach ($ids as $id) {
-            $shift = $this->shifts->find($id);
-            if ($shift === null || !$this->isGranted('shift:manage', $shift->getDepartment())) {
-                continue; // silently skip out-of-scope shifts
-            }
+        foreach ($selection as $shift) {
             if ($duration >= PlannerDraftStore::MIN_DURATION_MINUTES) {
                 $this->drafts->setDuration($shift, $duration, $this->user());
+            }
+            if ($taskId !== 0) {
+                $this->drafts->updateDetails($shift, ['task' => $this->requiredTask($taskId, $shift->getDepartment())], $this->user());
             }
             if ($needType instanceof VolunteerType) {
                 $this->drafts->setNeededVolunteerType($shift, $needType, $needCount);
@@ -349,6 +387,51 @@ final class PlannerController extends AbstractController
         }
 
         return new JsonResponse(['ok' => true, 'applied' => $applied]);
+    }
+
+    /**
+     * Delete every selected shift. Unlike discarding drafts this also removes published shifts, so
+     * the caller confirms with the count first; assignments go with the shift.
+     */
+    #[Route('/batch/delete', name: 'app_manage_shifts_planner_batch_delete', methods: ['POST'])]
+    public function batchDelete(Request $request): Response
+    {
+        if (!$this->isCsrfTokenValid('planner_edit', (string) $request->request->get('_token'))) {
+            return $this->fail('Invalid token.', 419);
+        }
+
+        $deleted = 0;
+        foreach ($this->selectedShifts($request) as $shift) {
+            $this->drafts->delete($shift);
+            ++$deleted;
+        }
+
+        return new JsonResponse(['ok' => true, 'deleted' => $deleted]);
+    }
+
+    /**
+     * Delete every draft shift of a department in one step, so a planning run that went wrong can be
+     * cleared without picking the drafts off the grid one by one. Published shifts are never
+     * touched: they may already carry assignments people are counting on.
+     */
+    #[Route('/drafts/discard', name: 'app_manage_shifts_planner_discard_drafts', methods: ['POST'])]
+    public function discardDrafts(Request $request): Response
+    {
+        $department = $this->departments->findOneByUuid((string) $request->request->get('department'));
+        if ($department === null) {
+            return $this->fail('Unknown department.');
+        }
+        $this->denyAccessUnlessGranted('shift:manage', $department);
+        if (!$this->isCsrfTokenValid('planner_discard', (string) $request->request->get('_token'))) {
+            return $this->fail('Invalid token.', 419);
+        }
+
+        $drafts = $this->shifts->findBy(['department' => $department, 'state' => ShiftState::DRAFT->value]);
+        foreach ($drafts as $draft) {
+            $this->drafts->delete($draft);
+        }
+
+        return new JsonResponse(['ok' => true, 'deleted' => \count($drafts)]);
     }
 
     #[Route('/shift/{id}/move', name: 'app_manage_shifts_planner_move', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
@@ -403,6 +486,44 @@ final class PlannerController extends AbstractController
     }
 
     /**
+     * The shifts named by `ids[]` that this manager may actually plan. Out-of-scope shifts are
+     * dropped silently rather than reported, so the response cannot be used to probe which shift
+     * uuids exist in departments the caller does not manage.
+     *
+     * @return list<Shift>
+     */
+    private function selectedShifts(Request $request): array
+    {
+        $selection = [];
+        foreach ((array) $request->request->all('ids') as $uuid) {
+            $shift = $this->shifts->findOneByUuid((string) $uuid);
+            if ($shift !== null && $this->isGranted('shift:manage', $shift->getDepartment())) {
+                $selection[] = $shift;
+            }
+        }
+
+        return $selection;
+    }
+
+    /**
+     * Resolve a shift task the department is actually offered, or null. Every planner surface that
+     * creates or saves a shift requires one, so a missing, unknown or foreign task is a rejection
+     * rather than a silent "no task".
+     */
+    private function requiredTask(int $id, ?Department $department): ?ShiftTask
+    {
+        if ($id === 0) {
+            return null;
+        }
+        $task = $this->tasks->find($id);
+        if (!$task instanceof ShiftTask) {
+            return null;
+        }
+
+        return $this->taskAccess->forDepartment([$task], $department) === [] ? null : $task;
+    }
+
+    /**
      * Apply the `needed[typeId] = count` staffing requirements from a create/edit
      * form to the shift.
      */
@@ -412,7 +533,9 @@ final class PlannerController extends AbstractController
         $needed = (array) $request->request->all('needed');
         foreach ($needed as $typeId => $count) {
             $type = $types->find((int) $typeId);
-            if ($type instanceof VolunteerType) {
+            // The form only offers this department's types; a posted id for another department's
+            // type is ignored rather than honoured, so the picker cannot be edited around.
+            if ($type instanceof VolunteerType && $this->typeAccess->isAvailableTo($type, $shift->getDepartment())) {
                 $this->drafts->setNeededVolunteerType($shift, $type, (int) $count);
             }
         }

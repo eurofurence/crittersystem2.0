@@ -17,11 +17,19 @@ export default class extends Controller {
 
     async submit(event) {
         event.preventDefault();
+        const form = this.element;
+        /*
+         * These forms are submitted from a button's click, not the form's submit event, so the
+         * browser never runs its own constraint checking - a required field like the shift task
+         * would post empty and come back as a server error instead of pointing at the field.
+         */
+        if (typeof form.reportValidity === 'function' && !form.reportValidity()) {
+            return;
+        }
         // Destructive or assignment-affecting edits confirm first.
         if (this.confirmValue && !(await confirmModal(this.confirmValue))) {
             return;
         }
-        const form = this.element;
         const button = form.querySelector('[type="submit"]');
         if (button) {
             button.disabled = true;

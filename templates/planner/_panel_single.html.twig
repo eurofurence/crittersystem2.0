@@ -20,26 +20,25 @@
       <label class="form-label" for="edit-title-{{ shift.id }}">{{ 'common.label.title'|trans }}</label>
       <input type="text" class="form-control" id="edit-title-{{ shift.id }}" name="title" value="{{ shift.title }}">
     </div>
-    <div class="row g-2 mb-2">
-      <div class="col-6">
-        <label class="form-label" for="edit-start-{{ shift.id }}">{{ 'planner.field.starts'|trans }}</label>
-        <input type="datetime-local" class="form-control" id="edit-start-{{ shift.id }}" name="start"
-               value="{{ shift.startsAt|date('Y-m-d\\TH:i', timezone) }}">
-      </div>
-      <div class="col-6">
-        <label class="form-label" for="edit-end-{{ shift.id }}">{{ 'planner.field.ends'|trans }}</label>
-        <input type="datetime-local" class="form-control" id="edit-end-{{ shift.id }}" name="end"
-               value="{{ shift.endsAt|date('Y-m-d\\TH:i', timezone) }}">
-      </div>
+    {# The panel is a narrow sidebar column: side by side these two are too cramped to show a whole
+       date AND time, which is exactly what the manager is checking here. #}
+    <div class="mb-2">
+      <label class="form-label" for="edit-start-{{ shift.id }}">{{ 'planner.field.starts'|trans }}</label>
+      <input type="datetime-local" class="form-control" id="edit-start-{{ shift.id }}" name="start"
+             value="{{ shift.startsAt|date('Y-m-d\\TH:i', timezone) }}">
     </div>
     <div class="mb-2">
-      <label class="form-label" for="edit-task-{{ shift.id }}">{{ 'planner.field.shift_task'|trans }}</label>
-      <select class="form-select" id="edit-task-{{ shift.id }}" name="task">
-        <option value="0">{{ 'planner.option.none'|trans }}</option>
-        {% for task in shiftTasks %}
-          <option value="{{ task.id }}" {{ shift.shiftTask and shift.shiftTask.id == task.id ? 'selected' : '' }}>{{ task.displayName }}</option>
-        {% endfor %}
-      </select>
+      <label class="form-label" for="edit-end-{{ shift.id }}">{{ 'planner.field.ends'|trans }}</label>
+      <input type="datetime-local" class="form-control" id="edit-end-{{ shift.id }}" name="end"
+             value="{{ shift.endsAt|date('Y-m-d\\TH:i', timezone) }}">
+    </div>
+    <div class="mb-2">
+      {% include 'planner/_task_picker.html.twig' with {
+        id: 'edit-task-' ~ shift.id,
+        tasks: shiftTasks,
+        department: shift.department,
+        selected: shift.shiftTask ? shift.shiftTask.id : null
+      } only %}
     </div>
     <div class="mb-2">
       <label class="form-label" for="edit-audience-{{ shift.id }}">{{ 'planner.field.audience'|trans }}</label>

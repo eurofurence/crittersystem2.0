@@ -6,6 +6,7 @@ use App\Entity\Department;
 use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\Shift;
+use App\Entity\ShiftTask;
 use App\Entity\User;
 use App\Enum\ShiftState;
 use App\Tests\DatabaseWebTestCase;
@@ -14,6 +15,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 /** Shift Wizard end-to-end: the form renders and generates drafts. */
 final class ShiftWizardPageTest extends DatabaseWebTestCase
 {
+    private ShiftTask $task;
+
     private function login(): Department
     {
         $group = new Group('Managers', 'mgr-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
@@ -32,7 +35,11 @@ final class ShiftWizardPageTest extends DatabaseWebTestCase
         $this->em->persist($user);
         $dept = new Department('Logistics', 'logistics');
         $this->em->persist($dept);
+        $task = new ShiftTask('Briefing');
+        $task->setDepartment($dept);
+        $this->em->persist($task);
         $this->em->flush();
+        $this->task = $task;
 
         $this->client->loginUser($this->em->getRepository(User::class)->findOneBy(['email' => 'mgr@example.com']));
 
@@ -55,6 +62,7 @@ final class ShiftWizardPageTest extends DatabaseWebTestCase
             'end_time' => '14:00',
             'slot_minutes' => 120,
             'audience' => 'department_staff',
+            'task' => $this->task->getId(),
         ]);
 
         self::assertResponseRedirects();

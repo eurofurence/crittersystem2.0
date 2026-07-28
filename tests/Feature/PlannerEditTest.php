@@ -6,6 +6,7 @@ use App\Entity\Department;
 use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\Shift;
+use App\Entity\ShiftTask;
 use App\Entity\User;
 use App\Entity\VolunteerType;
 use App\Enum\ShiftAudience;
@@ -19,6 +20,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  */
 final class PlannerEditTest extends DatabaseWebTestCase
 {
+    private Department $dept;
+
     private function login(): Department
     {
         $group = new Group('Managers', 'mgr-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
@@ -43,7 +46,18 @@ final class PlannerEditTest extends DatabaseWebTestCase
 
         $this->client->loginUser($this->em->getRepository(User::class)->findOneBy(['email' => 'mgr@example.com']));
 
-        return $dept;
+        return $this->dept = $dept;
+    }
+
+    /** A shift task the department may use; every planner surface now requires one. */
+    private function task(string $name = 'Briefing'): ShiftTask
+    {
+        $task = new ShiftTask($name);
+        $task->setDepartment($this->dept);
+        $this->em->persist($task);
+        $this->em->flush();
+
+        return $task;
     }
 
     private function draft(Department $dept, string $start, string $end): Shift
@@ -62,7 +76,7 @@ final class PlannerEditTest extends DatabaseWebTestCase
     /** Fetch a live planner_edit CSRF token from the rendered planner page. */
     private function editToken(): string
     {
-        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$this->dept->getUuid());
 
         return $crawler->filter('.planner')->attr('data-planner-edit-token-value');
     }
@@ -74,13 +88,15 @@ final class PlannerEditTest extends DatabaseWebTestCase
      */
     public function testPaintCreatesDraftFromTheDepartmentIdentifierRenderedOnThePage(): void
     {
-        $this->login();
-        $crawler = $this->client->request('GET', '/manage-shifts/planner');
+        $dept = $this->login();
+        $task = $this->task();
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
         $planner = $crawler->filter('.planner');
 
         $this->client->request('POST', '/manage-shifts/planner/paint', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             '_token' => $planner->attr('data-planner-paint-token-value'),
             'department' => $planner->attr('data-planner-department-value'),
+            'task' => $task->getId(),
             'intervals' => [['start' => '2026-06-01T10:00:00', 'end' => '2026-06-01T12:00:00']],
         ]));
 
@@ -97,7 +113,7 @@ final class PlannerEditTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/manage-shifts/planner/batch', [
             '_token' => $this->editToken(),
-            'ids' => [$a->getId(), $b->getId()],
+            'ids' => [$a->getUuid(), $b->getUuid()],
             'duration_minutes' => 120,
         ]);
 
@@ -119,7 +135,7 @@ final class PlannerEditTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/manage-shifts/planner/batch', [
             '_token' => $this->editToken(),
-            'ids' => [$a->getId()],
+            'ids' => [$a->getUuid()],
             'needed_type' => $type->getId(),
             'needed_count' => 3,
         ]);

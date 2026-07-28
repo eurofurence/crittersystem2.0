@@ -19,6 +19,8 @@ class VolunteerType
 {
     use HasPublicUuid;
 
+    public const SORT_ORDER_DEFAULT = 100;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -72,6 +74,11 @@ class VolunteerType
     /** Visible only to staff in the owning department. Requires staffOnly. */
     #[ORM\Column(name: 'department_only', options: ['default' => false])]
     private bool $departmentOnly = false;
+
+    /** Ranks the type in every picker; lower comes first, ties break on name */
+    #[ORM\Column(name: 'sort_order', options: ['default' => self::SORT_ORDER_DEFAULT])]
+    #[Assert\Range(min: 0, max: 9999)]
+    private int $sortOrder = self::SORT_ORDER_DEFAULT;
 
     /** @var Collection<int, Department> */
     #[ORM\ManyToMany(targetEntity: Department::class, mappedBy: 'volunteerTypes')]
@@ -240,6 +247,18 @@ class VolunteerType
     public function setDepartmentOnly(bool $departmentOnly): static
     {
         $this->departmentOnly = $departmentOnly;
+
+        return $this;
+    }
+
+    public function getSortOrder(): int
+    {
+        return $this->sortOrder;
+    }
+
+    public function setSortOrder(int $sortOrder): static
+    {
+        $this->sortOrder = $sortOrder;
 
         return $this;
     }
