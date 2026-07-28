@@ -20,7 +20,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Translation\TranslatableMessage;
 
 #[Route('/manage/certifications')]
-#[IsGranted('global:admin')]
+#[IsGranted('certification:manage')]
 final class CertificationController extends AbstractController
 {
     public function __construct(

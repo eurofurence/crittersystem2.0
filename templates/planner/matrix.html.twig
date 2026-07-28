@@ -31,12 +31,13 @@
     {{ d.card_start(null, {bodyClass: 'card-body d-flex flex-wrap align-items-end gap-3'}) }}
         <form method="get" class="d-flex align-items-end gap-2">
           <div>
-            <label class="form-label mb-1" for="matrix-department">{{ 'common.label.department'|trans }}</label>
+            <label class="form-label mb-1 required" for="matrix-department">{{ 'common.label.department'|trans }}</label>
             <select id="matrix-department" name="department" class="form-select" onchange="this.form.submit()">
               {% for dept in departments %}
                 <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
               {% endfor %}
             </select>
+          <div class="form-hint">Select only the deparment you are Director</div>
           </div>
         </form>
         <div class="ms-auto text-secondary small">

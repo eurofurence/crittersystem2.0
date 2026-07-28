@@ -521,6 +521,49 @@ Limitations: no sortable headers, no built-in caption, no sticky header.
 
 ---
 
+#### `pagination(options = {})`
+
+A Tabler pager plus a `1-25 of 213` summary, for a list paginated **server-side**. Renders nothing
+at all when there is a single page, so callers need no `{% if %}` guard.
+
+Page numbers travel in their own query parameter, so several independently paginated tables can
+live on one page (the department dashboard pages managers, staff and non-staff separately).
+
+| Param | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `options.route` | string | **yes** | - | Route the page links point at. |
+| `options.routeParams` | map | no | `{}` | Path parameters for that route. |
+| `options.param` | string | no | `'page'` | Query parameter carrying the page number. |
+| `options.page` | int | no | `1` | Current page (1-based). |
+| `options.pages` | int | no | `1` | Total pages. |
+| `options.total` | int | no | `0` | Total rows, for the summary. |
+| `options.perPage` | int | no | `25` | Only used to compute the summary range. |
+| `options.keep` | map | no | `{}` | Query parameters carried onto every link (other tables' searches and pages). |
+| `options.window` | int | no | `2` | Page links shown either side of the current one. |
+
+```twig
+{{ d.pagination({
+  route: 'app_department_show',
+  routeParams: {id: department.uuid},
+  param: 'staff_page',
+  page: section.page, pages: section.pages,
+  total: section.total, perPage: section.perPage,
+  keep: section.keep,
+}) }}
+```
+
+Notes:
+- **Anything not in `keep` is lost when the viewer pages.** That is how one table's pager discards
+  another table's state; pass the parameters you want preserved.
+- The macro paginates nothing itself - it only renders links. The slicing is the caller's job
+  (`DepartmentService::paginateMembers()` is the reference implementation, and it clamps an
+  out-of-range page to the last one).
+- **A paginated query needs a total `ORDER BY`.** Without one the database may return rows in a
+  different order per request, so a row can appear on two pages or on none.
+- Inside a `<turbo-frame>` the links navigate that frame only; no JS is needed for the pager.
+
+---
+
 #### `delete_form(action, token, options = {})`
 
 The destructive-action POST form used across ~20 CRUD index pages. It wires the `confirm` Stimulus
@@ -663,9 +706,14 @@ A standalone (non-Symfony-Form) search box that debounces into a Turbo Frame.
 | `options.id` | string | no | `'search_' ~ name` | |
 | `options.label` | string | no | `'Search'` | |
 | `options.placeholder` | string | no | `'Type to search…'` | |
-| `options.col` | string | no | `'col-12'` | |
+| `options.col` | string | no | `'col-12'` | Pass `''` for no column/margin (a card-header search). |
 | `options.debounceMs` | int | no | `250` | |
 | `options.turboFrame` | string | no | - | **Without it the input does nothing.** Id of the `<turbo-frame>` to refresh. |
+| `options.param` | string | no | `'q'` | Query parameter the term is written to. Give each search on a page its own so several tables stay independent. |
+| `options.resetParams` | list | no | - | Parameters dropped on every search, e.g. that table's page number. |
+| `options.value` | string | no | `''` | Current term, so the box survives a reload. |
+| `options.url` | string | no | - | Base URL for the request; needed when the frame has no `src` yet. |
+| `options.hideLabel` | bool | no | `false` | Keeps the label for screen readers only. |
 | `options.help` | string | no | - | |
 
 ```twig
@@ -673,12 +721,24 @@ A standalone (non-Symfony-Form) search box that debounces into a Turbo Frame.
 <turbo-frame id="user-results" src="{{ path('app_users_frame') }}">…</turbo-frame>
 ```
 
-Limitations, all real:
-- The JS always sets the **`q`** query parameter on the frame's URL, regardless of `name`. Name the
-  field `q` unless you also change `forms.js`.
-- The target frame must already have a `src` attribute (the JS falls back to a `data-search-url`
-  attribute on the input, which **this macro never emits**).
-- No form wrapper, no CSRF, no submit fallback for a JS-less client.
+Several independent searches on one page (the department dashboard does this for its three member
+tables). Each writes its own parameter and resets its own pager:
+
+```twig
+{{ f.search_input('staff_q', {
+  col: '', hideLabel: true, value: section.query,
+  param: 'staff_q', resetParams: ['staff_page'],
+  url: path('app_department_show', {id: department.uuid}),
+  turboFrame: 'dept-members-staff',
+}) }}
+```
+
+Notes:
+- A new term always resets the parameters in `resetParams`. Without that, searching from page 3
+  would keep `page=3` and show an empty table whenever the narrowed list has fewer pages.
+- The frame needs either a `src` or an `options.url`; otherwise the JS falls back to the current URL.
+- The macro emits no form wrapper and no CSRF. For a JS-less fallback, wrap the call in a
+  `<form method="get">` and add hidden inputs for the parameters you want carried through.
 
 ---
 
@@ -748,24 +808,58 @@ deleted `multi_select()` macro. Do not build anything on it. For a tag/chips **u
 #### `user_select(name, options = {})`
 
 A tag-style, type-ahead **user** picker: type a username, pick from a live dropdown (avatar + name,
-with a `(staff)` suffix for staff), and each pick becomes a removable chip. It submits one hidden
-`<name>[]` input per picked user, so it drops straight into a normal POST form - no JS submit needed.
-Behaviour is the `user_select` Stimulus controller (`assets/controllers/user_select_controller.js`);
-styling is `assets/styles/user-select.css`. Reusable anywhere: supply a JSON search endpoint.
+with a `(staff)` suffix for staff), and each pick becomes a removable chip. Behaviour is the
+`user_select` Stimulus controller (`assets/controllers/user_select_controller.js`); styling is
+`assets/styles/user-select.css`. **This is the only user-selection control** - it replaces every
+eager "load all users" `<select>`, which was unusable at 800+ users. Do not add a native user
+dropdown; point this macro at a scoped search endpoint instead.
 
-The endpoint receives `?q=<text>` and returns `{results: [{id, name, staff: bool, avatar: string|null}]}`.
-Search is username-only partial matching (`UserRepository::searchByName`); the caller's endpoint decides
-scope/authorization and which users to exclude (e.g. already-assigned).
+**Two modes.** Multi-select (default) collects several users and submits one hidden `<name>[]` input
+per pick. Single-select (`multiple: false`) holds one user at a time - a new pick replaces the
+current chip - and submits a single scalar `<name>` input. Both drop straight into a normal POST
+form; no JS submit needed.
 
 | Param | Type | Required | Default | Description |
 |---|---|---|---|---|
-| `name` | string | **yes** | - | Hidden inputs are named `<name>[]`. |
+| `name` | string | **yes** | - | Submitted input(s): `<name>[]` when multi, `<name>` when `multiple: false`. |
 | `options.url` | string | **yes** | - | The JSON search endpoint. |
+| `options.multiple` | bool | no | `true` | `false` = single-user field. Read with `is defined`, so an explicit `false` is honoured. |
 | `options.label` | string\|false | no | `'Add users'` | `false` omits the label. |
-| `options.placeholder` / `options.help` / `options.col` | | no | | |
+| `options.placeholder` / `options.help` / `options.col` / `options.id` | | no | | |
 | `options.minChars` | int | no | `1` | Characters typed before searching. |
 | `options.staffSuffix` | bool | no | `true` | Append `' (staff)'` to staff names. |
-| `options.selected` | list | no | `[]` | `{id, name, staff, avatar}` chips to pre-render (edit forms). |
+| `options.selected` | list | no | `[]` | Chips to pre-render (edit forms). `{id, name}` minimum; `staff`/`avatar` optional. |
+
+**The search endpoint.** Receives `?q=<text>`, returns
+`{results: [{id, name, staff: bool, avatar: string|null}]}`. Two non-negotiable rules:
+
+- **`id` must be the public UUID, never the primary key.** The widget treats `id` as opaque and
+  echoes it straight back in the hidden input, so the value must be safe to expose. Shape the JSON
+  with `App\Service\UserSearchResultFormatter::results($users)`, which emits the UUID-based contract
+  for you.
+- **Search username-only** (`UserRepository::searchByName`) - never email or id substrings, which
+  turn the box into an enumeration tool (see the security invariants).
+
+The endpoint owns authorization and scope: gate it with the screen's privilege and exclude whoever
+must not appear (already-assigned, existing members, SSO-managed, ...). The macro never mints CSRF
+tokens or decides authorization - the caller supplies the token and the scoped endpoint (mirrors the
+`d.delete_form()` convention).
+
+```php
+// A scoped, username-only endpoint. `denyAccessUnlessGranted($priv, $subject)` is required for
+// scoped privileges - passing the subject is what makes the check actually scope (it grants
+// unconditionally without it).
+#[Route('/.../search', name: 'app_..._user_search', methods: ['GET'])]
+#[IsGranted('some:privilege')]
+public function userSearch(Request $request, UserRepository $users, UserSearchResultFormatter $fmt): JsonResponse
+{
+    $q = trim((string) $request->query->get('q', ''));
+
+    return new JsonResponse($fmt->results($q === '' ? [] : $users->searchByName($q)));
+}
+```
+
+**Multi-select in a plain POST form:**
 
 ```twig
 <form method="post" action="{{ path('app_shift_staffing_assign', {id: shift.uuid}) }}">
@@ -775,8 +869,29 @@ scope/authorization and which users to exclude (e.g. already-assigned).
 </form>
 ```
 
-The macro never mints CSRF tokens or decides authorization - the caller supplies the token and the
-scoped search endpoint (mirrors the `d.delete_form()` convention).
+**Single user bound to a Symfony form.** Use `App\Form\UserPickerType` (a `HiddenType` with a
+UUID↔User transformer) so the field binds a `User` without loading every user, and render it with
+the macro in single mode:
+
+```php
+$builder->add('user', UserPickerType::class, ['label' => 'manage.label.volunteer']);
+```
+
+```twig
+{{ form_start(form) }}
+  {% set current = form.vars.data.user %}
+  {{ f.user_select(form.user.vars.full_name, {
+    url: path('app_..._user_search'),
+    multiple: false,
+    id: form.user.vars.id,
+    selected: current ? [{id: current.uuid, name: current.name, staff: current.staff}] : [],
+  }) }}
+  {# the picker already emitted the hidden input - mark the field rendered so form_end does not
+     add a duplicate, while still rendering the CSRF token #}
+  {% do form.user.setRendered %}
+  <button class="btn btn-primary">Save</button>
+{{ form_end(form) }}
+```
 
 ---
 
@@ -1087,7 +1202,7 @@ If you find yourself writing the third copy of something, *then* it is a compone
 | Removed | Why |
 |---|---|
 | `components/modal/_macros.twig` - `confirm()`, `form_modal()`, `detail()` (whole file deleted) | **Broken and dangerous.** `confirm()` rendered a POST form with **no CSRF token**; `form_modal()`'s submit button sat **outside** the `<form>` it claimed to submit (no `form=` attribute), so it could not work. They had zero production callers and they contradicted the project rule (`confirm_controller.js` / `modal.js`). The demo page was teaching a broken, unprotected pattern. **Use `data-controller="confirm"` or `confirmModal()`/`alertModal()` instead.** |
-| `data.pagination()` | **Broken.** It hard-coded `?page=N`, discarding every other query parameter (filters, search), and rendered every page with no windowing. Nothing in the app paginates. If pagination is ever needed, write it against a real caller and preserve the query string. |
+| `data.pagination()` - the original one | **Was broken, and has since been rewritten.** The old macro hard-coded `?page=N`, discarding every other query parameter (filters, search), and windowed nothing. The replacement documented in section 3 takes a `param` and a `keep` map for exactly that reason, and it has a real caller (the department dashboard). Do not reintroduce the `?page=N` form. |
 | `forms.multi_select()` | **Never functional.** Not bound to a Symfony form (no CSRF, no error display), and it emitted `data-multiselect` - an attribute **no JavaScript reads**. Use `choice_multiple()`. (That attribute survives in `choice_multiple`; it is inert.) |
 | `data.card(title, body, options)` - the old string-body card | **Superseded by `card_start`/`card_end`.** Its body was a pre-rendered string, which no real card body survives (loops, `is_granted`, `form_widget`), so it had 1 caller - a demo page - while the app contained 126 hand-rolled cards in 73 files. It also hard-coded `mb-3`, emitted `<div class="fw-bold">` instead of a real `<h3 class="card-title">` heading, could not be a `<form>`, and could not drop `card-body`. Keeping a shim would leave two ways to build a card - exactly the ambiguity that caused the mess. |
 

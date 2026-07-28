@@ -35,7 +35,11 @@ final class AccountSettingsType extends AbstractType
             ->add('plannedArrivalDate', DateType::class, ['label' => 'settings.field.planned_arrival.label'] + $date)
             ->add('plannedDepartureDate', DateType::class, ['label' => 'settings.field.planned_departure.label'] + $date)
             ->add('language', ChoiceType::class, [
-                'choices' => ['settings.language.option.en' => 'en_US', 'settings.language.option.de' => 'de_DE'],
+                'choices' => [
+                    'settings.language.option.en' => 'en_US',
+                    'settings.language.option.de' => 'de_DE',
+                    'settings.language.option.tlh' => 'tlh',
+                ],
                 'label' => 'settings.field.language.label',
             ])
             ->add('theme', ChoiceType::class, [

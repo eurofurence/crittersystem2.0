@@ -31,5 +31,19 @@ docs/keycloak-credentials.txt
 # Deployed version marker, written into the image by CI (see Dockerfile).
 /VERSION
 
+upload_sbom.sh
+
 # Backup files and shit files not need to be kept or sent to repo
 *.bak
+
+###> js test tooling ###
+# Test-only dependencies (vitest/happy-dom). Assets ship unbundled via AssetMapper; this is not a
+# build step and node_modules is never deployed.
+/node_modules/
+###< js test tooling ###
+
+###> browser test drivers ###
+# Chrome for Testing + chromedriver, fetched per machine (see docs/testing.md). ~200 MB, platform
+# specific, never committed.
+/drivers/
+###< browser test drivers ###

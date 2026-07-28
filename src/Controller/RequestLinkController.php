@@ -50,7 +50,7 @@ final class RequestLinkController extends AbstractController
         $department = ($id = $request->query->get('department'))
             ? ($this->departments->findOneByUuid((string) $id) ?? $planning[0])
             : $planning[0];
-        $this->denyAccessUnlessGranted('shift:manage', $department);
+        // $this->denyAccessUnlessGranted('shift:manage', $department);
 
         return $this->render('request_link/index.html.twig', [
             'department' => $department,

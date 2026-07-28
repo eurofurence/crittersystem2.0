@@ -1,0 +1,200 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: tlh\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+# ==========================================================================
+# tlhIngan Hol - Klingon. A novelty locale, and deliberately incomplete.
+#
+# WHAT THIS IS
+# Klingon has roughly 3000 known words, none of them for "two-factor
+# authentication" or "CSV export". A full catalogue would be mostly invented
+# vocabulary presented as translation, so this file covers only the strings
+# backed by real words: navigation, buttons, table headers. Everything else is
+# absent ON PURPOSE and falls back to English - a missing key is not a gap to
+# fill, and filling it means inventing Klingon.
+#
+# PROVENANCE
+# Entries marked "canon" use vocabulary from Marc Okrand's The Klingon
+# Dictionary. Entries marked "built" combine canon roots into a compound that
+# is grammatically formed but is not itself attested - the closest honest
+# equivalent, not an official term. Nothing here is machine-translated, and
+# nothing claims authority.
+#
+# THE WAY BACK MUST STAY ENGLISH
+# The user menu (ui.user_menu.*), the settings page (settings.*) and the aria
+# labels on that path (ui.aria.*) are NEVER translated here. Someone who picks
+# Klingon out of curiosity has to be able to find Settings and switch back, and
+# they cannot do that if the route out is also in Klingon. Adding any key with
+# those prefixes to this file locks users into a language they cannot read;
+# LocaleEscapeHatchTest fails the build if one appears.
+#
+# Buttons use the yI- imperative prefix, which is what Klingon actually uses to
+# tell someone to do something - so they read as commands, as they should.
+# ==========================================================================
+
+# --- navigation -----------------------------------------------------------
+
+# canon: juH = home
+msgid "ui.nav.dashboard"
+msgstr "juH"
+
+# built: De' (data, information) + chu' (be new)
+msgid "ui.nav.news"
+msgstr "De' chu'"
+
+# built: Qu' (mission, duty) + -wIj (my). A shift is a duty, near enough.
+msgid "ui.nav.my_shifts"
+msgstr "Qu'wIj"
+
+# built: Qu' + -mey (plural)
+msgid "ui.nav.shifts"
+msgstr "Qu'mey"
+
+# built: "commander of duties"; ra'wI' = one who commands (canon)
+msgid "ui.nav.shift_manager"
+msgstr "Qu' ra'wI'"
+
+# built: SuvwI' (warrior) + Segh (species, type) + -mey
+msgid "ui.nav.volunteer_types"
+msgstr "SuvwI' Seghmey"
+
+# canon: Daq = site, location
+msgid "ui.nav.locations"
+msgstr "Daqmey"
+
+# canon: QIn = message
+msgid "ui.nav.messages"
+msgstr "QInmey"
+
+# canon: ghom = group
+msgid "ui.nav.departments"
+msgstr "ghommey"
+
+# built: pop (reward) + nav (paper)
+msgid "ui.nav.bounty_board"
+msgstr "pop nav"
+
+# --- actions (yI- imperative: these are orders, not labels) ---------------
+
+# canon: pol = keep, save
+msgid "common.action.save"
+msgstr "yIpol"
+
+# canon: qIl = cancel
+msgid "common.action.cancel"
+msgstr "yIqIl"
+
+# canon: Qaw' = destroy
+msgid "common.action.delete"
+msgstr "yIQaw'"
+
+# canon: choH = change
+msgid "common.action.edit"
+msgstr "yIchoH"
+
+# canon: chenmoH = create, form
+msgid "common.action.create"
+msgstr "yIchenmoH"
+
+# canon: chel = add
+msgid "common.action.add"
+msgstr "yIchel"
+
+# canon: teq = remove, take off
+msgid "common.action.remove"
+msgstr "yIteq"
+
+# canon: chegh = return
+msgid "common.action.back"
+msgstr "yIchegh"
+
+# canon: HISlaH = yes. A confirm button is an affirmation, not a verb.
+msgid "common.action.confirm"
+msgstr "HISlaH"
+
+# canon: nej = seek, search for
+msgid "common.action.search"
+msgstr "yInej"
+
+# canon: wIv = choose
+msgid "common.action.select"
+msgstr "yIwIv"
+
+# canon: lo' = use
+msgid "common.action.apply"
+msgstr "yIlo'"
+
+# canon: ngeH = send
+msgid "common.action.submit"
+msgstr "yIngeH"
+
+# canon: bej = watch, observe
+msgid "common.action.view"
+msgstr "yIbej"
+
+# canon: taH = continue, go on
+msgid "common.action.continue"
+msgstr "yItaH"
+
+# --- labels ---------------------------------------------------------------
+
+# canon: pong = name
+msgid "common.label.name"
+msgstr "pong"
+
+# canon: Dotlh = status, condition
+msgid "common.label.status"
+msgstr "Dotlh"
+
+# canon: Segh = species, type
+msgid "common.label.type"
+msgstr "Segh"
+
+# canon: Daq = site, location
+msgid "common.label.location"
+msgstr "Daq"
+
+# canon: beq = crew member, + -pu' (plural, beings)
+msgid "common.label.members"
+msgstr "beqpu'"
+
+# canon: ghom = group
+msgid "common.label.department"
+msgstr "ghom"
+
+# canon: ghorgh = when. Reads as a question, which suits a column header.
+msgid "common.label.when"
+msgstr "ghorgh"
+
+# built: lo' (use) + -wI' (one who does) - the community's word for a user
+msgid "common.label.user"
+msgstr "lo'wI'"
+
+# canon: meq = reason
+msgid "common.label.reason"
+msgstr "meq"
+
+# canon: per = label
+msgid "common.label.title"
+msgstr "per"
+
+# --- states ---------------------------------------------------------------
+
+# canon: HISlaH = yes
+msgid "common.state.yes"
+msgstr "HISlaH"
+
+# canon: ghobe' = no
+msgid "common.state.no"
+msgstr "ghobe'"
+
+# canon: buy' = be full
+msgid "common.state.full"
+msgstr "buy'"
+
+# canon: Qapla' = success. The one word everybody knows.
+msgid "admin.audit.events.success"
+msgstr "Qapla'"

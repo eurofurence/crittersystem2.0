@@ -26,6 +26,7 @@ Critter 2.0 is pre-production. **`0.0.1-alpha` it is not yet run for a live even
 - feat(errors): add branded HTTP error pages inside the site layout (`9e4c708`)
 - feat(i18n): make the whole browser UI translatable
 - feat(i18n): add full German catalogs in informal du-form (`694b6c5`)
+- feat(i18n): add a partial Klingon (`tlh`) locale; the route back to English stays untranslated
 - feat(users): let admins queue an onboarding re-run, per user or for all (`534f268`)
 - feat(bot-api): add the `/api/bot/*` surface for the Telegram bot (`375db17`)
 - feat(bot-api): expose per-category Telegram notification consent (`375db17`)

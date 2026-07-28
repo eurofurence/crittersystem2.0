@@ -16,12 +16,13 @@
   {{ d.card_start() }}
       <form method="get" class="d-flex align-items-end gap-2">
         <div>
-          <label class="form-label mb-1" for="grid-department">{{ 'common.label.department'|trans }}</label>
+          <label class="form-label mb-1 required" for="grid-department">{{ 'common.label.department'|trans }}</label>
           <select id="grid-department" name="department" class="form-select" onchange="this.form.submit()">
             {% for dept in departments %}
               <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
             {% endfor %}
           </select>
+          <div class="form-hint">Select only the deparment you are Director</div>
         </div>
       </form>
   {{ d.card_end() }}

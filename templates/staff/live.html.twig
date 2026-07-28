@@ -10,10 +10,11 @@
     actions: [{label: 'staff.action.back_overview'|trans, href: path('app_staff_overview'), class: 'btn btn-outline-secondary'}]
   }) }}
 
+  {# 
   {% if understaffed is not empty %}
     {{ n.alert('warning', 'staff.live.understaffed'|trans({'%departments%': understaffed|map(dep => dep.name)|join(', ')}), {icon: '⚠️'}) }}
   {% endif %}
-
+  #}
   {% if byDepartment is empty %}
     {{ d.empty_state('staff.live.empty.title'|trans, {message: 'staff.live.empty.message'|trans}) }}
   {% else %}

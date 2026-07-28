@@ -113,7 +113,7 @@ final class StaffController extends AbstractController
 
         return $this->render('staff/live.html.twig', [
             'byDepartment' => $byDepartment,
-            'understaffed' => $understaffed,
+            // 'understaffed' => $understaffed,
         ]);
     }
 

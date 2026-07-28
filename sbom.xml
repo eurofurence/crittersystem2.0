@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1" serialNumber="urn:uuid:5eaf6829-491f-4be8-a24c-eadbb2b93737">
+<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1" serialNumber="urn:uuid:6532a87d-8b8d-4df8-b6f7-d854c394da0e">
   <metadata>
-    <timestamp><![CDATA[2026-07-27T18:20:30Z]]></timestamp>
+    <timestamp><![CDATA[2026-07-27T22:20:31Z]]></timestamp>
     <tools>
       <tool>
         <name><![CDATA[composer]]></name>
@@ -76,8 +76,8 @@
       </licenses>
       <purl><![CDATA[pkg:composer/__root__@dev-main]]></purl>
       <properties>
-        <property name="cdx:composer:package:distReference"><![CDATA[5d378d1e8d98c4ca555bfdf5b07b11195a4c9644]]></property>
-        <property name="cdx:composer:package:sourceReference"><![CDATA[5d378d1e8d98c4ca555bfdf5b07b11195a4c9644]]></property>
+        <property name="cdx:composer:package:distReference"><![CDATA[bbab7984a525dba6abdc1f76e39419c6393a98ac]]></property>
+        <property name="cdx:composer:package:sourceReference"><![CDATA[bbab7984a525dba6abdc1f76e39419c6393a98ac]]></property>
         <property name="cdx:composer:package:type"><![CDATA[project]]></property>
       </properties>
     </component>

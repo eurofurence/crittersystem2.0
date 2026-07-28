@@ -35,7 +35,7 @@ final class LocaleSubscriber implements EventSubscriberInterface
     public function __construct(
         private readonly Security $security,
         private readonly TranslatorInterface $translator,
-        array $enabledLocales = ['en', 'de'],
+        array $enabledLocales = ['en', 'de', 'tlh'],
     ) {
         $this->enabledLocales = $enabledLocales;
     }
@@ -99,7 +99,11 @@ final class LocaleSubscriber implements EventSubscriberInterface
     }
 
     /**
-     * Map a stored/query locale ("en_US", "de", "de_DE") to a supported short code, or null.
+     * Map a stored/query locale ("en_US", "de", "de_DE", "tlh") to a supported code, or null.
+     *
+     * Takes the language subtag rather than the first two characters: a three-letter ISO 639-2
+     * code such as "tlh" (Klingon) would otherwise be truncated to "tl" and match nothing, so the
+     * locale could never activate.
      */
     private function normalize(?string $value): ?string
     {
@@ -107,8 +111,8 @@ final class LocaleSubscriber implements EventSubscriberInterface
             return null;
         }
 
-        $short = strtolower(substr($value, 0, 2));
+        $language = strtolower(strtok(str_replace('-', '_', $value), '_') ?: '');
 
-        return in_array($short, $this->enabledLocales, true) ? $short : null;
+        return in_array($language, $this->enabledLocales, true) ? $language : null;
     }
 }

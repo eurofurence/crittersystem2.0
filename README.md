@@ -72,7 +72,9 @@ docker compose -f compose.dev.yaml up     # app on :8000, Mailpit on :8025
 ### Checks
 
 ```bash
-php bin/phpunit                        # the test suite (435 tests)
+php bin/phpunit                        # the test suite (787 tests; run it alone)
+npm test                               # Stimulus controller tests (vitest)
+php bin/phpunit --testsuite Browser    # real-browser tests (Panther; see docs/testing.md)
 php bin/console lint:twig templates
 php bin/console lint:container
 ```
