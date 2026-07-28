@@ -188,6 +188,37 @@ final class UserPreSeedImportTest extends DatabaseTestCase
         self::assertTrue($hasDepartment, 'memberships are still applied to the existing user');
     }
 
+    /**
+     * Real mappings repeat a volunteer type across many groups (every department granting Staff).
+     * A user in two such groups must still end up with one membership: the lookup behind the grant
+     * is a database query and cannot see an insert pending in the same flush, so applying it per
+     * mapping produced a duplicate INSERT that aborted the whole import.
+     */
+    public function testTwoGroupsGrantingTheSameVolunteerTypeCreateOneMembership(): void
+    {
+        $this->seedCatalogue();
+        $type = $this->em->getRepository(VolunteerType::class)->findOneBy(['name' => 'Volunteer']);
+        $second = (new SsoGroupMapping('GRP-DEPT2'))->setName('Dealers Den');
+        $second->addVolunteerType($type);
+        $this->em->persist($second);
+        $this->em->flush();
+
+        $result = $this->importer()->import([
+            ['id' => 'GRP-DEPT', 'type' => 'department', 'name' => 'Art Show', 'users' => [
+                ['user_id' => 'SUB-A', 'username' => 'alice', 'level' => 'member'],
+            ]],
+            ['id' => 'GRP-DEPT2', 'type' => 'department', 'name' => 'Dealers Den', 'users' => [
+                ['user_id' => 'SUB-A', 'username' => 'alice', 'level' => 'member'],
+            ]],
+        ]);
+        self::assertSame(1, $result['created']);
+
+        $this->em->clear();
+        $alice = $this->user('SUB-A');
+        self::assertNotNull($alice);
+        self::assertSame(1, $this->em->getRepository(UserVolunteerType::class)->count(['user' => $alice->getId()]));
+    }
+
     public function testRejectsNonListPayload(): void
     {
         $this->expectException(\InvalidArgumentException::class);

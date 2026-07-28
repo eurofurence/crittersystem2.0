@@ -207,6 +207,46 @@ final class SsoTest extends DatabaseTestCase
         self::assertTrue($memberships[0]->isConfirmed());
     }
 
+    /**
+     * Several SSO groups granting the same volunteer type must still produce one membership.
+     * The membership lookup is a database query, so it cannot see an insert already pending in
+     * the same flush - applying the grant per mapping made the second one a duplicate INSERT
+     * that the (user, volunteer_type) unique index rejected, failing the whole login.
+     */
+    public function testSeveralMappingsGrantingTheSameVolunteerTypeCreateOneMembership(): void
+    {
+        $this->seedTargets();
+        static::getContainer()->get(SsoMappingImporter::class)->import([
+            ['id' => 'GRP1', 'name' => 'Art Show', 'slug' => 'art-show', 'volunteertype' => ['Volunteer']],
+            ['id' => 'GRP2', 'name' => 'Info Desk', 'slug' => 'info-desk-team', 'volunteertype' => ['Volunteer']],
+        ]);
+
+        /** @var SsoUserProvisioner $provisioner */
+        $provisioner = static::getContainer()->get(SsoUserProvisioner::class);
+        $user = $provisioner->provision(new SsoClaims('sub-dup', 'dup@example.com', 'dup', 'Dup User', ['GRP1', 'GRP2']));
+
+        $this->em->clear();
+        $memberships = $this->em->getRepository(UserVolunteerType::class)->findBy(['user' => $user->getId()]);
+        self::assertCount(1, $memberships);
+        self::assertTrue($memberships[0]->isConfirmed());
+    }
+
+    /** The provider may report the same group id twice; that must not grant its type twice. */
+    public function testARepeatedGroupIdInTheClaimsCreatesOneMembership(): void
+    {
+        $this->seedTargets();
+        static::getContainer()->get(SsoMappingImporter::class)->import([
+            ['id' => 'GRP1', 'name' => 'Art Show', 'slug' => 'art-show', 'volunteertype' => ['Volunteer']],
+        ]);
+
+        /** @var SsoUserProvisioner $provisioner */
+        $provisioner = static::getContainer()->get(SsoUserProvisioner::class);
+        $user = $provisioner->provision(new SsoClaims('sub-rep', 'rep@example.com', 'rep', 'Rep User', ['GRP1', 'GRP1']));
+
+        $this->em->clear();
+        self::assertSame(1, $this->em->getRepository(UserVolunteerType::class)->count(['user' => $user->getId()]));
+    }
+
     public function testBannedIdentityIsRefused(): void
     {
         /** @var BanChecker $bans */

@@ -71,7 +71,8 @@ final class SsoUserProvisioner
      */
     public function applyGroups(User $user, array $groupIds): void
     {
-        $departments = $this->applyMappings($user, $groupIds);
+        // A provider that reports the same group twice must not apply its mapping twice.
+        $departments = $this->applyMappings($user, array_values(array_unique($groupIds)));
         $this->positions->apply($user, $groupIds, $departments);
         $this->globalRoles->apply($user, $groupIds);
     }
@@ -186,6 +187,8 @@ final class SsoUserProvisioner
     private function applyMappings(User $user, array $groupIds): array
     {
         $departments = [];
+        /** @var array<int, \App\Entity\VolunteerType> $volunteerTypes granted types, keyed by id */
+        $volunteerTypes = [];
 
         foreach ($groupIds as $groupId) {
             $mapping = $this->mappings->findOneBySsoGroupId($groupId);
@@ -206,11 +209,18 @@ final class SsoUserProvisioner
                 }
             }
             foreach ($mapping->getVolunteerTypes() as $type) {
-                $this->ensureVolunteerType($user, $type);
+                $volunteerTypes[(int) $type->getId()] = $type;
             }
             foreach ($mapping->getBadges() as $badge) {
                 $user->addBadge($badge);
             }
+        }
+
+        // Collected across all mappings first: mappings commonly share a volunteer type (every
+        // department granting Staff), and each type may be granted only once per pass - see
+        // ensureVolunteerType().
+        foreach ($volunteerTypes as $type) {
+            $this->ensureVolunteerType($user, $type);
         }
 
         return array_values($departments);
@@ -231,6 +241,10 @@ final class SsoUserProvisioner
      * rather than queued for a supporter - no manual step is needed for anything
      * SSO already tells us. A membership the user requested themselves and that
      * is still pending is confirmed too, once a mapping grants the same type.
+     *
+     * Call this at most once per user and type: the lookup is a database query, so it cannot see a
+     * membership persisted earlier in the same flush, and a second call would schedule a duplicate
+     * INSERT that the (user, volunteer_type) unique index rejects - aborting the whole sign-in.
      */
     private function ensureVolunteerType(User $user, \App\Entity\VolunteerType $type): void
     {
