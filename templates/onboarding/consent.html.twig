@@ -9,9 +9,9 @@
   <form method="post">
     <label class="form-check">
       <input type="checkbox" class="form-check-input" name="consent" value="1" required>
-      <span class="form-check-label">{{ text ? text.checkboxLabel : 'onboarding.consent.checkbox_default'|trans }}</span>
+      <span class="form-check-label required">{{ text ? text.checkboxLabel : 'onboarding.consent.checkbox_default'|trans }}</span>
     </label>
     {% if text and text.footer %}<p class="text-muted small mt-2">{{ text.footer|nl2br }}</p>{% endif %}
-    <div class="mt-3"><button class="btn btn-primary">{{ 'onboarding.consent.agree'|trans }}</button></div>
+    <div class="mt-3"><button class="btn btn-primary w-100">{{ 'onboarding.consent.agree'|trans }}</button></div>
   </form>
 {% endblock %}

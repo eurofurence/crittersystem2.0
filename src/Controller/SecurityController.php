@@ -27,7 +27,7 @@ final class SecurityController extends AbstractController
         LocalLoginPolicy $localLogin,
     ): Response {
         if ($this->getUser() !== null) {
-            return $this->redirectToRoute('app_dashboard');
+            return $this->redirectToRoute('app_news_index');
         }
 
         $this->rememberReturnPath($request);

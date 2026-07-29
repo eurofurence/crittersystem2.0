@@ -4113,10 +4113,10 @@ msgid "onboarding.flash.password_mismatch"
 msgstr "Passwords must match and be at least 8 characters."
 
 msgid "onboarding.notifications.contact_required_note"
-msgstr "You must share at least one channel so managers and shift leads can reach you. You choose which."
+msgstr "You must share at least one option, so departments and shift managers can contact you"
 
 msgid "onboarding.notifications.critical_note"
-msgstr "Critical notifications (password reset, security, support) are always sent. We never share your email or send spam."
+msgstr "Critical notifications (password reset, security, support) are always sent. We will never share your email or send spam"
 
 msgid "onboarding.notifications.email_goodies"
 msgstr "Goodies notifications"

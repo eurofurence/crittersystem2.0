@@ -3,10 +3,14 @@
 {% block step_title %}{{ 'onboarding.notifications.heading'|trans }}{% endblock %}
 {% block step_body %}
   <form method="post">
+
     <p class="form-label">{{ 'onboarding.notifications.email_heading'|trans }}</p>
+    <p class="text-muted small">{{ 'onboarding.notifications.critical_note'|trans }}</p>
     <label class="form-check"><input type="checkbox" class="form-check-input" name="email_shifts" value="1" {{ settings.emailShiftinfo ? 'checked' }}><span class="form-check-label">{{ 'onboarding.notifications.email_shifts'|trans }}</span></label>
     <label class="form-check"><input type="checkbox" class="form-check-input" name="email_goodies" value="1" {{ settings.emailGoodie ? 'checked' }}><span class="form-check-label">{{ 'onboarding.notifications.email_goodies'|trans }}</span></label>
-    <p class="form-label mt-3">{{ 'onboarding.notifications.visibility_heading'|trans }}</p>
+
+    <p class="form-label mt-6 required">{{ 'onboarding.notifications.visibility_heading'|trans }}</p>
+    <p class="text-muted small"><mark>*{{ 'onboarding.notifications.contact_required_note'|trans }}:</mark></p>
     <label class="form-check"><input type="checkbox" class="form-check-input" name="show_name" value="1" {{ consent.fullNameVisible ? 'checked' }}><span class="form-check-label">{{ 'onboarding.notifications.show_name'|trans }}</span></label>
     <label class="form-check"><input type="checkbox" class="form-check-input" name="show_email" value="1" {{ consent.emailVisible ? 'checked' }}><span class="form-check-label">{{ 'onboarding.notifications.show_email'|trans }}</span></label>
     {% if hasPhone %}
@@ -15,8 +19,9 @@
     {% if hasTelegram %}
       <label class="form-check"><input type="checkbox" class="form-check-input" name="show_telegram" value="1" {{ consent.telegramVisible ? 'checked' }}><span class="form-check-label">{{ 'onboarding.notifications.show_telegram'|trans }}</span></label>
     {% endif %}
-    <p class="text-muted small mt-3">{{ 'onboarding.notifications.contact_required_note'|trans }}</p>
-    <p class="text-muted small">{{ 'onboarding.notifications.critical_note'|trans }}</p>
-    <div class="mt-3"><button class="btn btn-primary">{{ 'common.action.continue'|trans }}</button></div>
+
+
+    <div class="mt-3"><button class="btn btn-primary w-100">{{ 'common.action.continue'|trans }}</button></div>
+
   </form>
 {% endblock %}

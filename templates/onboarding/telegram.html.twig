@@ -14,7 +14,7 @@
     {% if bot_username and pending %}
       <p>{{ 'telegram.pending.deeplink_instructions'|trans }}</p>
       <p>
-        <a class="btn btn-primary" href="https://t.me/{{ bot_username }}?start={{ pending.code }}" target="_blank" rel="noopener">
+        <a class="btn btn-primary w-100" href="https://t.me/{{ bot_username }}?start={{ pending.code }}" target="_blank" rel="noopener">
           {{ 'telegram.action.open_in_telegram'|trans }}
         </a>
       </p>
@@ -26,7 +26,7 @@
     {% endif %}
     <p class="text-muted small" id="tg-wait">{{ 'telegram.pending.waiting'|trans }}</p>
     <form method="post">
-      <button class="btn btn-outline-secondary">{{ 'onboarding.telegram.skip'|trans }}</button>
+      <button class="btn btn-secondary w-100">{{ 'onboarding.telegram.skip'|trans }}</button>
     </form>
     <script>
       (function poll(){

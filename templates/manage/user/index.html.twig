@@ -7,7 +7,7 @@
   {{ d.page_header('manage.user.page.title'|trans, {
     subtitle: 'manage.user.page.subtitle'|trans,
     actions: [
-      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-secondary'},
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
       is_granted('user:create') ? {label: 'manage.user.action.invite'|trans, href: path('app_manage_user_invite'), class: 'btn btn-primary'} : null
     ]|filter(a => a is not null)
   }) }}
@@ -17,7 +17,7 @@
     {% if is_granted('global:admin') %}
       {{ d.delete_form(path('app_manage_user_reset_onboarding_all'), csrf_token('reset-onboarding-all'), {
         label: 'manage.user.onboarding.force_all_label'|trans,
-        class: 'btn btn-warning text-nowrap',
+        class: 'btn btn-outline-warning text-nowrap',
         confirmTitle: 'manage.user.onboarding.force_all_title'|trans,
         confirmLabel: 'manage.user.onboarding.force_all_confirm'|trans,
         variant: 'warning',
@@ -29,7 +29,7 @@
   {% if can_reveal_pii() %}
     <div class="alert alert-secondary d-flex align-items-center mb-3" role="status">
       <span class="me-auto">{{ 'manage.user.pii.masked_notice'|trans }}</span>
-      <a class="btn btn-sm btn-primary text-nowrap" href="{{ path('app_2fa_confirm', {return: app.request.requestUri}) }}">{{ 'manage.user.pii.reveal'|trans }}</a>
+      <a class="btn btn-sm btn-outline-primary text-nowrap" href="{{ path('app_2fa_confirm', {return: app.request.requestUri}) }}">{{ 'manage.user.pii.reveal'|trans }}</a>
     </div>
   {% endif %}
 
@@ -50,11 +50,11 @@
             {% if u.onboardingResetPending %}{{ d.badge('manage.user.onboarding.rerun_queued'|trans, 'text-bg-info', {class: 'ms-1'}) }}{% endif %}
           </td>
           <td class="text-end text-nowrap">
-            {% if is_granted('user:edit') %}<a class="btn btn-sm btn-primary" href="{{ path('app_manage_user_edit', {id: u.uuid}) }}">{{ 'common.action.edit'|trans }}</a>{% endif %}
+            {% if is_granted('user:edit') %}<a class="btn btn-sm btn-outline-primary" href="{{ path('app_manage_user_edit', {id: u.uuid}) }}">{{ 'common.action.edit'|trans }}</a>{% endif %}
             {% if is_granted('global:admin') %}
               {{ d.delete_form(path('app_manage_user_reset_onboarding', {id: u.uuid}), csrf_token('reset-onboarding' ~ u.id), {
                 label: u.onboardingResetPending ? 'manage.user.onboarding.cancel_rerun'|trans : 'manage.user.onboarding.force'|trans,
-                class: 'btn btn-sm ' ~ (u.onboardingResetPending ? 'btn-secondary' : 'btn-warning'),
+                class: 'btn btn-sm ' ~ (u.onboardingResetPending ? 'btn-outline-secondary' : 'btn-outline-warning'),
                 confirmTitle: u.onboardingResetPending ? 'manage.user.onboarding.cancel_title'|trans : 'manage.user.onboarding.force_title'|trans,
                 confirmLabel: u.onboardingResetPending ? 'manage.user.onboarding.cancel_rerun'|trans : 'manage.user.onboarding.force'|trans,
                 variant: u.onboardingResetPending ? 'secondary' : 'warning',
