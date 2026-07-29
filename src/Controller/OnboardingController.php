@@ -246,7 +246,7 @@ final class OnboardingController extends AbstractController
             $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, ['details' => ['onboarding' => 'completed']]);
             $this->addFlash('success', new TranslatableMessage('onboarding.flash.complete'));
 
-            return $this->redirectToRoute('app_dashboard');
+            return $this->redirectToRoute('app_news_index');
         }
 
         return $this->render('onboarding/finish.html.twig', ['user' => $user]);
@@ -294,7 +294,7 @@ final class OnboardingController extends AbstractController
     private function redirectIfDone(): ?Response
     {
         return $this->currentUser()->isOnboardingCompleted()
-            ? $this->redirectToRoute('app_dashboard')
+            ? $this->redirectToRoute('app_news_index')
             : null;
     }
 }

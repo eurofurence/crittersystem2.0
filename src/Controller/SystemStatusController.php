@@ -20,7 +20,7 @@ final class SystemStatusController extends AbstractController
     {
         // Nothing is gated in public mode; don't leave a stale notice reachable.
         if (!$gate->isRestricted()) {
-            return $this->redirectToRoute('app_dashboard');
+            return $this->redirectToRoute('app_news_index');
         }
 
         return $this->render('system/unavailable.html.twig', ['mode' => $gate->mode()]);

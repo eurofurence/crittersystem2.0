@@ -135,7 +135,7 @@ final class SsoController extends AbstractController
             return $this->redirectToRoute('app_system_unavailable');
         }
 
-        return $this->redirectToRoute('app_dashboard');
+        return $this->redirectToRoute('app_news_index');
     }
 
     #[Route('/admin/sso', name: 'app_admin_sso', methods: ['GET', 'POST'])]
