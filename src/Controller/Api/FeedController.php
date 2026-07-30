@@ -94,6 +94,9 @@ final class FeedController extends AbstractController
             $lines[] = 'DTSTART:'.$shift->getStartsAt()->setTimezone($utc)->format('Ymd\THis\Z');
             $lines[] = 'DTEND:'.$shift->getEndsAt()->setTimezone($utc)->format('Ymd\THis\Z');
             $lines[] = 'SUMMARY:'.self::escapeIcal($shift->getTitle().' ('.$entry->getVolunteerType()->getName().')');
+            if ($shift->getDescription() !== null) {
+                $lines[] = 'DESCRIPTION:'.self::escapeIcal($shift->getDescription());
+            }
             if ($shift->getLocation() !== null) {
                 $lines[] = 'LOCATION:'.self::escapeIcal($shift->getLocation()->getName());
             }
@@ -101,7 +104,7 @@ final class FeedController extends AbstractController
         }
         $lines[] = 'END:VCALENDAR';
 
-        return new Response(implode("\r\n", $lines)."\r\n", Response::HTTP_OK, [
+        return new Response(implode("\r\n", array_map(self::fold(...), $lines))."\r\n", Response::HTTP_OK, [
             'Content-Type' => 'text/calendar; charset=UTF-8',
             'Content-Disposition' => 'attachment; filename="my-shifts.ics"',
         ]);
@@ -114,6 +117,7 @@ final class FeedController extends AbstractController
         $data = array_map(static fn (Shift $s): array => [
             'id' => (string) $s->getUuid(),
             'title' => $s->getTitle(),
+            'description' => $s->getDescription(),
             'start' => $s->getStartsAt()->format(\DATE_ATOM),
             'end' => $s->getEndsAt()->format(\DATE_ATOM),
             'shiftTask' => $s->getShiftTask()?->getName(),
@@ -131,5 +135,35 @@ final class FeedController extends AbstractController
     private static function escapeIcal(string $value): string
     {
         return addcslashes(str_replace(["\r\n", "\n"], '\\n', $value), ",;\\");
+    }
+
+    /**
+     * RFC 5545 limits a content line to 75 octets; longer lines are folded onto
+     * continuation lines introduced by a single space, which the reader strips
+     * again. Shift descriptions are long enough to need this, and a client that
+     * enforces the limit rejects the whole calendar over one overlong line.
+     * Splitting is done on character boundaries so a multi-byte sequence is
+     * never cut in half.
+     */
+    private static function fold(string $line): string
+    {
+        if (\strlen($line) <= 75) {
+            return $line;
+        }
+
+        $folded = '';
+        $current = '';
+        // The leading space of a continuation line counts toward its 75 octets.
+        $limit = 75;
+        foreach (preg_split('//u', $line, -1, \PREG_SPLIT_NO_EMPTY) ?: [] as $char) {
+            if (\strlen($current) + \strlen($char) > $limit) {
+                $folded .= ('' === $folded ? '' : "\r\n ").$current;
+                $current = '';
+                $limit = 74;
+            }
+            $current .= $char;
+        }
+
+        return $folded.('' === $folded ? '' : "\r\n ").$current;
     }
 }

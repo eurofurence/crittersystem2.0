@@ -165,6 +165,7 @@ final class ApiV0Controller extends AbstractController
         return [
             'id' => (string) $s->getUuid(),
             'title' => $s->getTitle(),
+            'description' => $s->getDescription(),
             'start' => $s->getStartsAt()->format(\DATE_ATOM),
             'end' => $s->getEndsAt()->format(\DATE_ATOM),
             'durationHours' => $s->getDurationHours(),

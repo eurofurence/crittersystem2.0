@@ -22,6 +22,11 @@
               <label class="form-label" for="add-title">{{ 'common.label.title'|trans }}</label>
               <input type="text" class="form-control" id="add-title" name="title" placeholder="{{ 'planner.modal_add.title_placeholder'|trans }}">
             </div>
+            <div class="col-12">
+              <label class="form-label" for="add-description">{{ 'common.label.description'|trans }}</label>
+              <textarea class="form-control" id="add-description" name="description" rows="2"
+                        maxlength="{{ constant('App\\Entity\\Shift::DESCRIPTION_MAX_LENGTH') }}"></textarea>
+            </div>
             <div class="col-6">
               <label class="form-label" for="add-start">{{ 'planner.field.starts_at'|trans }}</label>
               <input type="datetime-local" class="form-control" id="add-start" name="start" required>

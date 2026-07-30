@@ -21,6 +21,8 @@ class Shift
 {
     use HasPublicUuid;
 
+    public const DESCRIPTION_MAX_LENGTH = 2000;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -31,7 +33,9 @@ class Shift
     #[Assert\Length(max: 255)]
     private string $title;
 
+    /** Reaches anonymous callers through the public API and volunteers' calendars via iCal. */
     #[ORM\Column(type: Types::TEXT, nullable: true)]
+    #[Assert\Length(max: self::DESCRIPTION_MAX_LENGTH)]
     private ?string $description = null;
 
     #[ORM\Column(length: 255, nullable: true)]
@@ -151,9 +155,11 @@ class Shift
         return $this->description;
     }
 
+    /** Blank input is stored as null so every consumer can test presence with a single null check. */
     public function setDescription(?string $description): static
     {
-        $this->description = $description;
+        $description = $description !== null ? trim($description) : null;
+        $this->description = $description !== '' ? $description : null;
 
         return $this;
     }

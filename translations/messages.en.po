@@ -5586,7 +5586,7 @@ msgid "telegram.pending.instructions"
 msgstr "Send this code to the bot to finish linking (valid %time%):"
 
 msgid "telegram.pending.manual_fallback"
-msgstr "If the button does not work, send this code to the bot yourself (valid %time%):"
+msgstr "If the button does not work, send this code to the bot using `/link` (valid %time%):"
 
 msgid "telegram.pending.waiting"
 msgstr "Waiting for confirmation…"

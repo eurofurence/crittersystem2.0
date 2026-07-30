@@ -19,7 +19,11 @@
           <input type="hidden" name="_op_token" value="{{ csrf_token('op_status') }}">
           <input type="hidden" name="minutes" value="{{ minutes }}">
           <button class="dropdown-item" type="submit">
-            {% if minutes >= 60 %}{{ (minutes // 60 > 1 ? 'operational_status.duration.hours' : 'operational_status.duration.hour')|trans({'%count%': minutes // 60}) }}{% else %}{{ 'operational_status.duration.minutes'|trans({'%count%': minutes}) }}{% endif %}
+            {% if minutes >= 60 %}
+              {{ (minutes // 60 > 1 ? 'operational_status.duration.hours' : 'operational_status.duration.hour')|trans({'%count%': minutes // 60}) }}
+            {% else %}
+              {{ 'operational_status.duration.minutes'|trans({'%count%': minutes}) }}
+            {% endif %}
           </button>
         </form>
       {% endfor %}

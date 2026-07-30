@@ -38,7 +38,7 @@ final class ShiftFormType extends AbstractType
             ->add('description', TextareaType::class, [
                 'label' => 'common.label.description',
                 'required' => false,
-                'attr' => ['rows' => 3],
+                'attr' => ['rows' => 3, 'maxlength' => Shift::DESCRIPTION_MAX_LENGTH],
             ])
             ->add('url', UrlType::class, [
                 'label' => 'manage.shift.field.url.label',

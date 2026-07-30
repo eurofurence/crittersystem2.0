@@ -20,6 +20,11 @@
       <label class="form-label" for="edit-title-{{ shift.id }}">{{ 'common.label.title'|trans }}</label>
       <input type="text" class="form-control" id="edit-title-{{ shift.id }}" name="title" value="{{ shift.title }}">
     </div>
+    <div class="mb-2">
+      <label class="form-label" for="edit-description-{{ shift.id }}">{{ 'common.label.description'|trans }}</label>
+      <textarea class="form-control" id="edit-description-{{ shift.id }}" name="description" rows="3"
+                maxlength="{{ constant('App\\Entity\\Shift::DESCRIPTION_MAX_LENGTH') }}">{{ shift.description }}</textarea>
+    </div>
     {# The panel is a narrow sidebar column: side by side these two are too cramped to show a whole
        date AND time, which is exactly what the manager is checking here. #}
     <div class="mb-2">

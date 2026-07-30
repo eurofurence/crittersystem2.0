@@ -239,6 +239,7 @@ final class PlannerController extends AbstractController
                 $location instanceof Location ? $location : null,
                 $this->user(),
                 trim((string) $request->request->get('title')) ?: null,
+                trim((string) $request->request->get('description')) ?: null,
             );
         } catch (\InvalidArgumentException $e) {
             return $this->fail($e->getMessage());
@@ -280,6 +281,9 @@ final class PlannerController extends AbstractController
         $fields = [];
         if ($request->request->has('title')) {
             $fields['title'] = trim((string) $request->request->get('title'));
+        }
+        if ($request->request->has('description')) {
+            $fields['description'] = trim((string) $request->request->get('description'));
         }
         if ($request->request->has('audience')) {
             $fields['audience'] = ShiftAudience::tryFrom((string) $request->request->get('audience')) ?? $shift->getAudience();

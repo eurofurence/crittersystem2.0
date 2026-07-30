@@ -47,11 +47,14 @@ final class PlannerDraftStore
         ?Location $location = null,
         ?User $author = null,
         ?string $title = null,
+        ?string $description = null,
     ): Shift {
         $this->assertInterval($startsAt, $endsAt);
+        $this->assertDescription($description);
 
         $shift = (new Shift())
             ->setTitle($title ?? $this->defaultTitle($task, $department))
+            ->setDescription($description)
             ->setStartsAt($startsAt)
             ->setEndsAt($endsAt)
             ->setDepartment($department)
@@ -131,10 +134,14 @@ final class PlannerDraftStore
      * Update a single shift's editable details from the side panel or Add Shift
      * modal. Only the provided keys are changed. Autosaves.
      *
-     * @param array{title?: string, task?: ?ShiftTask, audience?: ShiftAudience, location?: ?Location, requireCheckin?: bool, startsAt?: \DateTimeImmutable, endsAt?: \DateTimeImmutable} $fields
+     * @param array{title?: string, description?: ?string, task?: ?ShiftTask, audience?: ShiftAudience, location?: ?Location, requireCheckin?: bool, startsAt?: \DateTimeImmutable, endsAt?: \DateTimeImmutable} $fields
      */
     public function updateDetails(Shift $shift, array $fields, ?User $author = null): Shift
     {
+        // Validate before mutating: a rejected field must leave the managed entity untouched.
+        if (\array_key_exists('description', $fields)) {
+            $this->assertDescription($fields['description']);
+        }
         if (\array_key_exists('startsAt', $fields) || \array_key_exists('endsAt', $fields)) {
             $start = $fields['startsAt'] ?? $shift->getStartsAt();
             $end = $fields['endsAt'] ?? $shift->getEndsAt();
@@ -143,6 +150,10 @@ final class PlannerDraftStore
         }
         if (isset($fields['title']) && $fields['title'] !== '') {
             $shift->setTitle($fields['title']);
+        }
+        // Present-but-empty clears the description; absent leaves it untouched.
+        if (\array_key_exists('description', $fields)) {
+            $shift->setDescription($fields['description']);
         }
         if (\array_key_exists('task', $fields)) {
             $shift->setShiftTask($fields['task']);
@@ -219,6 +230,18 @@ final class PlannerDraftStore
     {
         $this->em->remove($shift);
         $this->em->flush();
+    }
+
+    /**
+     * The planner writes entities straight through, so the entity's Assert\Length never runs here.
+     *
+     * @throws \InvalidArgumentException
+     */
+    private function assertDescription(?string $description): void
+    {
+        if ($description !== null && mb_strlen($description) > Shift::DESCRIPTION_MAX_LENGTH) {
+            throw new \InvalidArgumentException(\sprintf('The description may not exceed %d characters.', Shift::DESCRIPTION_MAX_LENGTH));
+        }
     }
 
     private function assertInterval(\DateTimeImmutable $startsAt, \DateTimeImmutable $endsAt): void

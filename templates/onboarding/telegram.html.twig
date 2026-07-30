@@ -18,7 +18,7 @@
           {{ 'telegram.action.open_in_telegram'|trans }}
         </a>
       </p>
-      <p class="text-muted small">{{ 'telegram.pending.manual_fallback'|trans({'%time%': pending.expiresAt|app_time}) }}</p>
+      <p class="text-muted mt-6">{{ 'telegram.pending.manual_fallback'|trans({'%time%': pending.expiresAt|app_time}) }}</p>
       <p class="display-6"><code>{{ pending.code }}</code></p>
     {% elseif pending %}
       <p>{{ 'telegram.pending.instructions'|trans({'%time%': pending.expiresAt|app_time}) }}</p>

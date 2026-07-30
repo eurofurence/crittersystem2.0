@@ -91,6 +91,11 @@
                   {% if shift.location %} · {{ shift.location.name }}{% endif %}
                   {% if shift.shiftTask %} · {{ 'shift.browse.task_label'|trans }} {{ shift.shiftTask.name }}{% endif %}
                 </div>
+                {% if shift.description %}
+                  <div class="text-secondary small mt-1">
+                    {{ shift.description|length > 120 ? shift.description|slice(0, 120) ~ '…' : shift.description }}
+                  </div>
+                {% endif %}
               </div>
               {{ d.status_badge(card.status, {map: shiftStatusStyles, label: shiftStatusLabels[card.status]}) }}
             </div>
