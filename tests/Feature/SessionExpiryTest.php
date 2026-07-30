@@ -106,7 +106,7 @@ final class SessionExpiryTest extends DatabaseWebTestCase
             '_password' => 'secret123',
         ]));
 
-        self::assertResponseRedirects('/dashboard', 302, sprintf('"%s" must not survive as a redirect target', $return));
+        self::assertResponseRedirects('/news', 302, sprintf('"%s" must not survive as a redirect target', $return));
     }
 
     public static function hostileReturnPaths(): iterable

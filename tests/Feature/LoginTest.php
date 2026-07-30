@@ -52,14 +52,17 @@ final class LoginTest extends DatabaseWebTestCase
         self::assertSelectorExists('input[name="_username"]');
     }
 
-    public function testValidLoginWithUsernameRedirectsToDashboard(): void
+    public function testValidLoginWithUsernameRedirectsToNews(): void
     {
         $this->submitLogin('tester', 'secret123');
-        self::assertResponseRedirects('/dashboard');
+        self::assertResponseRedirects('/news');
 
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'tester');
+
+        // The group badges live on the dashboard, which is no longer the landing page.
+        $this->client->request('GET', '/dashboard');
         self::assertSelectorTextContains('body', 'Volunteer');
     }
 
@@ -67,7 +70,7 @@ final class LoginTest extends DatabaseWebTestCase
     {
         $this->submitLogin('tester@example.com', 'secret123');
 
-        self::assertResponseRedirects('/dashboard');
+        self::assertResponseRedirects('/news');
     }
 
     public function testInvalidPasswordStaysOnLoginWithError(): void

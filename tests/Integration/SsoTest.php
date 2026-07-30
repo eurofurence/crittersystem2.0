@@ -6,6 +6,7 @@ use App\Entity\Badge;
 use App\Entity\BannedIdentity;
 use App\Entity\Department;
 use App\Entity\Group;
+use App\Entity\Privilege;
 use App\Entity\SsoGroupMapping;
 use App\Entity\User;
 use App\Entity\UserVolunteerType;
@@ -245,6 +246,48 @@ final class SsoTest extends DatabaseTestCase
 
         $this->em->clear();
         self::assertSame(1, $this->em->getRepository(UserVolunteerType::class)->count(['user' => $user->getId()]));
+    }
+
+    /**
+     * A department mapping alone must leave the user able to use the app. The positional group a
+     * department confers carries ROLE_STAFF but not the baseline privileges, so an SSO user mapped
+     * only into a department held no news:view and was denied the page every sign-in lands on.
+     */
+    public function testProvisionGrantsTheBaselinePermissionGroupToDepartmentStaff(): void
+    {
+        $this->em->persist(new Department('Art Show', 'art-show'));
+        $this->em->persist(new Group('Department staff', 'department-staff', 'ROLE_STAFF'));
+        $baseline = new Group('Volunteer', 'volunteer');
+        $newsView = new Privilege('news:view');
+        $this->em->persist($newsView);
+        $baseline->addPrivilege($newsView);
+        $this->em->persist($baseline);
+        $this->em->flush();
+
+        static::getContainer()->get(SsoMappingImporter::class)->import([[
+            'id' => 'GRP-DEPT', 'name' => 'Art Show', 'slug' => 'art-show', 'department' => 'art-show',
+        ]]);
+
+        /** @var SsoUserProvisioner $provisioner */
+        $provisioner = static::getContainer()->get(SsoUserProvisioner::class);
+        $user = $provisioner->provision(new SsoClaims('sub-dept', 'dept@example.com', 'deptuser', 'Dept User', ['GRP-DEPT']));
+
+        $slugs = array_map(static fn (Group $g): string => $g->getSlug(), $user->getGroups()->toArray());
+        self::assertContains('department-staff', $slugs);
+        self::assertContains('volunteer', $slugs);
+        self::assertTrue($user->hasPrivilege('news:view'));
+
+        // Idempotent: a second sign-in must not add a duplicate unscoped assignment.
+        $provisioner->provision(new SsoClaims('sub-dept', 'dept@example.com', 'deptuser', 'Dept User', ['GRP-DEPT']));
+        $this->em->clear();
+        $reloaded = $this->em->getRepository(User::class)->find($user->getId());
+        $baselineCount = 0;
+        foreach ($reloaded->getGroupAssignments() as $assignment) {
+            if ($assignment->getGroup()->getSlug() === 'volunteer') {
+                ++$baselineCount;
+            }
+        }
+        self::assertSame(1, $baselineCount);
     }
 
     public function testBannedIdentityIsRefused(): void

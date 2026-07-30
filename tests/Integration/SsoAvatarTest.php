@@ -3,6 +3,7 @@
 namespace App\Tests\Integration;
 
 use App\Gdpr\BanChecker;
+use App\Repository\GroupRepository;
 use App\Repository\SsoGroupMappingRepository;
 use App\Repository\UserRepository;
 use App\Sso\SsoAvatarFetcher;
@@ -142,6 +143,7 @@ final class SsoAvatarTest extends DatabaseTestCase
             $container->get(SsoGlobalRoles::class),
             $fetcher,
             $this->storage,
+            $container->get(GroupRepository::class),
         );
     }
 

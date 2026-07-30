@@ -81,7 +81,7 @@ final class OnboardingTest extends DatabaseWebTestCase
         self::assertResponseRedirects('/onboarding/finish');
 
         $this->client->request('POST', '/onboarding/finish', ['password' => 'newpassword1', 'password_confirm' => 'newpassword1']);
-        self::assertResponseRedirects('/dashboard');
+        self::assertResponseRedirects('/news');
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(User::class)->find($user->getId());
@@ -180,7 +180,7 @@ final class OnboardingTest extends DatabaseWebTestCase
         $this->client->request('POST', '/onboarding/telegram');
         $this->client->request('POST', '/onboarding/notifications', ['show_email' => '1']);
         $this->client->request('POST', '/onboarding/finish', ['password' => 'newpassword1', 'password_confirm' => 'newpassword1']);
-        self::assertResponseRedirects('/dashboard');
+        self::assertResponseRedirects('/news');
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(User::class)->find($user->getId());

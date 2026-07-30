@@ -6,12 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html) and sometimes
 [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/).
 
-Critter 2.0 is pre-production. **`0.0.1-alpha` it is not yet run for a live event.**
+Critter 2.0 is production. **`1.0.2`**
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-07-29
+
 ### Added
 
+- feat(auth): lead the login page with the SSO button when an identity provider is connected, and
+  collapse the username and password form behind a link; the form stays expanded after a failed
+  attempt. Without SSO the page is unchanged
+- feat(auth): let an administrator switch username and password sign-in off entirely, on the
+  step-up-guarded `/admin/sso`. The switch is ignored while SSO is disabled and `ROLE_ADMIN` always
+  keeps password access, so an unreachable provider cannot lock the operators out
+- feat(planner): confirm the department before the grid, publish bar and side panel load
+- feat(planner): create a Shift Task inline from the Add Shift modal, the wizard and the edit panel
+- feat(planner): set or replace the Shift Task across a batch selection
+- feat(planner): delete a batch selection, and remove all of a department's draft shifts in one step
+- feat(volunteer-types): rank types with a sort order, so Staff and Volunteer head every picker
 - feat(planner): lay out parallel shifts side by side, capped at four lanes per day (`5d378d1`)
 - feat(planner): add a Paint/Select drag mode; Paint creates over existing shifts (`5d378d1`)
 - feat(planner): outline the shifts a publish attempt rejected (`5d378d1`)
@@ -34,24 +47,60 @@ Critter 2.0 is pre-production. **`0.0.1-alpha` it is not yet run for a live even
 
 ### Changed
 
+- feat(planner)!: require a Shift Task wherever a shift is created or saved, not only to publish
+- feat(planner)!: offer only the Critter types a department may staff with - a type linked to
+  another department no longer appears in, or can be posted to, this one's shifts
+- fix(planner): stack the Starts/Ends fields in the side panel so the whole date and time are legible
+- fix(planner): keep a grid block's shift times readable - the range no longer wraps into the
+  block's clipped overflow, the draft badge no longer covers it, and a narrow lane stacks the end
+  time under the start instead of cutting it off
 - feat(planner)!: require a Shift Task before a shift can be published (`5d378d1`)
 - feat(api)!: return UUID strings instead of integer ids from `/api/v0-beta` (`c46d2a4`)
 - test: add Stimulus and browser test layers, and run the suite in CI (`1114b6f`)
+- test: point the login, session-expiry, access-mode and onboarding redirect assertions at the news
+  page, which replaced the dashboard as the landing route in `7c30bd1` (`ca35e24`)
 - chore: rotate dev and test logs daily (`2d57325`)
 - docs(api): document `/api/bot` and the visibility and identifier rules (`c46d2a4`)
 - docs(deploy): document the `BOT_API_TOKEN` secret (`375db17`)
 
 ### Fixed
 
+- fix(sso): let a pre-seeded or SSO user in once onboarding finishes. A department mapping assigns a
+  positional group, and `department-staff`, `shift-manager` and `department-manager` all carry
+  `ROLE_STAFF`, so onboarding treated every such user as staff and skipped the baseline `volunteer`
+  permission group. Those staff groups are not supersets of the baseline - none holds `news:view` -
+  and onboarding ends on the news page, so the wizard's last step answered 403. The baseline is now
+  granted while provisioning, on every sign-in, so accounts already shut out recover at next login
+  (`ca35e24`)
+- fix(planner): resolve batch-edit selections by shift UUID; reading them as integers made every
+  batch action a silent no-op in the browser while the PHP tests posted primary keys and passed
+- fix(planner): seed the paint defaults from the toolbar, so a first paint uses the audience and
+  task shown rather than the controller's own defaults
+- fix(planner): clear the side panel selection after a grid reload
 - fix(planner): refresh the draft counter and publish button after an edit (`5d378d1`)
 - fix(planner): order department shifts deterministically so lanes stay stable (`5d378d1`)
 - fix(department): stop the member tables capturing their own row links (`4242d65`)
 - fix(matrix): staff any user from the cell editor via type-ahead search (`bf7d480`)
 - fix(ui): stop `user_select` building a malformed double-`?` search URL (`bf7d480`)
 - fix(sso): emit an https `redirect_uri` behind a TLS-terminating proxy (`821efe3`)
+- fix(audit): cap audited identifiers at their column widths. `actorUsername`, `resourceType`,
+  `resourceId` and `resourceOwnerId` carry unvalidated caller input, so an over-long value
+  overflowed its column while the audit record was being written and took the audited request down
+  with it: posting a username longer than 128 characters to `/login` answered 500 instead of
+  "invalid credentials"
 
 ### Security
 
+- feat(auth): throttle username and password sign-in. Three failed attempts within 15 minutes
+  trigger a 30-minute timeout, during which the correct password is refused too and the caller is
+  told only that the credentials were wrong. A client address locks on its own, which stops
+  password spraying; an account locks only once failures arrive from more than one address, so
+  nobody can shut a volunteer out on purpose. Counters live in Postgres, because the
+  filesystem-backed cache pool would hand each container its own allowance. Attempt rows keep a
+  salted hash of the client address, never the address itself. SSO, the API-key firewall and the
+  bot firewall are unaffected, and a rejected CSRF token does not count as a guess
+- feat(auth): list and lift active login lockouts on `/manage/login-lockouts`, behind the new
+  `security:lockout:manage` privilege; both the automatic lock and the manual release are audited
 - fix(contact): resolve contact channels through consent, not `ROLE_STAFF` (`6bf37b2`)
 - fix(pii): require a fresh 2FA step-up before unmasking personal data (`6bf37b2`)
 - fix(users): match email exactly to close enumeration in management search (`6bf37b2`)

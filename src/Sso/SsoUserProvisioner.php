@@ -11,6 +11,7 @@ use App\Entity\State;
 use App\Entity\User;
 use App\Entity\UserVolunteerType;
 use App\Gdpr\BanChecker;
+use App\Repository\GroupRepository;
 use App\Repository\SsoGroupMappingRepository;
 use App\Repository\UserRepository;
 use App\Service\UsernameGenerator;
@@ -25,6 +26,9 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final class SsoUserProvisioner
 {
+    /** Baseline permission group every user needs to actually use the app. */
+    private const BASELINE_GROUP_SLUG = 'volunteer';
+
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly UserRepository $users,
@@ -35,6 +39,7 @@ final class SsoUserProvisioner
         private readonly SsoGlobalRoles $globalRoles,
         private readonly SsoAvatarFetcher $avatars,
         private readonly FileStorage $storage,
+        private readonly GroupRepository $groups,
         private readonly string $providerLabel = 'oidc',
     ) {
     }
@@ -62,19 +67,38 @@ final class SsoUserProvisioner
     }
 
     /**
-     * Applies the SSO group memberships to an already-created/matched user: department memberships
-     * and their permission-group/volunteer-type/badge grants, the derived department position, and
-     * the global admin / sub-admin roles. Shared by live login and the pre-seed importer so both
-     * produce an identical membership state for the same set of group ids. Does not flush.
+     * Applies the SSO group memberships to an already-created/matched user: the baseline permission
+     * group, department memberships and their permission-group/volunteer-type/badge grants, the
+     * derived department position, and the global admin / sub-admin roles. Shared by live login and
+     * the pre-seed importer so both produce an identical membership state for the same set of group
+     * ids. Does not flush.
      *
      * @param string[] $groupIds the user's full set of identity-provider group ids
      */
     public function applyGroups(User $user, array $groupIds): void
     {
+        $this->grantBaseline($user);
         // A provider that reports the same group twice must not apply its mapping twice.
         $departments = $this->applyMappings($user, array_values(array_unique($groupIds)));
         $this->positions->apply($user, $groupIds, $departments);
         $this->globalRoles->apply($user, $groupIds);
+    }
+
+    /**
+     * The baseline permission group every signed-in user needs (news, FAQ, messaging, own shifts,
+     * Telegram linking - see {@see \App\Security\PrivilegeCatalog::VOLUNTEER}).
+     *
+     * It is granted to every SSO user, staff included: the positional groups a department mapping
+     * confers (department-staff, shift-manager, department-manager) are *not* supersets of the
+     * baseline. The group carries no role, so granting it never widens anyone's role.
+     * Stay in school kids
+     */
+    private function grantBaseline(User $user): void
+    {
+        $group = $this->groups->findOneBySlug(self::BASELINE_GROUP_SLUG);
+        if ($group !== null) {
+            $user->addGroup($group);
+        }
     }
 
     public function findBySub(string $sub): ?User

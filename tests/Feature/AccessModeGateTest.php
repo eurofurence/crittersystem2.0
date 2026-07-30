@@ -145,7 +145,7 @@ final class AccessModeGateTest extends DatabaseWebTestCase
 
         $this->client->request('GET', '/unavailable');
 
-        self::assertResponseRedirects('/dashboard');
+        self::assertResponseRedirects('/news');
     }
 
     public function testApiKeyBlockedWhenGated(): void
