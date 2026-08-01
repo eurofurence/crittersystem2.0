@@ -17,7 +17,7 @@
     {% if is_granted('global:admin') %}
       {{ d.delete_form(path('app_manage_user_reset_onboarding_all'), csrf_token('reset-onboarding-all'), {
         label: 'manage.user.onboarding.force_all_label'|trans,
-        class: 'btn btn-outline-warning text-nowrap',
+        class: 'btn btn-warning text-nowrap',
         confirmTitle: 'manage.user.onboarding.force_all_title'|trans,
         confirmLabel: 'manage.user.onboarding.force_all_confirm'|trans,
         variant: 'warning',
@@ -54,7 +54,7 @@
             {% if is_granted('global:admin') %}
               {{ d.delete_form(path('app_manage_user_reset_onboarding', {id: u.uuid}), csrf_token('reset-onboarding' ~ u.id), {
                 label: u.onboardingResetPending ? 'manage.user.onboarding.cancel_rerun'|trans : 'manage.user.onboarding.force'|trans,
-                class: 'btn btn-sm ' ~ (u.onboardingResetPending ? 'btn-outline-secondary' : 'btn-outline-warning'),
+                class: 'btn btn-sm ' ~ (u.onboardingResetPending ? 'btn-outline-secondary' : 'btn-warning'),
                 confirmTitle: u.onboardingResetPending ? 'manage.user.onboarding.cancel_title'|trans : 'manage.user.onboarding.force_title'|trans,
                 confirmLabel: u.onboardingResetPending ? 'manage.user.onboarding.cancel_rerun'|trans : 'manage.user.onboarding.force'|trans,
                 variant: u.onboardingResetPending ? 'secondary' : 'warning',

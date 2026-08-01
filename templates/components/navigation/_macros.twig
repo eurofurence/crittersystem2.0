@@ -66,12 +66,11 @@
     {% endif %}
 {% endif %}
 
-<a class="list-group-item list-group-item-action d-flex align-items-center gap-2
-            {% if isActive %}active{% endif %}"
+<a class="list-group-item list-group-item-action d-flex align-items-center {% if isActive %}active{% endif %}"
     href="{{ href }}"
     {% if isActive %}aria-current="page"{% endif %}>
     {% if options.icon is defined %}{{ i.icon(options.icon, {class: 'icon-1 text-muted'}) }}{% endif %}
-    <span class="flex-grow-1">{{ label }}</span>
+    {{ label }}
     {% if options.badge is defined %}<span class="badge bg-secondary-lt">{{ options.badge }}</span>{% endif %}
 </a>
 {% endmacro %}

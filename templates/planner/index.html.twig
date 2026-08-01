@@ -16,14 +16,17 @@
       <form method="get" action="{{ path('app_manage_shifts_planner') }}" class="d-flex align-items-end gap-2">
         <div>
           <label class="form-label mb-1 required" for="planner-department">{{ 'common.label.department'|trans }}</label>
-          <select id="planner-department" name="department" class="form-select" required>
-            {% for dept in departments %}
-              <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
-            {% endfor %}
-          </select>
+          <div class="d-flex">
+            <select id="planner-department" name="department" class="form-select col-md-4" required>
+              {% for dept in departments %}
+                <option value="{{ dept.uuid }}" {{ dept.uuid == department.uuid ? 'selected' : '' }}>{{ dept.name }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary ms-4 col-md-4">{{ 'planner.choose.submit'|trans }}</button>
+          </div>
+
           <div class="form-hint">{{ 'planner.field.department_hint'|trans }}</div>
         </div>
-        <button type="submit" class="btn btn-outline-primary">{{ 'planner.choose.submit'|trans }}</button>
       </form>
 
       <div class="ms-auto text-secondary small">

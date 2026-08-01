@@ -1,43 +1,47 @@
-{# Planner toolbar: Add Shift and the paint defaults picked up by the `planner`
-   Stimulus controller. #}
+{# Planner toolbar: Add Shift and the paint defaults picked up by the `planner` Stimulus controller. #}
 <div class="btn-toolbar mb-2 gap-2 align-items-end" role="toolbar" aria-label="{{ 'planner.toolbar.aria'|trans }}">
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#planner-add-modal">
-    {{ 'planner.action.add_shift'|trans }}
-  </button>
 
-  <a href="{{ path('app_manage_shifts_wizard', {department: department.uuid}) }}" class="btn btn-outline-primary">
-    {{ 'planner.wizard.title'|trans }}
-  </a>
 
-  <a href="{{ path('app_manage_shifts_matrix', {department: department.uuid}) }}" class="btn btn-outline-primary">
-    {{ 'planner.action.matrix_view'|trans }}
-  </a>
+  <div class="btn-group" role="group">
+    <!-- + Add shift -->
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#planner-add-modal">
+      {{ 'planner.action.add_shift'|trans }}
+    </button>
 
-  {% if is_granted('assignment:manage', department) %}
-    <form method="post" action="{{ path('app_proposal_generate') }}" class="d-inline">
-      <input type="hidden" name="_token" value="{{ csrf_token('proposal_generate') }}">
-      <input type="hidden" name="department" value="{{ department.uuid }}">
-      <button type="submit" class="btn btn-outline-primary">{{ 'planner.action.auto_assign'|trans }}</button>
-    </form>
-  {% endif %}
+    <!-- Shift Wizard -->
+    <a href="{{ path('app_manage_shifts_wizard', {department: department.uuid}) }}" class="btn">
+      {{ 'planner.wizard.title'|trans }}
+    </a>
 
-  <div
-    class="d-flex align-items-end gap-2 ms-2"
-    data-controller="planner-defaults"
-  >
+    <!-- MATRIX -->
+    <!-- <a href="{{ path('app_manage_shifts_matrix', {department: department.uuid}) }}" class="btn">
+      {{ 'planner.action.matrix_view'|trans }}
+    </a> -->
+
+  </div>
+
+    <!-- Auto-Assign -->
+    {% if is_granted('assignment:manage', department) %}
+      <form method="post" action="{{ path('app_proposal_generate') }}" class="d-inline">
+        <input type="hidden" name="_token" value="{{ csrf_token('proposal_generate') }}">
+        <input type="hidden" name="department" value="{{ department.uuid }}">
+        <button type="submit" class="btn btn-primary">{{ 'planner.action.auto_assign'|trans }}</button>
+      </form>
+    {% endif %}
+
+  <div class="d-flex align-items-end gap-2 ms-2" data-controller="planner-defaults">
     <div>
       <span class="form-label mb-1 small d-block">{{ 'planner.field.mode'|trans }}</span>
       {# Select is the default: making Paint the default would turn every existing drag-to-move
          into a new shift. #}
       <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'planner.field.mode'|trans }}">
-        <input type="radio" class="btn-check" name="planner-mode" id="planner-mode-select" value="select"
-               checked data-action="change->planner-defaults#mode">
-        <label class="btn btn-outline-secondary" for="planner-mode-select">{{ 'planner.mode.select'|trans }}</label>
+        <input type="radio" class="btn-check" name="planner-mode" id="planner-mode-select" value="select" checked data-action="change->planner-defaults#mode">
 
-        <input type="radio" class="btn-check" name="planner-mode" id="planner-mode-paint" value="paint"
-               data-action="change->planner-defaults#mode">
-        <label class="btn btn-outline-secondary" for="planner-mode-paint"
-               title="{{ 'planner.mode.paint_title'|trans }}">{{ 'planner.mode.paint'|trans }}</label>
+        <!-- SELECT MODE -->
+        <label class="btn btn-outline-secondary" for="planner-mode-select">{{ 'planner.mode.select'|trans }}</label>
+        <!-- SELECT MODE -->
+        <input type="radio" class="btn-check" name="planner-mode" id="planner-mode-paint" value="paint" data-action="change->planner-defaults#mode">
+        <label class="btn btn-outline-secondary" for="planner-mode-paint"title="{{ 'planner.mode.paint_title'|trans }}">{{ 'planner.mode.paint'|trans }}</label>
       </div>
     </div>
     <div>
@@ -118,7 +122,7 @@
           data-planner-form-confirm-value="{{ 'planner.confirm.discard_drafts'|trans({'%count%': draftCount}) }}">
       <input type="hidden" name="_token" value="{{ csrf_token('planner_discard') }}">
       <input type="hidden" name="department" value="{{ department.uuid }}">
-      <button type="submit" class="btn btn-outline-danger" data-action="planner-form#submit" {{ draftCount == 0 ? 'disabled' : '' }}>
+      <button type="submit" class="btn btn-danger" data-action="planner-form#submit" {{ draftCount == 0 ? 'disabled' : '' }}>
         {{ 'planner.action.discard_drafts'|trans }}
       </button>
     </form>
