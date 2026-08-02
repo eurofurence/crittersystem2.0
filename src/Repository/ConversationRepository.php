@@ -58,6 +58,33 @@ class ConversationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Support conversations that hold no messages at all, created before the given moment.
+     *
+     * These are the residue of a defect: the messages list opened a conversation merely by being
+     * rendered, so visiting the page queued one for the Info Desk. A genuine conversation always
+     * carries at least its author's first message.
+     *
+     * The cut-off matters. Opening a conversation before writing in it is still a legitimate first
+     * step, so one created moments ago may simply be waiting for its author to finish typing.
+     *
+     * @return Conversation[]
+     */
+    public function findEmptySupportCreatedBefore(\DateTimeImmutable $before): array
+    {
+        return $this->createQueryBuilder('c')
+            ->leftJoin('c.messages', 'm')
+            ->andWhere('c.type = :support')
+            ->andWhere('c.createdAt < :before')
+            ->groupBy('c.id')
+            ->having('COUNT(m.id) = 0')
+            ->setParameter('support', ConversationType::SUPPORT->value)
+            ->setParameter('before', $before)
+            ->orderBy('c.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     /** @return Conversation[] support conversations claimed by the given owner */
     public function findClaimedBy(User $owner): array
     {

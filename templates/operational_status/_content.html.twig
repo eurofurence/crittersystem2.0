@@ -7,7 +7,7 @@
 <div class="nav-item dropdown"
      {% if vm.nextTransitionAt %}data-next-transition="{{ vm.nextTransitionAt|date('c') }}"{% endif %}>
   <button type="button"
-          class="btn btn-sm dropdown-toggle {{ vm.value == 'free_to_help' ? 'btn-success' : (vm.value == 'not_available' ? 'btn-outline-danger' : 'btn-outline-secondary') }}"
+          class="btn btn-sm dropdown-toggle {{ vm.value == 'free_to_help' ? 'btn-success' : (vm.value == 'not_available' ? 'btn-danger' : 'btn-secondary') }}"
           data-bs-toggle="dropdown" aria-expanded="false" title="{{ 'operational_status.title'|trans }}">
     {{ i.icon('activity', {class: 'icon-1 me-1'}) }}<span class="nav-status-label">{{ vm.label }}</span>
   </button>

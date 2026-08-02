@@ -711,7 +711,7 @@ msgid "availability.action.save"
 msgstr "Save availability"
 
 msgid "availability.comment_label"
-msgstr "Comment for managers (optional)"
+msgstr "Comment for Department Directors (optional)"
 
 msgid "availability.flash.saved"
 msgstr "Your availability was saved."
@@ -1047,7 +1047,7 @@ msgid "call.action.not_now"
 msgstr "Not now"
 
 msgid "call.empty.message"
-msgstr "There are no calls for help you are eligible for right now."
+msgstr "No open calls - Make sure you set your status to `Free to HELP`"
 
 msgid "call.empty.title"
 msgstr "No open calls"

@@ -45,7 +45,13 @@ final class ChatPageTest extends DatabaseWebTestCase
         $this->login();
         $crawler = $this->client->request('GET', '/messages');
         $link = $crawler->filter('a:contains("Info Desk Team")')->link();
-        $crawler = $this->client->click($link);
+
+        // The entry links to the action that opens the conversation, not to a conversation: the list
+        // must not create one just by being rendered, or every visit queues work for the Info Desk.
+        // So the click redirects to the conversation it opened.
+        $this->client->click($link);
+        self::assertResponseRedirects();
+        $crawler = $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 
         $conversation = static::getContainer()->get(ConversationRepository::class)->findAll()[0];

@@ -14,7 +14,7 @@
           {% if type.staffOnly %}{{ d.badge('membership.badge_staff'|trans, 'text-bg-secondary ms-auto') }}{% endif %}
       </div>
       <div class="card-body">
-        {% if type.description %}<div class="text-muted small mb-2">{{ type.description|striptags|slice(0, 160) }}</div>{% endif %}
+        {% if type.description %}<div class="text-muted small mb-2">{{ type.description|striptags|slice(0, 160) }}...</div>{% endif %}
         {% for c in type.contacts %}
           <div class="small">
             {% if c.name %}<strong>{{ c.name }}</strong> {% endif %}

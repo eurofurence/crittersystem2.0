@@ -51,7 +51,6 @@ final class MessageController extends AbstractController
         $canClaim = $this->isGranted('chat:claim');
 
         return $this->render('message/index.html.twig', [
-            'support' => $this->chat->startSupport($me),
             'mine' => $mine,
             'canClaim' => $canClaim,
             'waiting' => $canClaim ? $this->queue->waiting() : [],

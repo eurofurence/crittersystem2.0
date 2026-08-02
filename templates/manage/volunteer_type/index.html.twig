@@ -33,7 +33,7 @@
           <tr>
             <td>
               <div class="fw-semibold">{{ vt.name }}</div>
-              {% if vt.description %}<div class="text-muted small">{{ vt.description }}</div>{% endif %}
+              {% if vt.description %}<div class="text-muted small" style="max-height: 100px; overflow: auto;">{{ vt.description|raw }}</div>{% endif %}
             </td>
             <td class="small">
               {{ vt.contactName ?: '-' }}

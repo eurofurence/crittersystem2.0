@@ -187,8 +187,14 @@ final class ConversationService
     }
 
     /**
-     * The user's open support conversation with the Info Desk Team, created with
-     * the configured welcome message on first contact.
+     * The user's open support conversation with the Info Desk Team, created with the configured
+     * welcome message on first contact.
+     *
+     * This CREATES. Call it when the user has asked to contact the Info Desk, never to render a
+     * link or a label: the messages list used to call it just to build its "Info Desk Team" entry,
+     * so every volunteer who opened that page queued a conversation for the Info Desk to work
+     * through. {@see \App\Repository\ConversationRepository::findOpenSupportForUser()} answers
+     * without creating.
      */
     public function startSupport(User $user): Conversation
     {
@@ -211,7 +217,12 @@ final class ConversationService
         // appear without reloading.
         $this->signalChanged($conversation);
 
-        $this->notifyInfoDeskQueue($conversation, $user);
+        /*
+         * Deliberately no notification here. It says "your message was sent to the Info Desk", and
+         * at this point the user has opened a conversation and written nothing - they were being
+         * told about a message that did not exist. The first real message notifies through
+         * {@see post()}, which already handles every later one.
+         */
 
         return $conversation;
     }

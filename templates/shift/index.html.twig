@@ -32,7 +32,7 @@
   <div class="d-flex flex-wrap gap-1 mb-2" role="group" aria-label="{{ 'shift.filter.date_aria'|trans }}">
     {% for day in days %}
       {% set isSel = day == selectedDate|date('Y-m-d') %}
-      <a class="btn btn-sm {{ isSel ? 'btn-primary' : 'btn-outline-secondary' }}"
+      <a class="btn btn-md {{ isSel ? 'btn-primary' : 'btn-outline-secondary' }}"
          href="{{ path('app_shift_index', {date: day, location: filters.location, type: filters.type, available: filters.available ? 1 : null, mine: filters.mine ? 1 : null}) }}">
         {{ day|date('D d M') }}
       </a>
@@ -93,7 +93,7 @@
                 </div>
                 {% if shift.description %}
                   <div class="text-secondary small mt-1">
-                    {{ shift.description|length > 120 ? shift.description|slice(0, 120) ~ '…' : shift.description }}
+                    {{ shift.description|length > 120 ? shift.description|slice(0, 120) ~ '…' : shift.description|raw }}
                   </div>
                 {% endif %}
               </div>
