@@ -127,14 +127,9 @@ final class AvailabilityController extends AbstractController
     {
         $out = [];
         foreach ($ranges as $range) {
-            $start = $range->getStartsAt()->setTimezone($tz);
-            $end = $range->getEndsAt()->setTimezone($tz);
-            $out[] = [
-                'day' => $start->format('Y-m-d'),
-                'startMin' => (int) $start->format('H') * 60 + (int) $start->format('i'),
-                'endMin' => $this->endMinutes($start, $end),
-                'value' => $range->getValue()->value,
-            ];
+            foreach ($this->splitByDay($range->getStartsAt(), $range->getEndsAt(), $tz) as $segment) {
+                $out[] = $segment + ['value' => $range->getValue()->value];
+            }
         }
 
         return $out;
@@ -149,25 +144,60 @@ final class AvailabilityController extends AbstractController
     {
         $out = [];
         foreach ($overlays as $overlay) {
-            $start = $overlay['start']->setTimezone($tz);
-            $end = $overlay['end']->setTimezone($tz);
-            $out[] = [
-                'day' => $start->format('Y-m-d'),
-                'startMin' => (int) $start->format('H') * 60 + (int) $start->format('i'),
-                'endMin' => $this->endMinutes($start, $end),
-                'title' => $overlay['title'],
-            ];
+            // Split for the same reason as the declared ranges: an overnight shift belongs to both
+            // days it touches, and was previously drawn only on the one it started in.
+            foreach ($this->splitByDay($overlay['start'], $overlay['end'], $tz) as $segment) {
+                $out[] = $segment + ['title' => $overlay['title']];
+            }
         }
 
         return $out;
     }
 
-    private function endMinutes(\DateTimeImmutable $start, \DateTimeImmutable $end): int
+    /**
+     * Cut a span into one entry per calendar day, in the display timezone.
+     *
+     * The grid is a column per day addressed as {day, startMin, endMin}, so it cannot express a span
+     * that crosses midnight - and spans that cross midnight are the normal case, because touching
+     * same-value ranges are consolidated on save. Two whole days painted the same value become one
+     * 48-hour range, and emitting that as a single entry clamped to 1440 minutes made the second day
+     * disappear on reload, which read as the application deleting the volunteer's work. Leaving a gap
+     * between the days avoided the merge and so avoided the bug, which is how it was reported.
+     *
+     * Minutes are wall-clock, not elapsed: on the days a clock changes, a "day" is 23 or 25 hours,
+     * and the grid is still 1440 minutes tall. Measuring elapsed time would slide every block on
+     * those two days of the year.
+     *
+     * @return list<array{day: string, startMin: int, endMin: int}>
+     */
+    private function splitByDay(\DateTimeImmutable $from, \DateTimeImmutable $to, \DateTimeZone $tz): array
     {
-        $minutes = (int) $start->format('H') * 60 + (int) $start->format('i')
-            + (int) round(($end->getTimestamp() - $start->getTimestamp()) / 60);
+        $start = $from->setTimezone($tz);
+        $end = $to->setTimezone($tz);
+        if ($end <= $start) {
+            return [];
+        }
 
-        return min($minutes, 1440);
+        $segments = [];
+        $cursor = $start;
+        while ($cursor < $end) {
+            $nextMidnight = $cursor->setTime(0, 0)->modify('+1 day');
+            $segmentEnd = $end < $nextMidnight ? $end : $nextMidnight;
+
+            $segments[] = [
+                'day' => $cursor->format('Y-m-d'),
+                'startMin' => (int) $cursor->format('H') * 60 + (int) $cursor->format('i'),
+                // A segment running to the next midnight is a full day's worth of grid, whatever the
+                // clock did in between.
+                'endMin' => $segmentEnd == $nextMidnight
+                    ? 1440
+                    : (int) $segmentEnd->format('H') * 60 + (int) $segmentEnd->format('i'),
+            ];
+
+            $cursor = $nextMidnight;
+        }
+
+        return $segments;
     }
 
     /** @return array{0: \DateTimeImmutable, 1: \DateTimeImmutable} */

@@ -32,6 +32,11 @@
         <button type="submit" class="btn btn-primary ms-auto">{{ 'availability.action.save'|trans }}</button>
     {{ d.card_end({bodyClass: 'card-body d-flex flex-wrap align-items-center gap-3'}) }}
 
+      {{ d.card_start(null, {class: 'mb-3'}) }}
+      <label class="form-label" for="avail-comment">{{ 'availability.comment_label'|trans }}</label>
+      <textarea class="form-control" id="avail-comment" name="comment" rows="2">{{ comment }}</textarea>
+      {{ d.card_end() }}
+
     <div class="planner mb-3" data-availability-target="grid">
       <div class="planner-grid">
         <div class="planner-axis">
@@ -52,9 +57,5 @@
       </div>
     </div>
 
-    {{ d.card_start(null, {class: ''}) }}
-        <label class="form-label" for="avail-comment">{{ 'availability.comment_label'|trans }}</label>
-        <textarea class="form-control" id="avail-comment" name="comment" rows="2">{{ comment }}</textarea>
-    {{ d.card_end() }}
   </form>
 {% endblock %}
