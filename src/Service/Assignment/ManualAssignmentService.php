@@ -9,6 +9,7 @@ use App\Entity\ShiftEntry;
 use App\Entity\ShiftPosition;
 use App\Entity\User;
 use App\Entity\VolunteerType;
+use App\Mercure\ShiftSignal;
 use App\Enum\AvailabilityValue;
 use App\Enum\ShiftEntryState;
 use App\Repository\ShiftEntryRepository;
@@ -34,6 +35,7 @@ final class ManualAssignmentService
         private readonly HoursCalculator $hours,
         private readonly EventConfigStore $config,
         private readonly AuditLogger $audit,
+        private readonly ShiftSignal $live,
     ) {
     }
 
@@ -96,6 +98,8 @@ final class ManualAssignmentService
         $this->em->persist($entry);
         $this->em->flush();
 
+        $this->live->staffingChanged($shift, $user);
+
         $this->audit->log(AuditEvents::SHIFT, AuditEvents::ASSIGN, [
             'resourceType' => 'shift', 'resourceId' => (string) $shift->getId(), 'resourceOwnerId' => $user->getId(),
             'details' => ['user' => $user->getUserIdentifier()],
@@ -124,6 +128,8 @@ final class ManualAssignmentService
         $user = $entry->getUser();
         $this->em->remove($entry);
         $this->em->flush();
+
+        $this->live->staffingChanged($shift, $user);
 
         $this->audit->log(AuditEvents::SHIFT, AuditEvents::UNASSIGN, [
             'resourceType' => 'shift', 'resourceId' => (string) $shift->getId(), 'resourceOwnerId' => $user->getId(),

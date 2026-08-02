@@ -1,4 +1,10 @@
 {% import 'components/data/_macros.twig' as d %}
+{# `data-next-transition` is when this QR stops being valid. Nothing happens on the server at that
+   moment - the token simply lapses - so there is nothing to push; the card is re-rendered at exactly
+   that instant instead, and the fresh fragment carries the next one. It must live inside the
+   fragment: refreshing replaces the fragment, so a moment declared outside would be the first one
+   forever. #}
+<div data-next-transition="{{ refreshAt|date('c') }}"></div>
 {{ d.card_start(null, {class: 'text-center'}) }}
     <img src="{{ qrDataUri }}" alt="{{ 'digital_id.qr.alt'|trans }}" class="img-fluid mb-2" style="max-width: 320px;">
     <div class="fw-semibold">{{ app.user.name }}</div>

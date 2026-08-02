@@ -13,8 +13,12 @@ use App\Entity\VolunteerType;
 use App\Enum\HelpCallStatus;
 use App\Enum\HelpResponseType;
 use App\Enum\ShiftEntryState;
+use App\Mercure\ShiftSignal;
+use App\Mercure\Topics;
+use App\Mercure\UpdatePublisher;
 use App\Repository\HelpCallRepository;
 use App\Repository\HelpCallResponseRepository;
+use App\Repository\OperationalStatusOverrideRepository;
 use App\Repository\ShiftEntryRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Service\Availability\AvailabilityService;
@@ -47,6 +51,9 @@ final class HelpCallService
         private readonly ShiftConcurrency $concurrency,
         private readonly EventConfigStore $config,
         private readonly AuditLogger $audit,
+        private readonly UpdatePublisher $live,
+        private readonly OperationalStatusOverrideRepository $freeToHelp,
+        private readonly ShiftSignal $shiftSignal,
     ) {
     }
 
@@ -74,6 +81,13 @@ final class HelpCallService
         $call = new HelpCall($shift, $caller, $slots);
         $this->em->persist($call);
         $this->em->flush();
+        // A call nobody has seen yet has no previous eligible set; signalling the current one is
+        // what puts it on their board.
+        $this->live->signal(array_map(
+            static fn (User $user) => Topics::userCalls($user),
+            $this->eligibleUsersFor($call),
+        ));
+
         $this->audit->log(AuditEvents::CALL, AuditEvents::CREATE, [
             'resourceType' => 'help_call', 'resourceId' => (string) $call->getId(),
             'details' => ['shift' => $shift->getTitle(), 'slots' => $slots],
@@ -119,6 +133,10 @@ final class HelpCallService
         }
         $this->em->persist(new HelpCallResponse($call, $user, HelpResponseType::REFUSE));
         $this->em->flush();
+
+        // Only this user's board changes: refusing takes the call off theirs and nobody else's.
+        $this->live->signal(Topics::userCalls($user));
+
         $this->audit->log(AuditEvents::CALL, AuditEvents::REFUSE, [
             'resourceType' => 'help_call', 'resourceId' => (string) $call->getId(), 'resourceOwnerId' => $user->getId(),
         ]);
@@ -133,7 +151,12 @@ final class HelpCallService
      */
     public function accept(HelpCall $call, User $user): ShiftEntry
     {
-        return $this->concurrency->transactional(function () use ($call, $user): ShiftEntry {
+        // Taken before the lock: accepting removes this user from the eligible set and may fill the
+        // call for everyone else, so a set computed only afterwards would miss exactly the people
+        // whose board changed. Racing here costs at most a superfluous signal, never a wrong one.
+        $before = $this->eligibleUsersFor($call);
+
+        $entry = $this->concurrency->transactional(function () use ($call, $user): ShiftEntry {
             $this->concurrency->lockForUpdate($call);
 
             if (!$this->isEligible($call, $user)) {
@@ -157,12 +180,26 @@ final class HelpCallService
 
             return $entry;
         });
+
+        $topics = [];
+        foreach ([...$before, ...$this->eligibleUsersFor($call)] as $affected) {
+            $topics[(string) $affected->getUuid()] = Topics::userCalls($affected);
+        }
+        $this->live->signal(array_values($topics));
+
+        // Answering a call creates an assignment, so the staffing screens and the accepter's own
+        // status widget have to follow, exactly as for any other assignment.
+        $this->shiftSignal->staffingChanged($call->getShift(), $user);
+
+        return $entry;
     }
 
     public function cancel(HelpCall $call): void
     {
-        $call->setStatus(HelpCallStatus::CANCELLED);
-        $this->em->flush();
+        $this->signallingEligibilityChange($call, function () use ($call): void {
+            $call->setStatus(HelpCallStatus::CANCELLED);
+            $this->em->flush();
+        });
         $this->audit->log(AuditEvents::CALL, AuditEvents::CANCEL, [
             'resourceType' => 'help_call', 'resourceId' => (string) $call->getId(),
         ]);
@@ -172,13 +209,61 @@ final class HelpCallService
     public function expireIfDue(HelpCall $call, ?\DateTimeImmutable $now = null): bool
     {
         if ($call->isActive() && ($now ?? new \DateTimeImmutable()) > $call->getShift()->getEndsAt()) {
-            $call->setStatus(HelpCallStatus::EXPIRED);
-            $this->em->flush();
+            $this->signallingEligibilityChange($call, function () use ($call): void {
+                $call->setStatus(HelpCallStatus::EXPIRED);
+                $this->em->flush();
+            });
 
             return true;
         }
 
         return false;
+    }
+
+    /**
+     * Tell everyone whose bounty board this change affects.
+     *
+     * A call is offered per user - eligibility depends on their volunteer types, their operational
+     * status, the shift's audience and what else they are already doing - so there is no shared
+     * "calls" topic to publish to. Each affected user is signalled on their own topic and re-fetches
+     * the board, where that eligibility is applied exactly as on a full page load. Nothing about the
+     * call crosses the hub.
+     *
+     * The set is taken before AND after the change, then combined: accepting a call removes the
+     * accepter from the eligible set and may fill the call for everyone else, so a set computed only
+     * afterwards would leave precisely the people whose board changed most without a signal.
+     *
+     * @param callable():void $change
+     */
+    private function signallingEligibilityChange(HelpCall $call, callable $change): void
+    {
+        $before = $this->eligibleUsersFor($call);
+        $change();
+        $after = $this->eligibleUsersFor($call);
+
+        $topics = [];
+        foreach ([...$before, ...$after] as $user) {
+            $topics[(string) $user->getUuid()] = Topics::userCalls($user);
+        }
+
+        $this->live->signal(array_values($topics));
+    }
+
+    /**
+     * Users who could answer this call as things stand.
+     *
+     * Being "Free to help" is a precondition of eligibility, so the candidate pool is the handful of
+     * people currently marked as such rather than everyone at the event; each is then put through
+     * the same {@see isEligible()} check the board itself uses.
+     *
+     * @return User[]
+     */
+    public function eligibleUsersFor(HelpCall $call): array
+    {
+        return array_values(array_filter(
+            $this->freeToHelp->findFreeToHelpUsers(),
+            fn (User $user) => $this->isEligible($call, $user),
+        ));
     }
 
     /** @return HelpCall[] active calls the user may see and is eligible for (Bounty Board) */

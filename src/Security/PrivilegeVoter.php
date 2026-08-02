@@ -32,6 +32,10 @@ use Symfony\Component\Security\Core\Authorization\Voter\Voter;
  */
 class PrivilegeVoter extends Voter
 {
+    public function __construct(private readonly PrivilegeScopeResolver $scopes)
+    {
+    }
+
     protected function supports(string $attribute, mixed $subject): bool
     {
         return PrivilegeCatalog::isPrivilege($attribute);
@@ -44,50 +48,36 @@ class PrivilegeVoter extends Voter
             return false;
         }
 
-        // ROLE_ADMIN has full, unrestricted access: it satisfies every
-        // permission check, whether or not the global:admin privilege is attached
-        // to one of its groups. The explicit super-privilege keeps working too.
-        $roles = $user->getRoles();
-        if (\in_array('ROLE_ADMIN', $roles, true) || $user->hasPrivilege(PrivilegeCatalog::SUPER)) {
-            return true;
-        }
-
-        // ROLE_SUBADMIN mirrors ROLE_ADMIN but is denied the admin-level/critical
-        // permissions (configuration, audit, PII, RBAC management).
-        // It therefore holds every sub-admin-level permission unscoped.
-        if (\in_array('ROLE_SUBADMIN', $roles, true) && PrivilegeCatalog::level($attribute) === PrivilegeCatalog::LEVEL_SUBADMIN) {
-            return true;
-        }
-
-        $granting = [];
-        foreach ($user->getActiveAssignments() as $assignment) {
-            foreach ($assignment->getGroup()->getPrivileges() as $privilege) {
-                if ($privilege->getName() === $attribute) {
-                    $granting[] = $assignment;
-                    break;
-                }
-            }
-        }
-
-        if ($granting === []) {
+        // Null means "every department": ROLE_ADMIN and the global:admin super-privilege, a
+        // sub-admin holding a sub-admin-level permission, or a granting group assignment that
+        // carries no department scope. An empty array means the user does not hold it at all.
+        $held = $this->scopes->departmentsFor($user, $attribute);
+        if ($held === []) {
             return false;
         }
 
-        if (PrivilegeCatalog::isScoped($attribute)) {
-            $departments = $this->resolveDepartments($subject);
-            if ($departments !== []) {
-                foreach ($granting as $assignment) {
-                    $scope = $assignment->getDepartment();
-                    if ($scope === null || \in_array($scope, $departments, true)) {
-                        return true;
-                    }
-                }
+        if (!PrivilegeCatalog::isScoped($attribute)) {
+            return true;
+        }
 
-                return false;
+        $departments = $this->resolveDepartments($subject);
+        if ($departments === []) {
+            // No subject to scope against, so this reads as "may reach this module at all".
+            // Callers bound to one resource MUST pass it; see the class docblock.
+            return true;
+        }
+
+        if ($held === null) {
+            return true;
+        }
+
+        foreach ($held as $department) {
+            if (\in_array($department, $departments, true)) {
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     /**

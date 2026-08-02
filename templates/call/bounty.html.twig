@@ -3,9 +3,13 @@
 {% block title %}{{ 'ui.nav.bounty_board'|trans }}{% endblock %}
 {% block body %}
   {{ d.page_header('ui.nav.bounty_board'|trans, {subtitle: 'call.page.subtitle'|trans}) }}
-  <div data-controller="live-refresh"
-       data-live-refresh-url-value="{{ path('app_bounty_frame') }}"
-       data-live-refresh-interval-value="15000">
+  {# A call is offered per user - eligibility depends on their volunteer types, their operational
+     status, the shift's audience and what else they are already doing - so there is no shared
+     "calls" topic to listen on. Each affected user is signalled on their own topic and re-fetches
+     the board, where that eligibility is applied server-side exactly as on a full page load. #}
+  <div data-controller="live-stream"
+       data-live-stream-topic-value="{{ mercure_topic('user_calls') }}"
+       data-live-stream-url-value="{{ path('app_bounty_frame') }}">
     {% include 'call/_bounty_list.html.twig' with {calls: calls} only %}
   </div>
 {% endblock %}

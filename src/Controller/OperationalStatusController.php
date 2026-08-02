@@ -12,7 +12,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
  * Operational Status widget. The GET endpoint returns the inner
- * fragment (polled by the live-refresh controller); the POST endpoints mutate
+ * fragment (re-fetched by the live region on a signal); the POST endpoints mutate
  * the status and return the full Turbo Frame so the change is reflected without
  * a full-page refresh.
  */

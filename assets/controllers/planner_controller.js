@@ -47,6 +47,8 @@ export default class extends Controller {
         this.onPointerUp = this.handlePointerUp.bind(this);
         this.onKeyDown = this.handleKeyDown.bind(this);
         this.onChanged = () => this.reloadGrid();
+        this.onRemoteChanged = () => this.queueRemoteReload();
+        this.onEditMaybeFinished = () => this.applyRemoteReloadIfIdle();
         this.onSetPaint = (event) => this.applyPaintDefaults(event.detail);
         this.onInvalid = (event) => this.applyInvalid(event.detail?.uuids ?? []);
 
@@ -58,6 +60,8 @@ export default class extends Controller {
         window.addEventListener('planner:changed', this.onChanged);
         window.addEventListener('planner:paint-defaults', this.onSetPaint);
         window.addEventListener('planner:invalid', this.onInvalid);
+        window.addEventListener('planner:remote-changed', this.onRemoteChanged);
+        document.addEventListener('hidden.bs.modal', this.onEditMaybeFinished);
     }
 
     disconnect() {
@@ -68,7 +72,40 @@ export default class extends Controller {
         window.removeEventListener('planner:changed', this.onChanged);
         window.removeEventListener('planner:paint-defaults', this.onSetPaint);
         window.removeEventListener('planner:invalid', this.onInvalid);
+        window.removeEventListener('planner:remote-changed', this.onRemoteChanged);
+        document.removeEventListener('hidden.bs.modal', this.onEditMaybeFinished);
         this.clearGesture();
+    }
+
+    /**
+     * Someone else changed this department.
+     *
+     * Their change is not applied on arrival. reloadGrid() replaces the grid wholesale and clears
+     * the selection, so doing that mid-edit would pull the blocks out from under a drag, empty the
+     * side panel a manager was acting through, or refresh the page behind an open modal. The change
+     * is remembered and applied at the next moment this manager is not in the middle of something.
+     *
+     * A manager's own edits are unaffected: those come through planner:changed and still reload
+     * immediately, because they are the one who asked.
+     */
+    queueRemoteReload() {
+        this.remotePending = true;
+        this.applyRemoteReloadIfIdle();
+    }
+
+    /** True while applying a remote change would disrupt what this manager is doing. */
+    midEdit() {
+        return Boolean(this.gesture)
+            || this.selected.size > 0
+            || document.querySelector('.modal.show') !== null;
+    }
+
+    applyRemoteReloadIfIdle() {
+        if (!this.remotePending || this.midEdit()) {
+            return;
+        }
+        this.remotePending = false;
+        this.reloadGrid();
     }
 
     applyPaintDefaults(detail) {
@@ -235,12 +272,25 @@ export default class extends Controller {
                 this.moveShift(g.block, g.block.dataset.start, this.isoAtMinutes(day, g.newEnd));
             }
         }
+
+        this.releaseDeferredReload();
     }
 
     clearGesture() {
         this.preview?.remove();
         this.preview = null;
         this.gesture = null;
+    }
+
+    /**
+     * The moments an edit can finish.
+     *
+     * Called after a gesture ends and after the selection changes, which together with the modal
+     * listener in connect() cover every state {@see midEdit()} holds a remote change back for. A
+     * deferred change that never found one of these would sit unapplied until the next local edit.
+     */
+    releaseDeferredReload() {
+        this.applyRemoteReloadIfIdle();
     }
 
     blockDuration(block) {
@@ -286,6 +336,8 @@ export default class extends Controller {
             target: window,
             detail: { ids: Array.from(this.selected).map((b) => b.dataset.shiftId) },
         });
+
+        this.releaseDeferredReload();
     }
 
     // ---- server calls -----------------------------------------------------

@@ -11,6 +11,7 @@ use App\Enum\ShiftState;
 use App\Notification\NotificationCategories;
 use App\Repository\ShiftRepository;
 use App\Service\Notification\NotificationService;
+use App\Mercure\ShiftSignal;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -27,6 +28,7 @@ final class PublicationService
         private readonly ShiftConcurrency $concurrency,
         private readonly AuditLogger $audit,
         private readonly NotificationService $notifications,
+        private readonly ShiftSignal $live,
     ) {
     }
 
@@ -91,6 +93,10 @@ final class PublicationService
 
             return $drafts;
         });
+
+        // Publishing turns drafts into shifts volunteers can see and apply to, so every screen
+        // showing this department has to follow. One signal for the batch: they share a department.
+        $this->live->staffingChanged($drafts[0]);
 
         // Notifications happen only after a successful commit.
         $this->notifyAssignees($published);

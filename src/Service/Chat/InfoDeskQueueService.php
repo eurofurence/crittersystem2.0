@@ -67,6 +67,7 @@ final class InfoDeskQueueService
         }
         $conversation->releaseClaim();
         $this->em->flush();
+        $this->chat->signalChanged($conversation);
 
         return true;
     }
@@ -90,6 +91,10 @@ final class InfoDeskQueueService
             $conversation->claim($owner, $exclusive);
             $this->em->flush();
 
+            // Everyone reading the thread sees the header change, and the other responders need
+            // their queue to stop offering a conversation that is now taken.
+            $this->chat->signalChanged($conversation);
+
             $this->audit->log(AuditEvents::CHAT, AuditEvents::CLAIM, [
                 'resourceType' => 'conversation', 'resourceId' => (string) $conversation->getId(),
             ]);
@@ -105,6 +110,7 @@ final class InfoDeskQueueService
         }
         $conversation->releaseClaim();
         $this->em->flush();
+        $this->chat->signalChanged($conversation);
         $this->audit->log(AuditEvents::CHAT, AuditEvents::UNCLAIM, [
             'resourceType' => 'conversation', 'resourceId' => (string) $conversation->getId(),
         ]);
@@ -131,6 +137,7 @@ final class InfoDeskQueueService
         }
         $conversation->setStatus(ConversationStatus::CLOSED)->releaseClaim();
         $this->em->flush();
+        $this->chat->signalChanged($conversation);
         $this->audit->log(AuditEvents::CHAT, AuditEvents::CLOSE, [
             'resourceType' => 'conversation', 'resourceId' => (string) $conversation->getId(),
         ]);
@@ -140,6 +147,7 @@ final class InfoDeskQueueService
     {
         $conversation->setStatus(ConversationStatus::OPEN);
         $this->em->flush();
+        $this->chat->signalChanged($conversation);
         $this->audit->log(AuditEvents::CHAT, AuditEvents::REOPEN, [
             'resourceType' => 'conversation', 'resourceId' => (string) $conversation->getId(),
         ]);

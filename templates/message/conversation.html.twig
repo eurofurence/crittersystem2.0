@@ -35,11 +35,15 @@
   {% endif %}
 
   {{ d.card_start(null, {class: '', bodyClass: ''}) }}
+    {# The thread refreshes when this conversation changes: a message, an edit, a typing ping, a
+       claim. The signal says only that it changed - the thread is rendered per viewer, since
+       internal notices are hidden from the support subject, so what changed must never travel over
+       the hub. #}
     <div
       class="card-body chat-thread"
-      data-controller="live-refresh"
-      data-live-refresh-url-value="{{ path('app_messages_frame', {id: conversation.uuid}) }}"
-      data-live-refresh-interval-value="5000"
+      data-controller="live-stream"
+      data-live-stream-topic-value="{{ mercure_topic_conversation(conversation) }}"
+      data-live-stream-url-value="{{ path('app_messages_frame', {id: conversation.uuid}) }}"
     >
       {% include 'message/_thread.html.twig' with {conversation: conversation, messages: messages, chat: chat, typing: []} only %}
     </div>

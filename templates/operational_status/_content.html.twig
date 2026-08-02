@@ -1,5 +1,11 @@
 {% import 'components/icon/_macros.twig' as i %}
-<div class="nav-item dropdown">
+{# `data-next-transition` is when this status changes on its own: an override lapsing, a shift
+   starting or ending. Nothing happens on the server at that instant, so there is nothing to push -
+   the region reads this and looks again at exactly that moment instead of polling in case it has
+   passed. It must live inside the fragment: refreshing replaces the fragment, and a moment declared
+   on the frame outside would be the first one forever. #}
+<div class="nav-item dropdown"
+     {% if vm.nextTransitionAt %}data-next-transition="{{ vm.nextTransitionAt|date('c') }}"{% endif %}>
   <button type="button"
           class="btn btn-sm dropdown-toggle {{ vm.value == 'free_to_help' ? 'btn-success' : (vm.value == 'not_available' ? 'btn-outline-danger' : 'btn-outline-secondary') }}"
           data-bs-toggle="dropdown" aria-expanded="false" title="{{ 'operational_status.title'|trans }}">

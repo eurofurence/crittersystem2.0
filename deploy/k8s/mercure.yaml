@@ -1,0 +1,81 @@
+# ----------------------------------------------------------------------------
+# Mercure hub: the live-update transport (notifications, chat, help calls, shift
+# capacity). Browsers subscribe over server-sent events; the app publishes to it
+# over the cluster network.
+#
+# EXACTLY ONE REPLICA. The open-source hub does not cluster. With two, a browser
+# connected to pod A never receives what the app published to pod B - and nothing
+# anywhere logs an error, so it presents as "live updates work for some people".
+# The Deployment is pinned to 1 and uses the Recreate strategy so a rollout never
+# briefly runs two.
+#
+# It is deliberately NOT exposed through the Ingress directly. The nginx sidecar
+# in the app pod proxies /.well-known/mercure to it (see configmap.yaml), so the
+# hub shares the application's origin and the subscriber token can travel as a
+# SameSite=Strict cookie rather than a cross-site one.
+# ----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: critter-mercure
+  namespace: critter
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: critter-mercure }
+  template:
+    metadata:
+      labels: { app: critter-mercure }
+    spec:
+      containers:
+        - name: mercure
+          image: dunglas/mercure:v0.16
+          env:
+            - name: SERVER_NAME
+              value: ":80"
+            # Signs the tokens the APP publishes with.
+            - name: MERCURE_PUBLISHER_JWT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: critter-secrets
+                  key: MERCURE_JWT_SECRET
+            # Signs the tokens BROWSERS subscribe with. A different secret on purpose: a subscriber
+            # token reaches every user, so if it leaks it must not also be able to publish.
+            - name: MERCURE_SUBSCRIBER_JWT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: critter-secrets
+                  key: MERCURE_SUBSCRIBER_JWT_SECRET
+            # anonymous off: a connection without a token receives nothing at all, rather than
+            # every update that was not marked private.
+            # subscriptions off: the subscription API would let one subscriber enumerate the others.
+            - name: MERCURE_EXTRA_DIRECTIVES
+              value: |
+                anonymous off
+                subscriptions off
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet: { path: /healthz, port: 80 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: 80 }
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits: { cpu: "500m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: critter-mercure
+  namespace: critter
+spec:
+  selector: { app: critter-mercure }
+  ports:
+    - port: 80
+      targetPort: 80

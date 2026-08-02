@@ -8,16 +8,17 @@
 
   <div class="row g-3 justify-content-center">
     {#
-      The card re-renders itself just before the current token expires, which
-      rotates the QR. This has to be a Stimulus timer rather than a
-      <meta http-equiv="refresh">: Turbo never reloads the document, so a meta
-      refresh keeps ticking after the user has navigated away and drags them back
-      to this page.
+      The card re-renders just before the current token expires, which rotates the QR. There is no
+      topic here and nothing publishes one: the rotation is driven purely by the clock, so the card
+      declares the instant it next changes and the region waits for exactly that.
+
+      It has to be JavaScript rather than a <meta http-equiv="refresh">: Turbo never reloads the
+      document, so a meta refresh keeps ticking after the user has navigated away and drags them
+      back to this page.
     #}
     <div class="col-12 col-md-6 col-lg-5"
-         data-controller="live-refresh"
-         data-live-refresh-url-value="{{ path('app_digital_id_card') }}"
-         data-live-refresh-interval-value="{{ refreshIntervalMs }}">
+         data-controller="live-stream"
+         data-live-stream-url-value="{{ path('app_digital_id_card') }}">
       {{ include('digital_id/_card.html.twig') }}
     </div>
   </div>

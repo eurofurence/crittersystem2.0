@@ -81,6 +81,7 @@ final class StaffApplicationService
         return [
             'shift' => $shift,
             'status' => $this->signup->eligibilityStatus($shift, $user),
+            'signupOptions' => $this->signup->signupOptions($shift, $user),
             'needed' => $needed,
             'assigned' => $assigned,
             'availability' => $this->availability->planningState($user, $shift->getStartsAt(), $shift->getEndsAt(), $shift),

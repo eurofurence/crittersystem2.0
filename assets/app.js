@@ -19,6 +19,7 @@ import './styles/user-select.css';
 import "./js/forms.js"
 import "./js/notifications.js"
 import "./js/sentry.init.js"
+import "./js/heartbeat.js"
 
 // An expired session must take the user off the page, not leave their data on screen.
 import { watchTurboForSessionExpiry } from './js/session.js';

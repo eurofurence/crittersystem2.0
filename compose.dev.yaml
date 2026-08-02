@@ -62,6 +62,9 @@ services:
       MAILER_DSN: "smtp://mailer:1025"
       # Set to enable the web installer; unset to manage setup from the console.
       INSTALL_PASSWORD: "${INSTALL_PASSWORD:-devinstall}"
+      # Publish over the internal network; the browser subscribes through nginx on the app's origin.
+      MERCURE_URL: "http://mercure/.well-known/mercure"
+      MERCURE_PUBLIC_URL: "/.well-known/mercure"
 
     volumes:
       # Live source mount. The named volume keeps container-built vendor/ from
@@ -120,6 +123,36 @@ services:
 
     depends_on:
       - app
+
+    networks:
+      - critter-dev-net
+
+  # -----------------------------------------------------------------------------------------------------------------
+  # Mercure hub: the live-update transport (notifications, chat, help calls, shift capacity).
+  #
+  # Not published to the host. The browser reaches it through nginx at /.well-known/mercure on the
+  # app's own origin, which is what lets the subscriber token travel as a SameSite=Strict cookie.
+  #
+  # ONE replica, always. The open-source hub does not cluster: a second one would serve browsers that
+  # never receive what the app published to the first, silently.
+  mercure:
+    image: dunglas/mercure:v0.16
+
+    environment:
+      SERVER_NAME: ":80"
+      MERCURE_PUBLISHER_JWT_KEY: "${MERCURE_JWT_SECRET:-!ChangeThisMercureHubJWTSecretKey!}"
+      MERCURE_SUBSCRIBER_JWT_KEY: "${MERCURE_SUBSCRIBER_JWT_SECRET:-!ChangeThisMercureSubscriberJWTSecretKey!}"
+      # anonymous off: every subscriber must present a token, so an unauthenticated connection
+      # receives nothing at all rather than every public update.
+      # subscriptions off: the subscription API would let one subscriber enumerate the others.
+      MERCURE_EXTRA_DIRECTIVES: |
+        cors_origins http://localhost:8000 http://127.0.0.1:8000
+
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/healthz"]
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
     networks:
       - critter-dev-net

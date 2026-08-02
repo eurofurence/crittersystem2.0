@@ -87,6 +87,27 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Mercure hub: the live-update transport. Not published to the host - the browser reaches it
+  # through nginx at /.well-known/mercure on the app's own origin, which is what lets the subscriber
+  # token be a SameSite=Strict cookie.
+  #
+  # NEVER scale this to more than one replica. The open-source hub does not cluster, so a second
+  # instance serves browsers that never receive what the app published to the first, and nothing
+  # reports an error.
+  mercure:
+    image: dunglas/mercure:v0.16
+    env_file: [docker/.env.prod]
+    environment:
+      SERVER_NAME: ":80"
+      MERCURE_PUBLISHER_JWT_KEY: ${MERCURE_JWT_SECRET}
+      MERCURE_SUBSCRIBER_JWT_KEY: ${MERCURE_SUBSCRIBER_JWT_SECRET}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/healthz"]
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
   web:
     image: nginx:1.27-alpine
     volumes:
@@ -96,6 +117,7 @@ services:
       - "${HTTP_PORT:-8080}:80"
     depends_on:
       - app
+      - mercure
     restart: unless-stopped
 
 volumes:

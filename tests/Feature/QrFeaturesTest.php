@@ -63,11 +63,24 @@ final class QrFeaturesTest extends DatabaseWebTestCase
         // the user back to this page long after they left it.
         self::assertCount(0, $crawler->filter('meta[http-equiv="refresh"]'), 'the page must not use a meta refresh');
 
-        // The layout polls for notifications too, so scope to this page's poller.
-        $poller = $crawler->filter('[data-live-refresh-url-value="/digital-id/card"]');
-        self::assertCount(1, $poller, 'the QR card refreshes itself via the live-refresh controller');
-        self::assertSame('live-refresh', $poller->attr('data-controller'));
-        self::assertGreaterThan(0, (int) $poller->attr('data-live-refresh-interval-value'));
+        // The layout has live regions of its own, so scope to this page's.
+        $region = $crawler->filter('[data-live-stream-url-value="/digital-id/card"]');
+        self::assertCount(1, $region, 'the QR card re-renders itself before its token expires');
+        self::assertSame('live-stream', $region->attr('data-controller'));
+
+        /*
+         * The moment, not an interval. The card is re-rendered once when its token is about to
+         * lapse and the fresh fragment then declares its own next moment; a repeating interval kept
+         * the first token's remaining life forever, so a card opened on a nearly-expired token
+         * re-rendered every few seconds for as long as it stayed open.
+         */
+        $declared = $crawler->filter('[data-next-transition]');
+        self::assertCount(1, $declared, 'the card must declare when it next changes');
+        self::assertGreaterThan(
+            time(),
+            strtotime((string) $declared->attr('data-next-transition')),
+            'the declared moment must be in the future',
+        );
     }
 
     public function testDigitalIdCardEndpointReturnsTheQrOnItsOwn(): void

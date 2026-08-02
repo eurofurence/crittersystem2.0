@@ -47,6 +47,32 @@ class UserGroupAssignmentRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Departments the user currently belongs to, distinct.
+     *
+     * Membership in a department is an active department-scoped assignment, whatever the group -
+     * the same definition {@see userIsMember()} and {@see \App\Service\DepartmentMemberService} use.
+     *
+     * @return Department[]
+     */
+    public function findActiveDepartmentsForUser(\App\Entity\User $user): array
+    {
+        // Rooted at Department so the query can select it; an inner join means an unscoped
+        // assignment (department IS NULL) contributes nothing here. Event-wide grants are resolved
+        // separately, see App\Mercure\TopicBuilder.
+        return $this->getEntityManager()->createQueryBuilder()
+            ->select('DISTINCT d')
+            ->from(Department::class, 'd')
+            ->join(UserGroupAssignment::class, 'a', 'WITH', 'a.department = d')
+            ->andWhere('a.user = :user')
+            ->andWhere('a.expiresAt IS NULL OR a.expiresAt > :now')
+            ->orderBy('d.name', 'ASC')
+            ->setParameter('user', $user)
+            ->setParameter('now', new \DateTimeImmutable())
+            ->getQuery()
+            ->getResult();
+    }
+
     public function userIsMember(\App\Entity\User $user, Department $department): bool
     {
         return null !== $this->createQueryBuilder('a')

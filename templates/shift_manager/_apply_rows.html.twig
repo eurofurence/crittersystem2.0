@@ -1,0 +1,9 @@
+{# Every row this user may apply to in one department. One request refreshes the whole group, in
+   place of the Turbo Frame each row used to carry and poll on its own timer. #}
+{% for row in rows %}
+  {% include 'shift_manager/_apply_row.html.twig' with {row: row, signupOptions: row.signupOptions} only %}
+{% else %}
+  {% import 'components/data/_macros.twig' as d %}
+  {# Reachable after a live refresh: the last row in this department was filled or withdrawn. #}
+  {{ d.empty_inline('shift_manager.apply.empty.message'|trans, {tag: 'div', class: 'list-group-item text-secondary'}) }}
+{% endfor %}

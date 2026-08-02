@@ -6,6 +6,7 @@ use App\Entity\Shift;
 use App\Entity\ShiftEntry;
 use App\Entity\User;
 use App\Entity\VolunteerType;
+use App\Mercure\ShiftSignal;
 use App\Repository\NeededVolunteerTypeRepository;
 use App\Repository\ShiftEntryRepository;
 use App\Exception\CapacityConflictException;
@@ -33,6 +34,7 @@ final class ShiftSignupService
         private readonly EventConfigStore $config,
         private readonly CheckInPolicy $checkIn,
         private readonly ShiftConcurrency $concurrency,
+        private readonly ShiftSignal $live,
     ) {
     }
 
@@ -179,6 +181,8 @@ final class ShiftSignupService
                 $this->em->persist($entry);
                 $this->em->flush();
 
+                $this->live->staffingChanged($shift, $user);
+
                 return $entry;
             });
         } catch (UniqueConstraintViolationException) {
@@ -214,7 +218,12 @@ final class ShiftSignupService
 
     public function cancel(ShiftEntry $entry): void
     {
+        $shift = $entry->getShift();
+        $user = $entry->getUser();
+
         $this->em->remove($entry);
         $this->em->flush();
+
+        $this->live->staffingChanged($shift, $user);
     }
 }

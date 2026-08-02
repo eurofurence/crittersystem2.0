@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\EventSubscriber;
 
 use App\Entity\User;
+use App\Security\OnboardingGate;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Event\RequestEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
@@ -26,6 +28,7 @@ final class OnboardingGateSubscriber implements EventSubscriberInterface
 
     public function __construct(
         private readonly Security $security,
+        private readonly OnboardingGate $gate,
         private readonly UrlGeneratorInterface $urlGenerator,
     ) {
     }
@@ -43,20 +46,22 @@ final class OnboardingGateSubscriber implements EventSubscriberInterface
         }
 
         $user = $this->security->getUser();
-        if (!$user instanceof User || $user->isOnboardingCompleted()) {
+        if (!$this->gate->blocks($user instanceof User ? $user : null)) {
             return;
         }
 
-        // The site administrator is never forced through onboarding.
-        if ($this->security->isGranted('ROLE_ADMIN')) {
-            return;
-        }
-
-        $path = $event->getRequest()->getPathInfo();
+        $request = $event->getRequest();
+        $path = $request->getPathInfo();
         foreach (self::ALLOWLIST as $prefix) {
             if (str_starts_with($path, $prefix)) {
                 return;
             }
+        }
+
+        if ($request->isXmlHttpRequest()) {
+            $event->setResponse(new Response('', Response::HTTP_FORBIDDEN));
+
+            return;
         }
 
         $event->setResponse(new RedirectResponse($this->urlGenerator->generate('app_onboarding')));

@@ -35,30 +35,18 @@
     </div>
 
     {% if canClaim %}
-      <div class="col-12 col-lg-8">
-        {{ d.card_start('message.index.waiting'|trans({'%count%': waiting|length}), {bodyClass: ''}) }}
-          <div class="list-group list-group-flush">
-            {% for c in waiting %}
-              <a href="{{ path('app_messages_conversation', {id: c.uuid}) }}" class="list-group-item list-group-item-action">
-                {{ c.subject ? c.subject.name : 'message.index.unknown'|trans }}
-                <span class="text-secondary small">· {{ c.updatedAt|app_datetime }}</span>
-              </a>
-            {% else %}
-              {{ d.empty_inline('message.index.empty.waiting'|trans, {tag: 'div', class: 'list-group-item text-secondary'}) }}
-            {% endfor %}
-          </div>
-        {{ d.card_end({bodyClass: ''}) }}
-        {{ d.card_start('message.index.claimed_by_you'|trans({'%count%': claimed|length}), {class: '', bodyClass: ''}) }}
-          <div class="list-group list-group-flush">
-            {% for c in claimed %}
-              <a href="{{ path('app_messages_conversation', {id: c.uuid}) }}" class="list-group-item list-group-item-action">
-                {{ c.subject ? c.subject.name : 'message.index.unknown'|trans }} {{ d.badge('message.index.badge_claimed'|trans, 'bg-green-lt') }}
-              </a>
-            {% else %}
-              {{ d.empty_inline('message.index.empty.claimed'|trans, {tag: 'div', class: 'list-group-item text-secondary'}) }}
-            {% endfor %}
-          </div>
-        {{ d.card_end({bodyClass: ''}) }}
+      {# The queue changes because of what other people do: someone new writes in, another responder
+         claims a conversation, one is closed. Without a live region a responder only learns of a
+         waiting conversation by reloading, which for the Info Desk is the whole job.
+
+         Every claim holder receives the queue topic, so the region re-fetches this fragment and the
+         server renders it for whoever asked - "claimed by you" is per-viewer and must not be pushed
+         as rendered markup. #}
+      <div class="col-12 col-lg-8"
+           data-controller="live-stream"
+           data-live-stream-topic-value="{{ mercure_topic('info_desk_queue') }}"
+           data-live-stream-url-value="{{ path('app_messages_queue_frame') }}">
+        {% include 'message/_queue.html.twig' with {waiting: waiting, claimed: claimed} only %}
       </div>
     {% endif %}
   </div>

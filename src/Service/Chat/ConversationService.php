@@ -8,10 +8,13 @@ use App\Entity\Conversation;
 use App\Entity\ConversationParticipant;
 use App\Entity\User;
 use App\Enum\ConversationType;
+use App\Mercure\Topics;
+use App\Mercure\UpdatePublisher;
 use App\Notification\NotificationCategories;
 use App\Repository\ConversationParticipantRepository;
 use App\Repository\ConversationRepository;
 use App\Service\EventConfigStore;
+use App\Security\PrivilegeScopeResolver;
 use App\Service\Notification\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -30,12 +33,65 @@ final class ConversationService
         private readonly EventConfigStore $config,
         private readonly NotificationService $notifications,
         private readonly AuditLogger $audit,
+        private readonly UpdatePublisher $live,
+        private readonly PrivilegeScopeResolver $scopes,
     ) {
     }
 
     public function enabled(): bool
     {
         return $this->config->getBool(EventConfigStore::KEY_MESSAGES_ENABLED, true);
+    }
+
+    /**
+     * Whether this user may read this conversation.
+     *
+     * The single definition of that rule. {@see \App\Controller\MessageController} enforces it on
+     * every request, and {@see \App\Mercure\TopicBuilder} decides from the same predicate whether to
+     * put the conversation's topic in the user's subscriber token. Two implementations would mean a
+     * thread whose live updates reach someone the controller would turn away.
+     *
+     * Info Desk members may read any support conversation - that is what lets them pick one out of
+     * the queue - so the claim privilege stands in for participation there. It is resolved through
+     * {@see PrivilegeScopeResolver} rather than the security token, because the topic builder asks
+     * this about a user who is not the one making the request.
+     */
+    public function mayParticipate(Conversation $conversation, User $user): bool
+    {
+        if ($conversation->getType() === ConversationType::SUPPORT && $this->scopes->holds($user, 'chat:claim')) {
+            return true;
+        }
+
+        foreach ($conversation->getParticipants() as $participant) {
+            if ($participant->getUser() === $user) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Tell this conversation's readers, and the Info Desk queue, that it changed.
+     *
+     * A signal only: both the thread and the queue are rendered per viewer - internal notices are
+     * hidden from the support subject, and "claimed by you" is a different list for each responder -
+     * so what changed must never travel over the hub. Each reader re-requests and the server decides
+     * what they see, exactly as on a full page load.
+     *
+     * A support conversation also reaches the queue topic, because responders watching the queue
+     * hold that topic and not the conversation's own, and because the queue is ordered by last
+     * activity. The payload names the conversation; that is safe here because only claim holders can
+     * subscribe to the queue, and they may open any support thread anyway.
+     */
+    public function signalChanged(Conversation $conversation): void
+    {
+        $topics = [Topics::conversation($conversation)];
+        if ($conversation->getType() === ConversationType::SUPPORT) {
+            $topics[] = Topics::infoDeskQueue();
+        }
+
+        $this->live->signal($topics, ['conversation' => (string) $conversation->getUuid()]);
     }
 
     /** Whether a body contains a link/URL (restricted content). */
@@ -97,6 +153,8 @@ final class ConversationService
         $message->setBody($newBody)->markEdited();
         $this->em->flush();
 
+        $this->signalChanged($message->getConversation());
+
         $this->audit->log(\App\Audit\AuditEvents::CHAT, \App\Audit\AuditEvents::UPDATE, [
             'resourceType' => 'chat_message', 'resourceId' => (string) $message->getId(),
         ]);
@@ -112,6 +170,8 @@ final class ConversationService
         $conversation->touch();
         $this->em->persist($message);
         $this->em->flush();
+
+        $this->signalChanged($conversation);
 
         return $message;
     }
@@ -146,6 +206,10 @@ final class ConversationService
             $this->em->persist(new ChatMessage($conversation, null, $welcome));
         }
         $this->em->flush();
+
+        // A new support conversation is the queue's whole reason to change: a responder must see it
+        // appear without reloading.
+        $this->signalChanged($conversation);
 
         $this->notifyInfoDeskQueue($conversation, $user);
 
@@ -185,6 +249,8 @@ final class ConversationService
         $conversation->touch();
         $this->em->persist($message);
         $this->em->flush();
+
+        $this->signalChanged($conversation);
 
         // A support conversation's user reply re-notifies the Info Desk queue.
         if (!$internal && $sender !== null && $conversation->getType() === ConversationType::SUPPORT
@@ -277,6 +343,10 @@ final class ConversationService
         }
         $participant->markTyping();
         $this->em->flush();
+
+        // The other side's thread shows "is typing"; without a signal it would only appear when
+        // something else happened to refresh, which is never while the other person is still typing.
+        $this->signalChanged($conversation);
     }
 
     /**

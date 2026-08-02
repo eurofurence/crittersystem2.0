@@ -11,7 +11,7 @@ use Twig\TwigFunction;
 
 /**
  * Exposes {@see notification_bell()} so the navbar bell renders inline without a
- * controller round-trip (the fragment is then polled by live-refresh).
+ * controller round-trip (the fragment is then re-fetched on a signal).
  */
 final class NotificationExtension extends AbstractExtension
 {

@@ -57,10 +57,16 @@ final class DigitalIdController extends AbstractController
 
         $verifyUrl = $this->urls->generate('app_digital_id_verify', ['token' => $token->getToken()], UrlGeneratorInterface::ABSOLUTE_URL);
 
-        // Drive the refresh off the token actually on screen, not off the full
-        // TTL: getOrCreateActive() may hand back a token that is already part-way
-        // through its life, and refreshing on the full TTL would leave a dead QR
-        // on display in the meantime.
+        /*
+         * The moment this card must re-render, as an instant rather than an interval.
+         *
+         * Driven off the token actually on screen, not off the full TTL: getOrCreateActive() may
+         * hand back one that is already part-way through its life, and waiting a full TTL would
+         * leave a dead QR on display. Expressed as an instant because the card is refreshed once at
+         * that moment and the fresh fragment then carries its own - a repeating interval kept the
+         * first token's remaining life forever, so a card that happened to open on a nearly-expired
+         * token re-rendered every few seconds for as long as it stayed open.
+         */
         $remaining = $token->getExpiresAt()->getTimestamp() - time();
         $refreshIn = max(DigitalIdService::MIN_REMAINING_SECONDS, $remaining) - self::REFRESH_MARGIN_SECONDS;
 
@@ -68,7 +74,7 @@ final class DigitalIdController extends AbstractController
             'token' => $token,
             'verifyUrl' => $verifyUrl,
             'qrDataUri' => $this->qr->dataUri($verifyUrl, 320, 12),
-            'refreshIntervalMs' => $refreshIn * 1000,
+            'refreshAt' => (new \DateTimeImmutable())->modify(\sprintf('+%d seconds', $refreshIn)),
         ];
     }
 

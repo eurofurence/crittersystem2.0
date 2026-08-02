@@ -11,6 +11,7 @@ use App\Entity\User;
 use App\Entity\VolunteerType;
 use App\Enum\ShiftAudience;
 use App\Enum\ShiftState;
+use App\Mercure\ShiftSignal;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
@@ -28,8 +29,10 @@ final class PlannerDraftStore
     public const RASTER_MINUTES = 30;
     public const MIN_DURATION_MINUTES = 30;
 
-    public function __construct(private readonly EntityManagerInterface $em)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $em,
+        private readonly ShiftSignal $live,
+    ) {
     }
 
     /**
@@ -68,6 +71,8 @@ final class PlannerDraftStore
 
         $this->em->persist($shift);
         $this->em->flush();
+
+        $this->live->staffingChanged($shift);
 
         return $shift;
     }
@@ -172,6 +177,8 @@ final class PlannerDraftStore
         }
         $this->em->flush();
 
+        $this->live->staffingChanged($shift);
+
         return $shift;
     }
 
@@ -211,6 +218,8 @@ final class PlannerDraftStore
             $this->em->persist($need);
         }
         $this->em->flush();
+
+        $this->live->staffingChanged($shift);
     }
 
     /** Move/resize a shift, keeping it valid. Autosaves in place. */
@@ -223,11 +232,17 @@ final class PlannerDraftStore
         }
         $this->em->flush();
 
+        $this->live->staffingChanged($shift);
+
         return $shift;
     }
 
     public function delete(Shift $shift): void
     {
+        // Signalled before the flush: afterwards the entity is detached and its department is no
+        // longer reachable to address the update to.
+        $this->live->staffingChanged($shift);
+
         $this->em->remove($shift);
         $this->em->flush();
     }

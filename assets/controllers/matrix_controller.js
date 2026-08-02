@@ -35,11 +35,43 @@ export default class extends Controller {
 
     connect() {
         this.onChanged = () => this.reloadContent();
+        this.onRemoteChanged = () => this.queueRemoteReload();
+        this.onEditMaybeFinished = () => this.applyRemoteReloadIfIdle();
+
         window.addEventListener('planner:changed', this.onChanged);
+        // Another manager edited this department. Held back while the cell editor is open.
+        window.addEventListener('planner:remote-changed', this.onRemoteChanged);
+        document.addEventListener('hidden.bs.modal', this.onEditMaybeFinished);
     }
 
     disconnect() {
         window.removeEventListener('planner:changed', this.onChanged);
+        window.removeEventListener('planner:remote-changed', this.onRemoteChanged);
+        document.removeEventListener('hidden.bs.modal', this.onEditMaybeFinished);
+    }
+
+    /**
+     * Someone else changed this department.
+     *
+     * Not applied on arrival: reloadContent() replaces the whole content region, and the cell editor
+     * is populated from the cell that was clicked, so swapping the grid underneath an open editor
+     * leaves it acting on a cell that no longer exists in the page. The change waits until the
+     * editor is closed.
+     *
+     * A manager's own edits still apply immediately - they arrive as planner:changed, and the editor
+     * closes itself as part of saving.
+     */
+    queueRemoteReload() {
+        this.remotePending = true;
+        this.applyRemoteReloadIfIdle();
+    }
+
+    applyRemoteReloadIfIdle() {
+        if (!this.remotePending || document.querySelector('.modal.show') !== null) {
+            return;
+        }
+        this.remotePending = false;
+        this.reloadContent();
     }
 
     // ---- cell editor ------------------------------------------------------

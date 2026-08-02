@@ -6,6 +6,8 @@ use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
 use App\Entity\OperationalStatusOverride;
 use App\Entity\User;
+use App\Mercure\Topics;
+use App\Mercure\UpdatePublisher;
 use App\Repository\OperationalStatusOverrideRepository;
 use App\Repository\ShiftEntryRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -38,6 +40,7 @@ class OperationalStatusService
         private readonly OperationalStatusOverrideRepository $overrides,
         private readonly EntityManagerInterface $em,
         private readonly AuditLogger $audit,
+        private readonly UpdatePublisher $live,
     ) {
     }
 
@@ -59,7 +62,7 @@ class OperationalStatusService
     }
 
     /**
-     * @return array{value: string, label: string, freeToHelp: bool, expiresAt: ?\DateTimeImmutable, durations: int[]}
+     * @return array{value: string, label: string, freeToHelp: bool, expiresAt: ?\DateTimeImmutable, durations: int[], nextTransitionAt: ?\DateTimeImmutable}
      */
     public function viewModel(User $user, ?\DateTimeImmutable $now = null): array
     {
@@ -73,7 +76,40 @@ class OperationalStatusService
             'freeToHelp' => $status === self::FREE_TO_HELP,
             'expiresAt' => $status === self::FREE_TO_HELP && $override !== null ? $override->getExpiresAt() : null,
             'durations' => self::DURATIONS,
+            'nextTransitionAt' => $this->nextTransitionAt($user, $now),
         ];
+    }
+
+    /**
+     * When this status will change of its own accord, if it will.
+     *
+     * The status is derived from the clock: an override lapses, a shift begins, a shift ends. No
+     * server-side event happens at those instants, so there is nothing to push and the widget used
+     * to poll every minute in case one had passed. Telling the page the exact moment instead lets it
+     * look once, when it matters, rather than sixty times an hour on the chance that it does.
+     *
+     * Null means nothing is scheduled to change; only an actual edit (which does publish) will.
+     */
+    public function nextTransitionAt(User $user, ?\DateTimeImmutable $now = null): ?\DateTimeImmutable
+    {
+        $now ??= new \DateTimeImmutable();
+
+        $candidates = [];
+
+        $override = $this->overrides->findOneByUser($user);
+        if ($override !== null && $override->getValue() === self::FREE_TO_HELP) {
+            $expiresAt = $override->getExpiresAt();
+            if ($expiresAt !== null && $expiresAt > $now) {
+                $candidates[] = $expiresAt;
+            }
+        }
+
+        $boundary = $this->entries->findNextBoundaryAfter($user, $now);
+        if ($boundary !== null) {
+            $candidates[] = $boundary;
+        }
+
+        return $candidates === [] ? null : min($candidates);
     }
 
     public function setFreeToHelp(User $user, int $minutes): void
@@ -93,6 +129,11 @@ class OperationalStatusService
             $override->setValue(self::FREE_TO_HELP)->setExpiresAt($expiresAt);
         }
         $this->em->flush();
+
+        // The widget is in the navbar of every open tab, so all of them have to follow. Their bounty
+        // board changes too: being free to help is a precondition of answering a call, so calls that
+        // were already open become answerable at this moment and nothing else would announce them.
+        $this->live->signal([Topics::userStatus($user), Topics::userCalls($user)]);
 
         $this->audit->log(AuditEvents::OPERATIONAL_STATUS, AuditEvents::STATUS_CHANGE, [
             'resourceType' => 'User',
@@ -114,6 +155,9 @@ class OperationalStatusService
 
         $this->em->remove($override);
         $this->em->flush();
+
+        // Clearing it takes them off the eligible set for every open call, so the board goes too.
+        $this->live->signal([Topics::userStatus($user), Topics::userCalls($user)]);
 
         $this->audit->log(AuditEvents::OPERATIONAL_STATUS, AuditEvents::STATUS_CHANGE, [
             'resourceType' => 'User',

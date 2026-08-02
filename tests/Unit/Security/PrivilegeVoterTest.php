@@ -7,6 +7,7 @@ use App\Entity\Group;
 use App\Entity\Privilege;
 use App\Entity\Shift;
 use App\Entity\User;
+use App\Security\PrivilegeScopeResolver;
 use App\Security\PrivilegeVoter;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
@@ -18,7 +19,9 @@ final class PrivilegeVoterTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->voter = new PrivilegeVoter();
+        // The voter is built on the same scope resolver that decides Mercure topics, so the two
+        // cannot answer "which departments does this user hold it in" differently.
+        $this->voter = new PrivilegeVoter(new PrivilegeScopeResolver());
     }
 
     /** @param string[] $privilegeNames */

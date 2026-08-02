@@ -7,6 +7,8 @@ use App\Audit\AuditLogger;
 use App\Entity\Notification;
 use App\Entity\NotificationPreference;
 use App\Entity\User;
+use App\Mercure\Topics;
+use App\Mercure\UpdatePublisher;
 use App\Notification\NotificationCategories;
 use App\Repository\NotificationPreferenceRepository;
 use App\Repository\NotificationRepository;
@@ -30,6 +32,7 @@ class NotificationService
         private readonly TelegramSender $telegram,
         private readonly EventConfigStore $config,
         private readonly AuditLogger $audit,
+        private readonly UpdatePublisher $live,
     ) {
     }
 
@@ -48,6 +51,11 @@ class NotificationService
             $created = new Notification($user, $category, $title, $message, $actionUrl, $system);
             $this->em->persist($created);
             $this->em->flush();
+
+            // Wake this user's bell. The signal says only that something arrived; the browser
+            // re-requests the bell fragment, which is rendered for whoever is actually signed in.
+            // Nothing about the notification crosses the hub - not its title, not its category.
+            $this->live->signal(Topics::userNotifications($user));
         }
 
         if (!$inAppOnly) {
@@ -104,6 +112,9 @@ class NotificationService
     public function markAllRead(User $user): void
     {
         $this->notifications->markAllRead($user, new \DateTimeImmutable());
+
+        // The user may be reading in more than one tab; the count has to drop in all of them.
+        $this->live->signal(Topics::userNotifications($user));
     }
 
     /** Effective shift-reminder lead in minutes: the user's choice, else the system default. */

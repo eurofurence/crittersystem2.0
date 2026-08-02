@@ -45,6 +45,40 @@ class ShiftEntryRepository extends ServiceEntityRepository
     }
 
     /**
+     * The next moment one of this user's shifts starts or ends.
+     *
+     * Their operational status is derived from the clock, not from a stored value, so it changes on
+     * its own when a shift begins or finishes. Nothing happens server-side at that instant and there
+     * is therefore nothing to push - the page has to be told in advance when to look again, which is
+     * what this answers.
+     */
+    public function findNextBoundaryAfter(User $user, \DateTimeImmutable $after): ?\DateTimeImmutable
+    {
+        // Each side is filtered on its own column. Taking one MIN over a combined condition would
+        // return the start of a shift that is already running, hiding a nearer boundary behind it.
+        $candidates = [];
+        foreach (['startsAt', 'endsAt'] as $column) {
+            $value = $this->createQueryBuilder('e')
+                ->select(\sprintf('MIN(s.%s)', $column))
+                ->join('e.shift', 's')
+                ->andWhere('e.user = :user')
+                ->andWhere(\sprintf('s.%s > :after', $column))
+                ->setParameter('user', $user)
+                ->setParameter('after', $after)
+                ->getQuery()
+                ->getSingleScalarResult();
+
+            if ($value !== null) {
+                $candidates[] = $value instanceof \DateTimeImmutable
+                    ? $value
+                    : new \DateTimeImmutable((string) $value);
+            }
+        }
+
+        return $candidates === [] ? null : min($candidates);
+    }
+
+    /**
      * Entries for a user, ordered by shift start (joins the shift for display).
      *
      * @return ShiftEntry[]

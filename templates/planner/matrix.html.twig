@@ -18,7 +18,11 @@
 
   {# The URLs carry placeholders the controller substitutes per cell; the routes require a uuid, so
      the placeholders must survive URL generation. #}
-  <div data-controller="matrix"
+  {# The live region only announces; the matrix owns its refresh and holds it back while the cell
+     editor is open, since reloading replaces the region the editor was opened from. #}
+  <div data-controller="matrix live-stream"
+       data-live-stream-topic-value="{{ mercure_topic_department(department) }}"
+       data-live-stream-event-value="planner:remote-changed"
        data-matrix-token-value="{{ csrf_token('matrix_edit') }}"
        data-matrix-can-assign-value="{{ canAssign ? '1' : '0' }}"
        data-matrix-enable-url-value="{{ path('app_matrix_position_enable', {id: '00000000-0000-4000-8000-000000000000', positionId: '00000000-0000-4000-8000-000000000001'})|replace({'00000000-0000-4000-8000-000000000000': '__SHIFT__', '00000000-0000-4000-8000-000000000001': '__POSITION__'}) }}"

@@ -1,4 +1,3 @@
-
 ###> symfony/framework-bundle ###
 /.env.local
 /.env.local.php
@@ -24,7 +23,7 @@
 /assets/vendor/
 ###< symfony/asset-mapper ###
 docs/keycloak-credentials.txt
-
+.rtk/
 ## Seeds used for testing
 /seeds/
 
@@ -47,3 +46,5 @@ upload_sbom.sh
 # specific, never committed.
 /drivers/
 ###< browser test drivers ###
+
+.idea/

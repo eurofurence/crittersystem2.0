@@ -1,11 +1,11 @@
-{# A Turbo Frame so set/clear swap in place; live-refresh re-fetches the inner
-   fragment so auto-transitions (override expiry, shift start/end) surface without
-   a full-page refresh. Keep the frame id stable - the server responses target it
-   by id. #}
+{# A Turbo Frame so set/clear swap in place. The live region re-fetches the inner fragment on a
+   Mercure signal (this user's status was edited, or a shift assignment changed it) and, for the
+   transitions that happen on the clock rather than on an event, at the moment the fragment itself
+   declares. Keep the frame id stable - the server responses target it by id. #}
 <turbo-frame id="operational-status"
-             data-controller="live-refresh"
-             data-live-refresh-url-value="{{ path('app_operational_status') }}"
-             data-live-refresh-interval-value="60000"
+             data-controller="live-stream"
+             data-live-stream-topic-value="{{ mercure_topic('user_status') }}"
+             data-live-stream-url-value="{{ path('app_operational_status') }}"
              class="d-none d-md-flex align-items-center me-2">
   {% include 'operational_status/_content.html.twig' with {vm: vm} only %}
 </turbo-frame>

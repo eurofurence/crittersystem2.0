@@ -1,0 +1,13 @@
+mercure:
+    hubs:
+        default:
+            # Reached over the internal network to publish; the browser subscribes through the
+            # application's own origin, which nginx proxies to the same hub.
+            url: '%env(default::MERCURE_URL)%'
+            public_url: '%env(default::MERCURE_PUBLIC_URL)%'
+            jwt:
+                # The PUBLISHER secret. Deliberately not the one that signs the tokens handed to
+                # browsers - see App\Mercure\SubscriberCookieFactory and .env.
+                secret: '%env(MERCURE_JWT_SECRET)%'
+                publish: '*'
+

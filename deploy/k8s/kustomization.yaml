@@ -6,6 +6,7 @@ resources:
   - configmap.yaml
   - postgres.yaml        # remove when using an external/managed database
   - app.yaml
+  - mercure.yaml         # live-update hub; keep at exactly one replica (see the file)
   - backup.yaml          # nightly DB backup CronJob (needs critter-backup-secrets)
   - ingress.yaml
   # secret.example.yaml is intentionally NOT listed - provide the real Secret

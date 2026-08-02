@@ -12,6 +12,7 @@ use App\Entity\ShiftEntry;
 use App\Entity\ShiftPosition;
 use App\Entity\ShiftPositionAssignment;
 use App\Exception\CapacityConflictException;
+use App\Mercure\ShiftSignal;
 use App\Entity\User;
 use App\Entity\VolunteerType;
 use App\Repository\NamedPositionRepository;
@@ -41,6 +42,7 @@ final class PositionService
         private readonly ShiftEntryRepository $entries,
         private readonly ShiftConcurrency $concurrency,
         private readonly \App\Repository\UserVolunteerTypeRepository $memberships,
+        private readonly ShiftSignal $live,
     ) {
     }
 
@@ -50,6 +52,8 @@ final class PositionService
         $group->setDisplayOrder($this->groups->nextDisplayOrder($department));
         $this->em->persist($group);
         $this->em->flush();
+
+        $this->live->departmentChanged($department);
 
         return $group;
     }
@@ -61,6 +65,8 @@ final class PositionService
         $position->setDisplayOrder($this->positions->nextDisplayOrder($group));
         $this->em->persist($position);
         $this->em->flush();
+
+        $this->live->departmentChanged($group->getDepartment());
 
         return $position;
     }
@@ -82,6 +88,8 @@ final class PositionService
         $this->em->persist($shiftPosition);
         $this->em->flush();
 
+        $this->live->staffingChanged($shift);
+
         return $shiftPosition;
     }
 
@@ -97,21 +105,28 @@ final class PositionService
         if (!$force && $shiftPosition->getAssignments()->count() > 0) {
             throw new \RuntimeException('This position has assignments. Resolve them before removing it.');
         }
-        $shiftPosition->getShift()->removeShiftPosition($shiftPosition);
+        $shift = $shiftPosition->getShift();
+        $shift->removeShiftPosition($shiftPosition);
         $this->em->remove($shiftPosition);
         $this->em->flush();
+
+        $this->live->staffingChanged($shift);
     }
 
     public function setRequired(ShiftPosition $shiftPosition, bool $required): void
     {
         $shiftPosition->setRequired($required);
         $this->em->flush();
+
+        $this->live->staffingChanged($shiftPosition->getShift());
     }
 
     public function setNote(ShiftPosition $shiftPosition, ?string $note): void
     {
         $shiftPosition->setNote($note !== null && trim($note) !== '' ? $note : null);
         $this->em->flush();
+
+        $this->live->staffingChanged($shiftPosition->getShift());
     }
 
     /**
@@ -132,6 +147,8 @@ final class PositionService
             }
         }
         $this->em->flush();
+
+        $this->live->departmentChanged($group->getDepartment());
     }
 
     /**
@@ -152,6 +169,8 @@ final class PositionService
             }
         }
         $this->em->flush();
+
+        $this->live->departmentChanged($department);
     }
 
     /**
@@ -170,6 +189,8 @@ final class PositionService
             $target->setNote($source->getNote());
         }
         $this->em->flush();
+
+        $this->live->staffingChanged($to);
 
         return $to->getShiftPositions()->toArray();
     }
@@ -214,6 +235,8 @@ final class PositionService
         } catch (UniqueConstraintViolationException) {
             throw new CapacityConflictException('This position is already fully occupied.');
         }
+
+        $this->live->staffingChanged($shiftPosition->getShift(), $entry->getUser());
 
         $this->audit->log(AuditEvents::SHIFT, AuditEvents::POSITION_ASSIGN, [
             'resourceType' => 'shift_position',
@@ -300,6 +323,8 @@ final class PositionService
         $position->removeAssignment($assignment);
         $this->em->remove($assignment);
         $this->em->flush();
+
+        $this->live->staffingChanged($position->getShift(), $user);
 
         $this->audit->log(AuditEvents::SHIFT, AuditEvents::POSITION_UNASSIGN, [
             'resourceType' => 'shift_position',

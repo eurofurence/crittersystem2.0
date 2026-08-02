@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Department;
 use App\Entity\Shift;
 use App\Entity\User;
 use App\Exception\CapacityConflictException;
@@ -67,18 +68,24 @@ final class ShiftManagerController extends AbstractController
         ]);
     }
 
-    #[Route('/manage-shifts/apply/{id}/frame', name: 'app_manage_shifts_apply_frame', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
-    public function frame(#[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
+    /**
+     * Every row this user may apply to in one department.
+     *
+     * Replaces the per-row frame each shift used to carry: one signal on the department's topic
+     * refreshes the group in a single request, rather than one request per row per timer tick.
+     *
+     * No department check is needed, and none would help: applicableShifts() filters by
+     * ShiftVisibilityResolver, so a department the caller may see nothing in renders as an empty
+     * list rather than refusing and thereby confirming it exists.
+     */
+    #[Route('/manage-shifts/apply/department/{id}', name: 'app_manage_shifts_apply_department', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function departmentRows(#[MapEntity(mapping: ['id' => 'uuid'])] Department $department): Response
     {
         /** @var User $user */
         $user = $this->getUser();
-        if (!$this->visibility->isVisibleTo($shift, $user)) {
-            throw $this->createNotFoundException();
-        }
 
-        return $this->render('shift_manager/_apply_frame.html.twig', [
-            'row' => $this->applications->shiftRow($shift, $user),
-            'signupOptions' => $this->signup->signupOptions($shift, $user),
+        return $this->render('shift_manager/_apply_rows.html.twig', [
+            'rows' => $this->applications->applicableShifts($department, $user),
         ]);
     }
 

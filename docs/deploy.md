@@ -73,6 +73,45 @@ php bin/console messenger:failed:retry
 
 ---
 
+## ⚠ The Mercure hub, and why it must never be scaled
+
+Live updates - notifications, chat, help calls, shift capacity - are delivered by a
+[Mercure](https://mercure.rocks) hub over server-sent events. It is defined for you in
+`compose.prod.yaml`, `compose.dev.yaml` and `deploy/k8s/mercure.yaml`.
+
+**Run exactly one hub instance.** The open-source hub does not cluster. With two behind a load
+balancer, a browser connected to one never receives what the application published to the other, and
+nothing anywhere reports an error: it presents as "live updates work for some people and not others",
+intermittently. The Kubernetes Deployment is pinned to `replicas: 1` with the `Recreate` strategy so
+that a rollout never briefly runs two. Do not raise it. The application itself scales freely; only
+the hub is constrained.
+
+The hub is **not** exposed directly. The web server proxies `/.well-known/mercure` to it so that it
+shares the application's origin, which is what allows the subscriber token to be a `SameSite=Strict`
+cookie instead of a cross-site one. If you deploy some other way, reproduce that proxy rule -
+including `proxy_buffering off` and a long `proxy_read_timeout`, since an SSE response never ends and
+a buffered or timed-out one delivers nothing.
+
+Four environment variables configure it:
+
+| Variable                        | Purpose                                                          |
+| ------------------------------- | ---------------------------------------------------------------- |
+| `MERCURE_URL`                   | Where the app publishes (internal network).                      |
+| `MERCURE_PUBLIC_URL`            | Where the browser subscribes; same origin as the app.            |
+| `MERCURE_JWT_SECRET`            | Signs the tokens the **app** publishes with.                     |
+| `MERCURE_SUBSCRIBER_JWT_SECRET` | Signs the tokens **browsers** subscribe with.                    |
+
+The last two must differ, and both must be at least 32 characters (the minimum key length for
+HMAC-SHA256). Keeping them separate means a subscriber token - which is handed to every user - can
+never be used to publish, whatever else goes wrong. Set the same pair on the hub container
+(`MERCURE_PUBLISHER_JWT_KEY` / `MERCURE_SUBSCRIBER_JWT_KEY`) and on the application.
+
+**A hub outage is not an outage.** Every live region falls back to slow polling when the stream will
+not stay connected, and the application never fails a request because publishing failed. The symptom
+is updates arriving late rather than instantly.
+
+---
+
 ## How migrations stay safe
 
 Past deployments failed when a pod/container was killed mid-migration and left
@@ -133,6 +172,10 @@ GET /health  → 200 {"status":"ok","database":"up","migrationsPending":0}
 | `PUBLIC_SYNC_DIR`         | no       | Container-internal: where the entrypoint publishes `public/` for an nginx sidecar.                                                                                                                                        |
 | `UPLOAD_STORAGE_DSN`      | no       | Where user uploads live. `local://var/uploads` (default) or `s3://bucket?region=…`.                                                                                                                                       |
 | `EXPORT_STORAGE_DSN`      | no       | Where export archives live. `local://var/exports` (default) or `s3://bucket?region=…`. **Read the section below before deploying.**                                                                                       |
+| `MERCURE_URL`             | yes      | Where the app publishes live updates, on the internal network. See "The Mercure hub" above.                                                                                                                               |
+| `MERCURE_PUBLIC_URL`      | yes      | Where the browser subscribes. Must be on the app's own origin, normally `/.well-known/mercure`.                                                                                                                           |
+| `MERCURE_JWT_SECRET`      | yes      | Signs the tokens the app publishes with. At least 32 characters.                                                                                                                                                          |
+| `MERCURE_SUBSCRIBER_JWT_SECRET` | yes | Signs the tokens browsers subscribe with. At least 32 characters, and **must differ** from the publisher secret.                                                                                                     |
 
 ---
 

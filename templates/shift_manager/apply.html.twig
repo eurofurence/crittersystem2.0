@@ -29,18 +29,17 @@
             <h3 class="card-title">{{ group.department.name }}</h3>
             <span class="ms-2 badge {{ section == 'member' ? 'bg-green-lt' : 'bg-secondary-lt' }}">{{ label }}</span>
           </div>
-          <div class="list-group list-group-flush">
-            {% for row in group.shifts %}
-              {# Each row is its own Turbo Frame, polled for live capacity/status.
-                 Keep the frame ids stable - the server responses target them by id. #}
-              <turbo-frame id="apply-row-{{ row.shift.id }}"
-                           src="{{ path('app_manage_shifts_apply_frame', {id: row.shift.uuid}) }}"
-                           data-controller="live-refresh"
-                           data-live-refresh-frame-value="apply-row-{{ row.shift.id }}"
-                           data-live-refresh-interval-value="20000">
-                {% include 'shift_manager/_apply_row.html.twig' with {row: row, signupOptions: []} only %}
-              </turbo-frame>
-            {% endfor %}
+          {# One live region per department, not one per row.
+             Every row used to be its own Turbo Frame with its own twenty-second timer, so a
+             sixty-shift day cost a hundred and eighty requests a minute from a single viewer, each
+             running its own availability, eligibility and hours queries. Now one signal on the
+             department's topic refreshes the whole group in one request, and only when something
+             actually changed. #}
+          <div class="list-group list-group-flush"
+               data-controller="live-stream"
+               data-live-stream-topic-value="{{ mercure_topic_department(group.department) }}"
+               data-live-stream-url-value="{{ path('app_manage_shifts_apply_department', {id: group.department.uuid}) }}">
+            {% include 'shift_manager/_apply_rows.html.twig' with {rows: group.shifts} only %}
           </div>
         </div>
       {% endfor %}

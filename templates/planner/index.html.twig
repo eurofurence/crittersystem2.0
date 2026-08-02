@@ -43,9 +43,14 @@
       {# The paint defaults are seeded from the server rather than waited for on the toolbar's
          change event: until the manager touches a picker no event fires, so a first paint would
          otherwise use the controller's own defaults instead of what the toolbar is showing. #}
+      {# The live region only announces. The planner owns its own refresh and defers it while a
+         manager is mid-edit - see planner_controller - because reloading replaces the grid and
+         clears the selection, which mid-drag or mid-panel would take the work out from under them. #}
       <div
         class="planner"
-        data-controller="planner"
+        data-controller="planner live-stream"
+        data-live-stream-topic-value="{{ mercure_topic_department(department) }}"
+        data-live-stream-event-value="planner:remote-changed"
         data-planner-department-value="{{ department.uuid }}"
         data-planner-audience-value="department_staff"
         data-planner-task-value="{{ shiftTasks is not empty ? shiftTasks|first.id : 0 }}"

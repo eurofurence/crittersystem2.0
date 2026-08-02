@@ -32,6 +32,12 @@ services:
             string $ssoProviderLabel: '%env(SSO_PROVIDER_LABEL)%'
             # UI locales the app builds catalogs for and the LocaleSubscriber accepts.
             array $enabledLocales: '%kernel.enabled_locales%'
+            # Signs the Mercure subscriber tokens handed to browsers. Separate from the publisher
+            # secret on purpose - see .env.
+            string $subscriberSecret: '%env(MERCURE_SUBSCRIBER_JWT_SECRET)%'
+            # Empty means this deployment has no hub; the pages then never try to connect to one.
+            # `default:` treats an empty env var as unset and yields null, hence the string cast.
+            string $mercurePublicUrl: '%env(string:default::MERCURE_PUBLIC_URL)%'
 
     # src/Dev/ (the UI kit pages) is excluded here and registered below for non-prod only.
     # This exclusion is what keeps the kit out of production: `routing.controllers` derives
@@ -108,3 +114,17 @@ when@test:
             autoconfigure: true
         App\Dev\:
             resource: '../src/Dev/'
+
+        # No hub runs during the suite. Without this the publisher would attempt a real HTTP call
+        # per update - swallowed by its own error handling, but only after a DNS failure per test,
+        # which turns a fast suite into a slow one for no signal at all.
+        App\Tests\Support\RecordedUpdates: ~
+
+        mercure.hub.default:
+            class: Symfony\Component\Mercure\MockHub
+            arguments:
+                $url: 'http://localhost/.well-known/mercure'
+                $jwtProvider: '@mercure.hub.default.jwt.provider'
+                $publisher: '@App\Tests\Support\RecordedUpdates'
+                # Consumed so the Twig mercure() helper still renders a hub URL in rendered pages.
+                $publicUrl: '%env(default::MERCURE_PUBLIC_URL)%'

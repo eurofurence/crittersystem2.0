@@ -60,6 +60,26 @@ final class MessageController extends AbstractController
         ]);
     }
 
+    /**
+     * The Info Desk queue, on its own so the live region can re-fetch just that part.
+     *
+     * Gated by chat:claim, the same privilege that puts the queue topic in a subscriber token. The
+     * fragment is rendered per viewer - "claimed by you" is not the same list for two responders -
+     * which is why the queue signal carries no markup.
+     */
+    #[Route('/queue/frame', name: 'app_messages_queue_frame', methods: ['GET'])]
+    #[IsGranted('chat:claim')]
+    public function queueFrame(): Response
+    {
+        /** @var User $me */
+        $me = $this->getUser();
+
+        return $this->render('message/_queue.html.twig', [
+            'waiting' => $this->queue->waiting(),
+            'claimed' => $this->queue->claimedBy($me),
+        ]);
+    }
+
     #[Route('/info-desk', name: 'app_messages_infodesk', methods: ['GET'])]
     public function infoDesk(): Response
     {
@@ -224,19 +244,20 @@ final class MessageController extends AbstractController
         return $this->redirectToRoute('app_messages_index');
     }
 
+    /**
+     * The rule itself lives in {@see ConversationService::mayParticipate()}, because the Mercure
+     * topic builder decides from the same predicate whether this conversation's live updates may
+     * reach a user. Two copies would eventually mean a thread that pushes to someone this method
+     * would turn away.
+     */
     private function requireParticipant(Conversation $conversation): User
     {
         /** @var User $me */
         $me = $this->getUser();
-        // Info Desk members may watch any support conversation.
-        if ($conversation->getType() === ConversationType::SUPPORT && $this->isGranted('chat:claim')) {
-            return $me;
+        if (!$this->chat->mayParticipate($conversation, $me)) {
+            throw $this->createAccessDeniedException();
         }
-        foreach ($conversation->getParticipants() as $participant) {
-            if ($participant->getUser() === $me) {
-                return $me;
-            }
-        }
-        throw $this->createAccessDeniedException();
+
+        return $me;
     }
 }
