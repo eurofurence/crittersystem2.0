@@ -103,7 +103,8 @@ final class ShiftBrowseController extends AbstractController
         // The volunteer browser only exposes published public shifts; a draft or
         // staff-only shift reached by id must not leak here.
         if (!$this->visibility->isVisibleTo($shift, $user)) {
-            throw $this->createNotFoundException();
+//            throw $this->createNotFoundException();
+            return $this->render('shift/not_found.html.twig');
         }
 
         return $this->render('shift/show.html.twig', [
