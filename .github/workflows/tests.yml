@@ -1,0 +1,135 @@
+name: Tests
+
+on:
+  #push:
+  #  branches: [main]
+  #pull_request:
+  workflow_dispatch:
+
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  phpunit:
+    name: PHPUnit and linters
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: app
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: '!ChangeMe!'
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql://app:'!ChangeMe!'@127.0.0.1:5432/app?serverVersion=16&charset=utf8
+      # Required by the app; any stable value works for a throwaway CI database.
+      APP_ENCRYPTION_KEY: ${{ secrets.CI_APP_ENCRYPTION_KEY || 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, intl, sodium, zip
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Install importmap vendors
+        run: php bin/console importmap:install
+
+      - name: Run migrations
+        run: php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+
+      # The suite shares one database and truncates between tests, so it must never run in
+      # parallel with itself. Keep this a single job.
+      - name: PHPUnit
+        run: php bin/phpunit
+
+      - name: Lint Twig
+        run: php bin/console lint:twig templates
+
+      - name: Lint container
+        run: php bin/console lint:container
+
+  javascript:
+    name: Stimulus controller tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Test tooling only. Assets ship unbundled through AssetMapper; nothing here builds them.
+      - name: Install JS test dependencies
+        run: npm ci
+
+      - name: Vitest
+        run: npm test
+
+  browser:
+    name: Browser tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: app
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: '!ChangeMe!'
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      APP_ENV: test
+      DATABASE_URL: postgresql://app:'!ChangeMe!'@127.0.0.1:5432/app?serverVersion=16&charset=utf8
+      APP_ENCRYPTION_KEY: ${{ secrets.CI_APP_ENCRYPTION_KEY || 'base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=' }}
+      PANTHER_NO_SANDBOX: 1
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: pdo_pgsql, intl, sodium, zip
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Install importmap vendors
+        run: php bin/console importmap:install
+
+      - name: Run migrations
+        run: php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+
+      # The runner ships Chrome and chromedriver; Panther finds the driver by name on PATH, so no
+      # download is needed here. Locally the binaries live in ./drivers - see docs/testing.md.
+      - name: Browser tests
+        run: php bin/phpunit --testsuite Browser

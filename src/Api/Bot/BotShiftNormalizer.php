@@ -5,6 +5,7 @@ namespace App\Api\Bot;
 use App\Entity\Shift;
 use App\Entity\ShiftEntry;
 use App\Entity\User;
+use App\Service\Shift\ShiftGroupResolver;
 use App\Service\ShiftSignupService;
 
 /**
@@ -15,8 +16,10 @@ use App\Service\ShiftSignupService;
  */
 final class BotShiftNormalizer
 {
-    public function __construct(private readonly ShiftSignupService $signup)
-    {
+    public function __construct(
+        private readonly ShiftSignupService $signup,
+        private readonly ShiftGroupResolver $groups,
+    ) {
     }
 
     /** @return array<string, mixed> */
@@ -65,6 +68,45 @@ final class BotShiftNormalizer
             'staff_only' => $shift->getAudience()->isStaffOnly(),
             'map_url' => $location?->getMapUrl(),
             'my_state' => $actor !== null ? $this->signup->eligibilityStatus($shift, $actor) : null,
+            'group' => $this->group($shift, $actor),
+        ];
+    }
+
+    /**
+     * Shifts that can only be taken together with this one, so the bot can show the volunteer what
+     * applying commits them to before it applies.
+     *
+     * Null when the shift is not grouped, and null when any member is one the caller may not see:
+     * the group is then not applicable at all, and naming the hidden member would confirm that it
+     * exists.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function group(Shift $shift, ?User $actor): ?array
+    {
+        $group = $shift->getShiftGroup();
+        if (!$shift->isGrouped() || $group === null || !$this->groups->isFullyVisibleTo($shift, $actor)) {
+            return null;
+        }
+
+        $shifts = [];
+        foreach ($this->groups->membersFor($shift) as $member) {
+            $memberLocation = $member->getLocation();
+            $shifts[] = [
+                'id' => (string) $member->getUuid(),
+                'title' => $member->getTitle(),
+                'start' => $member->getStartsAt()->format(\DATE_ATOM),
+                'end' => $member->getEndsAt()->format(\DATE_ATOM),
+                'location_name' => $memberLocation?->getName() ?? '',
+                'is_this_shift' => $member === $shift,
+            ];
+        }
+
+        return [
+            'id' => (string) $group->getUuid(),
+            'name' => $group->getName(),
+            'description' => $group->getDescription() ?? '',
+            'shifts' => $shifts,
         ];
     }
 

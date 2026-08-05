@@ -1,0 +1,113 @@
+{% import 'components/data/_macros.twig' as d %}
+
+{#
+  The body of the shift-group confirmation dialog, fetched by shift_group_controller when the
+  volunteer opens or submits a grouped application.
+
+  Rendered server-side on every open, never cached into a data attribute: capacity and eligibility
+  are per viewer and move between the page render and the click, and the visibility filter has to run
+  here. A member the viewer may not see leaves `plan.members` empty and only the neutral refusal is
+  shown, so nothing confirms that the hidden shift exists.
+#}
+
+<div class="shift-group-modal">
+  {% if plan.members is empty %}
+    <p class="mb-0">{{ plan.error ?? 'shift.group.not_available'|trans }}</p>
+  {% else %}
+    {% if plan.group and plan.group.description %}
+      <p class="text-secondary">{{ plan.group.description }}</p>
+    {% endif %}
+
+    <p class="mb-2">
+      {% if mode == 'cancel' %}
+        {{ 'shift.group.cancel_intro'|trans({'%count%': plan.memberCount}) }}
+      {% else %}
+        {{ 'shift.group.apply_intro'|trans({'%count%': plan.memberCount}) }}
+      {% endif %}
+    </p>
+
+    <ul class="list-group list-group-flush mb-3">
+      {% for member in plan.members %}
+        <li class="list-group-item px-0">
+          <div class="d-flex justify-content-between align-items-start gap-2">
+            <div>
+              <span class="fw-semibold">{{ member.shift.title }}</span>
+              {% if member.isOrigin %}{{ d.badge('shift.group.this_shift'|trans, 'text-bg-primary') }}{% endif %}
+              <div class="text-muted small">
+                {{ member.shift.startsAt|app_datetime }} - {{ member.shift.endsAt|app_time }}
+                ({{ 'shift.group.hours'|trans({'%hours%': member.shift.durationHours|round(1)}) }})
+                {% if member.shift.location %} · {{ member.shift.location.name }}{% endif %}
+              </div>
+            </div>
+            {% if member.needed > 0 %}
+              {{ d.badge(member.assigned ~ '/' ~ member.needed, member.assigned >= member.needed ? 'text-bg-secondary' : 'text-bg-success') }}
+            {% endif %}
+          </div>
+
+          {% if mode != 'cancel' %}
+            {% if member.existingEntry %}
+              <div class="text-muted small mt-1">{{ 'shift.group.already_on'|trans({'%role%': member.existingEntry.volunteerType.name}) }}</div>
+            {% elseif member.needsChoice %}
+              {# A sibling asking for roles the clicked shift does not offer: the volunteer picks here
+                 rather than being sent away to the shift's own page. #}
+              <div class="mt-2">
+                <label class="form-label small mb-1" for="group-role-{{ member.shift.uuid }}">
+                  {{ 'shift.group.choose_role'|trans({'%shift%': member.shift.title}) }}
+                </label>
+                {# No data-action here: the dialog body is appended to <body>, outside the
+                   controller's element, so Stimulus would never see the event. The controller binds
+                   the listener itself when it builds the dialog. #}
+                <select id="group-role-{{ member.shift.uuid }}"
+                        class="form-select form-select-sm"
+                        name="group_type[{{ member.shift.uuid }}]"
+                        required>
+                  <option value="">{{ 'shift.group.choose_role_placeholder'|trans }}</option>
+                  {% for id, type in member.options %}<option value="{{ id }}">{{ type.name }}</option>{% endfor %}
+                </select>
+              </div>
+            {% elseif member.type %}
+              <div class="text-muted small mt-1">{{ 'shift.group.role'|trans({'%role%': member.type.name}) }}</div>
+              <input type="hidden" name="group_type[{{ member.shift.uuid }}]" value="{{ member.type.id }}">
+            {% endif %}
+
+            {% if member.error %}
+              <div class="text-danger small mt-1">{{ member.error }}</div>
+            {% endif %}
+            {% for warning in member.warnings %}
+              <div class="text-warning small mt-1">{{ warning }}</div>
+            {% endfor %}
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+
+    {% if mode != 'cancel' %}
+      <div class="d-flex justify-content-between small text-muted mb-2">
+        <span>{{ 'shift.group.total_hours'|trans({'%hours%': plan.totalHours|round(1)}) }}</span>
+      </div>
+
+      {% if plan.needsHoursAcknowledgement %}
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" value="1" id="group-ack-hours"
+                 name="acknowledge_hours">
+          <label class="form-check-label" for="group-ack-hours">{{ 'shift.group.acknowledge_hours'|trans }}</label>
+        </div>
+      {% endif %}
+
+      <div class="mb-2">
+        <label class="form-label small mb-1" for="group-comment">{{ 'shift.show.comment_label'|trans }}</label>
+        <textarea id="group-comment" name="comment" class="form-control" rows="2"></textarea>
+      </div>
+    {% endif %}
+
+    {% if plan.error %}
+      <div class="alert alert-danger mb-0">{{ plan.error }}</div>
+    {% endif %}
+  {% endif %}
+</div>
+
+{# Read by the controller to label and enable the primary button. #}
+<div data-shift-group-meta
+     data-applicable="{{ plan.isApplicable and plan.members is not empty ? '1' : '0' }}"
+     data-count="{{ plan.memberCount }}"
+     hidden></div>

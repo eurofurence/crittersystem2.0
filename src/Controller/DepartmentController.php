@@ -81,7 +81,9 @@ final class DepartmentController extends AbstractController
             $sections[$key] = $this->departments->paginateMembers(
                 $users,
                 (string) $request->query->get($key.'_q', ''),
-                $request->query->getInt($key.'_page', 1),
+                // Cast, not getInt(): a malformed or blank page number in a hand-edited URL falls
+                // back to the first page rather than answering 400.
+                max(1, (int) $request->query->get($key.'_page', 1)),
             );
 
             $sections[$key]['key'] = $key;

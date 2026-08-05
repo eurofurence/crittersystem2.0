@@ -36,14 +36,31 @@ export default class extends Controller {
         }
 
         try {
-            const response = await backgroundFetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-            });
-            if (response === null) {
+            const body = new FormData(form);
+            let result = await this.post(form.action, body);
+            if (result === null) {
                 return;
             }
-            const data = await response.json().catch(() => ({}));
+
+            /*
+             * The server can ask a question before it writes anything: batching shifts into a shift
+             * group that already has volunteers on it would leave some of them on part of a
+             * commitment, which is the same confirmation the management screen requires. Answering
+             * yes replays the identical request with the flag set, so the decision is made against
+             * the state the count was taken from.
+             */
+            if (result.data.confirm) {
+                if (!(await confirmModal(result.data.confirm))) {
+                    return;
+                }
+                body.append('confirm', '1');
+                result = await this.post(form.action, body);
+                if (result === null) {
+                    return;
+                }
+            }
+
+            const { response, data } = result;
             if (!response.ok || data.ok === false) {
                 this.markInvalid(data.invalid);
                 await alertModal(data.error || (data.errors ? data.errors.join('\n') : 'The change could not be saved.'));
@@ -69,6 +86,16 @@ export default class extends Controller {
                 button.disabled = false;
             }
         }
+    }
+
+    /** Returns {response, data}, or null when the session handler already took over the response. */
+    async post(action, body) {
+        const response = await backgroundFetch(action, { method: 'POST', body });
+        if (response === null) {
+            return null;
+        }
+
+        return { response, data: await response.json().catch(() => ({})) };
     }
 
     markInvalid(uuids) {

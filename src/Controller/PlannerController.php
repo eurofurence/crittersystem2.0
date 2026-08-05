@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Department;
 use App\Entity\Location;
 use App\Entity\Shift;
+use App\Entity\ShiftGroup;
 use App\Entity\ShiftTask;
 use App\Entity\User;
 use App\Enum\ShiftAudience;
@@ -52,6 +53,9 @@ final class PlannerController extends AbstractController
         private readonly ShiftTaskRepository $tasks,
         private readonly \App\Service\Shift\ShiftTaskAccess $taskAccess,
         private readonly \App\Service\Shift\VolunteerTypeAccess $typeAccess,
+        private readonly \App\Repository\ShiftGroupRepository $shiftGroups,
+        private readonly \App\Service\Shift\ShiftGroupAudit $audit,
+        private readonly \Symfony\Contracts\Translation\TranslatorInterface $translator,
         private readonly \Doctrine\ORM\EntityManagerInterface $em,
     ) {
     }
@@ -107,6 +111,9 @@ final class PlannerController extends AbstractController
             'volunteerTypes' => $this->typeAccess->forDepartment($types->findAllOrderedWithDepartments(), $department),
             'locations' => $locations->findAllOrdered(),
             'audiences' => ShiftAudience::cases(),
+            // Only this department's groups can be offered: a group and its shifts share one
+            // department, which is what makes the batch assignment safe to scope.
+            'shiftGroups' => $this->shiftGroups->findForDepartment($department),
             'timezone' => $tz->getName(),
         ]);
     }
@@ -223,7 +230,11 @@ final class PlannerController extends AbstractController
         }
 
         $audience = ShiftAudience::tryFrom((string) $request->request->get('audience', '')) ?? ShiftAudience::PUBLIC_VOLUNTEER;
-        $task = $this->requiredTask($request->request->getInt('task'), $department);
+        // Cast, not getInt(): the task picker's placeholder is <option value="">, so an empty
+        // string is what a caller sends when no task was chosen. getInt() would throw before
+        // requiredTask() could answer with TASK_REQUIRED, leaving that check resting on an HTML
+        // `required` attribute. See docs/tasks/input-bag-empty-value-audit.md.
+        $task = $this->requiredTask((int) $request->request->get('task'), $department);
         if (!$task instanceof ShiftTask) {
             return $this->fail(self::TASK_REQUIRED);
         }
@@ -289,7 +300,9 @@ final class PlannerController extends AbstractController
             $fields['audience'] = ShiftAudience::tryFrom((string) $request->request->get('audience')) ?? $shift->getAudience();
         }
         if ($request->request->has('task')) {
-            $task = $this->requiredTask($request->request->getInt('task'), $shift->getDepartment());
+            // Cast, not getInt(): an unchosen task arrives as an empty string and must reach
+            // requiredTask()'s TASK_REQUIRED rather than throwing first.
+            $task = $this->requiredTask((int) $request->request->get('task'), $shift->getDepartment());
             if (!$task instanceof ShiftTask) {
                 return $this->fail(self::TASK_REQUIRED);
             }
@@ -356,10 +369,17 @@ final class PlannerController extends AbstractController
         }
 
         $selection = $this->selectedShifts($request);
-        $duration = $request->request->getInt('duration_minutes');
-        $needType = ($ntid = $request->request->getInt('needed_type')) ? $types->find($ntid) : null;
-        $needCount = $request->request->getInt('needed_count');
-        $taskId = $request->request->getInt('task');
+        /*
+         * Cast rather than getInt(): the batch form's number inputs post an empty string when the
+         * manager leaves them blank, which is the normal case when they only want to change the task
+         * or the group, and getInt() rejects that as a malformed request rather than reading it as
+         * "not set".
+         */
+        $duration = (int) $request->request->get('duration_minutes');
+        $needType = ($ntid = (int) $request->request->get('needed_type')) ? $types->find($ntid) : null;
+        $needCount = (int) $request->request->get('needed_count');
+        $taskId = (int) $request->request->get('task');
+        $groupChoice = (string) $request->request->get('shift_group', '');
 
         /*
          * Everything is validated against the whole selection first. Rejecting halfway through would
@@ -376,6 +396,28 @@ final class PlannerController extends AbstractController
             }
         }
 
+        try {
+            $group = $this->resolveGroupChoice($groupChoice, $selection);
+        } catch (\InvalidArgumentException $e) {
+            return $this->fail($e->getMessage());
+        }
+
+        // Adding shifts to a populated group can leave volunteers on part of a commitment. The
+        // management screen refuses until the manager confirms; the planner must not be a way around
+        // that check, so it asks the same question before touching anything.
+        if ($group instanceof ShiftGroup && !$request->request->getBoolean('confirm')) {
+            $partial = $this->audit->partiallyAssignedCount(array_values(array_unique(
+                array_merge($this->audit->membersOf($group), $selection),
+                \SORT_REGULAR,
+            )));
+            if ($partial > 0) {
+                return new JsonResponse([
+                    'ok' => false,
+                    'confirm' => $this->translator->trans('planner.batch.group.confirm_partial', ['%count%' => $partial]),
+                ]);
+            }
+        }
+
         $applied = 0;
         foreach ($selection as $shift) {
             if ($duration >= PlannerDraftStore::MIN_DURATION_MINUTES) {
@@ -384,6 +426,9 @@ final class PlannerController extends AbstractController
             if ($taskId !== 0) {
                 $this->drafts->updateDetails($shift, ['task' => $this->requiredTask($taskId, $shift->getDepartment())], $this->user());
             }
+            if ($groupChoice !== '') {
+                $this->drafts->updateDetails($shift, ['shiftGroup' => $group], $this->user());
+            }
             if ($needType instanceof VolunteerType) {
                 $this->drafts->setNeededVolunteerType($shift, $needType, $needCount);
             }
@@ -391,6 +436,101 @@ final class PlannerController extends AbstractController
         }
 
         return new JsonResponse(['ok' => true, 'applied' => $applied]);
+    }
+
+    /**
+     * Create a shift group for the current selection, in one step.
+     *
+     * Naming the group is the whole point of the gesture, so this creates it and puts the selected
+     * shifts in it rather than leaving an empty group behind for a manager who forgets to press
+     * Apply. The other batch fields are independent and still need Apply.
+     */
+    #[Route('/shift-group', name: 'app_manage_shifts_planner_group_create', methods: ['POST'])]
+    public function createShiftGroup(Request $request): Response
+    {
+        $department = $this->departments->findOneByUuid((string) $request->request->get('department'));
+        if ($department === null) {
+            return $this->fail('Unknown department.');
+        }
+        $this->denyAccessUnlessGranted('shift:manage', $department);
+        if (!$this->isCsrfTokenValid('planner_edit', (string) $request->request->get('_token'))) {
+            return $this->fail('Invalid token.', 419);
+        }
+
+        $name = trim((string) $request->request->get('name'));
+        if ($name === '') {
+            return $this->fail($this->translator->trans('planner.batch.group.blank'));
+        }
+        if ($this->shiftGroups->findOneBy(['department' => $department, 'name' => $name]) !== null) {
+            return $this->fail($this->translator->trans('planner.batch.group.duplicate', ['%name%' => $name]));
+        }
+
+        $selection = $this->selectedShifts($request);
+        // A group and its shifts share one department, because shift:manage is scoped by department
+        // and a group spanning two would have none to check against. ids[] is user input, so this is
+        // checked here and not inferred from the grid the selection came from.
+        foreach ($selection as $shift) {
+            if ($shift->getDepartment() !== $department) {
+                return $this->fail($this->translator->trans('planner.batch.group.other_department'));
+            }
+        }
+
+        if ($selection !== [] && !$request->request->getBoolean('confirm')) {
+            $partial = $this->audit->partiallyAssignedCount($selection);
+            if ($partial > 0) {
+                return new JsonResponse([
+                    'ok' => false,
+                    'confirm' => $this->translator->trans('planner.batch.group.confirm_partial', ['%count%' => $partial]),
+                ]);
+            }
+        }
+
+        $group = new ShiftGroup($department, $name);
+        $this->em->persist($group);
+        $this->em->flush();
+
+        foreach ($selection as $shift) {
+            $this->drafts->updateDetails($shift, ['shiftGroup' => $group], $this->user());
+        }
+
+        return new JsonResponse([
+            'ok' => true,
+            'id' => $group->getId(),
+            'name' => $group->getName(),
+            'assigned' => \count($selection),
+        ]);
+    }
+
+    /**
+     * The group the batch form asked for: null to leave each shift alone, null-with-clear to take
+     * them out, or the group itself.
+     *
+     * @param list<Shift> $selection
+     *
+     * @throws \InvalidArgumentException when the choice cannot be applied to this selection
+     */
+    private function resolveGroupChoice(string $choice, array $selection): ?ShiftGroup
+    {
+        if ($choice === '' || $choice === 'none') {
+            return null;
+        }
+
+        $group = $this->shiftGroups->find((int) $choice);
+        if (!$group instanceof ShiftGroup) {
+            throw new \InvalidArgumentException($this->translator->trans('planner.batch.group.unknown'));
+        }
+
+        // ids[] admits any shift this manager may manage, which can span departments even though the
+        // grid shows one. Without this check the planner would be the one way to build a
+        // cross-department group, and every scoped permission check against it afterwards would have
+        // no authoritative department to use.
+        foreach ($selection as $shift) {
+            if ($shift->getDepartment() !== $group->getDepartment()) {
+                throw new \InvalidArgumentException($this->translator->trans('planner.batch.group.other_department'));
+            }
+        }
+
+        return $group;
     }
 
     /**

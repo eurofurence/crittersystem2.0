@@ -85,9 +85,15 @@ class ShiftEntryRepository extends ServiceEntityRepository
      */
     public function findByUserOrdered(User $user): array
     {
+        // The group and its other members come along: "my shifts" renders a grouped commitment as
+        // one block, which would otherwise cost two queries per row.
         return $this->createQueryBuilder('e')
             ->join('e.shift', 's')
             ->addSelect('s')
+            ->leftJoin('s.shiftGroup', 'grp')
+            ->addSelect('grp')
+            ->leftJoin('grp.shifts', 'grpShifts')
+            ->addSelect('grpShifts')
             ->andWhere('e.user = :user')
             ->setParameter('user', $user)
             ->orderBy('s.startsAt', 'ASC')
@@ -164,10 +170,17 @@ class ShiftEntryRepository extends ServiceEntityRepository
 
     /**
      * Whether the user already has an entry for a shift that overlaps the given
-     * window (used to prevent double-booking). Optionally excludes one shift.
+     * window (used to prevent double-booking).
+     *
+     * @param Shift[] $exclude shifts that must not count as an overlap. More than one is needed for
+     *                         shift groups: the members are taken together, so a member overlapping
+     *                         another member of the same group must not refuse the application. An
+     *                         overlap with any shift outside the list still refuses.
      */
-    public function hasOverlap(User $user, \DateTimeImmutable $start, \DateTimeImmutable $end, ?Shift $exclude = null): bool
+    public function hasOverlap(User $user, \DateTimeImmutable $start, \DateTimeImmutable $end, array $exclude = []): bool
     {
+        $exclude = array_values(array_filter($exclude, static fn (?Shift $s): bool => $s?->getId() !== null));
+
         $qb = $this->createQueryBuilder('e')
             ->select('COUNT(e.id)')
             ->join('e.shift', 's')
@@ -178,8 +191,8 @@ class ShiftEntryRepository extends ServiceEntityRepository
             ->setParameter('start', $start)
             ->setParameter('end', $end);
 
-        if ($exclude !== null) {
-            $qb->andWhere('s != :exclude')->setParameter('exclude', $exclude);
+        if ($exclude !== []) {
+            $qb->andWhere('s NOT IN (:exclude)')->setParameter('exclude', $exclude);
         }
 
         return (int) $qb->getQuery()->getSingleScalarResult() > 0;

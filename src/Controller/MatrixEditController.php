@@ -12,6 +12,7 @@ use App\Repository\DepartmentRepository;
 use App\Repository\NamedPositionRepository;
 use App\Repository\ShiftRepository;
 use App\Repository\UserRepository;
+use App\Service\Assignment\ManualAssignmentService;
 use App\Service\Shift\PositionService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -36,6 +37,7 @@ final class MatrixEditController extends AbstractController
         private readonly DepartmentRepository $departments,
         private readonly ShiftRepository $shifts,
         private readonly PositionService $positions,
+        private readonly ManualAssignmentService $assignments,
     ) {
     }
 
@@ -68,7 +70,11 @@ final class MatrixEditController extends AbstractController
         if ($name === '') {
             return $this->fail('A position needs a name.');
         }
-        $position = $this->positions->createPosition($group, $name, max(1, $request->request->getInt('capacity', 1)));
+        // Cast, not getInt(): the capacity box carries a value but is not required, so clearing it
+        // posts an empty string, which getInt() rejects as malformed rather than reading as the 1
+        // this line intends. See docs/tasks/input-bag-empty-value-audit.md.
+        $capacity = max(1, (int) $request->request->get('capacity', 1));
+        $position = $this->positions->createPosition($group, $name, $capacity);
 
         return new JsonResponse(['ok' => true, 'id' => $position->getId()]);
     }
@@ -176,7 +182,11 @@ final class MatrixEditController extends AbstractController
             return $this->fail('Unknown user.');
         }
         try {
-            $this->positions->assignUser($shiftPosition, $user);
+            // Through the assignment service, not PositionService directly: that is what audits the
+            // placement, fires the live signal, and puts the volunteer on every member of a grouped
+            // shift. override: true keeps the grid's "the manager decides" behaviour - warnings are
+            // recorded on the entry rather than refusing the placement.
+            $this->assignments->assignToPosition($shiftPosition, $user, override: true, actor: $this->getUser());
         } catch (\RuntimeException $e) {
             return $this->fail($e->getMessage(), 409);
         }

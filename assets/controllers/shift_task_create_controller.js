@@ -64,6 +64,10 @@ export default class extends Controller {
     }
 
     addOption(id, name) {
+        // TODO: verify in a real browser that the constructor's `selected` flag actually selects this
+        // option; under happy-dom it does not, so the picker silently keeps its previous value. If it
+        // reproduces in Chrome, build the option with createElement and set select.value explicitly,
+        // as shift_group_create_controller does. See docs/tasks/todo-option-constructor-selection.md.
         const option = new Option(name, String(id), true, true);
         this.selectTarget.add(option);
         // A picker that was empty (and therefore disabled the form) is usable from here on.

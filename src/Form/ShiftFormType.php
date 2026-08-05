@@ -5,9 +5,11 @@ namespace App\Form;
 use App\Entity\Department;
 use App\Entity\Location;
 use App\Entity\Shift;
+use App\Entity\ShiftGroup;
 use App\Entity\ShiftTask;
 use App\Enum\ShiftAudience;
 use App\Repository\DepartmentRepository;
+use App\Repository\ShiftGroupRepository;
 use App\Service\DisplaySettings;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -81,6 +83,20 @@ final class ShiftFormType extends AbstractType
                 'choice_label' => 'name',
                 'required' => false,
                 'placeholder' => 'manage.shift.placeholder.none',
+            ])
+            ->add('shiftGroup', EntityType::class, [
+                'label' => 'manage.shift.field.shift_group.label',
+                'class' => ShiftGroup::class,
+                'choice_label' => 'name',
+                'required' => false,
+                'placeholder' => 'manage.shift.placeholder.none',
+                'help' => 'manage.shift.field.shift_group.help',
+                // A group and its members share one department, because shift:manage is scoped by
+                // department and a group spanning two would have none to check against. Membership is
+                // otherwise managed on the group's own screen, where the manager is warned about the
+                // volunteers a change leaves on a partial commitment.
+                'query_builder' => fn (ShiftGroupRepository $repo) => $repo->createQueryBuilder('g')
+                    ->orderBy('g.name', 'ASC'),
             ])
             ->add('audience', EnumType::class, [
                 'label' => 'manage.shift.field.audience.label',

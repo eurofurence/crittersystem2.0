@@ -8,7 +8,9 @@ use App\Entity\ShiftEntry;
 use App\Repository\ShiftEntryRepository;
 use App\Repository\UserRepository;
 use App\Repository\VolunteerTypeRepository;
+use App\Service\Assignment\ManualAssignmentService;
 use App\Service\NoShowBanService;
+use App\Service\Shift\ShiftGroupResolver;
 use App\Service\ShiftSignupService;
 use App\Service\UserSearchResultFormatter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -42,6 +44,8 @@ final class ShiftStaffingController extends AbstractController
         private readonly UserRepository $users,
         private readonly ShiftEntryRepository $entries,
         private readonly NoShowBanService $noShowBans,
+        private readonly ManualAssignmentService $assignments,
+        private readonly ShiftGroupResolver $groups,
     ) {
     }
 
@@ -50,12 +54,26 @@ final class ShiftStaffingController extends AbstractController
     {
         $this->denyAccessUnlessGranted('shift:manage', $shift);
 
+        // How much of a grouped commitment each volunteer actually holds. A manager who split a group
+        // (or a volunteer added before the group existed) leaves somebody on part of it, and that has
+        // to stay visible rather than become invisible history.
+        $members = $this->groups->membersFor($shift);
+        $partial = [];
+        foreach ($shift->getEntries() as $entry) {
+            $held = \count($this->groups->entriesFor($shift, $entry->getUser()));
+            if ($held < \count($members)) {
+                $partial[$entry->getId()] = $held;
+            }
+        }
+
         return $this->render('manage/shift/staffing.html.twig', [
             'shift' => $shift,
             'availability' => $this->signup->availability($shift),
             'shiftNeeds' => $shift->getNeededVolunteerTypes(),
             'entries' => $shift->getEntries(),
             'volunteerTypes' => $this->volunteerTypes->findAllOrdered(),
+            'groupMembers' => $members,
+            'partialHeld' => $partial,
         ]);
     }
 
@@ -83,10 +101,17 @@ final class ShiftStaffingController extends AbstractController
             } elseif ($this->entries->findOneByShiftAndUser($shift, $user) !== null) {
                 $this->addFlash('warning', new TranslatableMessage('manage.shift.staffing.flash.already_on_shift', ['%name%' => $user->getName()]));
             } else {
-                // Manager override: capacity/membership are not enforced here.
-                $this->em->persist(new ShiftEntry($shift, $type, $user));
-                $this->em->flush();
-                $this->addFlash('success', new TranslatableMessage('manage.shift.staffing.flash.assigned', ['%name%' => $user->getName(), '%role%' => $type->getName()]));
+                // Manager override: capacity and membership are deliberately not enforced, so the
+                // availability/hours warnings are overridden rather than refused. This goes through
+                // ManualAssignmentService and not a bare persist, so the assignment is audited, the
+                // live signal fires, and a grouped shift takes the volunteer onto every member.
+                $groupSplit = $request->request->getBoolean('group_split');
+                $this->assignments->assign($shift, $user, $type, override: true, actor: $this->getUser(), groupSplit: $groupSplit);
+
+                $siblings = $groupSplit ? [] : $this->groups->siblingsOf($shift);
+                $this->addFlash('success', $siblings === []
+                    ? new TranslatableMessage('manage.shift.staffing.flash.assigned', ['%name%' => $user->getName(), '%role%' => $type->getName()])
+                    : new TranslatableMessage('manage.shift.staffing.flash.assigned_group', ['%name%' => $user->getName(), '%role%' => $type->getName(), '%count%' => \count($siblings) + 1]));
             }
         }
 
@@ -101,9 +126,14 @@ final class ShiftStaffingController extends AbstractController
         $shiftId = $entry->getShift()->getUuid();
         if ($this->isCsrfTokenValid('unassign'.$entry->getId(), (string) $request->request->get('_token'))) {
             $name = $entry->getUser()->getName();
-            $this->em->remove($entry);
-            $this->em->flush();
-            $this->addFlash('success', new TranslatableMessage('manage.shift.staffing.flash.removed', ['%name%' => $name]));
+            $groupSplit = $request->request->getBoolean('group_split');
+            $held = $groupSplit ? 1 : \count($this->groups->entriesFor($entry->getShift(), $entry->getUser()));
+
+            $this->assignments->remove($entry, groupSplit: $groupSplit);
+
+            $this->addFlash('success', $held > 1
+                ? new TranslatableMessage('manage.shift.staffing.flash.removed_group', ['%name%' => $name, '%count%' => $held])
+                : new TranslatableMessage('manage.shift.staffing.flash.removed', ['%name%' => $name]));
         }
 
         return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shiftId]);

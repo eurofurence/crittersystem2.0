@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Department;
 use App\Entity\Location;
 use App\Entity\Shift;
+use App\Entity\ShiftGroup;
 use App\Entity\ShiftTask;
 use App\Enum\ShiftAudience;
 use App\Enum\ShiftState;
@@ -104,16 +105,29 @@ class ShiftRepository extends ServiceEntityRepository
      */
     public function findUpcomingStaffPublished(?\DateTimeImmutable $from = null): array
     {
-        return $this->createQueryBuilder('s')
+        $qb = $this->createQueryBuilder('s')
             ->andWhere('s.endsAt >= :now')
             ->andWhere('s.state = :published')
             ->andWhere('s.audience != :public')
             ->setParameter('now', $from ?? new \DateTimeImmutable())
             ->setParameter('published', ShiftState::PUBLISHED->value)
             ->setParameter('public', ShiftAudience::PUBLIC_VOLUNTEER->value)
-            ->orderBy('s.startsAt', 'ASC')
-            ->getQuery()
-            ->getResult();
+            ->orderBy('s.startsAt', 'ASC');
+        $this->joinShiftGroup($qb);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Fetch each shift's group and the group's other members alongside it.
+     *
+     * Every list that renders a group badge asks the resolver for the members, which without this
+     * costs a query for the group and another for its shifts on every single row.
+     */
+    public function joinShiftGroup(QueryBuilder $qb, string $alias = 's'): void
+    {
+        $qb->leftJoin($alias.'.shiftGroup', 'grp')->addSelect('grp')
+            ->leftJoin('grp.shifts', 'grpShifts')->addSelect('grpShifts');
     }
 
     /**
@@ -164,6 +178,83 @@ class ShiftRepository extends ServiceEntityRepository
     }
 
     /**
+     * @return Shift[] the department's shifts that are not yet in a shift group, soonest first,
+     *                 for the group member picker
+     */
+    public function findForDepartmentUngrouped(Department $department): array
+    {
+        return $this->createQueryBuilder('s')
+            ->andWhere('s.department = :department')
+            ->andWhere('s.shiftGroup IS NULL')
+            ->setParameter('department', $department)
+            ->orderBy('s.startsAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Shifts a manager may add to a shift group, narrowed by the picker's filters.
+     *
+     * Restricted to the group's own department, which is what keeps a group single-department.
+     * Shifts already in ANOTHER group are included so the picker can show them disabled and name the
+     * owner: leaving them out silently is what makes a manager wonder whether a shift exists at all.
+     * Shifts already in THIS group are excluded, because they are listed above as members.
+     *
+     * @param ShiftGroup|null $exclude the group being edited
+     *
+     * @return Shift[] soonest first, capped
+     */
+    public function findGroupCandidates(
+        Department $department,
+        ?ShiftGroup $exclude = null,
+        ?\DateTimeImmutable $dayFrom = null,
+        ?\DateTimeImmutable $dayTo = null,
+        ?ShiftAudience $audience = null,
+        ?ShiftTask $task = null,
+        ?string $query = null,
+        bool $includePast = false,
+        ?\DateTimeImmutable $now = null,
+        int $limit = 250,
+    ): array {
+        $qb = $this->createQueryBuilder('s')
+            ->leftJoin('s.shiftGroup', 'grp')->addSelect('grp')
+            ->leftJoin('s.location', 'loc')->addSelect('loc')
+            ->leftJoin('s.shiftTask', 'tsk')->addSelect('tsk')
+            ->andWhere('s.department = :department')
+            ->setParameter('department', $department)
+            ->orderBy('s.startsAt', 'ASC')
+            ->addOrderBy('s.id', 'ASC')
+            ->setMaxResults($limit);
+
+        if ($exclude !== null && $exclude->getId() !== null) {
+            $qb->andWhere('s.shiftGroup IS NULL OR s.shiftGroup != :exclude')
+                ->setParameter('exclude', $exclude);
+        }
+        if (!$includePast) {
+            $qb->andWhere('s.endsAt >= :now')->setParameter('now', $now ?? new \DateTimeImmutable());
+        }
+        // A half-open range anchored on local midnight: shifts are stored as UTC instants, so
+        // comparing a date string against the column would drift across the timezone offset.
+        if ($dayFrom !== null && $dayTo !== null) {
+            $qb->andWhere('s.startsAt >= :dayFrom AND s.startsAt < :dayTo')
+                ->setParameter('dayFrom', $dayFrom)
+                ->setParameter('dayTo', $dayTo);
+        }
+        if ($audience !== null) {
+            $qb->andWhere('s.audience = :audience')->setParameter('audience', $audience->value);
+        }
+        if ($task !== null) {
+            $qb->andWhere('s.shiftTask = :task')->setParameter('task', $task);
+        }
+        if ($query !== null && $query !== '') {
+            $qb->andWhere('LOWER(s.title) LIKE :q')
+                ->setParameter('q', '%'.mb_strtolower($query).'%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * Restrict a query to what a volunteer may browse: published
      * public shifts only. Staff-only audiences and drafts never appear.
      */
@@ -186,6 +277,7 @@ class ShiftRepository extends ServiceEntityRepository
             ->setParameter('from', $from)
             ->setParameter('to', $to)
             ->orderBy('s.startsAt', 'ASC');
+        $this->joinShiftGroup($qb);
         $this->applyPublicVisibility($qb);
 
         if ($location !== null) {

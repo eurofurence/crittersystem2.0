@@ -1,0 +1,33 @@
+{% import 'components/data/_macros.twig' as d %}
+
+{# The group's current members, re-rendered after shifts are added. A fragment, never a page. #}
+
+{% for warning in warnings %}
+  <div class="alert alert-warning">{{ warning.key|trans(warning.params) }}</div>
+{% endfor %}
+
+{% if members is empty %}
+  {{ d.empty_inline('manage.shift_group.members.empty'|trans, {class: 'text-muted mb-0'}) }}
+{% else %}
+  <ul class="list-group list-group-flush">
+    {% for shift in members %}
+      <li class="list-group-item d-flex justify-content-between align-items-center gap-2 px-0">
+        <div>
+          <a href="{{ path('app_manage_shift_needs', {id: shift.uuid}) }}" class="fw-semibold text-decoration-none">{{ shift.title }}</a>
+          <div class="text-muted small">
+            {{ shift.startsAt|app_datetime }} - {{ shift.endsAt|app_time }}
+            {% if shift.location %} · {{ shift.location.name }}{% endif %}
+            · {{ shift.audience.label }}
+            {% if shift.draft %} · {{ 'common.state.draft'|trans }}{% endif %}
+          </div>
+        </div>
+        <form method="post" action="{{ path('app_manage_shift_group_member_remove', {id: group.uuid, shiftId: shift.uuid}) }}"
+              data-controller="confirm"
+              data-confirm-message-value="{{ 'manage.shift_group.confirm.remove_member'|trans({'%name%': shift.title}) }}">
+          <input type="hidden" name="_token" value="{{ csrf_token('group-member' ~ group.id) }}">
+          <button class="btn btn-sm btn-outline-danger">{{ 'common.action.remove'|trans }}</button>
+        </form>
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}

@@ -1,0 +1,107 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ heading|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(heading|trans, {
+    actions: [{label: 'manage.shift_group.action.back'|trans, href: path('app_manage_shift_group_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ form_start(form) }}
+    <div class="row">
+      {{ f.field(form.name, {col: 'col-12 col-md-6'}) }}
+      {{ f.choice(form.department, {col: 'col-12 col-md-6'}) }}
+      {{ f.field(form.description, {col: 'col-12'}) }}
+    </div>
+    <button class="btn btn-primary mt-2">{{ 'common.action.save'|trans }}</button>
+  {{ form_end(form) }}
+
+  {% if group %}
+    <h2 class="h4 mt-4">{{ 'manage.shift_group.members.heading'|trans }}</h2>
+    <p class="text-muted">{{ 'manage.shift_group.members.intro'|trans }}</p>
+
+    {{ d.card_start(null, {class: 'mb-3'}) }}
+      <div data-shift-group-picker-target="members">
+        {% include 'manage/shift_group/_members.html.twig' %}
+      </div>
+    {{ d.card_end() }}
+
+    {#
+      The picker. The filter controls sit OUTSIDE the list region on purpose: swapping them with the
+      results would reset them on every keystroke, and the whole point is to work through several
+      filtered views while building one selection.
+    #}
+    <div data-controller="shift-group-picker"
+         data-shift-group-picker-candidates-url-value="{{ path('app_manage_shift_group_candidates', {id: group.uuid}) }}"
+         data-shift-group-picker-members-url-value="{{ path('app_manage_shift_group_member_list', {id: group.uuid}) }}"
+         data-shift-group-picker-add-url-value="{{ path('app_manage_shift_group_member_add', {id: group.uuid}) }}"
+         data-shift-group-picker-token-value="{{ csrf_token('group-member' ~ group.id) }}"
+         data-shift-group-picker-add-label-value="{{ 'manage.shift_group.picker.add'|trans({'%count%': '__COUNT__'}) }}"
+         data-shift-group-picker-offscreen-label-value="{{ 'manage.shift_group.picker.offscreen'|trans({'%count%': '__COUNT__'}) }}"
+         data-shift-group-picker-failed-message-value="{{ 'manage.shift_group.picker.failed'|trans }}">
+
+      {{ d.card_start('manage.shift_group.members.add_heading'|trans, {headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
+          <div class="row g-2 align-items-end mb-3">
+            <div class="col-12 col-md-3">
+              <label class="form-label small mb-0" for="pick-day">{{ 'common.label.day'|trans }}</label>
+              <select id="pick-day" class="form-select form-select-sm"
+                      data-shift-group-picker-target="day" data-action="shift-group-picker#refresh">
+                <option value="">{{ 'manage.shift_group.filter.all_days'|trans }}</option>
+                {% for day in days %}<option value="{{ day }}">{{ day|date('D d M') }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label small mb-0" for="pick-audience">{{ 'manage.shift.field.audience.label'|trans }}</label>
+              <select id="pick-audience" class="form-select form-select-sm"
+                      data-shift-group-picker-target="audience" data-action="shift-group-picker#refresh">
+                <option value="">{{ 'manage.shift_group.filter.all_audiences'|trans }}</option>
+                {% for audience in audiences %}<option value="{{ audience.value }}">{{ audience.label }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label small mb-0" for="pick-type">{{ 'planner.field.shift_task'|trans }}</label>
+              <select id="pick-type" class="form-select form-select-sm"
+                      data-shift-group-picker-target="type" data-action="shift-group-picker#refresh">
+                <option value="">{{ 'manage.shift_group.filter.all_types'|trans }}</option>
+                {% for task in shiftTasks %}<option value="{{ task.id }}">{{ task.displayName }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-3">
+              <label class="form-label small mb-0" for="pick-q">{{ 'manage.shift_group.picker.search'|trans }}</label>
+              <input id="pick-q" type="search" class="form-control form-control-sm"
+                     placeholder="{{ 'manage.shift_group.picker.search_placeholder'|trans }}"
+                     data-shift-group-picker-target="query" data-action="input->shift-group-picker#refreshLater">
+            </div>
+            <div class="col-12">
+              <label class="form-check">
+                <input type="checkbox" class="form-check-input"
+                       data-shift-group-picker-target="past" data-action="shift-group-picker#refresh">
+                <span class="form-check-label">{{ 'manage.shift_group.picker.include_past'|trans }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div data-shift-group-picker-target="candidates">
+            {% include 'manage/shift_group/_candidates.html.twig' %}
+          </div>
+
+          <div class="d-flex align-items-center gap-2 mt-3">
+            <button type="button" class="btn btn-primary"
+                    data-shift-group-picker-target="submit"
+                    data-action="shift-group-picker#add" disabled>
+              {{ 'manage.shift_group.picker.add'|trans({'%count%': 0}) }}
+            </button>
+            <button type="button" class="btn btn-link btn-sm"
+                    data-shift-group-picker-target="clear"
+                    data-action="shift-group-picker#clear" hidden>
+              {{ 'manage.shift_group.picker.clear_selection'|trans }}
+            </button>
+            <span class="text-warning small" data-shift-group-picker-target="offscreen" hidden></span>
+          </div>
+          <div class="invalid-feedback d-block" data-shift-group-picker-target="error" hidden></div>
+      {{ d.card_end() }}
+    </div>
+  {% endif %}
+{% endblock %}

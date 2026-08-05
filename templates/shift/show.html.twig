@@ -21,6 +21,28 @@
           {% if shift.description %}<hr><p class="mb-0">{{ shift.description|nl2br }}</p>{% endif %}
       {{ d.card_end() }}
 
+      {% if groupSiblings is not empty %}
+        {{ d.card_start('shift.group.heading'|trans({'%name%': shift.shiftGroup.name}), {
+          headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''
+        }) }}
+            <p class="mb-2">{{ 'shift.group.show_intro'|trans({'%count%': groupSiblings|length + 1}) }}</p>
+            {% if shift.shiftGroup.description %}
+              <p class="text-secondary">{{ shift.shiftGroup.description }}</p>
+            {% endif %}
+            <ul class="list-unstyled mb-0">
+              {% for sibling in groupSiblings %}
+                <li class="mb-1">
+                  <a href="{{ path('app_shift_show', {id: sibling.uuid}) }}" class="text-decoration-none">{{ sibling.title }}</a>
+                  <span class="text-muted small d-block">
+                    {{ sibling.startsAt|app_datetime }} - {{ sibling.endsAt|app_time }}
+                    {% if sibling.location %} · {{ sibling.location.name }}{% endif %}
+                  </span>
+                </li>
+              {% endfor %}
+            </ul>
+        {{ d.card_end() }}
+      {% endif %}
+
       <h2 class="h5">{{ 'shift.show.staffing'|trans }}</h2>
       {% if availability is empty %}
         {{ d.empty_inline('shift.show.no_roles'|trans, {class: 'text-muted'}) }}
@@ -44,11 +66,21 @@
       {{ d.card_start('shift.show.your_signup'|trans, {class: '', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
           {% if myEntry %}
             <p>{{ 'shift.show.signed_up_as'|trans({'%type%': '<strong>' ~ (myEntry.volunteerType.name|e) ~ '</strong>'})|raw }}</p>
-            <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.uuid}) }}"
-                  data-controller="confirm" data-confirm-message-value="{{ 'shift.confirm.cancel_signup'|trans }}">
-              <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ myEntry.id) }}">
-              <button class="btn btn-outline-danger">{{ 'shift.action.cancel_signup'|trans }}</button>
-            </form>
+            {% if groupSiblings is not empty %}
+              {# The whole commitment goes at once, so the dialog lists what is being dropped rather
+                 than asking about this shift alone. #}
+              <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.uuid}) }}"
+                    {{ include('shift/_group_attrs.html.twig', {shift: shift, count: groupSiblings|length + 1, mode: 'cancel'}) }}>
+                <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ myEntry.id) }}">
+                <button class="btn btn-outline-danger">{{ 'shift.action.cancel_signup'|trans }}</button>
+              </form>
+            {% else %}
+              <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.uuid}) }}"
+                    data-controller="confirm" data-confirm-message-value="{{ 'shift.confirm.cancel_signup'|trans }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ myEntry.id) }}">
+                <button class="btn btn-outline-danger">{{ 'shift.action.cancel_signup'|trans }}</button>
+              </form>
+            {% endif %}
           {% elseif shift.past %}
             <p class="text-muted mb-0">{{ 'shift.show.ended'|trans }}</p>
           {% elseif signupOptions is empty %}
@@ -56,7 +88,10 @@
               {{ 'shift.show.cannot_signup'|trans({'%link%': '<a href="' ~ path('app_membership_index') ~ '">' ~ 'ui.nav.volunteer_types'|trans ~ '</a>'})|raw }}
             </p>
           {% else %}
-            <form method="post" action="{{ path('app_shift_signup', {id: shift.uuid}) }}">
+            <form method="post" action="{{ path('app_shift_signup', {id: shift.uuid}) }}"
+                  {% if groupSiblings is not empty %}
+                    {{ include('shift/_group_attrs.html.twig', {shift: shift, count: groupSiblings|length + 1, mode: 'apply'}) }}
+                  {% endif %}>
               <input type="hidden" name="_token" value="{{ csrf_token('signup' ~ shift.id) }}">
               <div class="mb-3">
                 <label class="form-label" for="volunteer_type">{{ 'shift.show.signup_as_label'|trans }}</label>
@@ -64,10 +99,17 @@
                   {% for id, type in signupOptions %}<option value="{{ id }}">{{ type.name }}</option>{% endfor %}
                 </select>
               </div>
-              <div class="mb-3">
-                <label class="form-label" for="comment">{{ 'shift.show.comment_label'|trans }}</label>
-                <textarea id="comment" name="comment" class="form-control" rows="2"></textarea>
-              </div>
+              {% if groupSiblings is empty %}
+                <div class="mb-3">
+                  <label class="form-label" for="comment">{{ 'shift.show.comment_label'|trans }}</label>
+                  <textarea id="comment" name="comment" class="form-control" rows="2"></textarea>
+                </div>
+              {% else %}
+                {# The comment is asked for inside the dialog instead, alongside the shifts it covers. #}
+                <p class="small mb-2">
+                  <a href="#" data-action="shift-group#info">{{ 'shift.group.info_link'|trans({'%count%': groupSiblings|length + 1}) }}</a>
+                </p>
+              {% endif %}
               <button class="btn btn-primary w-100">{{ 'shift.action.signup'|trans }}</button>
             </form>
           {% endif %}

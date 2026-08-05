@@ -91,6 +91,13 @@
                   {% if shift.location %} · {{ shift.location.name }}{% endif %}
                   {% if shift.shiftTask %} · {{ 'shift.browse.task_label'|trans }} {{ shift.shiftTask.name }}{% endif %}
                 </div>
+                {% if card.groupSize > 1 %}
+                  {# Counted, not listed: the members are described in the dialog, which is rendered
+                     server-side and leaves out any shift this viewer may not see. #}
+                  <div class="mt-1">
+                    {{ d.badge('shift.group.badge'|trans({'%name%': shift.shiftGroup.name, '%count%': card.groupSize}), 'text-bg-info') }}
+                  </div>
+                {% endif %}
                 {% if shift.description %}
                   <div class="text-secondary small mt-1">
                     {{ shift.description|length > 120 ? shift.description|slice(0, 120) ~ '…' : shift.description|raw }}
@@ -113,18 +120,32 @@
 
             <div class="d-flex flex-wrap gap-2 mt-2">
               {% if card.myEntry %}
-                {{ d.delete_form(
-                  path('app_shift_cancel', {id: card.myEntry.uuid}),
-                  csrf_token('cancel' ~ card.myEntry.id),
-                  {label: 'shift.action.cancel_signup'|trans, message: 'shift.confirm.cancel_signup'|trans}
-                ) }}
+                {% if card.groupSize > 1 %}
+                  <form method="post" action="{{ path('app_shift_cancel', {id: card.myEntry.uuid}) }}"
+                        {{ include('shift/_group_attrs.html.twig', {shift: shift, count: card.groupSize, mode: 'cancel'}) }}>
+                    <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ card.myEntry.id) }}">
+                    <button class="btn btn-sm btn-outline-danger">{{ 'shift.action.cancel_signup'|trans }}</button>
+                  </form>
+                {% else %}
+                  {{ d.delete_form(
+                    path('app_shift_cancel', {id: card.myEntry.uuid}),
+                    csrf_token('cancel' ~ card.myEntry.id),
+                    {label: 'shift.action.cancel_signup'|trans, message: 'shift.confirm.cancel_signup'|trans}
+                  ) }}
+                {% endif %}
               {% elseif card.options is not empty %}
-                <form method="post" action="{{ path('app_shift_signup', {id: shift.uuid}) }}" class="d-flex gap-2">
+                <form method="post" action="{{ path('app_shift_signup', {id: shift.uuid}) }}" class="d-flex gap-2 align-items-center"
+                      {% if card.groupSize > 1 %}
+                        {{ include('shift/_group_attrs.html.twig', {shift: shift, count: card.groupSize, mode: 'apply'}) }}
+                      {% endif %}>
                   <input type="hidden" name="_token" value="{{ csrf_token('signup' ~ shift.id) }}">
                   <select name="volunteer_type" class="form-select form-select-sm" style="width:auto">
                     {% for id, type in card.options %}<option value="{{ id }}">{{ type.name }}</option>{% endfor %}
                   </select>
                   <button class="btn btn-sm btn-primary">{{ 'shift.action.signup'|trans }}</button>
+                  {% if card.groupSize > 1 %}
+                    <a href="#" class="small" data-action="shift-group#info">{{ 'shift.group.info_link_short'|trans }}</a>
+                  {% endif %}
                 </form>
               {% endif %}
 

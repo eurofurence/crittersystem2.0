@@ -12,6 +12,7 @@ use App\Repository\ShiftRepository;
 use App\Repository\VolunteerTypeRepository;
 use App\Security\Bot\ActingUserAccess;
 use App\Security\Bot\ActingUserResolver;
+use App\Service\Shift\ShiftGroupSignupService;
 use App\Service\Shift\ShiftVisibilityResolver;
 use App\Service\ShiftSignupService;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
@@ -43,6 +44,7 @@ final class BotShiftController extends AbstractController
         private readonly ShiftEntryRepository $entries,
         private readonly VolunteerTypeRepository $volunteerTypes,
         private readonly ShiftSignupService $signup,
+        private readonly ShiftGroupSignupService $groupSignup,
         private readonly ShiftVisibilityResolver $visibility,
         private readonly BotShiftNormalizer $normalizer,
     ) {
@@ -174,13 +176,49 @@ final class BotShiftController extends AbstractController
             return $this->json(['error' => 'signup_refused', 'message' => $error], Response::HTTP_CONFLICT);
         }
 
-        try {
-            $entry = $this->signup->signUp($actor, $shift, $type, $payload['comment'] ?? null);
-        } catch (CapacityConflictException $e) {
-            return $this->json(['error' => 'capacity_conflict', 'message' => $e->getMessage()], Response::HTTP_CONFLICT);
+        // Applying to a grouped shift commits the volunteer to every member of it. The bot has to
+        // have shown them that first, which is what confirm_group asserts - otherwise somebody taps
+        // "apply" on a one-hour rehearsal and is booked for a six-hour show as well.
+        $plan = $this->signup->plan($actor, $shift, $type);
+        if ($plan->isGrouped() && !($payload['confirm_group'] ?? false)) {
+            return $this->json([
+                'error' => 'group_confirmation_required',
+                'message' => 'These shifts are taken together. Show the volunteer every shift below, then repeat the request with confirm_group: true.',
+                'group' => $this->normalizer->shift($shift, $actor)['group'],
+            ], Response::HTTP_CONFLICT);
         }
 
-        return $this->json($this->normalizer->entry($entry), Response::HTTP_CREATED);
+        try {
+            $entries = $this->groupSignup->signUpGroup(
+                $actor,
+                $shift,
+                $type,
+                [],
+                $payload['comment'] ?? null,
+                (bool) ($payload['acknowledge_hours'] ?? false),
+            );
+        } catch (CapacityConflictException $e) {
+            return $this->json(['error' => 'capacity_conflict', 'message' => $e->getMessage()], Response::HTTP_CONFLICT);
+        } catch (\RuntimeException $e) {
+            return $this->json(['error' => 'signup_refused', 'message' => $e->getMessage()], Response::HTTP_CONFLICT);
+        }
+
+        // The entry for the shift that was asked about stays at the top level, exactly as before, so
+        // no existing bot flow changes shape. group_entries is additive and lists everything created,
+        // which is what the caller needs to tell the volunteer what they are now on.
+        $requested = null;
+        foreach ($entries as $created) {
+            if ($created->getShift() === $shift) {
+                $requested = $created;
+            }
+        }
+
+        $body = $this->normalizer->entry($requested ?? $entries[0]);
+        if (\count($entries) > 1) {
+            $body['group_entries'] = array_map(fn ($entry): array => $this->normalizer->entry($entry), $entries);
+        }
+
+        return $this->json($body, Response::HTTP_CREATED);
     }
 
     #[Route('/shifts/{id}/cancel', name: 'app_api_bot_shift_cancel', methods: ['POST'])]
@@ -199,9 +237,18 @@ final class BotShiftController extends AbstractController
             return $this->json(['error' => 'cancel_refused', 'message' => $error], Response::HTTP_CONFLICT);
         }
 
-        $this->signup->cancel($entry);
+        // A grouped commitment is dropped whole. Cancelling a single shift keeps answering 204 with no
+        // body, as it always has; only the grouped case, which no existing caller can reach, carries
+        // the list of shifts that went so the bot can tell the volunteer.
+        $removed = $this->groupSignup->cancelGroup($entry);
 
-        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        if (\count($removed) <= 1) {
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        }
+
+        return $this->json([
+            'cancelled' => array_map(static fn ($held): string => (string) $held->getShift()->getUuid(), $removed),
+        ]);
     }
 
     /**

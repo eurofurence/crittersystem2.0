@@ -1,0 +1,49 @@
+{% import 'components/data/_macros.twig' as d %}
+
+{#
+  The candidate shift list, re-rendered on every filter change by shift_group_picker_controller.
+
+  A fragment, never a page: the edit screen holds the group's unsaved name and description above this,
+  so filtering must not reload it.
+
+  Shifts already in another group are listed but disabled, with the owning group named. Leaving them
+  out is what makes a manager wonder whether a shift exists at all.
+#}
+
+{% if candidates is empty %}
+  {{ d.empty_inline('manage.shift_group.picker.no_matches'|trans, {class: 'text-muted mb-0'}) }}
+{% else %}
+  <ul class="list-group list-group-flush" data-shift-group-picker-target="list">
+    {% for shift in candidates %}
+      {% set taken = shift.shiftGroup is not null %}
+      <li class="list-group-item px-0 {{ taken ? 'opacity-50' : '' }}">
+        <label class="d-flex align-items-start gap-2 mb-0 {{ taken ? '' : 'cursor-pointer' }}">
+          <input class="form-check-input mt-1" type="checkbox"
+                 value="{{ shift.uuid }}"
+                 data-shift-group-picker-target="checkbox"
+                 {{ taken ? 'disabled' : '' }}>
+          <span>
+            <span class="fw-semibold">{{ shift.title }}</span>
+            {% if shift.past %}{{ d.badge('manage.shift_group.picker.past'|trans, 'text-bg-secondary') }}{% endif %}
+            <span class="text-muted small d-block">
+              {{ shift.startsAt|app_datetime }} - {{ shift.endsAt|app_time }}
+              {% if shift.location %} · {{ shift.location.name }}{% endif %}
+              {% if shift.shiftTask %} · {{ shift.shiftTask.name }}{% endif %}
+              · {{ shift.audience.label }}
+              {% if shift.draft %} · {{ 'common.state.draft'|trans }}{% endif %}
+            </span>
+            {% if taken %}
+              <span class="text-warning small d-block">{{ 'manage.shift_group.picker.in_group'|trans({'%name%': shift.shiftGroup.name}) }}</span>
+            {% endif %}
+          </span>
+        </label>
+      </li>
+    {% endfor %}
+  </ul>
+
+  {% if candidates|length >= 250 %}
+    {# The query is capped, so a department with thousands of shifts cannot render an unusable page.
+       Say so rather than silently truncating. #}
+    <div class="form-text text-warning mt-2">{{ 'manage.shift_group.picker.capped'|trans({'%count%': 250}) }}</div>
+  {% endif %}
+{% endif %}

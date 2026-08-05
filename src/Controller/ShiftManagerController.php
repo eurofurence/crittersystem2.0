@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Exception\CapacityConflictException;
 use App\Repository\DepartmentRepository;
 use App\Service\Assignment\EventHoursGuard;
+use App\Service\Shift\ShiftGroupResolver;
 use App\Service\Shift\ShiftVisibilityResolver;
 use App\Service\Shift\StaffApplicationService;
 use App\Service\ShiftSignupService;
@@ -34,6 +35,7 @@ final class ShiftManagerController extends AbstractController
         private readonly ShiftVisibilityResolver $visibility,
         private readonly ShiftSignupService $signup,
         private readonly EventHoursGuard $hoursGuard,
+        private readonly ShiftGroupResolver $groups,
     ) {
     }
 
@@ -102,7 +104,7 @@ final class ShiftManagerController extends AbstractController
             $type = $options[$request->request->getInt('volunteer_type')] ?? (\count($options) === 1 ? reset($options) : null);
             if ($type === null) {
                 $this->addFlash('danger', new TranslatableMessage('shift_manager.flash.choose_role'));
-            } elseif ($this->hoursGuard->wouldExceed($user, $shift) && !$request->request->getBoolean('acknowledge_hours')) {
+            } elseif ($this->hoursGuard->wouldExceedGroup($user, $shift) && !$request->request->getBoolean('acknowledge_hours')) {
                 // Self-application beyond the recommended hours needs explicit
                 // acknowledgement.
                 $this->addFlash('warning', new TranslatableMessage(
@@ -111,11 +113,21 @@ final class ShiftManagerController extends AbstractController
                 ));
             } else {
                 try {
-                    if ($this->hoursGuard->wouldExceed($user, $shift)) {
+                    if ($this->hoursGuard->wouldExceedGroup($user, $shift)) {
                         $this->hoursGuard->acknowledgeSelfApplication($user, $shift);
                     }
-                    $this->signup->signUp($user, $shift, $type, (string) $request->request->get('comment') ?: null);
-                    $this->addFlash('success', new TranslatableMessage('shift_manager.flash.applied', ['%name%' => $shift->getTitle()]));
+                    $this->signup->signUp(
+                        $user,
+                        $shift,
+                        $type,
+                        (string) $request->request->get('comment') ?: null,
+                        $this->typeChoices($request),
+                        $request->request->getBoolean('acknowledge_hours'),
+                    );
+                    $held = \count($this->groups->entriesFor($shift, $user));
+                    $this->addFlash('success', $held > 1
+                        ? new TranslatableMessage('shift_manager.flash.applied_group', ['%name%' => $shift->getTitle(), '%count%' => $held])
+                        : new TranslatableMessage('shift_manager.flash.applied', ['%name%' => $shift->getTitle()]));
                 } catch (CapacityConflictException $e) {
                     // Stale UI: capacity changed underneath. Report and let the
                     // polling frame refresh the live state.
@@ -127,6 +139,26 @@ final class ShiftManagerController extends AbstractController
         }
 
         return $this->redirectToRoute('app_manage_shifts_apply');
+    }
+
+    /**
+     * Per-member role choices from the confirmation modal, as member shift uuid => volunteer type id.
+     *
+     * Only the shape is validated here; which roles the volunteer may take is decided by the sign-up
+     * service against live data, never by what the form posted.
+     *
+     * @return array<string, int>
+     */
+    private function typeChoices(Request $request): array
+    {
+        $choices = [];
+        foreach ($request->request->all('group_type') as $uuid => $typeId) {
+            if (\is_string($uuid) && \Symfony\Component\Uid\Uuid::isValid($uuid) && (int) $typeId > 0) {
+                $choices[$uuid] = (int) $typeId;
+            }
+        }
+
+        return $choices;
     }
 
     #[Route('/manage-shifts/apply/{id}/cancel', name: 'app_manage_shifts_apply_cancel', methods: ['POST'], requirements: ['id' => Requirement::UUID])]

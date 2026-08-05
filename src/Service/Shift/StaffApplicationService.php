@@ -28,6 +28,7 @@ final class StaffApplicationService
         private readonly ShiftSignupService $signup,
         private readonly AvailabilityService $availability,
         private readonly EventHoursGuard $hoursGuard,
+        private readonly ShiftGroupResolver $groups,
     ) {
     }
 
@@ -78,14 +79,26 @@ final class StaffApplicationService
         $needed = array_sum(array_column($availability, 'needed'));
         $assigned = array_sum(array_column($availability, 'assigned'));
 
+        $members = $this->groups->membersFor($shift);
+
         return [
             'shift' => $shift,
             'status' => $this->signup->eligibilityStatus($shift, $user),
             'signupOptions' => $this->signup->signupOptions($shift, $user),
             'needed' => $needed,
             'assigned' => $assigned,
-            'availability' => $this->availability->planningState($user, $shift->getStartsAt(), $shift->getEndsAt(), $shift),
-            'overHours' => $this->hoursGuard->wouldExceed($user, $shift),
+            // Members of one group are taken together, so they must not read as occupying each other.
+            'availability' => $this->availability->planningState(
+                $user,
+                $shift->getStartsAt(),
+                $shift->getEndsAt(),
+                $shift,
+                $this->groups->siblingsOf($shift),
+            ),
+            'overHours' => $this->hoursGuard->wouldExceedGroup($user, $shift),
+            // Counted, never described here: the modal renders the detail and applies the visibility
+            // filter while doing so.
+            'groupSize' => \count($members),
         ];
     }
 }

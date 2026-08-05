@@ -245,6 +245,9 @@ msgstr "Public"
 msgid "common.state.full"
 msgstr "Full"
 
+msgid "common.state.draft"
+msgstr "Draft"
+
 msgid "common.state.expired"
 msgstr "Expired"
 
@@ -6002,3 +6005,338 @@ msgstr "%count% more shifts run at this time. Open this day to see them all."
 
 msgid "planner.grid.collapse"
 msgstr "collapse"
+
+# ==========================================================================
+# shift.group.* - shifts that can only be taken together
+# ==========================================================================
+
+msgid "shift.group.heading"
+msgstr "Part of shift group: %name%"
+
+msgid "shift.group.badge"
+msgstr "%name% (%count% shifts together)"
+
+msgid "shift.group.show_intro"
+msgstr "This shift is one of %count% that go together. Applying to any of them signs you up for all of them, and cancelling cancels all of them."
+
+msgid "shift.group.apply_title"
+msgstr "These shifts go together"
+
+msgid "shift.group.apply_intro"
+msgstr "Applying signs you up for all %count% of these shifts:"
+
+msgid "shift.group.apply_confirm"
+msgstr "Apply to all %count% shifts"
+
+msgid "shift.group.cancel_title"
+msgstr "Cancel all of these shifts?"
+
+msgid "shift.group.cancel_intro"
+msgstr "These %count% shifts go together, so cancelling takes you off all of them:"
+
+msgid "shift.group.info_link"
+msgstr "See all %count% shifts in this group"
+
+msgid "shift.group.info_link_short"
+msgstr "See all"
+
+msgid "shift.group.this_shift"
+msgstr "This shift"
+
+msgid "shift.group.role"
+msgstr "Role: %role%"
+
+msgid "shift.group.already_on"
+msgstr "You are already on this one as %role%."
+
+msgid "shift.group.choose_role"
+msgstr "Choose your role for \"%shift%\""
+
+msgid "shift.group.choose_role_placeholder"
+msgstr "Choose a role"
+
+msgid "shift.group.hours"
+msgstr "%hours% h"
+
+msgid "shift.group.total_hours"
+msgstr "Adds %hours% hours in total"
+
+msgid "shift.group.acknowledge_hours"
+msgstr "I understand this takes me past the recommended maximum hours."
+
+msgid "shift.group.not_available"
+msgstr "This shift is not open for sign-up at the moment."
+
+msgid "shift.flash.signed_up_group"
+msgstr "Signed up for all %count% shifts in this group."
+
+msgid "shift_manager.flash.applied_group"
+msgstr "Applied for \"%name%\" and the %count% shifts it goes with."
+
+# ==========================================================================
+# manage.shift_group.* - managing shift groups
+# ==========================================================================
+
+msgid "manage.shift_group.page.title"
+msgstr "Shift Groups"
+
+msgid "manage.shift_group.page.subtitle"
+msgstr "Shifts a volunteer can only take together, such as a rehearsal and the performance it prepares."
+
+msgid "manage.shift_group.action.new"
+msgstr "New shift group"
+
+msgid "manage.shift_group.action.back"
+msgstr "Back to shift groups"
+
+msgid "manage.shift_group.action.add_member"
+msgstr "Add shift"
+
+msgid "manage.shift_group.form.heading_new"
+msgstr "New shift group"
+
+msgid "manage.shift_group.form.heading_edit"
+msgstr "Edit shift group"
+
+msgid "manage.shift_group.field.description.help"
+msgstr "Shown to volunteers when they apply. Explain why these shifts belong together."
+
+msgid "manage.shift_group.field.department.help"
+msgstr "A group and all of its shifts belong to one department. It cannot be changed once the group has shifts."
+
+msgid "manage.shift_group.table.shifts"
+msgstr "Shifts"
+
+msgid "manage.shift_group.table.no_shifts"
+msgstr "No shifts yet"
+
+msgid "manage.shift_group.empty.title"
+msgstr "No shift groups yet"
+
+msgid "manage.shift_group.empty.message"
+msgstr "Create a group to tie shifts together, so a volunteer taking one takes all of them."
+
+msgid "manage.shift_group.members.heading"
+msgstr "Shifts in this group"
+
+msgid "manage.shift_group.members.intro"
+msgstr "A volunteer applying to any of these is signed up for all of them. Volunteers already signed up to some of them are not added to a shift you add here; assign them from that shift's staffing screen."
+
+msgid "manage.shift_group.members.empty"
+msgstr "No shifts in this group yet."
+
+msgid "manage.shift_group.members.add_heading"
+msgstr "Add a shift"
+
+msgid "manage.shift_group.members.add_label"
+msgstr "Shift"
+
+msgid "manage.shift_group.members.no_candidates"
+msgstr "Every shift in this department is already in a group."
+
+msgid "manage.shift_group.confirm.delete"
+msgstr "Delete the shift group \"%name%\"? Its shifts and their sign-ups are kept; only the link between them goes."
+
+msgid "manage.shift_group.confirm.remove_member"
+msgstr "Remove \"%name%\" from this group? Volunteers keep their sign-ups on it."
+
+msgid "manage.shift_group.flash.created"
+msgstr "Shift group \"%name%\" created. Add its shifts below."
+
+msgid "manage.shift_group.flash.updated"
+msgstr "Shift group \"%name%\" updated."
+
+msgid "manage.shift_group.flash.deleted"
+msgstr "Shift group deleted. Its shifts were kept and are no longer linked."
+
+msgid "manage.shift_group.flash.member_added"
+msgstr "\"%name%\" added to this group."
+
+msgid "manage.shift_group.flash.member_removed"
+msgstr "\"%name%\" removed from this group."
+
+msgid "manage.shift_group.flash.unknown_shift"
+msgstr "That shift could not be found."
+
+msgid "manage.shift_group.flash.other_department"
+msgstr "A shift group can only hold shifts from its own department."
+
+msgid "manage.shift_group.flash.already_grouped"
+msgstr "That shift is already in the group \"%name%\". Remove it from there first."
+
+msgid "manage.shift_group.flash.department_locked"
+msgstr "The department cannot be changed while the group has shifts. Remove them first."
+
+msgid "manage.shift_group.flash.partial_members"
+msgstr "%count% volunteer(s) are signed up for the other shifts but not this one. Assign them from its staffing screen."
+
+msgid "manage.shift_group.warning.too_few"
+msgstr "This group has fewer than two shifts, so it links nothing yet."
+
+msgid "manage.shift_group.warning.mixed_state"
+msgstr "The shifts in this group are not all published. Volunteers cannot apply until every one of them is."
+
+msgid "manage.shift_group.warning.mixed_audience"
+msgstr "The shifts in this group are offered to different audiences. Volunteers who cannot see one of them cannot apply to any of them."
+
+msgid "manage.shift_group.warning.overlap"
+msgstr "\"%a%\" and \"%b%\" overlap in time."
+
+msgid "manage.shift_group.warning.partial"
+msgstr "%count% volunteer(s) are on some of these shifts but not all of them."
+
+msgid "manage.shift.field.shift_group.label"
+msgstr "Shift group"
+
+msgid "manage.shift.field.shift_group.help"
+msgstr "Shifts in a group can only be taken together. The group must belong to the same department as this shift."
+
+msgid "manage.shift.error.group_other_department"
+msgstr "That shift group belongs to %name%. A group and its shifts must share one department."
+
+msgid "manage.shift.staffing.group.heading"
+msgstr "Part of shift group: %name%"
+
+msgid "manage.shift.staffing.group.intro"
+msgstr "Assigning somebody here puts them on all %count% of these shifts, and removing them takes them off all of them."
+
+msgid "manage.shift.staffing.group.partial"
+msgstr "On %held% of %total% group shifts"
+
+msgid "manage.shift.staffing.group.this_shift_only"
+msgstr "Remove from this shift only"
+
+msgid "manage.shift.staffing.group.assign_split"
+msgstr "Assign to this shift only, not the other %count% in the group"
+
+msgid "manage.shift.staffing.group.confirm_unassign"
+msgstr "Remove %name% from all %count% shifts in this group?"
+
+msgid "manage.shift.staffing.group.confirm_split_unassign"
+msgstr "Remove %name% from this shift only? They stay on the other shifts in the group, which the group exists to prevent."
+
+msgid "manage.shift.staffing.flash.assigned_group"
+msgstr "%name% assigned as %role% to all %count% shifts in this group."
+
+msgid "manage.shift.staffing.flash.removed_group"
+msgstr "%name% removed from all %count% shifts in this group."
+
+msgid "manage.index.card.shift_groups.title"
+msgstr "Shift Groups"
+
+msgid "manage.index.card.shift_groups.desc"
+msgstr "Tie shifts together so a volunteer takes all of them or none."
+
+msgid "shift.group.error.load_failed"
+msgstr "The details of these linked shifts could not be loaded. Please try again."
+
+msgid "shift.group.error.no_dialog"
+msgstr "These shifts are taken together. Open the shift page to see them all."
+
+# --- shift group filters on the management screen ---
+
+msgid "common.label.day"
+msgstr "Day"
+
+msgid "manage.shift_group.filter.all_days"
+msgstr "Any day"
+
+msgid "manage.shift_group.filter.all_audiences"
+msgstr "Any audience"
+
+msgid "manage.shift_group.filter.all_types"
+msgstr "Any shift type"
+
+msgid "manage.shift_group.filter.clear"
+msgstr "Clear"
+
+
+
+
+# --- assigning a planner selection to a shift group ---
+
+msgid "planner.batch.group.label"
+msgstr "Shift group"
+
+msgid "planner.batch.group.unchanged"
+msgstr "Leave unchanged"
+
+msgid "planner.batch.group.remove"
+msgstr "Remove from any group"
+
+msgid "planner.batch.group.help"
+msgstr "Shifts in a group can only be taken together: a volunteer applying to one is signed up for all of them."
+
+msgid "planner.batch.group.new_aria"
+msgstr "New shift group for the selected shifts"
+
+msgid "planner.batch.group.new_placeholder"
+msgstr "Group name"
+
+msgid "planner.batch.group.new_submit"
+msgstr "Create"
+
+msgid "planner.batch.group.new_help"
+msgstr "Creates the group and puts the selected shifts in it straight away. The fields above still need Apply."
+
+msgid "planner.batch.group.blank"
+msgstr "A shift group needs a name."
+
+msgid "planner.batch.group.duplicate"
+msgstr "A shift group called \"%name%\" already exists in this department."
+
+msgid "planner.batch.group.unknown"
+msgstr "That shift group could not be found."
+
+msgid "planner.batch.group.other_department"
+msgstr "A shift group can only hold shifts from its own department."
+
+msgid "planner.batch.group.failed"
+msgstr "The shift group could not be created."
+
+msgid "planner.batch.group.confirm_partial"
+msgstr "%count% volunteer(s) would end up on only part of this group. They are not added automatically; assign them from each shift's staffing screen. Continue?"
+
+# --- shift group member picker ---
+
+msgid "manage.shift_group.picker.search"
+msgstr "Search"
+
+msgid "manage.shift_group.picker.search_placeholder"
+msgstr "Part of a shift title"
+
+msgid "manage.shift_group.picker.include_past"
+msgstr "Include shifts that have already ended"
+
+msgid "manage.shift_group.picker.past"
+msgstr "Ended"
+
+msgid "manage.shift_group.picker.in_group"
+msgstr "Already in the group \"%name%\". Remove it from there first."
+
+msgid "manage.shift_group.picker.no_matches"
+msgstr "No shift in this department matches those filters."
+
+msgid "manage.shift_group.picker.capped"
+msgstr "Only the first %count% shifts are shown. Narrow the filters to see the rest."
+
+msgid "manage.shift_group.picker.add"
+msgstr "Add %count% selected shift(s)"
+
+msgid "manage.shift_group.picker.clear_selection"
+msgstr "Clear selection"
+
+msgid "manage.shift_group.picker.offscreen"
+msgstr "%count% more selected that the current filter does not show."
+
+msgid "manage.shift_group.picker.failed"
+msgstr "The shifts could not be added. Please try again."
+
+msgid "manage.shift_group.flash.nothing_selected"
+msgstr "Pick at least one shift to add."
+
+msgid "manage.shift_group.flash.invalid_token"
+msgstr "That form expired. Reload the page and try again."
+
+msgid "manage.shift_group.confirm.partial_members"
+msgstr "%count% volunteer(s) would end up on only part of this group. They are not added automatically; assign them from each shift's staffing screen. Continue?"

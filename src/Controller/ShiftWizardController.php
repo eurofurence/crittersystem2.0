@@ -95,7 +95,9 @@ final class ShiftWizardController extends AbstractController
 
         // Every generated shift carries the same task, so a missing or foreign one stops the run
         // rather than producing a batch of drafts that publication would later reject.
-        $task = ($tid = $request->request->getInt('task')) ? $this->tasks->find($tid) : null;
+        // Cast, not getInt(): the task picker's placeholder posts an empty string when nothing is
+        // chosen, and that has to read as "no task" so the wizard's own validation reports it.
+        $task = ($tid = (int) $request->request->get('task')) ? $this->tasks->find($tid) : null;
         if (!$task instanceof ShiftTask || $this->taskAccess->forDepartment([$task], $department) === []) {
             $this->addFlash('danger', new TranslatableMessage('shift_manager.wizard.flash.task_required'));
 
@@ -118,7 +120,9 @@ final class ShiftWizardController extends AbstractController
                 $dates,
                 (string) $request->request->get('start_time', '10:00'),
                 (string) $request->request->get('end_time', '18:00'),
-                $request->request->getInt('slot_minutes', 120),
+                // Cast, not getInt(): a cleared number field posts an empty string, which must
+                // fall back to the default rather than answering 400.
+                max(1, (int) $request->request->get('slot_minutes', 120)),
                 $tz,
                 $audience,
                 $task,

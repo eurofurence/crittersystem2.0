@@ -60,6 +60,17 @@ class Shift
     #[ORM\JoinColumn(name: 'department_id', nullable: false, onDelete: 'CASCADE')]
     private ?Department $department = null;
 
+    /**
+     * Shifts that can only be taken together. Deleting the group ungroups the shift rather than
+     * deleting it (SET NULL).
+     *
+     * Not to be confused with {@see $transactionId}, which only records a batch creation and never
+     * affects behaviour.
+     */
+    #[ORM\ManyToOne(targetEntity: ShiftGroup::class, inversedBy: 'shifts')]
+    #[ORM\JoinColumn(name: 'shift_group_id', nullable: true, onDelete: 'SET NULL')]
+    private ?ShiftGroup $shiftGroup = null;
+
     #[ORM\ManyToOne(targetEntity: Location::class)]
     #[ORM\JoinColumn(name: 'location_id', nullable: true, onDelete: 'SET NULL')]
     private ?Location $location = null;
@@ -222,6 +233,27 @@ class Shift
         $this->department = $department;
 
         return $this;
+    }
+
+    public function getShiftGroup(): ?ShiftGroup
+    {
+        return $this->shiftGroup;
+    }
+
+    public function setShiftGroup(?ShiftGroup $shiftGroup): static
+    {
+        $this->shiftGroup = $shiftGroup;
+
+        return $this;
+    }
+
+    /**
+     * Whether this shift is bound to siblings. A group holding only this shift links nothing, so it
+     * is reported as ungrouped and every enforcement path skips it.
+     */
+    public function isGrouped(): bool
+    {
+        return $this->shiftGroup !== null && $this->shiftGroup->isEffective();
     }
 
     public function getLocation(): ?Location

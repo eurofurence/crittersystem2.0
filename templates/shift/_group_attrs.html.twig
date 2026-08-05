@@ -1,0 +1,21 @@
+{#-
+  The data attributes that wire a form to the shift-group confirmation dialog.
+
+  Shared by every surface that can apply to or cancel a grouped shift (the browse list, the shift
+  page, the staff apply rows, my shifts), so the five call sites cannot drift apart and every string
+  in the dialog stays translatable.
+
+  Parameters: `shift` (the member being acted on), `count` (members in the group), and `mode`
+  ('apply' or 'cancel').
+-#}
+data-controller="shift-group"
+data-shift-group-url-value="{{ path('app_shift_group_modal', {id: shift.uuid}) }}"
+data-shift-group-mode-value="{{ mode|default('apply') }}"
+data-shift-group-title-value="{{ (mode|default('apply') == 'cancel' ? 'shift.group.cancel_title' : 'shift.group.apply_title')|trans }}"
+data-shift-group-confirm-label-value="{{ mode|default('apply') == 'cancel'
+  ? 'shift.action.cancel_signup'|trans
+  : 'shift.group.apply_confirm'|trans({'%count%': count}) }}"
+data-shift-group-cancel-label-value="{{ 'common.action.cancel'|trans }}"
+data-shift-group-variant-value="{{ mode|default('apply') == 'cancel' ? 'danger' : 'primary' }}"
+data-shift-group-load-error-value="{{ 'shift.group.error.load_failed'|trans }}"
+data-shift-group-no-dialog-value="{{ 'shift.group.error.no_dialog'|trans }}"

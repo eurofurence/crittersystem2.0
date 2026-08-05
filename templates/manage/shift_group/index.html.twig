@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'manage.shift_group.page.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('manage.shift_group.page.title'|trans, {
+    subtitle: 'manage.shift_group.page.subtitle'|trans,
+    actions: [
+      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.shift_group.action.new'|trans, href: path('app_manage_shift_group_new'), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {% if groups is empty %}
+    {{ d.empty_state('manage.shift_group.empty.title'|trans, {
+      message: 'manage.shift_group.empty.message'|trans,
+      actionLabel: 'manage.shift_group.action.new'|trans,
+      actionHref: path('app_manage_shift_group_new')
+    }) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th>{{ 'common.label.name'|trans }}</th>
+          <th>{{ 'common.label.department'|trans }}</th>
+          <th>{{ 'manage.shift_group.table.shifts'|trans }}</th>
+          <th class="text-end">{{ 'common.label.actions'|trans }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for group in groups %}
+          <tr>
+            <td>
+              <div class="fw-semibold">{{ group.name }}</div>
+              {% if group.description %}<div class="text-muted small">{{ group.description }}</div>{% endif %}
+              {% for warning in warnings[group.id] %}
+                <div class="text-warning small">{{ warning.key|trans(warning.params) }}</div>
+              {% endfor %}
+            </td>
+            <td>{{ group.department.name }}</td>
+            <td>
+              {% if group.shifts is empty %}
+                {{ d.empty_inline('manage.shift_group.table.no_shifts'|trans, {tag: 'span', class: 'text-muted small'}) }}
+              {% else %}
+                <div class="d-flex flex-column gap-1">
+                  {% for shift in group.shifts %}
+                    <span class="small">{{ shift.title }} <span class="text-muted">{{ shift.startsAt|app_datetime }}</span></span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </td>
+            {% set del %}
+              {{ d.delete_form(path('app_manage_shift_group_delete', {id: group.uuid}), csrf_token('delete' ~ group.id), {
+                message: 'manage.shift_group.confirm.delete'|trans({'%name%': group.name})
+              }) }}
+            {% endset %}
+            {{ d.row_actions([
+              {label: 'common.action.edit'|trans, href: path('app_manage_shift_group_edit', {id: group.uuid})}
+            ], {extraHtml: del}) }}
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

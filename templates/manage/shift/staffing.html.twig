@@ -10,6 +10,25 @@
     actions: [{label: 'manage.shift.action.back'|trans, href: path('app_manage_shift_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 
+  {% if groupMembers|length > 1 %}
+    <div class="alert alert-info">
+      <div class="fw-semibold">{{ 'manage.shift.staffing.group.heading'|trans({'%name%': shift.shiftGroup.name}) }}</div>
+      <p class="mb-1">{{ 'manage.shift.staffing.group.intro'|trans({'%count%': groupMembers|length}) }}</p>
+      <ul class="mb-0">
+        {% for member in groupMembers %}
+          <li>
+            {% if member.id == shift.id %}
+              <span class="fw-semibold">{{ member.title }}</span>
+            {% else %}
+              <a href="{{ path('app_manage_shift_needs', {id: member.uuid}) }}">{{ member.title }}</a>
+            {% endif %}
+            <span class="text-muted small">{{ member.startsAt|app_datetime }} - {{ member.endsAt|app_time }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
   <h2 class="h5">{{ 'manage.shift.staffing.coverage'|trans }}</h2>
   {% if availability is empty %}
     {{ d.empty_inline('manage.shift.staffing.no_requirements'|trans, {class: 'text-muted'}) }}
@@ -80,7 +99,17 @@
       <tbody>
         {% for entry in entries %}
           <tr class="{{ entry.noshow ? 'table-danger' : '' }}">
-            <td>{{ entry.user.name }}</td>
+            <td>
+              {{ entry.user.name }}
+              {% if partialHeld[entry.id] is defined %}
+                {# Somebody on part of a grouped commitment: either a manager split it deliberately or
+                   they were assigned before the group existed. Either way the manager should see it. #}
+                <div class="mt-1">{{ d.badge(
+                  'manage.shift.staffing.group.partial'|trans({'%held%': partialHeld[entry.id], '%total%': groupMembers|length}),
+                  'text-bg-warning'
+                ) }}</div>
+              {% endif %}
+            </td>
             <td>{{ entry.volunteerType.name }}</td>
             <td>{% if entry.noshow %}{{ d.badge('common.state.no_show'|trans, 'text-bg-danger') }}{% else %}-{% endif %}</td>
             <td class="text-end text-nowrap">
@@ -91,10 +120,23 @@
                 </button>
               </form>
               <form method="post" action="{{ path('app_manage_shift_entry_unassign', {id: entry.uuid}) }}" class="d-inline"
-                    data-controller="confirm" data-confirm-message-value="{{ 'manage.shift.staffing.confirm_unassign'|trans({'%name%': entry.user.name}) }}">
+                    data-controller="confirm"
+                    data-confirm-message-value="{{ groupMembers|length > 1
+                      ? 'manage.shift.staffing.group.confirm_unassign'|trans({'%name%': entry.user.name, '%count%': groupMembers|length})
+                      : 'manage.shift.staffing.confirm_unassign'|trans({'%name%': entry.user.name}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('unassign' ~ entry.id) }}">
                 <button class="btn btn-sm btn-outline-secondary">{{ 'manage.shift.staffing.unassign'|trans }}</button>
               </form>
+              {% if groupMembers|length > 1 %}
+                {# Breaking the group is a deliberate act, so it is its own button and it is audited. #}
+                <form method="post" action="{{ path('app_manage_shift_entry_unassign', {id: entry.uuid}) }}" class="d-inline"
+                      data-controller="confirm"
+                      data-confirm-message-value="{{ 'manage.shift.staffing.group.confirm_split_unassign'|trans({'%name%': entry.user.name}) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('unassign' ~ entry.id) }}">
+                  <input type="hidden" name="group_split" value="1">
+                  <button class="btn btn-sm btn-outline-warning">{{ 'manage.shift.staffing.group.this_shift_only'|trans }}</button>
+                </form>
+              {% endif %}
             </td>
           </tr>
         {% endfor %}
@@ -123,5 +165,15 @@
       <label class="form-label d-none d-md-block">&nbsp;</label>
       <button class="btn btn-primary w-100">{{ 'manage.shift.staffing.assign'|trans }}</button>
     </div>
+    {% if groupMembers|length > 1 %}
+      {# Assigning puts the volunteer on every member. Splitting the group is possible, deliberate and
+         audited. #}
+      <div class="col-12">
+        <label class="form-check">
+          <input type="checkbox" class="form-check-input" name="group_split" value="1">
+          <span class="form-check-label">{{ 'manage.shift.staffing.group.assign_split'|trans({'%count%': groupMembers|length}) }}</span>
+        </label>
+      </div>
+    {% endif %}
   </form>
 {% endblock %}

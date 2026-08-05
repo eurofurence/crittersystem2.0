@@ -29,14 +29,24 @@
         {% for entry in entries %}
           {% set shift = entry.shift %}
           <tr class="{{ entry.noshow ? 'table-danger' : (shift.past ? 'opacity-75' : '') }}">
-            <td><a href="{{ path('app_shift_show', {id: shift.uuid}) }}">{{ shift.title }}</a></td>
-            <td class="small">{{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}</td>
+            <td>
+              <a href="{{ path('app_shift_show', {id: shift.uuid}) }}">{{ shift.title }}</a>
+              {% if shift.grouped %}
+                {# The commitment is the group, not this row: cancelling any of them cancels all. #}
+                <div class="mt-1">{{ d.badge('shift.group.badge'|trans({'%name%': shift.shiftGroup.name, '%count%': shift.shiftGroup.shifts|length}), 'text-bg-info') }}</div>
+              {% endif %}
+            </td>
+            <td class="small">{{ shift.startsAt|app_datetime }} - {{ shift.endsAt|app_time }}</td>
             <td>{{ entry.volunteerType.name }}{% if entry.noshow %} {{ d.badge('common.state.no_show'|trans, 'text-bg-danger') }}{% endif %}</td>
             <td>{{ perEntryHours[entry.id]|round(2) }}</td>
             <td class="text-end">
               {% if not shift.past %}
                 <form method="post" action="{{ path('app_shift_cancel', {id: entry.uuid}) }}" class="d-inline"
-                      data-controller="confirm" data-confirm-message-value="{{ 'shift.confirm.cancel_this_signup'|trans }}">
+                      {% if shift.grouped %}
+                        {{ include('shift/_group_attrs.html.twig', {shift: shift, count: shift.shiftGroup.shifts|length, mode: 'cancel'}) }}
+                      {% else %}
+                        data-controller="confirm" data-confirm-message-value="{{ 'shift.confirm.cancel_this_signup'|trans }}"
+                      {% endif %}>
                   <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ entry.id) }}">
                   <button class="btn btn-sm btn-outline-danger">{{ 'common.action.cancel'|trans }}</button>
                 </form>

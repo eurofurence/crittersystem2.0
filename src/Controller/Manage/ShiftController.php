@@ -8,6 +8,8 @@ use App\Form\ShiftFormType;
 use App\Repository\ShiftRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
@@ -15,6 +17,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Translation\TranslatableMessage;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Shift CRUD.
@@ -32,6 +35,7 @@ final class ShiftController extends AbstractController
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ShiftRepository $shifts,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -56,7 +60,7 @@ final class ShiftController extends AbstractController
         $form = $this->createForm(ShiftFormType::class, $shift);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid() && $this->groupDepartmentMatches($form, $shift)) {
             /** @var User $user */
             $user = $this->getUser();
             $shift->setCreatedBy($user)->setUpdatedBy($user);
@@ -81,7 +85,7 @@ final class ShiftController extends AbstractController
         $form = $this->createForm(ShiftFormType::class, $shift);
         $form->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
+        if ($form->isSubmitted() && $form->isValid() && $this->groupDepartmentMatches($form, $shift)) {
             /** @var User $user */
             $user = $this->getUser();
             $shift->setUpdatedBy($user);
@@ -110,5 +114,26 @@ final class ShiftController extends AbstractController
         }
 
         return $this->redirectToRoute('app_manage_shift_index');
+    }
+
+    /**
+     * A shift group and its members share one owning department.
+     *
+     * `shift:manage` is scoped by department, so a group whose members sit in different departments
+     * would have no authoritative department to check against and the scope check would pass for
+     * anyone. Reported on the field rather than thrown, because it is an ordinary mistake.
+     */
+    private function groupDepartmentMatches(FormInterface $form, Shift $shift): bool
+    {
+        $group = $shift->getShiftGroup();
+        if ($group === null || $group->getDepartment() === $shift->getDepartment()) {
+            return true;
+        }
+
+        $form->get('shiftGroup')->addError(new FormError(
+            $this->translator->trans('manage.shift.error.group_other_department', ['%name%' => $group->getDepartment()->getName()]),
+        ));
+
+        return false;
     }
 }

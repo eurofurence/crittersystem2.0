@@ -47,6 +47,45 @@
         <small class="text-secondary">{{ 'planner.panel.batch.task_help'|trans }}</small>
       </div>
 
+      {# Shift group. Assigning here puts every selected shift into the group, so a volunteer taking
+         one takes all of them. The + creates a group AND puts the selection in it straight away;
+         the fields above still need Apply, which the help text says. #}
+      <div class="mb-2"
+           data-controller="shift-group-create"
+           data-shift-group-create-url-value="{{ path('app_manage_shifts_planner_group_create') }}"
+           data-shift-group-create-department-value="{{ department.uuid }}"
+           data-shift-group-create-token-value="{{ csrf_token('planner_edit') }}"
+           data-shift-group-create-blank-message-value="{{ 'planner.batch.group.blank'|trans }}"
+           data-shift-group-create-failed-message-value="{{ 'planner.batch.group.failed'|trans }}">
+        <label class="form-label" for="batch-shift-group">{{ 'planner.batch.group.label'|trans }}</label>
+        <div class="d-flex align-items-center gap-1">
+          <select class="form-select" id="batch-shift-group" name="shift_group"
+                  data-shift-group-create-target="select">
+            <option value="">{{ 'planner.batch.group.unchanged'|trans }}</option>
+            <option value="none">{{ 'planner.batch.group.remove'|trans }}</option>
+            {% for group in shiftGroups ?? [] %}
+              <option value="{{ group.id }}">{{ group.name }}</option>
+            {% endfor %}
+          </select>
+          <button type="button" class="btn btn-outline-secondary" data-action="shift-group-create#open"
+                  title="{{ 'planner.batch.group.new_aria'|trans }}" aria-label="{{ 'planner.batch.group.new_aria'|trans }}">+</button>
+        </div>
+        <small class="text-secondary">{{ 'planner.batch.group.help'|trans }}</small>
+
+        <div class="mt-2" data-shift-group-create-target="panel" hidden>
+          <div class="input-group input-group-sm">
+            <input type="text" class="form-control" data-shift-group-create-target="name"
+                   data-action="keydown->shift-group-create#keydown"
+                   placeholder="{{ 'planner.batch.group.new_placeholder'|trans }}"
+                   aria-label="{{ 'planner.batch.group.new_aria'|trans }}">
+            <button type="button" class="btn btn-primary" data-action="shift-group-create#create">{{ 'planner.batch.group.new_submit'|trans }}</button>
+            <button type="button" class="btn btn-outline-secondary" data-action="shift-group-create#close">{{ 'common.action.cancel'|trans }}</button>
+          </div>
+          <div class="form-text">{{ 'planner.batch.group.new_help'|trans }}</div>
+          <div class="invalid-feedback d-block" data-shift-group-create-target="error" hidden></div>
+        </div>
+      </div>
+
       <fieldset class="mb-2">
         <legend class="form-label">{{ 'planner.field.needed_single'|trans }}</legend>
         <div class="d-flex gap-2">

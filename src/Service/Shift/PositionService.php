@@ -273,7 +273,7 @@ final class PositionService
         $shift = $shiftPosition->getShift();
         $entry = $this->entries->findOneByShiftAndUser($shift, $user);
         if ($entry === null) {
-            $type = $fallbackType ?? $this->entryTypeFor($shiftPosition, $user);
+            $type = $fallbackType ?? $this->resolveEntryType($shiftPosition, $user);
             if (!$type instanceof VolunteerType) {
                 throw new \RuntimeException('No volunteer type is available to record this assignment. Give the position a required volunteer type, or confirm the volunteer in one.');
             }
@@ -285,8 +285,13 @@ final class PositionService
         return $this->assign($shiftPosition, $entry);
     }
 
-    /** The Volunteer Type a new shift entry is recorded under; null when none can be resolved. */
-    private function entryTypeFor(ShiftPosition $shiftPosition, User $user): ?VolunteerType
+    /**
+     * The Volunteer Type a new shift entry is recorded under; null when none can be resolved.
+     *
+     * Public because the manager assignment path resolves the role before creating the entry, so
+     * that a grouped shift records the same role on every member.
+     */
+    public function resolveEntryType(ShiftPosition $shiftPosition, User $user): ?VolunteerType
     {
         $required = $shiftPosition->getNamedPosition()->getRequiredVolunteerTypes()->first();
         if ($required instanceof VolunteerType) {

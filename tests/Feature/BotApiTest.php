@@ -520,4 +520,101 @@ final class BotApiTest extends DatabaseWebTestCase
         self::assertArrayHasKey('goodies', $this->json());
         self::assertSame(0, $this->json()['no_show_count']);
     }
+
+    // --- shift groups ---------------------------------------------------
+
+    /** @param Shift[] $shifts */
+    private function groupShifts(array $shifts): \App\Entity\ShiftGroup
+    {
+        $group = new \App\Entity\ShiftGroup($this->scenario->department, 'Main Show');
+        $this->em->persist($group);
+        foreach ($shifts as $shift) {
+            $group->addShift($shift);
+        }
+        $this->em->flush();
+
+        return $group;
+    }
+
+    public function testGroupedShiftCarriesItsSiblings(): void
+    {
+        $rehearsal = $this->scenario->shift('Rehearsal', 'tomorrow 12:00');
+        $show = $this->scenario->shift('Main event', '+2 days 09:00');
+        $this->groupShifts([$rehearsal, $show]);
+
+        $this->request('GET', '/api/bot/shifts/'.$show->getUuid(), $this->scenario->user());
+
+        self::assertResponseIsSuccessful();
+        self::assertNotNull($this->json()['group']);
+        self::assertCount(2, $this->json()['group']['shifts']);
+    }
+
+    public function testUngroupedShiftReportsNoGroup(): void
+    {
+        $shift = $this->scenario->shift('Standalone');
+
+        $this->request('GET', '/api/bot/shifts/'.$shift->getUuid(), $this->scenario->user());
+
+        self::assertResponseIsSuccessful();
+        self::assertNull($this->json()['group']);
+    }
+
+    /**
+     * The volunteer has to be shown every shift before the bot commits them to it, so an
+     * unconfirmed grouped application is refused rather than silently signing them up for more
+     * than they asked about.
+     */
+    public function testGroupedApplyWithoutConfirmationIsRefused(): void
+    {
+        $rehearsal = $this->scenario->shift('Rehearsal', 'tomorrow 12:00');
+        $show = $this->scenario->shift('Main event', '+2 days 09:00');
+        $this->groupShifts([$rehearsal, $show]);
+        $user = $this->scenario->user(['shift:view', 'shift:apply', 'shift:self'], $this->scenario->type);
+
+        $this->request('POST', '/api/bot/shifts/'.$show->getUuid().'/apply', $user);
+
+        self::assertSame(409, $this->client->getResponse()->getStatusCode());
+        self::assertSame('group_confirmation_required', $this->json()['error']);
+        self::assertCount(2, $this->json()['group']['shifts']);
+        self::assertSame(0, $this->em->getRepository(\App\Entity\ShiftEntry::class)->count(['user' => $user->getId()]));
+    }
+
+    public function testConfirmedGroupedApplyCreatesEveryEntry(): void
+    {
+        $rehearsal = $this->scenario->shift('Rehearsal', 'tomorrow 12:00');
+        $show = $this->scenario->shift('Main event', '+2 days 09:00');
+        $this->groupShifts([$rehearsal, $show]);
+        $user = $this->scenario->user(['shift:view', 'shift:apply', 'shift:self'], $this->scenario->type);
+
+        $this->request('POST', '/api/bot/shifts/'.$show->getUuid().'/apply', $user, self::TOKEN, ['confirm_group' => true]);
+
+        self::assertSame(201, $this->client->getResponse()->getStatusCode());
+        self::assertSame((string) $show->getUuid(), $this->json()['shift_id'], 'The requested shift stays at the top level.');
+        self::assertCount(2, $this->json()['group_entries']);
+
+        $this->request('POST', '/api/bot/shifts/'.$show->getUuid().'/cancel', $user);
+        self::assertSame(200, $this->client->getResponse()->getStatusCode());
+        self::assertCount(2, $this->json()['cancelled']);
+        self::assertSame(0, $this->em->getRepository(\App\Entity\ShiftEntry::class)->count(['user' => $user->getId()]));
+    }
+
+    /**
+     * A group holding a shift this volunteer cannot see is not applicable, and the payload must not
+     * describe or even acknowledge the hidden member.
+     */
+    public function testGroupWithAnInvisibleMemberIsHiddenEntirely(): void
+    {
+        $show = $this->scenario->shift('Main event', '+2 days 09:00');
+        $secret = $this->scenario->shift('Secret briefing', 'tomorrow 12:00');
+        $secret->setAudience(\App\Enum\ShiftAudience::ALL_STAFF);
+        $this->em->flush();
+        $this->groupShifts([$secret, $show]);
+
+        $user = $this->scenario->user(['shift:view', 'shift:apply', 'shift:self'], $this->scenario->type);
+        $this->request('GET', '/api/bot/shifts/'.$show->getUuid(), $user);
+
+        self::assertResponseIsSuccessful();
+        self::assertNull($this->json()['group']);
+        self::assertStringNotContainsString('Secret briefing', (string) $this->client->getResponse()->getContent());
+    }
 }

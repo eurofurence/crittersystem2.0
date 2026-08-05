@@ -163,6 +163,11 @@ final class PlannerDraftStore
         if (\array_key_exists('task', $fields)) {
             $shift->setShiftTask($fields['task']);
         }
+        // Present-but-null takes the shift out of its group; absent leaves it where it is. The caller
+        // is responsible for having checked that the group and the shift share a department.
+        if (\array_key_exists('shiftGroup', $fields)) {
+            $shift->setShiftGroup($fields['shiftGroup']);
+        }
         if (isset($fields['audience'])) {
             $shift->setAudience($fields['audience']);
         }

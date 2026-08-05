@@ -47,7 +47,10 @@ final class CallController extends AbstractController
             return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
         }
 
-        $slots = max(1, $request->request->getInt('slots', 1));
+        // Cast, not getInt(): the slots box carries a value but is not required, so clearing it posts
+        // an empty string. getInt() rejects that as malformed instead of falling back to the 1 this
+        // line already intends. See docs/tasks/input-bag-empty-value-audit.md.
+        $slots = max(1, (int) $request->request->get('slots', 1));
         $this->calls->trigger($shift, $me, $slots);
         $this->addFlash('success', new TranslatableMessage('call.flash.sent'));
 

@@ -6,224 +6,165 @@ use App\Entity\Shift;
 use App\Entity\ShiftEntry;
 use App\Entity\User;
 use App\Entity\VolunteerType;
-use App\Mercure\ShiftSignal;
-use App\Repository\NeededVolunteerTypeRepository;
-use App\Repository\ShiftEntryRepository;
-use App\Exception\CapacityConflictException;
-use App\Repository\UserVolunteerTypeRepository;
-use App\Service\Shift\CheckInPolicy;
-use App\Service\Shift\ShiftConcurrency;
-use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\Shift\GroupSignupPlan;
+use App\Service\Shift\ShiftEligibility;
+use App\Service\Shift\ShiftGroupResolver;
+use App\Service\Shift\ShiftGroupSignupService;
 
 /**
- * Encapsulates the sign-up and cancellation rules.
+ * The sign-up and cancellation entry point for every volunteer-facing surface: the shift browser,
+ * the staff apply screen and the Telegram bot.
  *
- * Certification requirements are NOT enforced on sign-up; {@see signUpError()}
- * marks the hook where that check belongs.
+ * Shifts can be grouped, and a grouped shift is applied to and cancelled as a whole. That is
+ * enforced here rather than in the callers, so a new surface cannot reach the single-shift behaviour
+ * by accident: {@see signUp()} and {@see cancel()} always run the group path, which treats an
+ * ungrouped shift as a group of one.
+ *
+ * The per-shift rules live in {@see ShiftEligibility}; the group writes in
+ * {@see ShiftGroupSignupService}.
  */
 final class ShiftSignupService
 {
-    private const KEY_LAST_UNSUBSCRIBE = 'event.last_unsubscribe';
-
     public function __construct(
-        private readonly EntityManagerInterface $em,
-        private readonly ShiftEntryRepository $entries,
-        private readonly UserVolunteerTypeRepository $memberships,
-        private readonly NeededVolunteerTypeRepository $needed,
-        private readonly EventConfigStore $config,
-        private readonly CheckInPolicy $checkIn,
-        private readonly ShiftConcurrency $concurrency,
-        private readonly ShiftSignal $live,
+        private readonly ShiftEligibility $eligibility,
+        private readonly ShiftGroupSignupService $groupSignup,
+        private readonly ShiftGroupResolver $groups,
     ) {
     }
 
     /**
-     * Per-type availability for a shift: a list of rows with the volunteer type,
-     * the effective needed count, and how many are currently assigned.
+     * Per-type availability for a shift: a list of rows with the volunteer type, the effective
+     * needed count, and how many are currently assigned.
      *
      * @return list<array{type: VolunteerType, needed: int, assigned: int}>
      */
     public function availability(Shift $shift): array
     {
-        $rows = [];
-        foreach ($this->needed->findEffectiveForShift($shift) as $need) {
-            $type = $need->getVolunteerType();
-            $rows[] = [
-                'type' => $type,
-                'needed' => $need->getCount(),
-                'assigned' => $this->entries->countForShiftAndType($shift, $type),
-            ];
-        }
-
-        return $rows;
+        return $this->eligibility->availability($shift);
     }
 
     /**
-     * Volunteer types the user may sign up as for this shift: requested by the
-     * shift, the user is a confirmed member, and there is open capacity.
+     * Volunteer types the user may sign up as for this shift.
+     *
+     * For a grouped shift these are the roles offered on the shift itself; the roles on the siblings
+     * are resolved from it (see {@see plan()}), because the volunteer picks once and commits to the
+     * whole group.
      *
      * @return array<int, VolunteerType> keyed by volunteer type id
      */
     public function signupOptions(Shift $shift, User $user): array
     {
-        if ($shift->isPast() || $this->entries->findOneByShiftAndUser($shift, $user) !== null) {
+        // A group with a member this volunteer may not see offers nothing at all, and says nothing
+        // about why.
+        if (!$this->groups->isFullyVisibleTo($shift, $user)) {
             return [];
         }
 
-        $options = [];
-        foreach ($this->availability($shift) as $row) {
-            if ($row['assigned'] < $row['needed'] && $this->memberships->isConfirmedMember($user, $row['type'])) {
-                $options[$row['type']->getId()] = $row['type'];
-            }
-        }
-
-        return $options;
+        return $this->eligibility->signupOptions($shift, $user);
     }
 
     /**
-     * The user's state for a shift, for badges/filtering:
+     * The user's state for a shift, for badges and filtering:
      * signed_up | past | full | overlap | ineligible | available.
+     *
+     * Grouped shifts report the state of the whole commitment. A shift whose sibling is full is not
+     * "available": offering it would put a button on screen that can only fail.
      */
     public function eligibilityStatus(Shift $shift, User $user): string
     {
-        if ($this->entries->findOneByShiftAndUser($shift, $user) !== null) {
-            return 'signed_up';
-        }
-        if ($shift->isPast()) {
-            return 'past';
-        }
-        if (!empty($this->signupOptions($shift, $user))) {
-            return 'available';
+        $members = $this->groups->membersFor($shift);
+        if (\count($members) === 1) {
+            return $this->eligibility->eligibilityStatus($shift, $user);
         }
 
-        $availability = $this->availability($shift);
-        $needed = array_sum(array_column($availability, 'needed'));
-        $assigned = array_sum(array_column($availability, 'assigned'));
-        if ($needed > 0 && $assigned >= $needed) {
-            return 'full';
-        }
-        if ($this->entries->hasOverlap($user, $shift->getStartsAt(), $shift->getEndsAt(), $shift)) {
-            return 'overlap';
+        if (!$this->groups->isFullyVisibleTo($shift, $user)) {
+            return 'ineligible';
         }
 
-        return 'ineligible';
+        $own = $this->eligibility->eligibilityStatus($shift, $user, $this->groups->siblingsOf($shift));
+        if ($own !== 'available') {
+            return $own;
+        }
+
+        // Ranked worst-first: the state the volunteer needs to see is the one that blocks them.
+        foreach (['past', 'full', 'overlap', 'ineligible'] as $blocking) {
+            foreach ($members as $member) {
+                if ($member === $shift) {
+                    continue;
+                }
+                $siblings = array_values(array_filter($members, static fn (Shift $m): bool => $m !== $member));
+                $state = $this->eligibility->eligibilityStatus($member, $user, $siblings);
+                if ($state === $blocking) {
+                    return $blocking;
+                }
+            }
+        }
+
+        return 'available';
     }
 
     /**
-     * First reason the user cannot sign up for this shift as this type, or null
-     * when sign-up is allowed.
+     * First reason the user cannot sign up for this shift as this type, or null when sign-up is
+     * allowed. For a grouped shift this is the first reason across the whole group.
      */
     public function signUpError(User $user, Shift $shift, VolunteerType $type): ?string
     {
-        if ($shift->isPast()) {
-            return 'This shift has already ended.';
-        }
-
-        if ($this->entries->findOneByShiftAndUser($shift, $user) !== null) {
-            return 'You are already signed up for this shift.';
-        }
-
-        if ($this->entries->hasOverlap($user, $shift->getStartsAt(), $shift->getEndsAt(), $shift)) {
-            return 'You are already booked for an overlapping shift.';
-        }
-
-        // Event-phase check-in gate: main-event shifts and shifts with
-        // the per-shift override require the applicant to be checked in.
-        if (($checkInError = $this->checkIn->checkInError($shift, $user)) !== null) {
-            return $checkInError;
-        }
-
-        if (!$this->memberships->isConfirmedMember($user, $type)) {
-            return 'You are not a confirmed member of this volunteer type.';
-        }
-
-        // TODO: reject sign-up when the user lacks a certification the volunteer
-        // type requires. Certifications are recorded but not enforced here.
-
-        $need = $this->needed->findEffectiveForShift($shift)[$type->getId()] ?? null;
-        if ($need === null) {
-            return 'This role is not requested for this shift.';
-        }
-        if ($this->entries->countForShiftAndType($shift, $type) >= $need->getCount()) {
-            return 'This role is already fully staffed.';
-        }
-
-        return null;
+        return $this->plan($user, $shift, $type)->error;
     }
 
     /**
-     * Sign the user up, guarding against the last-slot race: the shift
-     * is write-locked so eligibility (which includes capacity) is re-checked
-     * against a stable view, and the unique (shift,user) constraint is the final
-     * backstop against a duplicate entry slipping through.
+     * What applying would actually commit the volunteer to: every member shift, the role on each,
+     * the added hours, and anything that blocks it. Read by the confirmation modal, the bot and the
+     * submit handlers so all three agree.
+     *
+     * @param array<string, int> $typeChoices member shift uuid => volunteer type id
      */
-    public function signUp(User $user, Shift $shift, VolunteerType $type, ?string $comment = null): ShiftEntry
+    public function plan(User $user, Shift $shift, ?VolunteerType $type, array $typeChoices = []): GroupSignupPlan
     {
-        // Pre-check outside the transaction for a fast, friendly error.
-        $error = $this->signUpError($user, $shift, $type);
-        if ($error !== null) {
-            throw new \RuntimeException($error);
-        }
+        return $this->groupSignup->plan($user, $shift, $type, $typeChoices);
+    }
 
-        try {
-            return $this->concurrency->transactional(function () use ($user, $shift, $type, $comment): ShiftEntry {
-                $this->concurrency->lockForUpdate($shift);
+    /**
+     * Sign the user up. A grouped shift signs them up for every member of the group, or for none.
+     *
+     * @param array<string, int> $typeChoices member shift uuid => volunteer type id
+     *
+     * @return ShiftEntry the entry on the shift that was applied to
+     */
+    public function signUp(
+        User $user,
+        Shift $shift,
+        VolunteerType $type,
+        ?string $comment = null,
+        array $typeChoices = [],
+        bool $acknowledgeHours = false,
+    ): ShiftEntry {
+        $created = $this->groupSignup->signUpGroup($user, $shift, $type, $typeChoices, $comment, $acknowledgeHours);
 
-                // Re-check under the lock: capacity/overlap may have changed.
-                $error = $this->signUpError($user, $shift, $type);
-                if ($error !== null) {
-                    throw new CapacityConflictException($error);
-                }
-
-                $entry = new ShiftEntry($shift, $type, $user);
-                $entry->setUserComment($comment);
-                $this->em->persist($entry);
-                $this->em->flush();
-
-                $this->live->staffingChanged($shift, $user);
-
+        foreach ($created as $entry) {
+            if ($entry->getShift() === $shift) {
                 return $entry;
-            });
-        } catch (UniqueConstraintViolationException) {
-            throw new CapacityConflictException('You are already signed up for this shift.');
+            }
         }
+
+        // Every member already held an entry except the siblings; the caller asked about this shift,
+        // so hand back whatever exists for it rather than inventing one.
+        return $created[0] ?? throw new \RuntimeException('You are already signed up for this shift.');
     }
 
     /**
      * Reason the entry cannot be cancelled by this actor, or null when allowed.
-     * Managers may always cancel; volunteers only outside the unsubscribe window.
+     * Managers may always cancel; volunteers only outside the unsubscribe window, and a grouped
+     * commitment only while every member is still cancellable.
      */
     public function cancelError(ShiftEntry $entry, bool $isManager): ?string
     {
-        if ($isManager) {
-            return null;
-        }
-
-        $shift = $entry->getShift();
-        if ($shift->isPast()) {
-            return 'This shift has already ended.';
-        }
-
-        $windowHours = (int) $this->config->get(self::KEY_LAST_UNSUBSCRIBE, 0);
-        if ($windowHours > 0) {
-            $deadline = $shift->getStartsAt()->modify(\sprintf('-%d hours', $windowHours));
-            if (new \DateTimeImmutable() > $deadline) {
-                return \sprintf('Cancellation closed %d hour(s) before the shift starts.', $windowHours);
-            }
-        }
-
-        return null;
+        return $this->groupSignup->cancelGroupError($entry, $isManager);
     }
 
+    /** Cancel the sign-up. A grouped shift cancels every member entry the user holds. */
     public function cancel(ShiftEntry $entry): void
     {
-        $shift = $entry->getShift();
-        $user = $entry->getUser();
-
-        $this->em->remove($entry);
-        $this->em->flush();
-
-        $this->live->staffingChanged($shift, $user);
+        $this->groupSignup->cancelGroup($entry);
     }
 }

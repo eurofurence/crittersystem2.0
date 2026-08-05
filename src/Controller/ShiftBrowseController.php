@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Shift;
 use App\Entity\ShiftEntry;
 use App\Entity\User;
+use App\Exception\CapacityConflictException;
 use App\Repository\LocationRepository;
 use App\Repository\ShiftEntryRepository;
 use App\Repository\ShiftRepository;
@@ -12,6 +13,8 @@ use App\Repository\ShiftTaskRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Service\DisplaySettings;
 use App\Service\HoursCalculator;
+use App\Service\Shift\ShiftGroupResolver;
+use App\Service\Shift\ShiftGroupSignupService;
 use App\Service\Shift\ShiftVisibilityResolver;
 use App\Service\ShiftSignupService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,6 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Translation\TranslatableMessage;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Volunteer-facing shift browsing (filterable list, grouped by hour), sign-up/
@@ -34,8 +38,10 @@ final class ShiftBrowseController extends AbstractController
         private readonly ShiftEntryRepository $entries,
         private readonly UserVolunteerTypeRepository $memberships,
         private readonly ShiftSignupService $signup,
+        private readonly ShiftGroupSignupService $groupSignup,
         private readonly HoursCalculator $hours,
         private readonly ShiftVisibilityResolver $visibility,
+        private readonly ShiftGroupResolver $groups,
         private readonly DisplaySettings $display,
     ) {
     }
@@ -75,6 +81,9 @@ final class ShiftBrowseController extends AbstractController
                 'status' => $status,
                 'options' => $this->signup->signupOptions($shift, $user),
                 'myEntry' => $this->entries->findOneByShiftAndUser($shift, $user),
+                // Only counted, not described: the card shows "part of N shifts" and the modal
+                // fetches the detail, which is where the visibility filter runs.
+                'groupSize' => \count($this->groups->membersFor($shift)),
             ];
         }
 
@@ -112,6 +121,9 @@ final class ShiftBrowseController extends AbstractController
             'availability' => $this->signup->availability($shift),
             'myEntry' => $this->entries->findOneByShiftAndUser($shift, $user),
             'signupOptions' => $this->signup->signupOptions($shift, $user),
+            // Siblings the viewer may see. A member they may not see is absent, and the plan behind
+            // the modal refuses the whole group without naming it.
+            'groupSiblings' => $this->groups->isFullyVisibleTo($shift, $user) ? $this->groups->siblingsOf($shift) : [],
         ]);
     }
 
@@ -133,17 +145,57 @@ final class ShiftBrowseController extends AbstractController
             if ($type === null) {
                 $this->addFlash('danger', new TranslatableMessage('shift.flash.choose_type'));
             } else {
-                $error = $this->signup->signUpError($user, $shift, $type);
-                if ($error !== null) {
-                    $this->addFlash('danger', $error);
-                } else {
-                    $this->signup->signUp($user, $shift, $type, (string) $request->request->get('comment') ?: null);
-                    $this->addFlash('success', new TranslatableMessage('shift.flash.signed_up', ['%name%' => $type->getName()]));
+                try {
+                    $created = $this->groupSignup->signUpGroup(
+                        $user,
+                        $shift,
+                        $type,
+                        $this->typeChoices($request),
+                        (string) $request->request->get('comment') ?: null,
+                        $request->request->getBoolean('acknowledge_hours'),
+                    );
+                    $this->addFlash('success', \count($created) > 1
+                        ? new TranslatableMessage('shift.flash.signed_up_group', ['%count%' => \count($created)])
+                        : new TranslatableMessage('shift.flash.signed_up', ['%name%' => $type->getName()]));
+                } catch (CapacityConflictException $e) {
+                    // The group filled up between rendering the modal and submitting it.
+                    $this->addFlash('warning', $e->getMessage());
+                } catch (\RuntimeException $e) {
+                    $this->addFlash('danger', $e->getMessage());
                 }
             }
         }
 
         return $this->redirectToRefererOrShift($request, $shift);
+    }
+
+    /**
+     * The confirmation body for a grouped shift: every member, the role on each, the capacity and the
+     * hours the whole thing adds.
+     *
+     * Rendered here rather than built in the browser from a data attribute. Capacity and eligibility
+     * are per viewer and move between the page render and the click, and the visibility filter has to
+     * run on the server - a stale attribute could show a full shift as open, or carry a member this
+     * viewer may not see.
+     */
+    #[IsGranted('shift:view')]
+    #[Route('/shifts/{id}/group', name: 'app_shift_group_modal', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function groupModal(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$this->visibility->isVisibleTo($shift, $user)) {
+            throw $this->createNotFoundException();
+        }
+
+        $options = $this->signup->signupOptions($shift, $user);
+        $typeId = (int) $request->query->get('volunteer_type');
+
+        return $this->render('shift/_group_modal.html.twig', [
+            'plan' => $this->signup->plan($user, $shift, $options[$typeId] ?? null),
+            'mode' => $request->query->get('mode') === 'cancel' ? 'cancel' : 'apply',
+        ]);
     }
 
     #[IsGranted('shift:self')]
@@ -188,6 +240,27 @@ final class ShiftBrowseController extends AbstractController
         }
 
         return $this->redirectToRefererOrShift($request, $entry->getShift());
+    }
+
+    /**
+     * Per-member role choices from the confirmation modal, as member shift uuid => volunteer type id.
+     *
+     * Only the shape is validated here. Which roles a volunteer may actually take on each member is
+     * decided by the sign-up service against the live data, never by what the form posted.
+     *
+     * @return array<string, int>
+     */
+    private function typeChoices(Request $request): array
+    {
+        $raw = $request->request->all('group_type');
+        $choices = [];
+        foreach ($raw as $uuid => $typeId) {
+            if (\is_string($uuid) && Uuid::isValid($uuid) && (int) $typeId > 0) {
+                $choices[$uuid] = (int) $typeId;
+            }
+        }
+
+        return $choices;
     }
 
     /**

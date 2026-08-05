@@ -109,7 +109,7 @@ final class AvailabilityService
      *
      * @return list<array{0: \DateTimeImmutable, 1: \DateTimeImmutable}>
      */
-    public function consumedIntervals(User $user, ?\App\Entity\Shift $exclude = null): array
+    public function consumedIntervals(User $user, ?\App\Entity\Shift $exclude = null, array $alsoExclude = []): array
     {
         $intervals = [];
         foreach ($this->entries->findByUserOrdered($user) as $entry) {
@@ -118,6 +118,9 @@ final class AvailabilityService
             }
             $shift = $entry->getShift();
             if ($exclude !== null && $shift === $exclude) {
+                continue;
+            }
+            if (\in_array($shift, $alsoExclude, true)) {
                 continue;
             }
             $intervals[] = [$shift->getStartsAt(), $shift->getEndsAt()];
@@ -132,11 +135,16 @@ final class AvailabilityService
      * assignment is `occupied`. Otherwise the value is the least-willing declared
      * value overlapping the range (null when nothing is declared).
      *
+     * @param \App\Entity\Shift[] $alsoExclude further shifts that must not count as occupying the
+     *                                         range: the other members of the shift group being
+     *                                         assigned, which are taken together and so cannot
+     *                                         occupy each other
+     *
      * @return array{occupied: bool, value: ?AvailabilityValue}
      */
-    public function planningState(User $user, \DateTimeImmutable $start, \DateTimeImmutable $end, ?\App\Entity\Shift $exclude = null): array
+    public function planningState(User $user, \DateTimeImmutable $start, \DateTimeImmutable $end, ?\App\Entity\Shift $exclude = null, array $alsoExclude = []): array
     {
-        foreach ($this->consumedIntervals($user, $exclude) as [$cStart, $cEnd]) {
+        foreach ($this->consumedIntervals($user, $exclude, $alsoExclude) as [$cStart, $cEnd]) {
             if ($cStart < $end && $cEnd > $start) {
                 return ['occupied' => true, 'value' => null];
             }

@@ -5,9 +5,14 @@
     <div class="col-12 col-md-4">
       <div class="fw-bold">{{ shift.title }}</div>
       <div class="text-secondary small">
-        {{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}
+        {{ shift.startsAt|app_datetime }} - {{ shift.endsAt|app_time }}
         {% if shift.location %} · {{ shift.location.name }}{% endif %}
       </div>
+      {% if row.groupSize > 1 %}
+        {# Counted here, described in the dialog, which is rendered server-side and omits any member
+           this viewer may not see. #}
+        <div class="mt-1">{{ d.badge('shift.group.badge'|trans({'%name%': shift.shiftGroup.name, '%count%': row.groupSize}), 'text-bg-info') }}</div>
+      {% endif %}
     </div>
     <div class="col-6 col-md-2">
       <span class="text-secondary small">{{ 'shift_manager.apply.fill'|trans }}</span><br>
@@ -28,13 +33,21 @@
     <div class="col-6 col-md-2 text-md-end">
       {% if row.status == 'signed_up' %}
         <form method="post" action="{{ path('app_manage_shifts_apply_cancel', {id: shift.uuid}) }}"
-              data-turbo="false" data-controller="confirm" data-confirm-message-value="{{ 'shift_manager.apply.confirm_cancel'|trans }}">
+              data-turbo="false"
+              {% if row.groupSize > 1 %}
+                {{ include('shift/_group_attrs.html.twig', {shift: shift, count: row.groupSize, mode: 'cancel'}) }}
+              {% else %}
+                data-controller="confirm" data-confirm-message-value="{{ 'shift_manager.apply.confirm_cancel'|trans }}"
+              {% endif %}>
           <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ shift.id) }}">
           <button class="btn btn-sm btn-outline-danger">{{ 'common.action.cancel'|trans }}</button>
         </form>
       {% elseif row.status == 'available' %}
         <form method="post" action="{{ path('app_manage_shifts_apply_do', {id: shift.uuid}) }}" data-turbo="false"
-              class="d-flex flex-wrap gap-1 justify-content-md-end align-items-center">
+              class="d-flex flex-wrap gap-1 justify-content-md-end align-items-center"
+              {% if row.groupSize > 1 %}
+                {{ include('shift/_group_attrs.html.twig', {shift: shift, count: row.groupSize, mode: 'apply'}) }}
+              {% endif %}>
           <input type="hidden" name="_token" value="{{ csrf_token('apply' ~ shift.id) }}">
           {% if signupOptions|length > 1 %}
             <select name="volunteer_type" class="form-select form-select-sm" style="max-width: 9rem;">
@@ -42,6 +55,9 @@
             </select>
           {% endif %}
           {% if row.overHours %}
+            {# The dialog asks for this again next to the hours it is about, and its answer is
+               appended after this one so it wins. Kept here so the screen still works without
+               JavaScript, where the dialog never opens. #}
             <label class="form-check form-check-inline small text-orange mb-0">
               <input type="checkbox" class="form-check-input" name="acknowledge_hours" value="1">
               <span class="form-check-label">{{ 'shift_manager.apply.acknowledge'|trans }}</span>
