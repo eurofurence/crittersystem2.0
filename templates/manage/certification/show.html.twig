@@ -1,0 +1,173 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
+
+{% block title %}{{ certification.title }}{% endblock %}
+
+{% block body %}
+  {% set canDecide = is_granted('certification:approve') %}
+  {{ d.page_header(certification.title, {
+    subtitle: 'manage.certification.show.subtitle'|trans({'%count%': total}),
+    actions: [
+      {label: 'manage.certification.action.back'|trans, href: path('app_manage_certification_index'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.certification.action.export_csv'|trans, href: path('app_manage_certification_export', {id: certification.uuid}), class: 'btn btn-outline-secondary'},
+      {label: 'manage.certification.action.qr'|trans, href: path('app_manage_certification_qr', {id: certification.uuid}), class: 'btn btn-outline-secondary'},
+      {label: 'common.action.edit'|trans, href: path('app_manage_certification_edit', {id: certification.uuid}), class: 'btn btn-primary'}
+    ]
+  }) }}
+
+  {{ d.card_start(null, {bodyClass: 'card-body', class: 'mb-3'}) }}
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+      {% if certification.active %}{{ d.badge('common.state.active'|trans, 'text-bg-success') }}
+      {% else %}{{ d.badge('common.state.inactive'|trans, 'text-bg-secondary') }}{% endif %}
+      {% if certification.perpetual %}{{ d.badge('manage.certification.validity.never_expires'|trans, 'text-bg-secondary') }}
+      {% elseif certification.validityPeriodDays %}{{ d.badge('manage.certification.validity.days'|trans({'%count%': certification.validityPeriodDays}), 'text-bg-secondary') }}{% endif %}
+      {% if certification.allowSelfConfirmation %}{{ d.badge('manage.certification.badge.self_confirm'|trans, 'text-bg-info') }}{% endif %}
+      {% if certification.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'text-bg-warning') }}{% endif %}
+    </div>
+    {% if certification.description %}<div class="text-muted small mt-2">{{ certification.description }}</div>{% endif %}
+  {{ d.card_end() }}
+
+  {% if canDecide and counts.approved + counts.self_confirmed > 0 %}
+    {# Revoking from everyone at once. Its own card, away from the per-row actions: this is the only
+       control here that touches people nobody looked at individually. #}
+    {{ d.card_start('manage.certification.revoke_all.heading'|trans, {class: 'mb-3 border-danger'}) }}
+      <form method="post" action="{{ path('app_manage_certification_revoke_all', {id: certification.uuid}) }}"
+            class="row g-2 align-items-end"
+            data-controller="confirm"
+            data-confirm-variant-value="danger"
+            data-confirm-message-value="{{ 'manage.certification.revoke_all.confirm'|trans({
+              '%count%': counts.approved + counts.self_confirmed,
+              '%certification%': certification.title
+            }) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('cert-revoke-all' ~ certification.id) }}">
+        <div class="col-12 col-md-8">
+          <label class="form-label" for="revoke-all-reason">{{ 'manage.certification.field.reason'|trans }}</label>
+          <input type="text" class="form-control" id="revoke-all-reason" name="reason" required>
+        </div>
+        <div class="col-12 col-md-4">
+          <button class="btn btn-danger w-100">
+            {{ 'manage.certification.revoke_all.submit'|trans({'%count%': counts.approved + counts.self_confirmed}) }}
+          </button>
+        </div>
+      </form>
+    {{ d.card_end() }}
+  {% endif %}
+
+  {% if canDecide %}
+    {{ d.card_start('manage.certification.grant.heading'|trans, {class: 'mb-3'}) }}
+      {{ include('manage/certification/_grant_form.html.twig', {
+        certification: certification,
+        holder: null,
+        from: 'show'
+      }) }}
+    {{ d.card_end() }}
+  {% endif %}
+
+  <div class="row row-cards mb-3">
+    {% for status, count in counts %}
+      <div class="col-6 col-md">
+        <div class="card">
+          <div class="card-body text-center">
+            <div class="h2 mb-1">{{ count }}</div>
+            <div class="text-secondary small">{{ ('manage.certification.status.' ~ status)|trans }}</div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  {% for status, section in sections %}
+    {% set frameId = 'cert-holders-' ~ status %}
+    <div class="card mb-3">
+      <div class="card-header">
+        <h3 class="card-title">
+          {{ ('manage.certification.status.' ~ status)|trans }} <span class="text-secondary">({{ section.totalAll }})</span>
+        </h3>
+        {% if section.totalAll > 0 %}
+          <div class="card-actions">
+            {# Plain GET form so the search still works with JS disabled; with JS the debounced
+               handler swaps only this section's frame instead of reloading the page. #}
+            <form method="get" action="{{ path('app_manage_certification_show', {id: certification.uuid}) }}" role="search">
+              {% for name, value in section.formKeep %}
+                <input type="hidden" name="{{ name }}" value="{{ value }}">
+              {% endfor %}
+              {{ f.search_input(status ~ '_q', {
+                col: '',
+                id: 'search-' ~ status,
+                label: 'manage.certification.show.search.label'|trans,
+                hideLabel: true,
+                placeholder: 'manage.certification.show.search.placeholder'|trans,
+                value: section.query,
+                param: status ~ '_q',
+                resetParams: [status ~ '_page'],
+                url: path('app_manage_certification_show', {id: certification.uuid}),
+                turboFrame: frameId,
+              }) }}
+            </form>
+          </div>
+        {% endif %}
+      </div>
+      {# target="_top" so a profile link inside a row navigates the page rather than this frame,
+         which has no such frame in its response. Only the pager opts back in. #}
+      <turbo-frame id="{{ frameId }}" target="_top">
+      {% if section.items is empty %}
+        {{ d.empty_inline(
+          section.query ? 'manage.certification.show.no_matches'|trans : 'manage.certification.show.none'|trans,
+          {tag: 'div', class: 'card-body text-secondary'}
+        ) }}
+      {% else %}
+        {{ d.table_start() }}
+          <thead>
+            <tr>
+              <th>{{ 'common.label.user'|trans }}</th>
+              <th>{{ 'manage.certification.show.col.certified'|trans }}</th>
+              <th>{{ 'manage.certification.show.col.expires'|trans }}</th>
+              <th>{{ 'manage.certification.show.col.decided_by'|trans }}</th>
+              <th>{{ 'manage.certification.show.col.notes'|trans }}</th>
+              {% if canDecide %}<th class="text-end">{{ 'common.label.actions'|trans }}</th>{% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in section.items %}
+              <tr>
+                <td><a href="{{ path('app_profile_show', {id: record.user.uuid}) }}">{{ record.user|display_name }}</a></td>
+                <td class="small">{{ record.dateCertified ? record.dateCertified|app_date : '-' }}</td>
+                <td class="small">
+                  {{ record.dateExpires ? record.dateExpires|app_date : 'manage.certification.validity.never_expires'|trans }}
+                </td>
+                <td class="small">{{ record.certifiedBy ? record.certifiedBy|display_name : '-' }}</td>
+                <td class="small text-muted">
+                  {{ record.notes ?: '-' }}
+                  {% if record.decisionReason %}
+                    <div class="text-secondary">
+                      {{ 'manage.certification.show.last_decision'|trans({
+                        '%date%': record.decidedAt ? record.decidedAt|app_date : '',
+                        '%reason%': record.decisionReason
+                      }) }}
+                    </div>
+                  {% endif %}
+                </td>
+                {% if canDecide %}<td class="text-end">{{ include('manage/certification/_decide.html.twig', {record: record, from: 'show'}) }}</td>{% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        {{ d.table_end() }}
+        <div class="card-footer">
+          {{ d.pagination({
+            route: 'app_manage_certification_show',
+            routeParams: {id: certification.uuid},
+            param: status ~ '_page',
+            page: section.page,
+            pages: section.pages,
+            total: section.total,
+            perPage: section.perPage,
+            keep: section.keep,
+            frame: frameId,
+          }) }}
+        </div>
+      {% endif %}
+      </turbo-frame>
+    </div>
+  {% endfor %}
+{% endblock %}

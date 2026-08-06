@@ -1,0 +1,91 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'manage.certification.compliance.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('manage.certification.compliance.title'|trans, {
+    subtitle: 'manage.certification.compliance.subtitle'|trans,
+    actions: [
+      {label: 'manage.certification.action.back'|trans, href: path('app_manage_certification_index'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.certification.action.export_csv'|trans, href: path('app_manage_certification_compliance_export'), class: 'btn btn-outline-primary'}
+    ]
+  }) }}
+
+  {% if report is empty %}
+    {{ d.empty_state('manage.certification.compliance.empty.title'|trans, {
+      message: 'manage.certification.compliance.empty.message'|trans
+    }) }}
+  {% else %}
+    <div class="row row-cards mb-3">
+      <div class="col-6 col-md-4">
+        <div class="card"><div class="card-body text-center">
+          <div class="h2 mb-1">{{ totals.types }}</div>
+          <div class="text-secondary small">{{ 'manage.certification.compliance.stat.types'|trans }}</div>
+        </div></div>
+      </div>
+      <div class="col-6 col-md-4">
+        <div class="card"><div class="card-body text-center">
+          <div class="h2 mb-1">{{ totals.members }}</div>
+          <div class="text-secondary small">{{ 'manage.certification.compliance.stat.members'|trans }}</div>
+        </div></div>
+      </div>
+      <div class="col-12 col-md-4">
+        <div class="card {{ totals.gaps > 0 ? 'border-danger' : '' }}"><div class="card-body text-center">
+          <div class="h2 mb-1 {{ totals.gaps > 0 ? 'text-danger' : 'text-success' }}">{{ totals.gaps }}</div>
+          <div class="text-secondary small">{{ 'manage.certification.compliance.stat.gaps'|trans }}</div>
+        </div></div>
+      </div>
+    </div>
+
+    {% for entry in report %}
+      <div class="card mb-3">
+        <div class="card-header">
+          <h3 class="card-title">
+            {{ entry.type.name }}
+            <span class="text-secondary">
+              {{ 'manage.certification.compliance.of'|trans({'%compliant%': entry.compliant, '%members%': entry.members}) }}
+            </span>
+          </h3>
+        </div>
+        <div class="card-body">
+          <div class="mb-2">
+            <span class="text-secondary small">{{ 'manage.certification.compliance.requires'|trans }}</span>
+            {% for certification in entry.required %}
+              <a href="{{ path('app_manage_certification_show', {id: certification.uuid}) }}" class="ms-1">
+                {{ d.badge(certification.title, 'text-bg-secondary') }}
+              </a>
+            {% endfor %}
+          </div>
+
+          {% if entry.gaps is empty %}
+            <div class="text-success">{{ 'manage.certification.compliance.all_covered'|trans }}</div>
+          {% else %}
+            <div class="table-responsive">
+              <table class="table table-vcenter">
+                <thead>
+                  <tr>
+                    <th>{{ 'common.label.user'|trans }}</th>
+                    <th>{{ 'manage.certification.compliance.col.missing'|trans }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for gap in entry.gaps %}
+                    <tr>
+                      <td><a href="{{ path('app_profile_show', {id: gap.user.uuid}) }}">{{ gap.user|display_name }}</a></td>
+                      <td>
+                        {% for certification in gap.missing %}
+                          {{ d.badge(certification.title, 'text-bg-danger') }}
+                        {% endfor %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endblock %}

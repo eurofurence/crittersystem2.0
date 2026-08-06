@@ -34,6 +34,23 @@ class VolunteerTypeRepository extends ServiceEntityRepository
     }
 
     /**
+     * The same list with each type's required certifications hydrated, for the compliance report,
+     * which reads them on every row.
+     *
+     * @return VolunteerType[]
+     */
+    public function findAllOrderedWithCertifications(): array
+    {
+        return $this->createQueryBuilder('t')
+            ->leftJoin('t.certifications', 'c')
+            ->addSelect('c')
+            ->orderBy('t.sortOrder', 'ASC')
+            ->addOrderBy('t.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * The same list, with each type's departments already hydrated. Callers that scope types to a
      * department read `getDepartments()` on every row, which is one query per type without the join.
      *

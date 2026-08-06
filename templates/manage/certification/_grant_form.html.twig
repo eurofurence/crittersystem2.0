@@ -1,0 +1,71 @@
+{% import 'components/forms/_macros.twig' as f %}
+{# Add a certification to somebody by hand.
+   Params:
+     - certification: fixed certification, or null when it is chosen here
+     - holder:        fixed user, or null when they are picked here
+     - certifications: choices, required when certification is null
+     - from:          'show' | 'user', where to return to
+
+   One of the two sides is always fixed: the certification's page knows the certification and picks
+   the person, the user's page knows the person and picks the certification. #}
+<form method="post" action="{{ path('app_manage_certification_grant') }}" class="row g-2 align-items-end">
+  <input type="hidden" name="_token" value="{{ csrf_token('cert-grant') }}">
+  <input type="hidden" name="from" value="{{ from }}">
+
+  {% if certification %}
+    <input type="hidden" name="certification" value="{{ certification.uuid }}">
+  {% else %}
+    <div class="col-12 col-md-4">
+      <label class="form-label" for="grant-certification">{{ 'manage.certification.grant.certification'|trans }}</label>
+      <select class="form-select" id="grant-certification" name="certification" required>
+        {% for c in certifications %}
+          <option value="{{ c.uuid }}">{{ c.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  {% endif %}
+
+  {% if holder %}
+    <input type="hidden" name="user" value="{{ holder.uuid }}">
+  {% else %}
+    {{ f.user_select('user', {
+      url: path('app_manage_certification_user_search'),
+      label: 'manage.certification.grant.user_many'|trans,
+      col: 'col-12 col-md-4',
+      id: 'grant-user',
+      placeholder: 'manage.certification.grant.user_placeholder'|trans,
+    }) }}
+  {% endif %}
+
+  <div class="col-6 col-md-2">
+    <label class="form-label" for="grant-status">{{ 'common.label.status'|trans }}</label>
+    <select class="form-select" id="grant-status" name="status">
+      <option value="approved">{{ 'manage.certification.status.approved'|trans }}</option>
+      <option value="pending">{{ 'manage.certification.status.pending'|trans }}</option>
+    </select>
+  </div>
+
+  <div class="col-6 col-md-2">
+    <label class="form-label" for="grant-certified">{{ 'manage.certification.grant.certified'|trans }}</label>
+    <input type="date" class="form-control" id="grant-certified" name="date_certified">
+  </div>
+
+  <div class="col-6 col-md-2">
+    <label class="form-label" for="grant-expires">{{ 'manage.certification.grant.expires'|trans }}</label>
+    <input type="date" class="form-control" id="grant-expires" name="date_expires">
+  </div>
+
+  <div class="col-12 col-md-6">
+    <label class="form-label" for="grant-notes">{{ 'manage.certification.show.col.notes'|trans }}</label>
+    <input type="text" class="form-control" id="grant-notes" name="notes"
+           placeholder="{{ 'manage.certification.grant.notes_placeholder'|trans }}">
+  </div>
+
+  <div class="col-12 col-md-2">
+    <button class="btn btn-primary w-100">{{ 'common.action.add'|trans }}</button>
+  </div>
+
+  <div class="col-12">
+    <div class="form-text">{{ 'manage.certification.grant.help'|trans }}</div>
+  </div>
+</form>

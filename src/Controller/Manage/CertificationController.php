@@ -29,6 +29,7 @@ final class CertificationController extends AbstractController
         private readonly CertificationService $service,
         private readonly QrCodeGenerator $qr,
         private readonly UrlGeneratorInterface $urls,
+        private readonly \App\Repository\UserCertificationRepository $records,
     ) {
     }
 
@@ -63,6 +64,58 @@ final class CertificationController extends AbstractController
     {
         return $this->render('manage/certification/index.html.twig', [
             'certifications' => $this->certifications->findAllOrdered(),
+            'statistics' => $this->records->statistics(),
+        ]);
+    }
+
+    /**
+     * Who applied for this certification and who holds it, grouped by what each record counts as
+     * today.
+     *
+     * Each section owns a `<status>_q` and a `<status>_page` parameter, and carries the other
+     * sections' parameters through, so searching or paging one table leaves the rest of the page
+     * where the viewer left it. Only the known parameters are carried, so an arbitrary query string
+     * cannot be reflected back into the page's own links.
+     */
+    #[Route('/{id}', name: 'app_manage_certification_show', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function show(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
+    {
+        $grouped = $this->service->holdersByStatus($certification);
+
+        $carried = [];
+        foreach (array_keys($grouped) as $status) {
+            foreach ([$status.'_q', $status.'_page'] as $name) {
+                $value = $request->query->get($name);
+                if (\is_string($value) && $value !== '') {
+                    $carried[$name] = $value;
+                }
+            }
+        }
+
+        $sections = [];
+        $counts = [];
+        foreach ($grouped as $status => $records) {
+            $section = $this->service->paginateHolders(
+                $records,
+                (string) $request->query->get($status.'_q', ''),
+                // Cast, not getInt(): a malformed or blank page number in a hand-edited URL falls
+                // back to the first page rather than answering 400.
+                max(1, (int) $request->query->get($status.'_page', 1)),
+            );
+
+            $section['key'] = $status;
+            $section['keep'] = array_diff_key($carried, [$status.'_page' => true]);
+            $section['formKeep'] = array_diff_key($carried, [$status.'_page' => true, $status.'_q' => true]);
+
+            $sections[$status] = $section;
+            $counts[$status] = $section['totalAll'];
+        }
+
+        return $this->render('manage/certification/show.html.twig', [
+            'certification' => $certification,
+            'sections' => $sections,
+            'counts' => $counts,
+            'total' => array_sum($counts),
         ]);
     }
 

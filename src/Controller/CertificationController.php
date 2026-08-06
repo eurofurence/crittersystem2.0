@@ -83,6 +83,65 @@ final class CertificationController extends AbstractController
         return $this->redirectToRoute('app_certifications_index');
     }
 
+    /**
+     * Withdraw one's own application, while nobody has decided on it yet.
+     *
+     * Only a pending record: once a manager has decided, taking the decision off the record is not
+     * the volunteer's to do.
+     */
+    #[Route('/{id}/withdraw', name: 'app_certifications_withdraw', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
+    public function withdraw(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($this->isCsrfTokenValid('cert-withdraw'.$certification->getId(), (string) $request->request->get('_token'))) {
+            $record = $this->userCerts->findOneByUserAndCertification($user, $certification);
+            if ($record !== null && $record->isPending()) {
+                $this->service->withdraw($record, $user);
+                $this->addFlash('success', new TranslatableMessage('certification.flash.withdrawn', ['%name%' => $certification->getTitle()]));
+            } else {
+                $this->addFlash('warning', new TranslatableMessage('certification.flash.nothing_to_withdraw'));
+            }
+        }
+
+        return $this->redirectToRoute('app_certifications_index');
+    }
+
+    /**
+     * The volunteer's own certifications as a file, for handing on to whoever asks them to prove it.
+     *
+     * Their own records only - the export is built from the signed-in user, never from a parameter.
+     */
+    #[Route('/export.csv', name: 'app_certifications_export', methods: ['GET'])]
+    public function export(): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $handle = fopen('php://temp', 'r+');
+        // Escape given explicitly: PHP 8.4 deprecates leaving it to a default that is going to
+        // change, and a backslash in a note must not silently alter the next field.
+        fputcsv($handle, ['Certification', 'Status', 'Certified', 'Expires', 'Notes'], ',', '"', '');
+        foreach ($this->userCerts->findByUser($user) as $record) {
+            fputcsv($handle, [
+                $record->getCertification()->getTitle(),
+                $record->effectiveStatus(),
+                $record->getDateCertified()?->format('Y-m-d') ?? '',
+                $record->getDateExpires()?->format('Y-m-d') ?? '',
+                $record->getNotes() ?? '',
+            ], ',', '"', '');
+        }
+        rewind($handle);
+        $csv = (string) stream_get_contents($handle);
+        fclose($handle);
+
+        return new Response($csv, Response::HTTP_OK, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="my-certifications.csv"',
+        ]);
+    }
+
     #[Route('/{id}/self-confirm', name: 'app_certifications_self_confirm', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function selfConfirm(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {

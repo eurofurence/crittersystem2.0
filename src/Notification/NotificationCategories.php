@@ -18,6 +18,7 @@ final class NotificationCategories
     public const SECURITY = 'security';
     public const INFO_DESK = 'info_desk';
     public const MANAGER_ALERT = 'manager_alert';
+    public const CERTIFICATION = 'certification';
     public const GENERAL = 'general';
 
     /** @var array<string, array{0: string, 1: bool, 2: bool}> category => [label, system, inAppOnly] */
@@ -34,6 +35,10 @@ final class NotificationCategories
         // step in: a manager must be able to mute that broadcast without also
         // losing the alerts about their own shifts.
         self::MANAGER_ALERT => ['Manager alert', false, false],
+        // A decision on a certification changes what the volunteer is allowed to do, so it is
+        // delivered in-app whatever their preferences say. Somebody who never hears that theirs was
+        // revoked turns up to a shift believing they are still qualified.
+        self::CERTIFICATION => ['Certification decision', true, false],
         self::GENERAL => ['General', false, false],
     ];
 

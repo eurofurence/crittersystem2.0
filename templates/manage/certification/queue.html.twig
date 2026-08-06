@@ -1,0 +1,80 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'manage.certification.queue.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('manage.certification.queue.title'|trans, {
+    subtitle: 'manage.certification.queue.subtitle'|trans({'%count%': pending|length}),
+    actions: [
+      {label: 'manage.certification.action.back'|trans, href: path('app_manage_certification_index'), class: 'btn btn-outline-secondary'}
+    ]
+  }) }}
+
+  {% if pending is empty %}
+    {{ d.empty_state('manage.certification.queue.empty.title'|trans, {
+      message: 'manage.certification.queue.empty.message'|trans
+    }) }}
+  {% else %}
+    {# One form around the table: the checkboxes and the action bar have to submit together. #}
+    <form method="post" action="{{ path('app_manage_certification_bulk') }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('cert-bulk') }}">
+      <input type="hidden" name="from" value="queue">
+
+      <div class="card mb-2">
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+          <span class="text-secondary small">{{ 'manage.certification.bulk.help'|trans }}</span>
+          <input type="text" name="reason" class="form-control form-control-sm" style="max-width: 16rem;"
+                 placeholder="{{ 'manage.certification.field.reason'|trans }}"
+                 aria-label="{{ 'manage.certification.bulk.reason_aria'|trans }}">
+          <button class="btn btn-sm btn-success" name="action" value="approve">{{ 'manage.certification.bulk.approve'|trans }}</button>
+          <button class="btn btn-sm btn-outline-danger" name="action" value="reject">{{ 'manage.certification.bulk.reject'|trans }}</button>
+        </div>
+      </div>
+
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th class="w-1"></th>
+          <th>{{ 'common.label.user'|trans }}</th>
+          <th>{{ 'manage.certification.queue.col.certification'|trans }}</th>
+          <th>{{ 'manage.certification.queue.col.applied'|trans }}</th>
+          <th>{{ 'manage.certification.queue.col.history'|trans }}</th>
+          <th class="text-end">{{ 'common.label.actions'|trans }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in pending %}
+          <tr>
+            <td>
+              <input type="checkbox" class="form-check-input" name="records[]"
+                     value="{{ record.certification.uuid }}:{{ record.user.uuid }}"
+                     aria-label="{{ 'manage.certification.bulk.select_aria'|trans({'%name%': record.user|display_name}) }}">
+            </td>
+            <td><a href="{{ path('app_profile_show', {id: record.user.uuid}) }}">{{ record.user|display_name }}</a></td>
+            <td>
+              <a href="{{ path('app_manage_certification_show', {id: record.certification.uuid}) }}">{{ record.certification.title }}</a>
+            </td>
+            <td class="small">{{ record.createdAt|app_date }}</td>
+            <td class="small">
+              {# A record back in the queue after a refusal: the reason is shown here so the second
+                 decision is not taken on trust. #}
+              {% if record.decisionReason %}
+                <span class="text-danger">
+                  {{ 'manage.certification.queue.previously_rejected'|trans({
+                    '%date%': record.decidedAt ? record.decidedAt|app_date : '',
+                    '%reason%': record.decisionReason
+                  }) }}
+                </span>
+              {% else %}
+                <span class="text-secondary">{{ 'manage.certification.queue.first_application'|trans }}</span>
+              {% endif %}
+            </td>
+            <td class="text-end">{{ include('manage/certification/_decide.html.twig', {record: record, from: 'queue'}) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+    </form>
+  {% endif %}
+{% endblock %}

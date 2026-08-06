@@ -9,6 +9,7 @@
     'certified':      'text-bg-success',
     'pending':        'text-bg-warning',
     'self_confirmed': 'text-bg-info',
+    'rejected':       'text-bg-danger',
     'revoked':        'text-bg-danger',
     'expired':        'text-bg-secondary',
     'other':          'text-bg-secondary'
@@ -17,13 +18,15 @@
     'certified':      'certification.status.certified'|trans,
     'pending':        'certification.status.pending'|trans,
     'self_confirmed': 'certification.status.self_confirmed'|trans,
+    'rejected':       'certification.status.rejected'|trans,
     'revoked':        'certification.status.revoked'|trans,
     'expired':        'common.state.expired'|trans
   } %}
 
   {{ d.page_header('certification.page.title'|trans, {
     subtitle: 'certification.page.subtitle'|trans,
-    actions: is_granted('global:admin') ? [{label: 'certification.action.manage'|trans, href: path('app_manage_certification_index'), class: 'btn btn-outline-primary'}] : []
+    actions: (is_granted('global:admin') ? [{label: 'certification.action.manage'|trans, href: path('app_manage_certification_index'), class: 'btn btn-outline-primary'}] : [])
+      |merge([{label: 'certification.action.export'|trans, href: path('app_certifications_export'), class: 'btn btn-outline-secondary'}])
   }) }}
 
   {% if rows is empty %}
@@ -47,21 +50,37 @@
               {% set certStatus = r.valid ? 'certified'
                 : (r.status == 'pending' ? 'pending'
                 : (r.status == 'self_confirmed' ? 'self_confirmed'
+                : (r.status == 'rejected' ? 'rejected'
                 : (r.status == 'revoked' ? 'revoked'
-                : (r.expired ? 'expired' : 'other')))) %}
+                : (r.expired ? 'expired' : 'other'))))) %}
               {{ d.status_badge(certStatus, {
                 map: certStyles,
                 label: certLabels[certStatus]|default(r.status|capitalize)
               }) }}
+              {% if r.decisionReason and r.status in ['rejected', 'revoked'] %}
+                <div class="text-secondary small mt-1">{{ 'certification.field.decision_reason'|trans({'%reason%': r.decisionReason}) }}</div>
+              {% endif %}
             {% endif %}
           </div>
         {% endset %}
 
         {% set control %}
-          {% if r is null %}
+          {# A declined application may be made again, so the button comes back rather than leaving
+             the volunteer with a refusal and no way to answer it. #}
+          {% if r is null or r.status in ['rejected', 'expired'] %}
             <form method="post" action="{{ path('app_certifications_apply', {id: c.uuid}) }}" class="d-inline">
               <input type="hidden" name="_token" value="{{ csrf_token('cert-apply' ~ c.id) }}">
-              <button class="btn btn-sm btn-primary">{{ 'common.action.apply'|trans }}</button>
+              <button class="btn btn-sm btn-primary">
+                {{ r is null ? 'common.action.apply'|trans
+                  : (r.status == 'expired' ? 'certification.action.renew'|trans : 'certification.action.apply_again'|trans) }}
+              </button>
+            </form>
+          {% endif %}
+          {# While nobody has decided, the application is still the volunteer's to take back. #}
+          {% if r and r.pending %}
+            <form method="post" action="{{ path('app_certifications_withdraw', {id: c.uuid}) }}" class="d-inline">
+              <input type="hidden" name="_token" value="{{ csrf_token('cert-withdraw' ~ c.id) }}">
+              <button class="btn btn-sm btn-outline-secondary">{{ 'certification.action.withdraw'|trans }}</button>
             </form>
           {% endif %}
           {% if c.allowSelfConfirmation and (r is null or not r.valid) %}

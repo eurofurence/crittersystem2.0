@@ -4,13 +4,38 @@
 {% block title %}{{ 'manage.certification.page.title'|trans }}{% endblock %}
 
 {% block body %}
+  {% set headerActions = [{label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'}] %}
+  {% if is_granted('certification:approve') %}
+    {% set headerActions = headerActions|merge([{label: 'manage.certification.action.queue'|trans, href: path('app_manage_certification_queue'), class: 'btn btn-outline-primary'}]) %}
+  {% endif %}
+  {% set headerActions = headerActions|merge([
+    {label: 'manage.certification.action.compliance'|trans, href: path('app_manage_certification_compliance'), class: 'btn btn-outline-secondary'},
+    {label: 'manage.certification.action.new'|trans, href: path('app_manage_certification_new'), class: 'btn btn-primary'}
+  ]) %}
+
   {{ d.page_header('manage.certification.page.title'|trans, {
     subtitle: 'manage.certification.page.subtitle'|trans,
-    actions: [
-      {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
-      {label: 'manage.certification.action.new'|trans, href: path('app_manage_certification_new'), class: 'btn btn-primary'}
-    ]
+    actions: headerActions
   }) }}
+
+  <div class="row row-cards mb-3">
+    {% for key, value in {
+      'applications': statistics.applications,
+      'held': statistics.held,
+      'expiring': statistics.expiring,
+      'expired': statistics.expired,
+      'revoked': statistics.revoked
+    } %}
+      <div class="col-6 col-md">
+        <div class="card">
+          <div class="card-body text-center">
+            <div class="h2 mb-1">{{ value }}</div>
+            <div class="text-secondary small">{{ ('manage.certification.stat.' ~ key)|trans }}</div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
 
   {% if certifications is empty %}
     {{ d.empty_state('manage.certification.empty.title'|trans, {
@@ -33,7 +58,7 @@
         {% for cert in certifications %}
           <tr>
             <td>
-              <div class="fw-semibold">{{ cert.title }}</div>
+              <div class="fw-semibold"><a href="{{ path('app_manage_certification_show', {id: cert.uuid}) }}">{{ cert.title }}</a></div>
               {% if cert.description %}<div class="text-muted small">{{ cert.description }}</div>{% endif %}
             </td>
             <td class="small">
@@ -57,6 +82,8 @@
               }) }}
             {% endset %}
             {{ d.row_actions([
+              {label: 'manage.certification.action.holders'|trans, href: path('app_manage_certification_show', {id: cert.uuid}), class: 'btn btn-sm btn-outline-secondary'},
+              {label: 'manage.certification.action.export_csv'|trans, href: path('app_manage_certification_export', {id: cert.uuid}), class: 'btn btn-sm btn-outline-secondary'},
               {label: 'manage.certification.action.qr'|trans, href: path('app_manage_certification_qr', {id: cert.uuid}), class: 'btn btn-sm btn-outline-secondary'},
               {label: 'common.action.edit'|trans, href: path('app_manage_certification_edit', {id: cert.uuid})}
             ], {extraHtml: del}) }}

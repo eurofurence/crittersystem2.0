@@ -1157,6 +1157,30 @@ msgstr "Not applied"
 msgid "certification.status.pending"
 msgstr "Pending - scan the QR at the event"
 
+msgid "certification.status.rejected"
+msgstr "Not approved"
+
+msgid "certification.action.apply_again"
+msgstr "Apply again"
+
+msgid "certification.field.decision_reason"
+msgstr "Reason: %reason%"
+
+msgid "certification.action.withdraw"
+msgstr "Withdraw"
+
+msgid "certification.action.renew"
+msgstr "Renew"
+
+msgid "certification.action.export"
+msgstr "Export mine"
+
+msgid "certification.flash.withdrawn"
+msgstr "Your application for %name% was withdrawn."
+
+msgid "certification.flash.nothing_to_withdraw"
+msgstr "That application has already been decided."
+
 msgid "certification.status.revoked"
 msgstr "Revoked"
 
@@ -2032,6 +2056,261 @@ msgstr "← Back to certifications"
 
 msgid "manage.certification.action.new"
 msgstr "+ New certification"
+
+msgid "manage.certification.show.subtitle"
+msgstr "%count% records"
+
+msgid "manage.certification.action.back"
+msgstr "All certifications"
+
+msgid "manage.certification.show.search.label"
+msgstr "Search this list by username"
+
+msgid "manage.certification.show.search.placeholder"
+msgstr "Search by username…"
+
+msgid "manage.certification.show.none"
+msgstr "Nobody yet."
+
+msgid "manage.certification.show.no_matches"
+msgstr "No match in this list."
+
+msgid "manage.certification.show.col.certified"
+msgstr "Certified"
+
+msgid "manage.certification.show.col.expires"
+msgstr "Expires"
+
+msgid "manage.certification.show.col.decided_by"
+msgstr "Decided by"
+
+msgid "manage.certification.show.col.notes"
+msgstr "Notes"
+
+msgid "manage.certification.action.holders"
+msgstr "Holders"
+
+msgid "manage.certification.status.pending"
+msgstr "Applied"
+
+msgid "manage.certification.status.approved"
+msgstr "Approved"
+
+msgid "manage.certification.status.self_confirmed"
+msgstr "Self-confirmed"
+
+msgid "manage.certification.status.expired"
+msgstr "Expired"
+
+msgid "manage.certification.status.revoked"
+msgstr "Revoked"
+
+msgid "manage.certification.action.approve"
+msgstr "Approve"
+
+msgid "manage.certification.action.reinstate"
+msgstr "Reinstate"
+
+msgid "manage.certification.action.reject"
+msgstr "Decline"
+
+msgid "manage.certification.action.revoke"
+msgstr "Revoke"
+
+msgid "manage.certification.action.queue"
+msgstr "Applications"
+
+msgid "manage.certification.field.reason"
+msgstr "Reason"
+
+msgid "manage.certification.field.reason_reject_aria"
+msgstr "Reason for declining %name%"
+
+msgid "manage.certification.field.reason_revoke_aria"
+msgstr "Reason for revoking %name%"
+
+msgid "manage.certification.confirm.revoke"
+msgstr "Revoke \"%certification%\" from %name%? They are told, and stop counting as qualified."
+
+msgid "manage.certification.flash.approved"
+msgstr "%name% is now certified."
+
+msgid "manage.certification.flash.rejected"
+msgstr "The application from %name% was declined."
+
+msgid "manage.certification.flash.revoked"
+msgstr "The certification was revoked from %name%."
+
+msgid "manage.certification.flash.reason_required"
+msgstr "Give a reason: the volunteer is told what was decided."
+
+msgid "manage.certification.flash.no_record"
+msgstr "That volunteer has no record for this certification."
+
+msgid "manage.certification.show.last_decision"
+msgstr "Last decision %date%: %reason%"
+
+msgid "manage.certification.status.rejected"
+msgstr "Declined"
+
+msgid "manage.certification.queue.title"
+msgstr "Certification applications"
+
+msgid "manage.certification.queue.subtitle"
+msgstr "%count% waiting for a decision"
+
+msgid "manage.certification.queue.col.certification"
+msgstr "Certification"
+
+msgid "manage.certification.queue.col.applied"
+msgstr "Applied"
+
+msgid "manage.certification.queue.col.history"
+msgstr "History"
+
+msgid "manage.certification.queue.previously_rejected"
+msgstr "Declined once on %date%: %reason%"
+
+msgid "manage.certification.queue.first_application"
+msgstr "First application"
+
+msgid "manage.certification.queue.empty.title"
+msgstr "Nothing waiting"
+
+msgid "manage.certification.queue.empty.message"
+msgstr "Every application has been decided."
+
+msgid "manage.certification.grant.heading"
+msgstr "Add a holder"
+
+msgid "manage.certification.grant.certification"
+msgstr "Certification"
+
+msgid "manage.certification.grant.user"
+msgstr "Volunteer"
+
+msgid "manage.certification.grant.user_placeholder"
+msgstr "Search by username…"
+
+msgid "manage.certification.grant.certified"
+msgstr "Certified on"
+
+msgid "manage.certification.grant.expires"
+msgstr "Expires"
+
+msgid "manage.certification.grant.notes_placeholder"
+msgstr "e.g. paper certificate seen at the desk"
+
+msgid "manage.certification.grant.help"
+msgstr "Leave the dates empty to certify from today for the certification's own validity period. An existing record for this volunteer is replaced."
+
+msgid "manage.certification.flash.granted"
+msgstr "%certification% was added to %name%."
+
+msgid "manage.certification.flash.grant_incomplete"
+msgstr "Choose both a certification and a volunteer."
+
+msgid "manage.certification.flash.grant_bad_date"
+msgstr "That date could not be read."
+
+msgid "manage.certification.user.heading"
+msgstr "Certifications"
+
+msgid "manage.certification.user.none"
+msgstr "This volunteer holds no certifications."
+
+msgid "manage.certification.flash.granted_many"
+msgstr "%certification% was added to %count% volunteers."
+
+msgid "manage.certification.flash.bulk_applied"
+msgstr "%count% records updated."
+
+msgid "manage.certification.flash.bulk_skipped"
+msgstr "%count% were left alone: the action did not apply to them."
+
+msgid "manage.certification.flash.revoked_all"
+msgstr "Revoked from %count% holders."
+
+msgid "manage.certification.bulk.help"
+msgstr "Tick the ones to decide together:"
+
+msgid "manage.certification.bulk.approve"
+msgstr "Approve selected"
+
+msgid "manage.certification.bulk.reject"
+msgstr "Decline selected"
+
+msgid "manage.certification.bulk.reason_aria"
+msgstr "Reason, used when declining"
+
+msgid "manage.certification.bulk.select_aria"
+msgstr "Select the application from %name%"
+
+msgid "manage.certification.revoke_all.heading"
+msgstr "Revoke from everyone"
+
+msgid "manage.certification.revoke_all.submit"
+msgstr "Revoke from all %count%"
+
+msgid "manage.certification.revoke_all.confirm"
+msgstr "Revoke \"%certification%\" from all %count% current holders? Each of them is told, and none of them counts as qualified afterwards."
+
+msgid "manage.certification.grant.user_many"
+msgstr "Volunteers"
+
+msgid "manage.certification.action.export_csv"
+msgstr "Export CSV"
+
+msgid "manage.certification.action.compliance"
+msgstr "Compliance"
+
+msgid "manage.certification.stat.applications"
+msgstr "Waiting"
+
+msgid "manage.certification.stat.held"
+msgstr "Qualified now"
+
+msgid "manage.certification.stat.expiring"
+msgstr "Expiring in 30 days"
+
+msgid "manage.certification.stat.expired"
+msgstr "Expired"
+
+msgid "manage.certification.stat.revoked"
+msgstr "Revoked"
+
+msgid "manage.certification.compliance.title"
+msgstr "Certification compliance"
+
+msgid "manage.certification.compliance.subtitle"
+msgstr "Volunteers holding a role that requires a certification they do not have."
+
+msgid "manage.certification.compliance.stat.types"
+msgstr "Roles with requirements"
+
+msgid "manage.certification.compliance.stat.members"
+msgstr "Members of those roles"
+
+msgid "manage.certification.compliance.stat.gaps"
+msgstr "Volunteers short of one"
+
+msgid "manage.certification.compliance.of"
+msgstr "%compliant% of %members% covered"
+
+msgid "manage.certification.compliance.requires"
+msgstr "Requires:"
+
+msgid "manage.certification.compliance.all_covered"
+msgstr "Every member holds what this role requires."
+
+msgid "manage.certification.compliance.col.missing"
+msgstr "Missing"
+
+msgid "manage.certification.compliance.empty.title"
+msgstr "No role requires a certification"
+
+msgid "manage.certification.compliance.empty.message"
+msgstr "Link a certification to a volunteer type to see who is short of it."
 
 msgid "manage.certification.action.qr"
 msgstr "QR"

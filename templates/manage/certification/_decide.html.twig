@@ -1,0 +1,48 @@
+{# Decision buttons for one certification record.
+   Params: record, from ('show'|'queue').
+
+   Each action is its own form: declining and revoking carry a reason the volunteer is told, so the
+   field belongs to the action that uses it rather than to a shared row-level input that the wrong
+   button could pick up. #}
+{% set token = csrf_token('cert-decide' ~ record.certification.id ~ '-' ~ record.user.id) %}
+{% set status = record.effectiveStatus() %}
+{% set grantable = status in ['pending', 'rejected', 'revoked', 'expired'] %}
+
+<div class="d-flex flex-wrap gap-1 justify-content-end">
+  {% if grantable %}
+    <form method="post" action="{{ path('app_manage_certification_approve', {id: record.certification.uuid, userId: record.user.uuid}) }}">
+      <input type="hidden" name="_token" value="{{ token }}">
+      <input type="hidden" name="from" value="{{ from }}">
+      <button class="btn btn-sm btn-success">
+        {{ status == 'pending' ? 'manage.certification.action.approve'|trans : 'manage.certification.action.reinstate'|trans }}
+      </button>
+    </form>
+  {% endif %}
+
+  {% if status == 'pending' %}
+    <form method="post" action="{{ path('app_manage_certification_reject', {id: record.certification.uuid, userId: record.user.uuid}) }}"
+          class="d-flex gap-1">
+      <input type="hidden" name="_token" value="{{ token }}">
+      <input type="hidden" name="from" value="{{ from }}">
+      <input type="text" name="reason" class="form-control form-control-sm" style="max-width: 12rem;"
+             placeholder="{{ 'manage.certification.field.reason'|trans }}"
+             aria-label="{{ 'manage.certification.field.reason_reject_aria'|trans({'%name%': record.user|display_name}) }}">
+      <button class="btn btn-sm btn-outline-danger">{{ 'manage.certification.action.reject'|trans }}</button>
+    </form>
+  {% endif %}
+
+  {% if status in ['approved', 'self_confirmed'] %}
+    <form method="post" action="{{ path('app_manage_certification_revoke', {id: record.certification.uuid, userId: record.user.uuid}) }}"
+          class="d-flex gap-1"
+          data-controller="confirm"
+          data-confirm-message-value="{{ 'manage.certification.confirm.revoke'|trans({'%name%': record.user|display_name, '%certification%': record.certification.title}) }}"
+          data-confirm-variant-value="danger">
+      <input type="hidden" name="_token" value="{{ token }}">
+      <input type="hidden" name="from" value="{{ from }}">
+      <input type="text" name="reason" class="form-control form-control-sm" style="max-width: 12rem;"
+             placeholder="{{ 'manage.certification.field.reason'|trans }}"
+             aria-label="{{ 'manage.certification.field.reason_revoke_aria'|trans({'%name%': record.user|display_name}) }}">
+      <button class="btn btn-sm btn-outline-danger">{{ 'manage.certification.action.revoke'|trans }}</button>
+    </form>
+  {% endif %}
+</div>

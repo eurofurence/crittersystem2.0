@@ -49,6 +49,39 @@ class UserVolunteerTypeRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Confirmed memberships of the given types, keyed by volunteer type id, users joined.
+     *
+     * One query for the whole set: the compliance report walks every role that requires a
+     * certification, and asking per role is a query per role before a single member is read.
+     *
+     * @param VolunteerType[] $types
+     *
+     * @return array<int, list<UserVolunteerType>>
+     */
+    public function findConfirmedByTypes(array $types): array
+    {
+        if ($types === []) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('m')
+            ->join('m.user', 'u')->addSelect('u')
+            ->andWhere('m.volunteerType IN (:types)')
+            ->andWhere('m.confirmedBy IS NOT NULL')
+            ->setParameter('types', $types)
+            ->orderBy('u.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $byType = [];
+        foreach ($rows as $membership) {
+            $byType[$membership->getVolunteerType()->getId()][] = $membership;
+        }
+
+        return $byType;
+    }
+
     public function isConfirmedMember(User $user, VolunteerType $type): bool
     {
         $membership = $this->findOneByUserAndType($user, $type);

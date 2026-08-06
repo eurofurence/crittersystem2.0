@@ -16,7 +16,9 @@ use App\Form\Model\UserInviteData;
 use App\Form\UserInviteType;
 use App\Gdpr\BanChecker;
 use App\Repository\BadgeRepository;
+use App\Repository\CertificationRepository;
 use App\Repository\GroupRepository;
+use App\Repository\UserCertificationRepository;
 use App\Repository\UserRepository;
 use App\Service\InviteMailer;
 use App\Service\UsernameGenerator;
@@ -55,6 +57,8 @@ final class UserController extends AbstractController
         private readonly TwoFactorService $twoFactor,
         private readonly StepUpGuard $stepUp,
         private readonly MailerInterface $mailer,
+        private readonly UserCertificationRepository $userCertifications,
+        private readonly CertificationRepository $certifications,
     ) {
     }
 
@@ -259,10 +263,17 @@ final class UserController extends AbstractController
             return $this->redirectToRoute('app_manage_user_index');
         }
 
+        // The certification block is shown to whoever may decide on them, which is a different
+        // privilege from editing the account itself.
+        $canGrantCertifications = $this->isGranted('certification:approve');
+
         return $this->render('manage/user/edit.html.twig', [
             'user' => $user,
             'assignableGroups' => $this->assignableGroups(),
             'allBadges' => $this->badges->findAllOrdered(),
+            'canGrantCertifications' => $canGrantCertifications,
+            'certifications' => $canGrantCertifications ? $this->userCertifications->findByUser($user) : [],
+            'grantableCertifications' => $canGrantCertifications ? $this->certifications->findAllOrdered() : [],
         ]);
     }
 

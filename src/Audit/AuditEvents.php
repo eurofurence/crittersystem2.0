@@ -26,6 +26,7 @@ final class AuditEvents
     public const OPERATIONAL_STATUS = 'OPERATIONAL_STATUS';
     public const CHAT = 'CHAT';
     public const CALL = 'CALL';
+    public const CERTIFICATION = 'CERTIFICATION';
 
     // Actions
     public const LOGIN = 'LOGIN';

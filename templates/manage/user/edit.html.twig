@@ -36,6 +36,48 @@
     <div class="mt-3"><button class="btn btn-primary">{{ 'common.action.save'|trans }}</button></div>
   </form>
 
+  {% if canGrantCertifications %}
+    {{ d.card_start('manage.certification.user.heading'|trans, {class: 'mt-3'}) }}
+      {% if certifications is empty %}
+        {{ d.empty_inline('manage.certification.user.none'|trans, {tag: 'div', class: 'text-secondary mb-3'}) }}
+      {% else %}
+        <div class="table-responsive mb-3">
+          <table class="table table-vcenter">
+            <thead>
+              <tr>
+                <th>{{ 'manage.certification.queue.col.certification'|trans }}</th>
+                <th>{{ 'common.label.status'|trans }}</th>
+                <th>{{ 'manage.certification.show.col.expires'|trans }}</th>
+                <th class="text-end">{{ 'common.label.actions'|trans }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for record in certifications %}
+                <tr>
+                  <td>
+                    <a href="{{ path('app_manage_certification_show', {id: record.certification.uuid}) }}">{{ record.certification.title }}</a>
+                  </td>
+                  <td>{{ ('manage.certification.status.' ~ record.effectiveStatus())|trans }}</td>
+                  <td class="small">
+                    {{ record.dateExpires ? record.dateExpires|app_date : 'manage.certification.validity.never_expires'|trans }}
+                  </td>
+                  <td class="text-end">{{ include('manage/certification/_decide.html.twig', {record: record, from: 'show'}) }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% endif %}
+
+      {{ include('manage/certification/_grant_form.html.twig', {
+        certification: null,
+        holder: user,
+        certifications: grantableCertifications,
+        from: 'user'
+      }) }}
+    {{ d.card_end() }}
+  {% endif %}
+
   {% if is_granted('user:telegram:admin') and user.telegramLinked %}
     <hr>
     <form method="post" action="{{ path('app_manage_user_unlink_telegram', {id: user.uuid}) }}" class="mb-2"

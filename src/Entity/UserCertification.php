@@ -21,6 +21,7 @@ class UserCertification
     public const STATUS_PENDING = 'pending';
     public const STATUS_APPROVED = 'approved';
     public const STATUS_SELF_CONFIRMED = 'self_confirmed';
+    public const STATUS_REJECTED = 'rejected';
     public const STATUS_REVOKED = 'revoked';
     public const STATUS_EXPIRED = 'expired';
 
@@ -28,6 +29,7 @@ class UserCertification
         self::STATUS_PENDING,
         self::STATUS_APPROVED,
         self::STATUS_SELF_CONFIRMED,
+        self::STATUS_REJECTED,
         self::STATUS_REVOKED,
         self::STATUS_EXPIRED,
     ];
@@ -55,10 +57,35 @@ class UserCertification
     #[ORM\Column(name: 'date_expires', nullable: true)]
     private ?\DateTimeImmutable $dateExpires = null;
 
-    /** The admin who approved (null for self-confirmation or QR check-in). */
+    /**
+     * The admin whose decision this record carries - approval, rejection or revocation alike.
+     * Null when nobody decided it: a self-confirmation, or a QR check-in at the event.
+     */
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'certified_by', nullable: true, onDelete: 'SET NULL')]
     private ?User $certifiedBy = null;
+
+    /**
+     * When the last decision was taken, and why.
+     *
+     * Kept when a rejected record returns to pending on a fresh application: the manager deciding it
+     * the second time has to see that this was already turned down once, and what for. `notes` is
+     * the admin's own free-text field and is not overwritten by a decision.
+     */
+    #[ORM\Column(name: 'decided_at', nullable: true)]
+    private ?\DateTimeImmutable $decidedAt = null;
+
+    #[ORM\Column(name: 'decision_reason', type: Types::TEXT, nullable: true)]
+    private ?string $decisionReason = null;
+
+    /**
+     * When the holder was last warned that this is about to run out.
+     *
+     * Kept so the reminder is sent once per validity period rather than every night the job runs.
+     * Cleared whenever the record is granted again, because the next expiry is a different one.
+     */
+    #[ORM\Column(name: 'expiry_reminded_at', nullable: true)]
+    private ?\DateTimeImmutable $expiryRemindedAt = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $notes = null;
@@ -138,6 +165,42 @@ class UserCertification
         return $this;
     }
 
+    public function getDecidedAt(): ?\DateTimeImmutable
+    {
+        return $this->decidedAt;
+    }
+
+    public function setDecidedAt(?\DateTimeImmutable $decidedAt): static
+    {
+        $this->decidedAt = $decidedAt;
+
+        return $this;
+    }
+
+    public function getDecisionReason(): ?string
+    {
+        return $this->decisionReason;
+    }
+
+    public function setDecisionReason(?string $decisionReason): static
+    {
+        $this->decisionReason = $decisionReason;
+
+        return $this;
+    }
+
+    public function getExpiryRemindedAt(): ?\DateTimeImmutable
+    {
+        return $this->expiryRemindedAt;
+    }
+
+    public function setExpiryRemindedAt(?\DateTimeImmutable $expiryRemindedAt): static
+    {
+        $this->expiryRemindedAt = $expiryRemindedAt;
+
+        return $this;
+    }
+
     public function getNotes(): ?string
     {
         return $this->notes;
@@ -153,6 +216,22 @@ class UserCertification
     public function isPending(): bool
     {
         return $this->status === self::STATUS_PENDING;
+    }
+
+    /**
+     * What this record counts as today: an approved or self-confirmed certification whose expiry has
+     * passed reads as expired, since the holder is no longer qualified.
+     *
+     * A revoked record stays revoked. Revocation is a decision somebody made about this person, and
+     * letting the clock relabel it as a routine expiry would hide that from whoever looks next.
+     */
+    public function effectiveStatus(): string
+    {
+        if ($this->isExpired() && \in_array($this->status, [self::STATUS_APPROVED, self::STATUS_SELF_CONFIRMED], true)) {
+            return self::STATUS_EXPIRED;
+        }
+
+        return $this->status;
     }
 
     public function isExpired(): bool
