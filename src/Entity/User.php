@@ -748,6 +748,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return false;
     }
 
+    /** Special check if the user is a Director, shift manager or info desk */
+    public function isShiftCoordinator(): bool
+    {
+        foreach ($this->getGroups() as $group) {
+            switch ($group->getSlug()) {
+                case 'department-manager':
+                case 'info-desk':
+                case 'shift-manager':
+                case 'shift-manager-delegated':
+                    return true;
+            }
+        }
+
+        return false;
+    }
+
     public function getUserIdentifier(): string
     {
         return $this->name;

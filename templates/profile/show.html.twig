@@ -52,7 +52,9 @@
     <div class="col-12">
       {% set workHistoryActions %}
           {% if canAddWorklog %}
-            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#add-worklog-modal">{{ 'profile.action.add_worklog'|trans }}</button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-worklog-modal">{{ 'profile.action.add_worklog'|trans }}</button>
+          {% elseif is_granted('user:worklog:edit') %}
+            <a class="btn btn-primary" href="{{ path('app_manage_worklog_new', {user: header.user.uuid}) }}">{{ 'profile.action.add_worklog'|trans }}</a>
           {% endif %}
       {% endset %}
       {{ d.card_start('profile.card.work_history'|trans, {class: '', bodyClass: '', headerActions: workHistoryActions}) }}
@@ -174,31 +176,21 @@
   {% if canAddWorklog %}
     <div class="modal fade" id="add-worklog-modal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog">
-        <form class="modal-content" method="post" action="{{ path('app_worklog_self_create') }}">
+        {{ form_start(worklogForm, {attr: {class: 'modal-content'}}) }}
           <div class="modal-header">
             <h5 class="modal-title">{{ 'profile.worklog_modal.title'|trans }}</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'ui.aria.close'|trans }}"></button>
           </div>
           <div class="modal-body">
-            <input type="hidden" name="worklog_self[_token]" value="{{ csrf_token('worklog_self') }}">
-            <div class="mb-3">
-              <label class="form-label" for="wl-hours">{{ 'profile.worklog_modal.hours'|trans }}</label>
-              <input class="form-control" id="wl-hours" type="number" step="0.25" min="0" name="worklog_self[hours]" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label" for="wl-when">{{ 'profile.worklog_modal.worked_at'|trans }}</label>
-              <input class="form-control" id="wl-when" type="datetime-local" name="worklog_self[workedAt]" required>
-            </div>
-            <div class="mb-3">
-              <label class="form-label" for="wl-comment">{{ 'profile.worklog_modal.comment'|trans }}</label>
-              <textarea class="form-control" id="wl-comment" name="worklog_self[comment]" rows="2"></textarea>
-            </div>
+            {{ form_row(worklogForm.hours, {label: 'profile.worklog_modal.hours'}) }}
+            {{ form_row(worklogForm.workedAt, {label: 'profile.worklog_modal.worked_at'}) }}
+            {{ form_row(worklogForm.comment, {label: 'profile.worklog_modal.comment'}) }}
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-link" data-bs-dismiss="modal">{{ 'common.action.cancel'|trans }}</button>
             <button type="submit" class="btn btn-primary">{{ 'common.action.add'|trans }}</button>
           </div>
-        </form>
+        {{ form_end(worklogForm) }}
       </div>
     </div>
   {% endif %}

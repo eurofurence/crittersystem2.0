@@ -164,6 +164,26 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getResult();
     }
 
+    /**
+     * Onboarded accounts that are not checked in yet. The state and the group memberships are
+     * fetch-joined because the caller decides per user whether they count as staff, and the inverse
+     * one-to-one state would otherwise cost a query for every row.
+     *
+     * @return User[]
+     */
+    public function findOnboardedNotCheckedIn(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->leftJoin('u.state', 'st')->addSelect('st')
+            ->leftJoin('u.groupAssignments', 'ga')->addSelect('ga')
+            ->leftJoin('ga.group', 'g')->addSelect('g')
+            ->andWhere('u.onboardingCompleted = true')
+            ->andWhere('st.id IS NULL OR st.arrived = false')
+            ->orderBy('u.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     /** @return User[] users who opted in to news emails (settings.emailNews) */
     public function findSubscribedToNews(): array
     {

@@ -17,6 +17,7 @@ use App\Repository\TelegramConfigurationRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Repository\VolunteerTypeRepository;
 use App\Service\PrivacyNoticeProvider;
+use App\Service\StaffCheckInService;
 use App\Service\TextVariables;
 use App\Telegram\TelegramLinkService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -56,6 +57,7 @@ final class OnboardingController extends AbstractController
         private readonly AuditLogger $audit,
         private readonly TelegramLinkService $telegramLinks,
         private readonly TelegramConfigurationRepository $telegramConfig,
+        private readonly StaffCheckInService $staffCheckIn,
     ) {
     }
 
@@ -242,6 +244,7 @@ final class OnboardingController extends AbstractController
 
             $this->assignDefaults($user);
             $user->completeOnboarding();
+            $this->staffCheckIn->checkInOnboardedStaff($user);
             $this->em->flush();
             $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, ['details' => ['onboarding' => 'completed']]);
             $this->addFlash('success', new TranslatableMessage('onboarding.flash.complete'));

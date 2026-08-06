@@ -46,11 +46,11 @@ final class WorklogController extends AbstractController
     }
 
     #[Route('/new', name: 'app_manage_worklog_new', methods: ['GET', 'POST'])]
-    public function new(Request $request): Response
+    public function new(Request $request, UserRepository $users): Response
     {
         /** @var User $actor */
         $actor = $this->getUser();
-        $worklog = new Worklog($actor);
+        $worklog = new Worklog($this->preselectedUser($request, $users) ?? $actor);
         $form = $this->createForm(WorklogType::class, $worklog);
         $form->handleRequest($request);
 
@@ -70,6 +70,21 @@ final class WorklogController extends AbstractController
             'form' => $form,
             'heading' => 'manage.worklog.form.heading_new',
         ]);
+    }
+
+    /**
+     * The volunteer the form opens on, taken from `?user=<uuid>` when the page was reached from a
+     * profile. An unresolvable uuid is a 404 rather than a fallback to the actor: silently
+     * defaulting to whoever is signed in is how hours end up on the wrong person.
+     */
+    private function preselectedUser(Request $request, UserRepository $users): ?User
+    {
+        $uuid = trim((string) $request->query->get('user', ''));
+        if ($uuid === '') {
+            return null;
+        }
+
+        return $users->findOneByUuid($uuid) ?? throw $this->createNotFoundException();
     }
 
     #[Route('/{id}/delete', name: 'app_manage_worklog_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]

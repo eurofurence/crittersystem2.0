@@ -6,6 +6,8 @@ use App\Entity\Group;
 use App\Entity\User;
 use App\Entity\Worklog;
 use App\Tests\DatabaseWebTestCase;
+use Symfony\Component\BrowserKit\Cookie;
+use Symfony\Component\DomCrawler\Form;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class WorklogSelfTest extends DatabaseWebTestCase
@@ -82,6 +84,60 @@ final class WorklogSelfTest extends DatabaseWebTestCase
 
         $this->client->request('GET', '/worklog/'.$log->getUuid().'/edit');
         self::assertResponseStatusCodeSame(403);
+    }
+
+    /**
+     * The add-worklog modal posts to a Symfony form, whose CSRF token is stateless: the hidden
+     * field must be the one the form theme renders, carrying the attributes the csrf-protection
+     * controller looks for. A hand-written token field leaves the browser unable to double-submit,
+     * and the post is then rejected for every session that has already validated one.
+     */
+    public function testSelfWorklogFormCarriesTheStatelessCsrfField(): void
+    {
+        $staff = $this->makeUser('worker', 'ROLE_STAFF');
+        $this->client->loginUser($staff);
+
+        $crawler = $this->client->request('GET', '/profile');
+        $field = $crawler->filter('input[name="worklog_self[_token]"]');
+
+        self::assertSame('csrf-protection', $field->attr('data-controller'));
+        self::assertSame('csrf-token', $field->attr('value'));
+    }
+
+    public function testSelfWorklogSurvivesASessionThatAlreadyDoubleSubmitted(): void
+    {
+        $staff = $this->makeUser('worker', 'ROLE_STAFF');
+        $log = $this->worklog($staff, $staff);
+        $this->client->loginUser($staff);
+
+        $crawler = $this->client->request('GET', '/worklog/'.$log->getUuid().'/edit');
+        $this->client->submit($this->doubleSubmit($crawler->filter('form[name="worklog_self"]')->form(['worklog_self[hours]' => '1'])));
+        self::assertResponseRedirects('/profile');
+
+        $crawler = $this->client->request('GET', '/profile');
+        $form = $crawler->filter('#add-worklog-modal form')->form([
+            'worklog_self[hours]' => '3.5',
+            'worklog_self[workedAt]' => '2026-07-10T09:00',
+        ]);
+        $this->client->submit($this->doubleSubmit($form));
+
+        self::assertResponseRedirects('/profile');
+        self::assertCount(2, $this->em->getRepository(Worklog::class)->findAll());
+    }
+
+    /**
+     * Replays what assets/controllers/csrf_protection_controller.js does on submit: swap the
+     * rendered sentinel for a random token and mirror it into a cookie.
+     */
+    private function doubleSubmit(Form $form): Form
+    {
+        $field = $form['worklog_self[_token]'];
+        $cookieName = $field->getValue();
+        $token = bin2hex(random_bytes(16));
+        $field->setValue($token);
+        $this->client->getCookieJar()->set(new Cookie($cookieName.'_'.$token, $cookieName, null, '/'));
+
+        return $form;
     }
 
     public function testNonStaffCannotSelfReport(): void

@@ -4,6 +4,7 @@ namespace App\Service\Assignment;
 
 use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
+use App\Entity\Certification;
 use App\Entity\Shift;
 use App\Entity\ShiftEntry;
 use App\Entity\ShiftPosition;
@@ -47,6 +48,7 @@ final class ManualAssignmentService
         private readonly UserVolunteerTypeRepository $memberships,
         private readonly AuditLogger $audit,
         private readonly ShiftSignal $live,
+        private readonly \App\Service\Shift\ShiftEligibility $eligibility,
     ) {
     }
 
@@ -60,9 +62,9 @@ final class ManualAssignmentService
      *
      * @return array{needsOverride: bool, warnings: list<array{key: string, message: string}>, members: list<Shift>, missing: list<Shift>}
      */
-    public function inspect(Shift $shift, User $user): array
+    public function inspect(Shift $shift, User $user, ?VolunteerType $type = null): array
     {
-        return $this->inspectMembers($this->groups->membersFor($shift), $user);
+        return $this->inspectMembers($this->groups->membersFor($shift), $user, $type);
     }
 
     /**
@@ -74,7 +76,7 @@ final class ManualAssignmentService
      *
      * @return array{needsOverride: bool, warnings: list<array{key: string, message: string}>, members: list<Shift>, missing: list<Shift>}
      */
-    private function inspectMembers(array $members, User $user): array
+    private function inspectMembers(array $members, User $user, ?VolunteerType $type = null): array
     {
         $missing = $this->missingMembers($members, $user);
         $grouped = \count($members) > 1;
@@ -109,6 +111,24 @@ final class ManualAssignmentService
             $warnings[] = ['key' => 'hours', 'message' => \sprintf('This would bring the user to %.1f planned hours (recommended max %d).', $projected, $recommended)];
         }
 
+        // A volunteer signing themselves up is refused outright when they lack a certification the
+        // role requires. A manager is not - they may be holding the paper certificate as they type -
+        // but they are told, and the override is recorded on the entry so the placement is not a
+        // silent exception.
+        if ($type !== null) {
+            $missingCertifications = $this->eligibility->missingCertifications($user, $type);
+            if ($missingCertifications !== []) {
+                $needsOverride = true;
+                $warnings[] = [
+                    'key' => 'certification',
+                    'message' => \sprintf(
+                        'The user does not hold %s, which this role requires.',
+                        implode(', ', array_map(static fn (Certification $c): string => $c->getTitle(), $missingCertifications)),
+                    ),
+                ];
+            }
+        }
+
         return ['needsOverride' => $needsOverride, 'warnings' => $warnings, 'members' => $members, 'missing' => $missing];
     }
 
@@ -137,7 +157,7 @@ final class ManualAssignmentService
             return $existing ?? throw new \RuntimeException('The assignment could not be recorded.');
         }
 
-        $inspection = $this->inspectMembers($members, $user);
+        $inspection = $this->inspectMembers($members, $user, $type);
         if ($inspection['needsOverride'] && !$override) {
             $messages = array_map(static fn ($w) => $w['message'], $inspection['warnings']);
             throw new \RuntimeException('This assignment needs an override: '.implode(' ', $messages));

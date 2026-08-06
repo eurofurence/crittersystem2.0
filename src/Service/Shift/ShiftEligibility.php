@@ -2,11 +2,13 @@
 
 namespace App\Service\Shift;
 
+use App\Entity\Certification;
 use App\Entity\Shift;
 use App\Entity\User;
 use App\Entity\VolunteerType;
 use App\Repository\NeededVolunteerTypeRepository;
 use App\Repository\ShiftEntryRepository;
+use App\Repository\UserCertificationRepository;
 use App\Repository\UserVolunteerTypeRepository;
 
 /**
@@ -17,17 +19,69 @@ use App\Repository\UserVolunteerTypeRepository;
  * two ever answered differently, a group application would pass its own checks and then be refused
  * by the surface that offered it.
  *
- * Certification requirements are NOT enforced; {@see signUpError()} marks the hook where that check
- * belongs.
+ * A role's certification requirements are enforced here: a volunteer who does not currently hold
+ * one is neither offered the role nor accepted for it, and the refusal names what is missing.
  */
 final class ShiftEligibility
 {
+    /**
+     * Certification ids each user currently holds, filled once per user.
+     *
+     * A shift list asks about every shift on the page, and the answer cannot change while one
+     * request is being served. This service is never used from a worker, so nothing keeps the
+     * instance alive past that.
+     *
+     * @var array<int, array<int, true>>
+     */
+    private array $heldCertifications = [];
+
     public function __construct(
         private readonly ShiftEntryRepository $entries,
         private readonly UserVolunteerTypeRepository $memberships,
         private readonly NeededVolunteerTypeRepository $needed,
         private readonly CheckInPolicy $checkIn,
+        private readonly UserCertificationRepository $certifications,
     ) {
+    }
+
+    /**
+     * The certifications this role requires and this volunteer does not currently hold.
+     *
+     * Expiry counts: somebody whose certificate ran out is not qualified today, which is the whole
+     * reason the expiry is recorded.
+     *
+     * @return list<Certification>
+     */
+    public function missingCertifications(User $user, VolunteerType $type): array
+    {
+        $required = $type->getCertifications();
+        if ($required->isEmpty()) {
+            return [];
+        }
+
+        $held = $this->heldCertifications[$user->getId()] ??= $this->heldFor($user);
+
+        $missing = [];
+        foreach ($required as $certification) {
+            if (!isset($held[$certification->getId()])) {
+                $missing[] = $certification;
+            }
+        }
+
+        return $missing;
+    }
+
+    /** @return array<int, true> */
+    private function heldFor(User $user): array
+    {
+        $held = [];
+        foreach ($this->certifications->findByUser($user) as $record) {
+            if ($record->isValid()) {
+                $held[$record->getCertification()->getId()] = true;
+            }
+        }
+
+        return $held;
     }
 
     /**
@@ -65,7 +119,13 @@ final class ShiftEligibility
 
         $options = [];
         foreach ($this->availability($shift) as $row) {
-            if ($row['assigned'] < $row['needed'] && $this->memberships->isConfirmedMember($user, $row['type'])) {
+            // A role whose certification the volunteer lacks is not offered: signUpError refuses it,
+            // so leaving it in the list puts a button on screen that can only fail. The reason is
+            // still reachable - signUpError names the missing certification when asked.
+            if ($row['assigned'] < $row['needed']
+                && $this->memberships->isConfirmedMember($user, $row['type'])
+                && $this->missingCertifications($user, $row['type']) === []
+            ) {
                 $options[(string) $row['type']->getUuid()] = $row['type'];
             }
         }
@@ -134,8 +194,14 @@ final class ShiftEligibility
             return 'You are not a confirmed member of this volunteer type.';
         }
 
-        // TODO: reject sign-up when the user lacks a certification the volunteer
-        // type requires. Certifications are recorded but not enforced here.
+        // The missing one is named: "you are not qualified" is not something a volunteer can act on,
+        // and the name is what they take to whoever issues it.
+        if (($missing = $this->missingCertifications($user, $type)) !== []) {
+            return \sprintf(
+                'This role requires %s, which you do not currently hold.',
+                implode(', ', array_map(static fn (Certification $c): string => $c->getTitle(), $missing)),
+            );
+        }
 
         $need = $this->needed->findEffectiveForShift($shift)[$type->getId()] ?? null;
         if ($need === null) {
