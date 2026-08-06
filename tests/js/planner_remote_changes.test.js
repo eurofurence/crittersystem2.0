@@ -94,7 +94,7 @@ describe('remote planner changes', () => {
 
     it('holds back while blocks are selected', async () => {
         await mount();
-        controller.selected.add(document.querySelector('.planner-block'));
+        controller.selected.add('shift-a');
 
         remoteChange();
         await new Promise((resolve) => setTimeout(resolve, 0));
@@ -133,7 +133,7 @@ describe('remote planner changes', () => {
     /* The manager's own edits are not deferred - they asked for them. */
     it('does not defer the manager’s own changes', async () => {
         await mount();
-        controller.selected.add(document.querySelector('.planner-block'));
+        controller.selected.add('shift-a');
 
         window.dispatchEvent(new CustomEvent('planner:changed'));
 

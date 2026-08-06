@@ -28,7 +28,9 @@ final class PlannerBrowserTest extends BrowserTestCase
     private function seed(): Department
     {
         $group = new Group('Managers', 'mgr-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
-        foreach (['manageshifts:view', 'shift:manage', 'shift:publish'] as $p) {
+        // news:view is part of it because signing in lands on /news, and a 403 there is a severe
+        // console error that every assertNoConsoleErrors() in this file would report.
+        foreach (['manageshifts:view', 'shift:manage', 'shift:publish', 'news:view'] as $p) {
             $priv = new Privilege($p);
             $this->em->persist($priv);
             $group->addPrivilege($priv);
@@ -245,5 +247,43 @@ final class PlannerBrowserTest extends BrowserTestCase
             'the new task is selected, so the form the manager is filling stays usable',
         );
         $this->assertNoConsoleErrors('the planner after creating a shift task inline');
+    }
+
+    /**
+     * Selecting a shift has to work on the first attempt. A real mouse moves a pixel or two between
+     * pressing and releasing, which used to be read as a drag: the planner saved a move, replaced
+     * the grid, and the selection landed on a block that no longer existed. Managers described it as
+     * having to click several times before anything selected.
+     */
+    public function testAClickThatWobblesSelectsTheShiftInsteadOfMovingIt(): void
+    {
+        $dept = $this->seed();
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'planner-mgr@example.com']);
+
+        $this->browse();
+        $this->signIn($user, self::PASSWORD);
+        $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
+        $this->client->waitFor('.planner-block', 10);
+
+        $before = $this->client->executeScript(
+            'return document.querySelector(".planner-block").style.top;'
+        );
+
+        $block = $this->client->getWebDriver()->findElement(\Facebook\WebDriver\WebDriverBy::cssSelector('.planner-block'));
+        $this->client->getWebDriver()->action()
+            ->moveToElement($block)
+            ->clickAndHold()
+            ->moveByOffset(2, 2)
+            ->release()
+            ->perform();
+
+        $this->client->waitFor('.planner-block.is-selected', 10);
+
+        self::assertSame(
+            $before,
+            $this->client->executeScript('return document.querySelector(".planner-block").style.top;'),
+            'the shift must not have moved',
+        );
+        $this->assertNoConsoleErrors('the planner after selecting a shift');
     }
 }

@@ -31,7 +31,9 @@ final class DepartmentMembersBrowserTest extends BrowserTestCase
         $this->em->persist($memberGroup);
 
         $group = new Group('Managers', 'mgr-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
-        foreach (['department:manage', 'department:member:manage'] as $p) {
+        // news:view is part of it because signing in lands on /news, and a 403 there is a severe
+        // console error that every assertNoConsoleErrors() in this file would report.
+        foreach (['department:manage', 'department:member:manage', 'news:view'] as $p) {
             $priv = new Privilege($p);
             $this->em->persist($priv);
             $group->addPrivilege($priv);

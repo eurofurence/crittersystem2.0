@@ -99,13 +99,13 @@ describe('planner controller', () => {
     });
 
     describe('drag modes', () => {
-        it('creates nothing when dragging empty grid in select mode', async () => {
+        it('selects rather than creating when dragging empty grid in select mode', async () => {
             const controller = await start();
             const body = document.querySelector('.planner-day-body');
 
             body.dispatchEvent(new window.PointerEvent('pointerdown', { button: 0, bubbles: true }));
 
-            expect(controller.gesture).toBeUndefined();
+            expect(controller.gesture?.kind).toBe('marquee');
             expect(document.querySelector('.planner-paint-preview')).toBeNull();
         });
 
@@ -133,14 +133,16 @@ describe('planner controller', () => {
             expect(block.classList.contains('is-dragging')).toBe(false);
         });
 
-        it('moves a block when dragging it in select mode', async () => {
+        /* Pressing a block only arms a move: it becomes one once the pointer actually travels. */
+        it('arms a move when pressing a block in select mode', async () => {
             const controller = await start(BLOCK('uuid-a'));
             const block = document.querySelector('.planner-block');
 
             block.dispatchEvent(new window.PointerEvent('pointerdown', { button: 0, bubbles: true }));
 
             expect(controller.gesture?.kind).toBe('move');
-            expect(block.classList.contains('is-dragging')).toBe(true);
+            expect(controller.gesture?.armed).toBe(false);
+            expect(block.classList.contains('is-dragging')).toBe(false);
         });
 
         it('reflects the mode on the element so the cursor can follow it', async () => {
@@ -156,6 +158,124 @@ describe('planner controller', () => {
             controller.modeValue = 'select';
             await tick();
             expect(controller.element.classList.contains('is-painting')).toBe(false);
+        });
+    });
+
+    /*
+     * The bug managers reported as "selecting a shift is almost impossible, it takes several tries".
+     * A press on a block started a move outright, and any pointer movement at all - a pixel of
+     * tremor under an ordinary click - posted that move and reloaded the grid. The click that
+     * followed then landed on a block the reload had already detached, so the selection went
+     * nowhere.
+     */
+    describe('selecting', () => {
+        function measure() {
+            const body = document.querySelector('.planner-day-body');
+            body.getBoundingClientRect = () => ({ top: 0, left: 0, height: 1440, width: 200, right: 200, bottom: 1440 });
+        }
+
+        function press(element, clientY, init = {}) {
+            element.dispatchEvent(new window.PointerEvent('pointerdown', { button: 0, bubbles: true, clientX: 10, clientY, ...init }));
+        }
+
+        function moveTo(clientY, clientX = 10) {
+            window.dispatchEvent(new window.PointerEvent('pointermove', { clientX, clientY }));
+        }
+
+        function release() {
+            window.dispatchEvent(new window.PointerEvent('pointerup', {}));
+        }
+
+        beforeEach(() => {
+            vi.stubGlobal('fetch', vi.fn(async () => new Response('<html><body></body></html>', { status: 200 })));
+        });
+
+        it('selects the block when a click wobbles a pixel, and saves nothing', async () => {
+            const controller = await start(BLOCK('uuid-a'));
+            measure();
+            const block = document.querySelector('.planner-block');
+
+            press(block, 150);
+            moveTo(152, 11);
+            release();
+
+            expect([...controller.selected]).toEqual(['uuid-a']);
+            expect(block.classList.contains('is-selected')).toBe(true);
+            expect(fetch).not.toHaveBeenCalled();
+        });
+
+        it('moves the block when the pointer really travels', async () => {
+            await start(BLOCK('uuid-a'));
+            measure();
+            const block = document.querySelector('.planner-block');
+
+            press(block, 150);
+            moveTo(300);
+            release();
+
+            await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
+            expect(fetch.mock.calls[0][0]).toBe('/move/uuid-a');
+        });
+
+        it('saves nothing when a drag ends where it started', async () => {
+            const controller = await start(BLOCK('uuid-a'));
+            measure();
+            const block = document.querySelector('.planner-block');
+
+            press(block, 150);
+            moveTo(300);
+            moveTo(150);
+            release();
+
+            expect(fetch).not.toHaveBeenCalled();
+            expect(controller.selected.size).toBe(0);
+        });
+
+        it('adds to the selection with shift held, and replaces it without', async () => {
+            const controller = await start(BLOCK('uuid-a') + BLOCK('uuid-b', 30));
+            measure();
+            const [a, b] = document.querySelectorAll('.planner-block');
+
+            press(a, 150);
+            release();
+            press(b, 450, { shiftKey: true });
+            release();
+            expect([...controller.selected].sort()).toEqual(['uuid-a', 'uuid-b']);
+
+            press(a, 150);
+            release();
+            expect([...controller.selected]).toEqual(['uuid-a']);
+        });
+
+        it('clears the selection when clicking empty grid', async () => {
+            const controller = await start(BLOCK('uuid-a'));
+            measure();
+
+            press(document.querySelector('.planner-block'), 150);
+            release();
+            expect(controller.selected.size).toBe(1);
+
+            press(document.querySelector('.planner-day-body'), 800);
+            release();
+            expect(controller.selected.size).toBe(0);
+        });
+
+        /* Windows-explorer style: drag a band over empty grid and take everything it touches. */
+        it('selects every block the rubber band touches', async () => {
+            const controller = await start(BLOCK('uuid-a') + BLOCK('uuid-b', 30));
+            measure();
+            const [a, b] = document.querySelectorAll('.planner-block');
+            a.getBoundingClientRect = () => ({ top: 140, bottom: 200, left: 0, right: 100 });
+            b.getBoundingClientRect = () => ({ top: 420, bottom: 480, left: 0, right: 100 });
+
+            press(document.querySelector('.planner-day-body'), 100);
+            moveTo(460, 50);
+
+            expect(document.querySelector('.planner-marquee')).not.toBeNull();
+            expect([...controller.selected].sort()).toEqual(['uuid-a', 'uuid-b']);
+
+            release();
+            expect(document.querySelector('.planner-marquee')).toBeNull();
         });
     });
 
@@ -220,6 +340,57 @@ describe('planner controller', () => {
             const bar = document.querySelector('#planner-publish-bar');
             expect(bar.textContent).toContain('0 drafts');
             expect(bar.querySelector('button').hasAttribute('disabled')).toBe(true);
+        });
+
+        /*
+         * A refresh landing mid-drag used to leave the gesture pointing at a block that had just
+         * been detached, and its pointerup saved a position computed against that dead element: the
+         * shift jumped to an unrelated time on its own.
+         */
+        it('cancels a drag in progress rather than saving a position from the replaced grid', async () => {
+            const controller = await start(BLOCK('uuid-a'));
+            const body = document.querySelector('.planner-day-body');
+            body.getBoundingClientRect = () => ({ top: 0, left: 0, height: 1440, width: 200, right: 200, bottom: 1440 });
+
+            const fresh = `<html><body>
+                <div class="planner-grid" data-planner-target="grid">
+                    <div class="planner-day-body" data-planner-target="dayBody" data-planner-day="2026-06-01">
+                        ${BLOCK('uuid-a')}
+                    </div>
+                </div>
+            </body></html>`;
+            vi.stubGlobal('fetch', vi.fn(async () => new Response(fresh, { status: 200 })));
+
+            document.querySelector('.planner-block')
+                .dispatchEvent(new window.PointerEvent('pointerdown', { button: 0, bubbles: true, clientX: 10, clientY: 150 }));
+            window.dispatchEvent(new window.PointerEvent('pointermove', { clientX: 10, clientY: 600 }));
+
+            await controller.reloadGrid();
+            window.dispatchEvent(new window.PointerEvent('pointerup', {}));
+
+            expect(controller.gesture).toBeNull();
+            expect(fetch.mock.calls.some(([url]) => String(url).startsWith('/move/'))).toBe(false);
+        });
+
+        /* Losing the selection on every refresh is what made the planner unusable in a busy department. */
+        it('keeps the selection across a reload and drops shifts that are gone', async () => {
+            const controller = await start(BLOCK('uuid-a') + BLOCK('uuid-b', 30));
+            controller.replaceSelection(['uuid-a', 'uuid-b']);
+
+            const fresh = `<html><body>
+                <div class="planner-grid" data-planner-target="grid">
+                    <div class="planner-day-body" data-planner-target="dayBody" data-planner-day="2026-06-01">
+                        ${BLOCK('uuid-a')}
+                    </div>
+                </div>
+            </body></html>`;
+            vi.stubGlobal('fetch', vi.fn(async () => new Response(fresh, { status: 200 })));
+
+            await controller.reloadGrid();
+            await new Promise((resolve) => setTimeout(resolve, 0));
+
+            expect([...controller.selected]).toEqual(['uuid-a']);
+            expect(document.querySelector('[data-shift-id="uuid-a"]').classList.contains('is-selected')).toBe(true);
         });
     });
 });

@@ -8,7 +8,7 @@ import { backgroundFetch } from '../js/session.js';
  * Dependency-free pointer handling over a time×day grid:
  *   - drag on empty grid to paint a new draft shift (snaps to the raster);
  *   - drag a block to move it, drag its bottom edge to resize;
- *   - click to select (shift/ctrl or tap adds to a multi-selection);
+ *   - click to select, drag across empty grid to select a range, shift/ctrl to add;
  *   - Delete/Backspace removes the selection.
  *
  * Every mutation posts JSON to the server (which owns validation and draft
@@ -30,6 +30,15 @@ export default class extends Controller {
     };
 
     /*
+     * How far the pointer must travel before a press on a block becomes a drag. Below it the press
+     * is a click and selects, which is the whole point: a mouse moves a pixel or two under an
+     * ordinary click, and treating that as a drag posted a move, reloaded the grid and destroyed the
+     * selection the click was making. Managers reported selection as "impossible, takes several
+     * tries" because of it.
+     */
+    static DRAG_THRESHOLD_PX = 4;
+
+    /*
      * Stimulus fires the *TargetConnected callbacks BEFORE connect(), so any state they read has to
      * exist by the end of initialize(). Setting these up in connect() instead threw on the first
      * block of a populated grid, and the exception aborted the controller's connection - taking
@@ -41,7 +50,6 @@ export default class extends Controller {
     }
 
     connect() {
-        this.selected = new Set();
         this.onPointerDown = this.handlePointerDown.bind(this);
         this.onPointerMove = this.handlePointerMove.bind(this);
         this.onPointerUp = this.handlePointerUp.bind(this);
@@ -80,10 +88,10 @@ export default class extends Controller {
     /**
      * Someone else changed this department.
      *
-     * Their change is not applied on arrival. reloadGrid() replaces the grid wholesale and clears
-     * the selection, so doing that mid-edit would pull the blocks out from under a drag, empty the
-     * side panel a manager was acting through, or refresh the page behind an open modal. The change
-     * is remembered and applied at the next moment this manager is not in the middle of something.
+     * Their change is not applied on arrival. reloadGrid() replaces the grid wholesale, so doing
+     * that mid-edit would pull the blocks out from under a drag, empty the side panel a manager was
+     * acting through, or refresh the page behind an open modal. The change is remembered and applied
+     * at the next moment this manager is not in the middle of something.
      *
      * A manager's own edits are unaffected: those come through planner:changed and still reload
      * immediately, because they are the one who asked.
@@ -156,15 +164,16 @@ export default class extends Controller {
 
     // ---- gesture start ----------------------------------------------------
 
+    /**
+     * Creating a shift is exclusive to paint mode, including over an existing block: a drag in
+     * select mode never creates anything, so an imprecise drag on empty grid cannot leave a stray
+     * shift behind. The block under the pointer is ignored in paint mode, which is the only way to
+     * start a shift running in parallel with one already there.
+     */
     handlePointerDown(event) {
         if (event.button !== 0) {
             return;
         }
-        // Creating a shift is exclusive to paint mode, including over an existing block: a drag in
-        // select mode never creates anything, so an imprecise drag on empty grid cannot leave a
-        // stray shift behind. The block under the pointer is ignored here, which is the only way to
-        // start a shift running in parallel with one already there. Blocks live inside the day body,
-        // so the body is still resolvable from a pointer that landed on a block.
         const body = event.target.closest('.planner-day-body');
         if (this.modeValue === 'paint') {
             if (body) {
@@ -175,49 +184,79 @@ export default class extends Controller {
 
         const block = event.target.closest('.planner-block');
         if (block) {
-            if (event.target.closest('.planner-block-resize')) {
-                this.startResize(event, block);
-            } else {
-                this.startMove(event, block);
-            }
+            this.armBlockGesture(event, block);
+        } else if (body) {
+            this.startMarquee(event);
         }
     }
 
     startPaint(event, body) {
         event.preventDefault();
         const start = this.pointerMinutes(body, event.clientY);
-        this.gesture = { kind: 'paint', body, day: body.dataset.plannerDay, start, end: start };
+        this.gesture = { kind: 'paint', armed: true, body, day: body.dataset.plannerDay, start, end: start };
         this.preview = document.createElement('div');
         this.preview.className = 'planner-paint-preview';
         body.appendChild(this.preview);
         this.renderPreview();
     }
 
-    startMove(event, block) {
+    /**
+     * Records what a press on a block would do without doing any of it yet. The gesture only becomes
+     * a move or a resize once the pointer has actually travelled; until then it is a click, and
+     * pointerup selects instead.
+     */
+    armBlockGesture(event, block) {
         event.preventDefault();
         const body = block.closest('.planner-day-body');
-        const durationMin = this.blockDuration(block);
-        const grabMin = this.pointerMinutes(body, event.clientY);
         const topMin = this.snap(parseFloat(block.style.top) / 100 * 1440);
-        this.gesture = { kind: 'move', block, body, durationMin, offset: grabMin - topMin };
-        block.classList.add('is-dragging');
+        const durationMin = this.blockDuration(block);
+        const resizing = Boolean(event.target.closest('.planner-block-resize'));
+
+        this.gesture = {
+            kind: resizing ? 'resize' : 'move',
+            armed: false,
+            originX: event.clientX,
+            originY: event.clientY,
+            additive: event.shiftKey || event.ctrlKey || event.metaKey,
+            block,
+            body,
+            topMin,
+            durationMin,
+            offset: this.pointerMinutes(body, event.clientY) - topMin,
+        };
     }
 
-    startResize(event, block) {
+    /**
+     * Rubber-band selection, as in a file manager: dragging across empty grid selects every shift
+     * the band touches, and shift/ctrl adds them to what is already selected. A press that never
+     * moves is a click on empty space and clears the selection.
+     */
+    startMarquee(event) {
         event.preventDefault();
-        const body = block.closest('.planner-day-body');
-        const topMin = this.snap(parseFloat(block.style.top) / 100 * 1440);
-        this.gesture = { kind: 'resize', block, body, topMin };
-        block.classList.add('is-dragging');
+        this.gesture = {
+            kind: 'marquee',
+            armed: false,
+            originX: event.clientX,
+            originY: event.clientY,
+            additive: event.shiftKey || event.ctrlKey || event.metaKey,
+            base: new Set(this.selected),
+        };
     }
 
     // ---- gesture move -----------------------------------------------------
 
     handlePointerMove(event) {
-        if (!this.gesture) {
+        const g = this.gesture;
+        if (!g) {
             return;
         }
-        const g = this.gesture;
+        if (!g.armed && !this.passedThreshold(g, event)) {
+            return;
+        }
+        if (!g.armed) {
+            this.armGesture(g);
+        }
+
         if (g.kind === 'paint') {
             g.end = this.pointerMinutes(g.body, event.clientY);
             this.renderPreview();
@@ -231,7 +270,30 @@ export default class extends Controller {
             const end = Math.max(g.topMin + this.rasterValue, this.pointerMinutes(g.body, event.clientY));
             g.block.style.height = `${(end - g.topMin) / 1440 * 100}%`;
             g.newEnd = end;
+        } else if (g.kind === 'marquee') {
+            this.renderMarquee(event);
+            this.applyMarqueeSelection();
         }
+    }
+
+    passedThreshold(gesture, event) {
+        const threshold = this.constructor.DRAG_THRESHOLD_PX;
+
+        return Math.abs(event.clientX - gesture.originX) > threshold
+            || Math.abs(event.clientY - gesture.originY) > threshold;
+    }
+
+    armGesture(gesture) {
+        gesture.armed = true;
+        if (gesture.kind === 'marquee') {
+            this.marquee = document.createElement('div');
+            this.marquee.className = 'planner-marquee';
+            this.gridTarget.appendChild(this.marquee);
+            this.element.classList.add('is-marqueeing');
+
+            return;
+        }
+        gesture.block.classList.add('is-dragging');
     }
 
     renderPreview() {
@@ -240,6 +302,44 @@ export default class extends Controller {
         const height = Math.max(this.rasterValue, Math.abs(g.end - g.start));
         this.preview.style.top = `${top / 1440 * 100}%`;
         this.preview.style.height = `${height / 1440 * 100}%`;
+    }
+
+    /**
+     * The band is drawn inside the scroll container and positioned in its coordinate space, so it
+     * keeps covering the same shifts when the grid is scrolled under it mid-drag.
+     */
+    renderMarquee(event) {
+        const g = this.gesture;
+        const rect = this.gridTarget.getBoundingClientRect();
+        const x1 = g.originX - rect.left + this.gridTarget.scrollLeft;
+        const y1 = g.originY - rect.top + this.gridTarget.scrollTop;
+        const x2 = event.clientX - rect.left + this.gridTarget.scrollLeft;
+        const y2 = event.clientY - rect.top + this.gridTarget.scrollTop;
+
+        g.rect = {
+            left: Math.min(g.originX, event.clientX),
+            right: Math.max(g.originX, event.clientX),
+            top: Math.min(g.originY, event.clientY),
+            bottom: Math.max(g.originY, event.clientY),
+        };
+
+        this.marquee.style.left = `${Math.min(x1, x2)}px`;
+        this.marquee.style.top = `${Math.min(y1, y2)}px`;
+        this.marquee.style.width = `${Math.abs(x2 - x1)}px`;
+        this.marquee.style.height = `${Math.abs(y2 - y1)}px`;
+    }
+
+    applyMarqueeSelection() {
+        const g = this.gesture;
+        const touched = this.blockTargets
+            .filter((block) => this.intersects(block.getBoundingClientRect(), g.rect))
+            .map((block) => block.dataset.shiftId);
+
+        this.replaceSelection(g.additive ? [...g.base, ...touched] : touched);
+    }
+
+    intersects(a, b) {
+        return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
     }
 
     // ---- gesture end ------------------------------------------------------
@@ -251,34 +351,85 @@ export default class extends Controller {
         }
         this.gesture = null;
 
-        if (g.kind === 'paint') {
-            const start = Math.min(g.start, g.end);
-            const end = Math.max(g.start, g.end);
-            this.preview?.remove();
-            this.preview = null;
-            if (end - start >= this.rasterValue) {
-                this.paint(g.day, start, end);
-            }
+        if (!g.armed) {
+            this.finishUnarmed(g);
+        } else if (g.kind === 'paint') {
+            this.finishPaint(g);
         } else if (g.kind === 'move') {
-            g.block.classList.remove('is-dragging');
-            if (g.newTop !== undefined) {
-                const day = g.body.dataset.plannerDay;
-                this.moveShift(g.block, this.isoAtMinutes(day, g.newTop), this.isoAtMinutes(day, g.newTop + g.durationMin));
-            }
+            this.finishMove(g);
         } else if (g.kind === 'resize') {
-            g.block.classList.remove('is-dragging');
-            if (g.newEnd !== undefined) {
-                const day = g.body.dataset.plannerDay;
-                this.moveShift(g.block, g.block.dataset.start, this.isoAtMinutes(day, g.newEnd));
-            }
+            this.finishResize(g);
+        } else if (g.kind === 'marquee') {
+            this.finishMarquee();
         }
 
         this.releaseDeferredReload();
     }
 
+    /** A press that never travelled: a click, which selects a block or clears the selection. */
+    finishUnarmed(gesture) {
+        if (gesture.kind === 'marquee') {
+            this.replaceSelection(gesture.additive ? [...gesture.base] : []);
+
+            return;
+        }
+        if (gesture.block) {
+            this.toggleSelect(gesture.block, gesture.additive);
+        }
+    }
+
+    finishPaint(gesture) {
+        const start = Math.min(gesture.start, gesture.end);
+        const end = Math.max(gesture.start, gesture.end);
+        this.preview?.remove();
+        this.preview = null;
+        if (end - start >= this.rasterValue) {
+            this.paint(gesture.day, start, end);
+        }
+    }
+
+    /**
+     * A drag that ends where it started saves nothing. Posting it anyway cost a request and a grid
+     * reload for a shift that did not move, and the reload is what wiped the manager's selection.
+     */
+    finishMove(gesture) {
+        gesture.block.classList.remove('is-dragging');
+        if (gesture.newTop === undefined || gesture.newTop === gesture.topMin || !gesture.block.isConnected) {
+            return;
+        }
+        const day = gesture.body.dataset.plannerDay;
+        this.moveShift(
+            gesture.block,
+            this.isoAtMinutes(day, gesture.newTop),
+            this.isoAtMinutes(day, gesture.newTop + gesture.durationMin),
+        );
+    }
+
+    finishResize(gesture) {
+        gesture.block.classList.remove('is-dragging');
+        const originalEnd = gesture.topMin + gesture.durationMin;
+        if (gesture.newEnd === undefined || gesture.newEnd === originalEnd || !gesture.block.isConnected) {
+            return;
+        }
+        this.moveShift(
+            gesture.block,
+            gesture.block.dataset.start,
+            this.isoAtMinutes(gesture.body.dataset.plannerDay, gesture.newEnd),
+        );
+    }
+
+    finishMarquee() {
+        this.marquee?.remove();
+        this.marquee = null;
+        this.element.classList.remove('is-marqueeing');
+    }
+
     clearGesture() {
         this.preview?.remove();
         this.preview = null;
+        this.marquee?.remove();
+        this.marquee = null;
+        this.element.classList.remove('is-marqueeing');
         this.gesture = null;
     }
 
@@ -299,17 +450,34 @@ export default class extends Controller {
 
     // ---- selection & delete ----------------------------------------------
 
+    /**
+     * Enter and Space select the focused block. A div with role="button" gets no click from the
+     * keyboard, and selection is driven by pointer events, so without this the grid is reachable by
+     * keyboard but cannot be acted on.
+     */
     handleKeyDown(event) {
         if ((event.key === 'Delete' || event.key === 'Backspace') && this.selected.size > 0) {
             event.preventDefault();
             this.deleteSelected();
+
+            return;
+        }
+
+        if (event.key !== 'Enter' && event.key !== ' ') {
+            return;
+        }
+        const block = event.target.closest?.('.planner-block');
+        if (block) {
+            event.preventDefault();
+            this.toggleSelect(block, event.shiftKey || event.ctrlKey || event.metaKey);
         }
     }
 
     blockTargetConnected(block) {
-        block.addEventListener('click', (event) => this.toggleSelect(event, block));
-        // Runs for every block the reloaded grid brings in, which is what re-applies the outlines.
+        // Runs for every block the reloaded grid brings in, which is what re-applies the outlines
+        // and the selection.
         block.classList.toggle('planner-block-invalid', this.invalid.has(block.dataset.shiftId));
+        block.classList.toggle('is-selected', this.selected.has(block.dataset.shiftId));
     }
 
     applyInvalid(uuids) {
@@ -319,25 +487,40 @@ export default class extends Controller {
         });
     }
 
-    toggleSelect(event, block) {
-        const additive = event.shiftKey || event.ctrlKey || event.metaKey;
-        if (!additive) {
-            this.selected.forEach((b) => b.classList.remove('is-selected'));
-            this.selected.clear();
-        }
-        if (this.selected.has(block)) {
-            this.selected.delete(block);
-            block.classList.remove('is-selected');
+    toggleSelect(block, additive) {
+        const id = block.dataset.shiftId;
+        const next = additive ? new Set(this.selected) : new Set();
+        if (next.has(id)) {
+            next.delete(id);
         } else {
-            this.selected.add(block);
-            block.classList.add('is-selected');
+            next.add(id);
         }
-        this.dispatch('selection', {
-            target: window,
-            detail: { ids: Array.from(this.selected).map((b) => b.dataset.shiftId) },
-        });
 
+        this.replaceSelection(next);
+    }
+
+    /**
+     * The selection is held as shift uuids rather than as elements. Every edit replaces the grid, so
+     * a selection of nodes pointed at blocks that had been detached: the panel then acted on shifts
+     * the manager could no longer see highlighted, and a click arriving just after a reload selected
+     * a node that was no longer in the document at all.
+     */
+    replaceSelection(ids) {
+        const next = new Set(ids);
+        if (next.size === this.selected.size && [...next].every((id) => this.selected.has(id))) {
+            return;
+        }
+
+        this.selected = next;
+        this.blockTargets.forEach((block) => {
+            block.classList.toggle('is-selected', next.has(block.dataset.shiftId));
+        });
+        this.dispatch('selection', { target: window, detail: { ids: [...next] } });
         this.releaseDeferredReload();
+    }
+
+    blockFor(id) {
+        return this.blockTargets.find((block) => block.dataset.shiftId === id) ?? null;
     }
 
     // ---- server calls -----------------------------------------------------
@@ -358,10 +541,12 @@ export default class extends Controller {
     }
 
     async deleteSelected() {
-        const blocks = Array.from(this.selected);
-        this.selected.clear();
-        for (const block of blocks) {
-            await this.post(block.dataset.deleteUrl, { _token: this.editTokenValue });
+        const urls = [...this.selected]
+            .map((id) => this.blockFor(id)?.dataset.deleteUrl)
+            .filter(Boolean);
+        this.replaceSelection([]);
+        for (const url of urls) {
+            await this.post(url, { _token: this.editTokenValue });
         }
     }
 
@@ -409,12 +594,13 @@ export default class extends Controller {
 
                 current.replaceWith(fresh);
                 /*
-                 * The blocks the panel was editing are gone with the old grid - after a batch delete
-                 * they no longer exist at all - so the panel has to be told the selection is empty,
-                 * or it keeps offering to act on shifts that are not there.
+                 * Anything in progress was pointing at blocks that have just been detached. Left
+                 * alone, the drag continued against the old element and its pointerup posted a
+                 * position computed from it, which is how a shift being dragged jumped to an
+                 * unrelated time whenever a refresh landed mid-gesture.
                  */
-                this.selected = new Set();
-                this.dispatch('selection', { target: window, detail: { ids: [] } });
+                this.clearGesture();
+                this.pruneSelection();
 
                 fresh.scrollLeft = left;
                 fresh.scrollTop = top;
@@ -426,6 +612,17 @@ export default class extends Controller {
             console.error('Refresh failed; falling back to a full page load.', e);
             window.location.reload();
         }
+    }
+
+    /**
+     * Shifts the reload did not bring back are gone (a batch delete removes them outright), so they
+     * leave the selection and the panel stops offering to act on them. What survived stays selected:
+     * losing the selection on every refresh is the behaviour managers complained about.
+     */
+    pruneSelection() {
+        const alive = this.blockTargets.map((block) => block.dataset.shiftId);
+
+        this.replaceSelection([...this.selected].filter((id) => alive.includes(id)));
     }
 
     refreshPublishBar(parsed) {

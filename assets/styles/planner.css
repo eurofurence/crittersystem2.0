@@ -9,7 +9,10 @@
     --planner-head-height: 48px;
 }
 
+/* Positioned so the selection band can be placed in the grid's own content coordinates and scroll
+   with it. */
 .planner-grid {
+    position: relative;
     display: flex;
     align-items: stretch;
     overflow-x: auto;
@@ -275,6 +278,24 @@
     bottom: 0;
     height: 6px;
     cursor: ns-resize;
+}
+
+/* The rubber band drawn while selecting a range of shifts. It is a child of the scroll container
+   and positioned in its content coordinates, so it stays over the same shifts when the grid scrolls
+   under it. */
+.planner-marquee {
+    position: absolute;
+    border: 1px solid var(--tblr-primary);
+    background-color: color-mix(in srgb, var(--tblr-primary) 15%, transparent);
+    border-radius: 2px;
+    pointer-events: none;
+    z-index: 7;
+}
+
+/* Dragging a band across the grid must not start a text selection instead. */
+.planner.is-marqueeing,
+.planner.is-marqueeing .planner-day-body {
+    user-select: none;
 }
 
 /* The transient block drawn while painting a new shift. */
