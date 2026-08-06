@@ -19,8 +19,8 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 /**
  * The planner rules a manager relies on when planning a department:
  * the department has to be confirmed before anything loads, a shift cannot be saved without a shift
- * task, the Critter-type pickers show only what this department may staff with, and the batch tools
- * (task, delete) plus discarding drafts act on exactly the shifts they name.
+ * task, the Critter-type pickers offer the whole vocabulary with this department's own types first,
+ * and the batch tools (task, delete) plus discarding drafts act on exactly the shifts they name.
  */
 final class PlannerTask17Test extends DatabaseWebTestCase
 {
@@ -211,7 +211,7 @@ final class PlannerTask17Test extends DatabaseWebTestCase
             'department' => $this->alpha->getUuid(),
             'start' => '2026-06-01T10:00',
             'end' => '2026-06-01T12:00',
-            'task' => $foreign->getId(),
+            'task' => $foreign->getUuid(),
         ]);
 
         self::assertResponseStatusCodeSame(422);
@@ -232,13 +232,14 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         self::assertNotContains('0', $values, 'there is no "None" option left to pick');
     }
 
-    // ---- volunteer types are scoped to the department ----------------------
+    // ---- volunteer types are shared, this department's come first ----------
 
     /**
-     * A type linked to a department belongs to it. Offering every department's specialised roles
-     * everywhere let a manager attach another department's type to their own shift.
+     * The whole vocabulary is offered everywhere. Hiding a type that another department had claimed
+     * left a planner with only the two unlinked base types once departments started claiming theirs,
+     * with no way to plan for a role the staffing screen would still happily assign.
      */
-    public function testTypesOfAnotherDepartmentAreNotOfferedOrAccepted(): void
+    public function testTypesClaimedByAnotherDepartmentAreStillOfferedAndHonoured(): void
     {
         $this->login();
         $this->task('Briefing', $this->alpha);
@@ -250,30 +251,62 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         $this->bravo->addVolunteerType($foreign);
         $this->em->flush();
         // Department owns the association, so the type's own side is only correct once reloaded.
-        $sharedId = $shared->getId();
-        $foreignId = $foreign->getId();
+        $sharedUuid = (string) $shared->getUuid();
+        $foreignUuid = (string) $foreign->getUuid();
         $this->em->clear();
         $this->reloadDepartments();
 
         $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$this->alpha->getUuid());
         $names = $crawler->filter('#planner-add-modal input[type="number"]')->each(static fn ($n) => $n->attr('name'));
-        self::assertContains('needed['.$sharedId.']', $names, 'an unlinked type is shared vocabulary');
-        self::assertNotContains('needed['.$foreignId.']', $names, "Bravo's own type is not offered to Alpha");
+        self::assertContains('needed['.$sharedUuid.']', $names, 'an unclaimed type is offered');
+        self::assertContains('needed['.$foreignUuid.']', $names, "Bravo's own type is offered to Alpha too");
 
-        // ...and posting it anyway does not attach it.
+        // ...and posting it attaches it.
         $this->client->request('POST', '/manage-shifts/planner/create', [
             '_token' => $this->editToken($this->alpha),
             'department' => $this->alpha->getUuid(),
             'start' => '2026-06-01T10:00',
             'end' => '2026-06-01T12:00',
-            'task' => $this->em->getRepository(ShiftTask::class)->findOneBy(['name' => 'Briefing'])->getId(),
-            'needed' => [(string) $foreignId => '2'],
+            'task' => $this->em->getRepository(ShiftTask::class)->findOneBy(['name' => 'Briefing'])->getUuid(),
+            'needed' => [$foreignUuid => '2'],
         ]);
         self::assertResponseIsSuccessful();
 
         $this->em->clear();
         $shift = static::getContainer()->get(ShiftRepository::class)->findAll()[0];
-        self::assertCount(0, $shift->getNeededVolunteerTypes(), "a foreign type is ignored, not honoured");
+        self::assertCount(1, $shift->getNeededVolunteerTypes(), 'a type another department claimed is honoured');
+    }
+
+    /**
+     * Within one sort order the department's own types lead, so claiming a type is a shortcut rather
+     * than a restriction. The pinned base types still outrank both.
+     */
+    public function testThisDepartmentsTypesLeadThePickerWithoutOutrankingTheBaseTypes(): void
+    {
+        $this->login();
+        $this->task('Briefing', $this->alpha);
+
+        $staff = (new VolunteerType('Staff'))->setSortOrder(10);
+        $ours = new VolunteerType('Zulu Rigging');
+        $theirs = new VolunteerType('Bravo Audio');
+        $unclaimed = new VolunteerType('Runner');
+        foreach ([$staff, $ours, $theirs, $unclaimed] as $type) {
+            $this->em->persist($type);
+        }
+        $this->alpha->addVolunteerType($ours);
+        $this->bravo->addVolunteerType($theirs);
+        $this->em->flush();
+        $expected = array_map(
+            static fn (VolunteerType $t) => 'needed['.$t->getUuid().']',
+            [$staff, $ours, $theirs, $unclaimed],
+        );
+        $this->em->clear();
+        $this->reloadDepartments();
+
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$this->alpha->getUuid());
+        $names = $crawler->filter('#planner-add-modal input[type="number"]')->each(static fn ($n) => $n->attr('name'));
+
+        self::assertSame($expected, $names);
     }
 
     /** The base types head every picker regardless of where their names fall alphabetically. */
@@ -317,7 +350,7 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         $this->client->request('POST', '/manage-shifts/planner/batch', [
             '_token' => $this->editToken($this->alpha),
             'ids' => [$a->getUuid(), $b->getUuid()],
-            'task' => $briefing->getId(),
+            'task' => $briefing->getUuid(),
         ]);
 
         self::assertResponseIsSuccessful();

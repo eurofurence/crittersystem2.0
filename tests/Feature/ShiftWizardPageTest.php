@@ -62,7 +62,7 @@ final class ShiftWizardPageTest extends DatabaseWebTestCase
             'end_time' => '14:00',
             'slot_minutes' => 120,
             'audience' => 'department_staff',
-            'task' => $this->task->getId(),
+            'task' => $this->task->getUuid(),
         ]);
 
         self::assertResponseRedirects();

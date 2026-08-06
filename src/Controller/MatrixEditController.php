@@ -55,13 +55,13 @@ final class MatrixEditController extends AbstractController
         }
         $group = $this->positions->createGroup($department, $name);
 
-        return new JsonResponse(['ok' => true, 'id' => $group->getId()]);
+        return new JsonResponse(['ok' => true, 'id' => $group->getUuid()]);
     }
 
     #[Route('/position', name: 'app_matrix_position_create', methods: ['POST'])]
     public function createPosition(Request $request, \App\Repository\PositionGroupRepository $groups): Response
     {
-        $group = $groups->find($request->request->getInt('group'));
+        $group = $groups->findOneByUuid((string) $request->request->get('group'));
         if ($group === null) {
             return $this->fail('Unknown position group.');
         }
@@ -76,18 +76,18 @@ final class MatrixEditController extends AbstractController
         $capacity = max(1, (int) $request->request->get('capacity', 1));
         $position = $this->positions->createPosition($group, $name, $capacity);
 
-        return new JsonResponse(['ok' => true, 'id' => $position->getId()]);
+        return new JsonResponse(['ok' => true, 'id' => $position->getUuid()]);
     }
 
     #[Route('/positions/reorder', name: 'app_matrix_positions_reorder', methods: ['POST'])]
     public function reorderPositions(Request $request, \App\Repository\PositionGroupRepository $groups): Response
     {
-        $group = $groups->find($request->request->getInt('group'));
+        $group = $groups->findOneByUuid((string) $request->request->get('group'));
         if ($group === null) {
             return $this->fail('Unknown position group.');
         }
         $this->guard($group->getDepartment(), $request);
-        $this->positions->reorderPositions($group, array_map('intval', (array) $request->request->all('ids')));
+        $this->positions->reorderPositions($group, array_map(strval(...), (array) $request->request->all('ids')));
 
         return new JsonResponse(['ok' => true]);
     }
@@ -102,7 +102,7 @@ final class MatrixEditController extends AbstractController
         }
         $sp = $this->positions->enablePosition($shift, $position, $request->request->getBoolean('required', true));
 
-        return new JsonResponse(['ok' => true, 'shiftPositionId' => $sp->getId()]);
+        return new JsonResponse(['ok' => true, 'shiftPositionId' => $sp->getUuid()]);
     }
 
     #[Route('/shift-position/{id}/required', name: 'app_matrix_position_required', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
@@ -144,7 +144,7 @@ final class MatrixEditController extends AbstractController
      */
     #[Route('/users', name: 'app_matrix_user_search', methods: ['GET'])]
     #[IsGranted('shift:assign')]
-    public function searchUsers(Request $request, UserRepository $users): JsonResponse
+    public function searchUsers(Request $request, UserRepository $users, \App\Service\UserSearchResultFormatter $formatter): JsonResponse
     {
         $department = $this->departments->findOneByUuid((string) $request->query->get('department'));
         if ($department === null) {
@@ -157,19 +157,7 @@ final class MatrixEditController extends AbstractController
             return new JsonResponse(['results' => []]);
         }
 
-        $results = [];
-        foreach ($users->searchByName($q) as $user) {
-            $results[] = [
-                'id' => $user->getId(),
-                'name' => $user->getName(),
-                'staff' => $user->isStaff(),
-                'avatar' => $user->getPersonalData()?->getAvatarPath() !== null
-                    ? $this->generateUrl('app_media_avatar', ['id' => $user->getUuid()])
-                    : null,
-            ];
-        }
-
-        return new JsonResponse(['results' => $results]);
+        return new JsonResponse($formatter->results($users->searchByName($q)));
     }
 
     #[Route('/shift-position/{id}/assign', name: 'app_matrix_position_assign', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
@@ -177,7 +165,7 @@ final class MatrixEditController extends AbstractController
     public function assign(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftPosition $shiftPosition, UserRepository $users): Response
     {
         $this->guard($shiftPosition->getShift()->getDepartment(), $request);
-        $user = $users->find($request->request->getInt('user'));
+        $user = $users->findOneByUuid((string) $request->request->get('user'));
         if ($user === null) {
             return $this->fail('Unknown user.');
         }
@@ -207,15 +195,15 @@ final class MatrixEditController extends AbstractController
     #[Route('/copy', name: 'app_matrix_copy_structure', methods: ['POST'])]
     public function copy(Request $request): Response
     {
-        $from = $this->shifts->find($request->request->getInt('from'));
+        $from = $this->shifts->findOneByUuid((string) $request->request->get('from'));
         if ($from === null) {
             return $this->fail('Unknown source shift.');
         }
         $this->guard($from->getDepartment(), $request);
 
         $copied = 0;
-        foreach (array_map('intval', (array) $request->request->all('to')) as $toId) {
-            $to = $this->shifts->find($toId);
+        foreach ((array) $request->request->all('to') as $toUuid) {
+            $to = $this->shifts->findOneByUuid((string) $toUuid);
             if ($to !== null && $to !== $from && $this->isGranted('shift:manage', $to->getDepartment())) {
                 $this->positions->copyStructure($from, $to);
                 ++$copied;

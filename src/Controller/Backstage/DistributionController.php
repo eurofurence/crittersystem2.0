@@ -134,7 +134,7 @@ final class DistributionController extends AbstractController
     public function give(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): Response
     {
         if ($this->isCsrfTokenValid('give'.$user->getId(), (string) $request->request->get('_token'))) {
-            $item = $this->items->find((int) $request->request->get('item'));
+            $item = $this->items->findOneByUuid((string) $request->request->get('item'));
             $quantity = max(1, (int) $request->request->get('quantity', 1));
 
             if ($item === null) {

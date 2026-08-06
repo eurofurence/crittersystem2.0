@@ -130,20 +130,20 @@ final class PositionService
     }
 
     /**
-     * Reorder Named Positions within a group by the given id order.
+     * Reorder Named Positions within a group by the given uuid order.
      *
-     * @param int[] $orderedIds
+     * @param string[] $orderedUuids
      */
-    public function reorderPositions(PositionGroup $group, array $orderedIds): void
+    public function reorderPositions(PositionGroup $group, array $orderedUuids): void
     {
-        $byId = [];
+        $byUuid = [];
         foreach ($group->getPositions() as $position) {
-            $byId[$position->getId()] = $position;
+            $byUuid[(string) $position->getUuid()] = $position;
         }
         $order = 1;
-        foreach ($orderedIds as $id) {
-            if (isset($byId[(int) $id])) {
-                $byId[(int) $id]->setDisplayOrder($order++);
+        foreach ($orderedUuids as $uuid) {
+            if (isset($byUuid[(string) $uuid])) {
+                $byUuid[(string) $uuid]->setDisplayOrder($order++);
             }
         }
         $this->em->flush();
@@ -152,20 +152,20 @@ final class PositionService
     }
 
     /**
-     * Reorder a department's Position Groups by the given id order.
+     * Reorder a department's Position Groups by the given uuid order.
      *
-     * @param int[] $orderedIds
+     * @param string[] $orderedUuids
      */
-    public function reorderGroups(Department $department, array $orderedIds): void
+    public function reorderGroups(Department $department, array $orderedUuids): void
     {
-        $byId = [];
+        $byUuid = [];
         foreach ($this->groups->findForDepartment($department) as $group) {
-            $byId[$group->getId()] = $group;
+            $byUuid[(string) $group->getUuid()] = $group;
         }
         $order = 1;
-        foreach ($orderedIds as $id) {
-            if (isset($byId[(int) $id])) {
-                $byId[(int) $id]->setDisplayOrder($order++);
+        foreach ($orderedUuids as $uuid) {
+            if (isset($byUuid[(string) $uuid])) {
+                $byUuid[(string) $uuid]->setDisplayOrder($order++);
             }
         }
         $this->em->flush();

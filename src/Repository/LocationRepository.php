@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\Location;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @extends ServiceEntityRepository<Location>
@@ -14,6 +15,11 @@ class LocationRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Location::class);
+    }
+
+    public function findOneByUuid(string $uuid): ?Location
+    {
+        return Uuid::isValid($uuid) ? $this->findOneBy(['uuid' => $uuid]) : null;
     }
 
     /** @return Location[] */

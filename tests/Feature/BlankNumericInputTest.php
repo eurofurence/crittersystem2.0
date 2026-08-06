@@ -91,7 +91,7 @@ final class BlankNumericInputTest extends DatabaseWebTestCase
         $this->client->loginUser($this->manager(['shift:manage', 'shift:assign'], $department));
         $this->client->request('POST', '/manage-shifts/matrix/position', [
             '_token' => $this->matrixToken($department),
-            'group' => (string) $positionGroup->getId(),
+            'group' => (string) $positionGroup->getUuid(),
             'name' => 'Spot',
             'capacity' => '',
         ]);
@@ -116,7 +116,7 @@ final class BlankNumericInputTest extends DatabaseWebTestCase
             'start' => '2036-06-01 10:00',
             'end' => '2036-06-01 12:00',
             'task' => '',
-            'location' => '0',
+            'location' => '',
         ]);
 
         // A readable refusal (the planner's own 422), not a 400 BadRequestException.
@@ -158,7 +158,7 @@ final class BlankNumericInputTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/calls/trigger', [
             '_token' => $form->filter('input[name="_token"]')->attr('value'),
-            'shift' => (string) $shift->getId(),
+            'shift' => (string) $shift->getUuid(),
             'slots' => '',
         ]);
 

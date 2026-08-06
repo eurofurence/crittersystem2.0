@@ -61,9 +61,9 @@
         <select id="paint-task" class="form-select form-select-sm" data-action="change->planner-defaults#task"
                 {{ shiftTasks is empty ? 'disabled' : '' }}>
           {% for task in shiftTasks %}
-            <option value="{{ task.id }}">{{ task.displayName }}</option>
+            <option value="{{ task.uuid }}">{{ task.displayName }}</option>
           {% else %}
-            <option value="0">{{ 'planner.task_picker.placeholder'|trans }}</option>
+            <option value="">{{ 'planner.task_picker.placeholder'|trans }}</option>
           {% endfor %}
         </select>
         <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#planner-new-task"

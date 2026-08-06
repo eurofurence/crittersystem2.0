@@ -40,7 +40,7 @@ final class ShiftWizardController extends AbstractController
         private readonly EventConfigStore $config,
         private readonly ShiftTaskRepository $tasks,
         private readonly \App\Service\Shift\ShiftTaskAccess $taskAccess,
-        private readonly \App\Service\Shift\VolunteerTypeAccess $typeAccess,
+        private readonly \App\Service\Shift\VolunteerTypeOrdering $typeOrder,
     ) {
     }
 
@@ -73,7 +73,7 @@ final class ShiftWizardController extends AbstractController
             'audiences' => ShiftAudience::cases(),
             'shiftTasks' => $this->taskAccess->forDepartment($this->tasks->findAllOrdered(), $department),
             'locations' => $locations->findAllOrdered(),
-            'volunteerTypes' => $this->typeAccess->forDepartment($types->findAllOrderedWithDepartments(), $department),
+            'volunteerTypes' => $this->typeOrder->forDepartment($types->findAllOrderedWithDepartments(), $department),
         ]);
     }
 
@@ -91,13 +91,11 @@ final class ShiftWizardController extends AbstractController
         ))));
 
         $audience = ShiftAudience::tryFrom((string) $request->request->get('audience', '')) ?? ShiftAudience::PUBLIC_VOLUNTEER;
-        $location = ($lid = $request->request->getInt('location')) ? $locations->find($lid) : null;
+        $location = $locations->findOneByUuid((string) $request->request->get('location'));
 
         // Every generated shift carries the same task, so a missing or foreign one stops the run
         // rather than producing a batch of drafts that publication would later reject.
-        // Cast, not getInt(): the task picker's placeholder posts an empty string when nothing is
-        // chosen, and that has to read as "no task" so the wizard's own validation reports it.
-        $task = ($tid = (int) $request->request->get('task')) ? $this->tasks->find($tid) : null;
+        $task = $this->tasks->findOneByUuid((string) $request->request->get('task'));
         if (!$task instanceof ShiftTask || $this->taskAccess->forDepartment([$task], $department) === []) {
             $this->addFlash('danger', new TranslatableMessage('shift_manager.wizard.flash.task_required'));
 
@@ -105,11 +103,9 @@ final class ShiftWizardController extends AbstractController
         }
 
         $needed = [];
-        foreach ((array) $request->request->all('needed') as $typeId => $count) {
-            $type = $types->find((int) $typeId);
-            // The form only offers this department's types; anything else posted is ignored.
-            if ($type instanceof VolunteerType && (int) $count > 0
-                && $this->typeAccess->isAvailableTo($type, $department)) {
+        foreach ((array) $request->request->all('needed') as $typeUuid => $count) {
+            $type = $types->findOneByUuid((string) $typeUuid);
+            if ($type instanceof VolunteerType && (int) $count > 0) {
                 $needed[] = [$type, (int) $count];
             }
         }

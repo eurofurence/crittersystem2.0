@@ -101,7 +101,7 @@ final class ShiftManagerController extends AbstractController
         }
         if ($this->isCsrfTokenValid('apply'.$shift->getId(), (string) $request->request->get('_token'))) {
             $options = $this->signup->signupOptions($shift, $user);
-            $type = $options[$request->request->getInt('volunteer_type')] ?? (\count($options) === 1 ? reset($options) : null);
+            $type = $options[(string) $request->request->get('volunteer_type')] ?? (\count($options) === 1 ? reset($options) : null);
             if ($type === null) {
                 $this->addFlash('danger', new TranslatableMessage('shift_manager.flash.choose_role'));
             } elseif ($this->hoursGuard->wouldExceedGroup($user, $shift) && !$request->request->getBoolean('acknowledge_hours')) {
@@ -142,19 +142,19 @@ final class ShiftManagerController extends AbstractController
     }
 
     /**
-     * Per-member role choices from the confirmation modal, as member shift uuid => volunteer type id.
+     * Per-member role choices from the confirmation modal, as member shift uuid => volunteer type uuid.
      *
      * Only the shape is validated here; which roles the volunteer may take is decided by the sign-up
      * service against live data, never by what the form posted.
      *
-     * @return array<string, int>
+     * @return array<string, string>
      */
     private function typeChoices(Request $request): array
     {
         $choices = [];
-        foreach ($request->request->all('group_type') as $uuid => $typeId) {
-            if (\is_string($uuid) && \Symfony\Component\Uid\Uuid::isValid($uuid) && (int) $typeId > 0) {
-                $choices[$uuid] = (int) $typeId;
+        foreach ($request->request->all('group_type') as $uuid => $typeUuid) {
+            if (\is_string($uuid) && \Symfony\Component\Uid\Uuid::isValid($uuid) && \is_string($typeUuid) && \Symfony\Component\Uid\Uuid::isValid($typeUuid)) {
+                $choices[$uuid] = $typeUuid;
             }
         }
 

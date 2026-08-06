@@ -158,7 +158,7 @@ final class PlannerPageTest extends DatabaseWebTestCase
                 '_token' => $token,
                 'department' => $deptId,
                 'audience' => 'department_staff',
-                'task' => $task->getId(),
+                'task' => $task->getUuid(),
                 'intervals' => [
                     ['start' => '2026-06-01T10:00:00', 'end' => '2026-06-01T11:00:00'],
                     ['start' => '2026-06-01T11:00:00', 'end' => '2026-06-01T12:00:00'],

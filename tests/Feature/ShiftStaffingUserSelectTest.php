@@ -126,7 +126,7 @@ final class ShiftStaffingUserSelectTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/manage-shifts/shift/'.$this->shift->getUuid().'/staffing/assign', [
             '_token' => $token,
-            'users' => [(string) $a->getId(), (string) $b->getId(), (string) $stranger->getId()],
+            'users' => [(string) $a->getUuid(), (string) $b->getUuid(), (string) $stranger->getUuid()],
         ]);
         self::assertResponseRedirects();
 

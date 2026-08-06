@@ -55,7 +55,7 @@ final class ShiftEligibility
      * Volunteer types the user may sign up as for this shift: requested by the shift, the user is a
      * confirmed member, and there is open capacity.
      *
-     * @return array<int, VolunteerType> keyed by volunteer type id
+     * @return array<string, VolunteerType> keyed by the type's public uuid
      */
     public function signupOptions(Shift $shift, User $user): array
     {
@@ -66,7 +66,7 @@ final class ShiftEligibility
         $options = [];
         foreach ($this->availability($shift) as $row) {
             if ($row['assigned'] < $row['needed'] && $this->memberships->isConfirmedMember($user, $row['type'])) {
-                $options[$row['type']->getId()] = $row['type'];
+                $options[(string) $row['type']->getUuid()] = $row['type'];
             }
         }
 

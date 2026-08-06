@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
 
 {% block title %}{{ 'admin.audit.page.title'|trans }}{% endblock %}
 
@@ -21,10 +22,12 @@
             <label class="form-label">{{ 'admin.audit.export.to'|trans }}</label>
             <input type="date" name="to" class="form-control" required>
           </div>
-          <div class="col-auto">
-            <label class="form-label">{{ 'admin.audit.export.focus_user'|trans }} <span class="text-muted">{{ 'admin.audit.export.optional'|trans }}</span></label>
-            <input type="number" name="focus_user" class="form-control" min="1">
-          </div>
+          {{ f.user_select('focus_user', {
+            url: path('app_manage_audit_user_search'),
+            label: 'admin.audit.export.focus_user'|trans ~ ' (' ~ 'admin.audit.export.optional'|trans ~ ')',
+            multiple: false,
+            col: 'col-12 col-md-4',
+          }) }}
           <div class="col-auto">
             <label class="form-label">{{ 'admin.audit.export.legal_hold'|trans }} <span class="text-muted">{{ 'admin.audit.export.optional'|trans }}</span></label>
             <input type="text" name="legal_hold" class="form-control">

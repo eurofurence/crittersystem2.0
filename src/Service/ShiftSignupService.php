@@ -50,7 +50,7 @@ final class ShiftSignupService
      * are resolved from it (see {@see plan()}), because the volunteer picks once and commits to the
      * whole group.
      *
-     * @return array<int, VolunteerType> keyed by volunteer type id
+     * @return array<string, VolunteerType> keyed by the type's public uuid
      */
     public function signupOptions(Shift $shift, User $user): array
     {

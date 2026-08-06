@@ -44,7 +44,7 @@ final class ShiftGroupSignupService
     /**
      * What applying to this shift would commit the volunteer to, without writing anything.
      *
-     * @param array<string, int> $typeChoices member shift uuid => volunteer type id, for members
+     * @param array<string, string> $typeChoices member shift uuid => volunteer type uuid, for members
      *                                        whose role the volunteer had to pick
      */
     public function plan(User $user, Shift $shift, ?VolunteerType $requestedType, array $typeChoices = []): GroupSignupPlan
@@ -143,7 +143,7 @@ final class ShiftGroupSignupService
      * fixed order matters - two volunteers applying from opposite members of the same group would
      * otherwise deadlock.
      *
-     * @param array<string, int> $typeChoices member shift uuid => volunteer type id
+     * @param array<string, string> $typeChoices member shift uuid => volunteer type uuid
      *
      * @return list<ShiftEntry> the entries created, in member order
      *
@@ -319,8 +319,8 @@ final class ShiftGroupSignupService
      * 3. the only remaining eligible role;
      * 4. null, meaning the volunteer has to choose.
      *
-     * @param array<int, VolunteerType> $options
-     * @param array<string, int>        $typeChoices
+     * @param array<string, VolunteerType> $options
+     * @param array<string, string>        $typeChoices
      */
     private function resolveType(Shift $member, bool $isOrigin, ?VolunteerType $requested, array $options, array $typeChoices): ?VolunteerType
     {
@@ -333,8 +333,8 @@ final class ShiftGroupSignupService
             return $options[$chosen];
         }
 
-        if ($requested !== null && isset($options[$requested->getId()])) {
-            return $options[$requested->getId()];
+        if ($requested !== null && isset($options[(string) $requested->getUuid()])) {
+            return $options[(string) $requested->getUuid()];
         }
 
         return \count($options) === 1 ? reset($options) : null;

@@ -119,7 +119,7 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
         $this->post('/manage-shifts/planner/batch', [
             '_token' => $this->token(),
             'ids' => [(string) $a->getUuid(), (string) $b->getUuid()],
-            'shift_group' => (string) $group->getId(),
+            'shift_group' => (string) $group->getUuid(),
         ]);
 
         self::assertResponseIsSuccessful();
@@ -184,7 +184,7 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
         $this->post('/manage-shifts/planner/batch', [
             '_token' => $this->token(),
             'ids' => [(string) $mine->getUuid(), (string) $foreign->getUuid()],
-            'shift_group' => (string) $group->getId(),
+            'shift_group' => (string) $group->getUuid(),
         ]);
 
         $this->em->clear();
@@ -205,7 +205,7 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
         $this->post('/manage-shifts/planner/batch', [
             '_token' => $this->token(),
             'ids' => [(string) $shift->getUuid()],
-            'shift_group' => (string) $foreignGroup->getId(),
+            'shift_group' => (string) $foreignGroup->getUuid(),
         ]);
 
         $this->em->clear();
@@ -229,7 +229,7 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
         $this->post('/manage-shifts/planner/batch', [
             '_token' => $token,
             'ids' => [(string) $withEntries->getUuid(), (string) $empty->getUuid()],
-            'shift_group' => (string) $group->getId(),
+            'shift_group' => (string) $group->getUuid(),
         ]);
 
         $data = json_decode((string) $this->client->getResponse()->getContent(), true);
@@ -246,7 +246,7 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
         $this->post('/manage-shifts/planner/batch', [
             '_token' => $token,
             'ids' => [(string) $withEntries->getUuid(), (string) $empty->getUuid()],
-            'shift_group' => (string) $group->getId(),
+            'shift_group' => (string) $group->getUuid(),
             'confirm' => '1',
         ]);
 
@@ -347,12 +347,13 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
         $this->post('/manage-shifts/planner/batch', [
             '_token' => $this->token(),
             'ids' => [(string) $shift->getUuid()],
-            'shift_group' => (string) $group->getId(),
-            // Exactly what the browser sends for an untouched number input.
+            'shift_group' => (string) $group->getUuid(),
+            // Exactly what the browser sends for an untouched field: an empty number input, and the
+            // placeholder option of each picker.
             'duration_minutes' => '',
             'needed_count' => '',
-            'needed_type' => '0',
-            'task' => '0',
+            'needed_type' => '',
+            'task' => '',
         ]);
 
         self::assertResponseIsSuccessful();

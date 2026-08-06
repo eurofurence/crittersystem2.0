@@ -17,7 +17,7 @@
             {{ tasks is empty and department is null ? 'disabled' : '' }}>
       <option value="">{{ 'planner.task_picker.placeholder'|trans }}</option>
       {% for task in tasks %}
-        <option value="{{ task.id }}" {{ selected is defined and selected == task.id ? 'selected' : '' }}>{{ task.displayName }}</option>
+        <option value="{{ task.uuid }}" {{ selected is defined and selected == task.uuid ? 'selected' : '' }}>{{ task.displayName }}</option>
       {% endfor %}
     </select>
     {% if department %}

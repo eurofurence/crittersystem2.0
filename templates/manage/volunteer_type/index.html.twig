@@ -46,6 +46,7 @@
                 {% if vt.shiftSelfSignup %}{{ d.badge('manage.volunteer_type.badge.self_signup'|trans, 'text-bg-info') }}{% endif %}
                 {% if vt.showOnDashboard %}{{ d.badge('manage.volunteer_type.badge.dashboard'|trans, 'text-bg-secondary') }}{% endif %}
                 {% if vt.staffOnly %}{{ d.badge('common.state.staff_only'|trans, 'text-bg-dark') }}{% endif %}
+                {% if vt.global %}{{ d.badge('manage.volunteer_type.badge.global'|trans, 'text-bg-primary') }}{% endif %}
               </div>
             </td>
             {% set del %}

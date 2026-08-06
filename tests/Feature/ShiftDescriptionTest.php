@@ -94,7 +94,7 @@ final class ShiftDescriptionTest extends DatabaseWebTestCase
         $this->client->request('POST', '/manage-shifts/planner/create', [
             '_token' => $this->editToken(),
             'department' => $dept->getUuid(),
-            'task' => $task->getId(),
+            'task' => $task->getUuid(),
             'start' => '2026-06-01T10:00',
             'end' => '2026-06-01T12:00',
             'description' => "Bring a radio.\nMeet at the loading bay.",

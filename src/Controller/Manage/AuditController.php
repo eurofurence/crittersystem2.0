@@ -56,6 +56,21 @@ final class AuditController extends AbstractController
         ]);
     }
 
+    /**
+     * Type-ahead source for the export form's focus-user picker. Behind `audit:view` like the rest of
+     * this controller, and it answers with public uuids - the export form resolves a user by uuid, so
+     * an admin never has to know (or be shown) an internal id.
+     */
+    #[Route('/user-search', name: 'app_manage_audit_user_search', methods: ['GET'])]
+    public function userSearch(Request $request, \App\Service\UserSearchResultFormatter $formatter): \Symfony\Component\HttpFoundation\JsonResponse
+    {
+        $q = trim((string) $request->query->get('q', ''));
+
+        return new \Symfony\Component\HttpFoundation\JsonResponse(
+            $formatter->results($q === '' ? [] : $this->users->searchByName($q)),
+        );
+    }
+
     #[Route('/export', name: 'app_manage_audit_export', methods: ['POST'])]
     #[IsGranted('audit:export')]
     public function export(Request $request): Response
@@ -78,9 +93,9 @@ final class AuditController extends AbstractController
         }
 
         $focusUser = null;
-        $focusId = $request->request->get('focus_user');
-        if ($focusId !== null && $focusId !== '') {
-            $focusUser = $this->users->find((int) $focusId);
+        $focusUuid = (string) $request->request->get('focus_user');
+        if ($focusUuid !== '') {
+            $focusUser = $this->users->findOneByUuid($focusUuid);
         }
         $legalHold = trim((string) $request->request->get('legal_hold')) ?: null;
 

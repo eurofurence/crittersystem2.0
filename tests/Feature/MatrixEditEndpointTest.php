@@ -112,8 +112,8 @@ final class MatrixEditEndpointTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/manage-shifts/matrix/copy', [
             '_token' => $this->token(),
-            'from' => $from->getId(),
-            'to' => [$to->getId()],
+            'from' => $from->getUuid(),
+            'to' => [$to->getUuid()],
         ]);
 
         self::assertResponseIsSuccessful();

@@ -39,9 +39,9 @@
       <div class="mb-2">
         <label class="form-label" for="batch-task">{{ 'planner.field.shift_task'|trans }}</label>
         <select class="form-select" id="batch-task" name="task">
-          <option value="0">{{ 'planner.panel.batch.task_unchanged'|trans }}</option>
+          <option value="">{{ 'planner.panel.batch.task_unchanged'|trans }}</option>
           {% for task in shiftTasks %}
-            <option value="{{ task.id }}">{{ task.displayName }}</option>
+            <option value="{{ task.uuid }}">{{ task.displayName }}</option>
           {% endfor %}
         </select>
         <small class="text-secondary">{{ 'planner.panel.batch.task_help'|trans }}</small>
@@ -64,7 +64,7 @@
             <option value="">{{ 'planner.batch.group.unchanged'|trans }}</option>
             <option value="none">{{ 'planner.batch.group.remove'|trans }}</option>
             {% for group in shiftGroups ?? [] %}
-              <option value="{{ group.id }}">{{ group.name }}</option>
+              <option value="{{ group.uuid }}">{{ group.name }}</option>
             {% endfor %}
           </select>
           <button type="button" class="btn btn-outline-secondary" data-action="shift-group-create#open"
@@ -90,9 +90,9 @@
         <legend class="form-label">{{ 'planner.field.needed_single'|trans }}</legend>
         <div class="d-flex gap-2">
           <select class="form-select" name="needed_type">
-            <option value="0">{{ 'planner.option.none'|trans }}</option>
+            <option value="">{{ 'planner.option.none'|trans }}</option>
             {% for vt in volunteerTypes ?? [] %}
-              <option value="{{ vt.id }}">{{ vt.name }}</option>
+              <option value="{{ vt.uuid }}">{{ vt.name }}</option>
             {% endfor %}
           </select>
           <input type="number" min="0" class="form-control" name="needed_count" placeholder="{{ 'planner.field.qty_placeholder'|trans }}" style="max-width: 6rem;">

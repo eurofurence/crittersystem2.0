@@ -226,8 +226,8 @@ final class UserController extends AbstractController
             }
 
             if ($this->isGranted('user:promote')) {
-                $groupIds = array_map('intval', (array) $request->request->all('groups'));
-                if ($this->grantsElevatedRole($user, $groupIds)) {
+                $groupUuids = array_map(strval(...), (array) $request->request->all('groups'));
+                if ($this->grantsElevatedRole($user, $groupUuids)) {
                     // Promoting to an admin/sub-admin role requires step-up; a
                     // non-staff target must be approved by a global admin.
                     if ($stepUp = $this->stepUp->guard($request)) {
@@ -239,10 +239,10 @@ final class UserController extends AbstractController
                         return $this->redirectToRoute('app_manage_user_edit', ['id' => $user->getUuid()]);
                     }
                 }
-                $this->syncGroups($user, $groupIds);
+                $this->syncGroups($user, $groupUuids);
             }
             if ($this->isGranted('badge:assign')) {
-                $this->syncBadges($user, array_map('intval', (array) $request->request->all('badges')));
+                $this->syncBadges($user, array_map(strval(...), (array) $request->request->all('badges')));
             }
 
             $state = $user->getState() ?? new State($user);
@@ -326,17 +326,17 @@ final class UserController extends AbstractController
     /**
      * Whether the submitted selection newly grants an admin/sub-admin role.
      *
-     * @param int[] $groupIds
+     * @param string[] $groupUuids
      */
-    private function grantsElevatedRole(User $user, array $groupIds): bool
+    private function grantsElevatedRole(User $user, array $groupUuids): bool
     {
         $current = [];
         foreach ($user->getGroups() as $group) {
-            $current[$group->getId()] = true;
+            $current[(string) $group->getUuid()] = true;
         }
         foreach ($this->assignableGroups() as $group) {
-            if (\in_array($group->getId(), $groupIds, true)
-                && !isset($current[$group->getId()])
+            if (\in_array((string) $group->getUuid(), $groupUuids, true)
+                && !isset($current[(string) $group->getUuid()])
                 && \in_array($group->getRole(), ['ROLE_ADMIN', 'ROLE_SUBADMIN'], true)) {
                 return true;
             }
@@ -345,34 +345,33 @@ final class UserController extends AbstractController
         return false;
     }
 
-    /** @param int[] $groupIds */
-    private function syncGroups(User $user, array $groupIds): void
+    /** @param string[] $groupUuids */
+    private function syncGroups(User $user, array $groupUuids): void
     {
-        $assignable = $this->assignableGroups();
-        $assignableById = [];
-        foreach ($assignable as $g) {
-            $assignableById[$g->getId()] = $g;
+        $assignableByUuid = [];
+        foreach ($this->assignableGroups() as $g) {
+            $assignableByUuid[(string) $g->getUuid()] = $g;
         }
 
         // Remove only assignable groups the user no longer has selected; leave
         // groups outside the editor's authority untouched.
         foreach ($user->getGroups() as $group) {
-            if (isset($assignableById[$group->getId()]) && !\in_array($group->getId(), $groupIds, true)) {
+            if (isset($assignableByUuid[(string) $group->getUuid()]) && !\in_array((string) $group->getUuid(), $groupUuids, true)) {
                 $user->removeGroup($group);
             }
         }
-        foreach ($groupIds as $id) {
-            if (isset($assignableById[$id])) {
-                $user->addGroup($assignableById[$id]);
+        foreach ($groupUuids as $uuid) {
+            if (isset($assignableByUuid[$uuid])) {
+                $user->addGroup($assignableByUuid[$uuid]);
             }
         }
     }
 
-    /** @param int[] $badgeIds */
-    private function syncBadges(User $user, array $badgeIds): void
+    /** @param string[] $badgeUuids */
+    private function syncBadges(User $user, array $badgeUuids): void
     {
         foreach ($this->badges->findAllOrdered() as $badge) {
-            $selected = \in_array($badge->getId(), $badgeIds, true);
+            $selected = \in_array((string) $badge->getUuid(), $badgeUuids, true);
             if ($selected && !$user->hasBadge($badge)) {
                 $user->addBadge($badge);
             } elseif (!$selected && $user->hasBadge($badge)) {

@@ -65,7 +65,7 @@
               <select id="pick-type" class="form-select form-select-sm"
                       data-shift-group-picker-target="type" data-action="shift-group-picker#refresh">
                 <option value="">{{ 'manage.shift_group.filter.all_types'|trans }}</option>
-                {% for task in shiftTasks %}<option value="{{ task.id }}">{{ task.displayName }}</option>{% endfor %}
+                {% for task in shiftTasks %}<option value="{{ task.uuid }}">{{ task.displayName }}</option>{% endfor %}
               </select>
             </div>
             <div class="col-12 col-md-3">

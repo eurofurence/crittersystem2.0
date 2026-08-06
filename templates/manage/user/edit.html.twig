@@ -18,7 +18,7 @@
     {% if is_granted('user:promote') %}
       <div class="mt-3"><div class="form-label">{{ 'manage.label.groups'|trans }}</div>
         {% for g in assignableGroups %}
-          <label class="form-check"><input type="checkbox" class="form-check-input" name="groups[]" value="{{ g.id }}" {{ user.groups.contains(g) ? 'checked' }}><span class="form-check-label">{{ g.name }}{% if g.role %} <span class="text-muted small">({{ g.role }})</span>{% endif %}</span></label>
+          <label class="form-check"><input type="checkbox" class="form-check-input" name="groups[]" value="{{ g.uuid }}" {{ user.groups.contains(g) ? 'checked' }}><span class="form-check-label">{{ g.name }}{% if g.role %} <span class="text-muted small">({{ g.role }})</span>{% endif %}</span></label>
         {% endfor %}
       </div>
     {% endif %}
@@ -26,7 +26,7 @@
     {% if is_granted('badge:assign') %}
       <div class="mt-3"><div class="form-label">{{ 'manage.label.badges'|trans }}</div>
         {% for b in allBadges %}
-          <label class="form-check"><input type="checkbox" class="form-check-input" name="badges[]" value="{{ b.id }}" {{ user.hasBadge(b) ? 'checked' }}><span class="form-check-label">{{ d.badge(b.name, 'text-bg-' ~ b.color) }}</span></label>
+          <label class="form-check"><input type="checkbox" class="form-check-input" name="badges[]" value="{{ b.uuid }}" {{ user.hasBadge(b) ? 'checked' }}><span class="form-check-label">{{ d.badge(b.name, 'text-bg-' ~ b.color) }}</span></label>
         {% endfor %}
       </div>
     {% endif %}

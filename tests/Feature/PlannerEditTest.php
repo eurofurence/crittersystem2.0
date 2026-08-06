@@ -96,7 +96,7 @@ final class PlannerEditTest extends DatabaseWebTestCase
         $this->client->request('POST', '/manage-shifts/planner/paint', [], [], ['CONTENT_TYPE' => 'application/json'], json_encode([
             '_token' => $planner->attr('data-planner-paint-token-value'),
             'department' => $planner->attr('data-planner-department-value'),
-            'task' => $task->getId(),
+            'task' => $task->getUuid(),
             'intervals' => [['start' => '2026-06-01T10:00:00', 'end' => '2026-06-01T12:00:00']],
         ]));
 
@@ -136,7 +136,7 @@ final class PlannerEditTest extends DatabaseWebTestCase
         $this->client->request('POST', '/manage-shifts/planner/batch', [
             '_token' => $this->editToken(),
             'ids' => [$a->getUuid()],
-            'needed_type' => $type->getId(),
+            'needed_type' => $type->getUuid(),
             'needed_count' => 3,
         ]);
 

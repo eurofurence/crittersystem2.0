@@ -5,6 +5,7 @@ namespace App\Repository;
 use App\Entity\GoodieItem;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @extends ServiceEntityRepository<GoodieItem>
@@ -14,6 +15,11 @@ class GoodieItemRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, GoodieItem::class);
+    }
+
+    public function findOneByUuid(string $uuid): ?GoodieItem
+    {
+        return Uuid::isValid($uuid) ? $this->findOneBy(['uuid' => $uuid]) : null;
     }
 
     /** @return GoodieItem[] */

@@ -56,8 +56,8 @@ final class ShiftBrowseController extends AbstractController
         $tz = $this->display->timezone();
         $days = $this->shifts->findUpcomingDays($tz);
         $selectedDate = $this->resolveDate((string) $request->query->get('date', ''), $days, $tz);
-        $location = ($lid = (int) $request->query->get('location')) > 0 ? $locationRepo->find($lid) : null;
-        $shiftTask = ($tid = (int) $request->query->get('type')) > 0 ? $shiftTaskRepo->find($tid) : null;
+        $location = $locationRepo->findOneByUuid((string) $request->query->get('location'));
+        $shiftTask = $shiftTaskRepo->findOneByUuid((string) $request->query->get('type'));
         $onlyAvailable = $request->query->getBoolean('available');
         $onlyMine = $request->query->getBoolean('mine');
 
@@ -94,8 +94,8 @@ final class ShiftBrowseController extends AbstractController
             'locations' => $locationRepo->findAllOrdered(),
             'shiftTasks' => $shiftTaskRepo->findAllOrdered(),
             'filters' => [
-                'location' => $location?->getId(),
-                'type' => $shiftTask?->getId(),
+                'location' => $location !== null ? (string) $location->getUuid() : null,
+                'type' => $shiftTask !== null ? (string) $shiftTask->getUuid() : null,
                 'available' => $onlyAvailable,
                 'mine' => $onlyMine,
             ],
@@ -140,7 +140,7 @@ final class ShiftBrowseController extends AbstractController
 
         if ($this->isCsrfTokenValid('signup'.$shift->getId(), (string) $request->request->get('_token'))) {
             $options = $this->signup->signupOptions($shift, $user);
-            $type = $options[(int) $request->request->get('volunteer_type')] ?? null;
+            $type = $options[(string) $request->request->get('volunteer_type')] ?? null;
 
             if ($type === null) {
                 $this->addFlash('danger', new TranslatableMessage('shift.flash.choose_type'));
@@ -190,10 +190,10 @@ final class ShiftBrowseController extends AbstractController
         }
 
         $options = $this->signup->signupOptions($shift, $user);
-        $typeId = (int) $request->query->get('volunteer_type');
+        $typeUuid = (string) $request->query->get('volunteer_type');
 
         return $this->render('shift/_group_modal.html.twig', [
-            'plan' => $this->signup->plan($user, $shift, $options[$typeId] ?? null),
+            'plan' => $this->signup->plan($user, $shift, $options[$typeUuid] ?? null),
             'mode' => $request->query->get('mode') === 'cancel' ? 'cancel' : 'apply',
         ]);
     }
@@ -243,20 +243,20 @@ final class ShiftBrowseController extends AbstractController
     }
 
     /**
-     * Per-member role choices from the confirmation modal, as member shift uuid => volunteer type id.
+     * Per-member role choices from the confirmation modal, as member shift uuid => volunteer type uuid.
      *
      * Only the shape is validated here. Which roles a volunteer may actually take on each member is
      * decided by the sign-up service against the live data, never by what the form posted.
      *
-     * @return array<string, int>
+     * @return array<string, string>
      */
     private function typeChoices(Request $request): array
     {
         $raw = $request->request->all('group_type');
         $choices = [];
-        foreach ($raw as $uuid => $typeId) {
-            if (\is_string($uuid) && Uuid::isValid($uuid) && (int) $typeId > 0) {
-                $choices[$uuid] = (int) $typeId;
+        foreach ($raw as $uuid => $typeUuid) {
+            if (\is_string($uuid) && Uuid::isValid($uuid) && \is_string($typeUuid) && Uuid::isValid($typeUuid)) {
+                $choices[$uuid] = $typeUuid;
             }
         }
 

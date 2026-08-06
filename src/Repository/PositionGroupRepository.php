@@ -6,6 +6,7 @@ use App\Entity\Department;
 use App\Entity\PositionGroup;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * @extends ServiceEntityRepository<PositionGroup>
@@ -15,6 +16,11 @@ class PositionGroupRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, PositionGroup::class);
+    }
+
+    public function findOneByUuid(string $uuid): ?PositionGroup
+    {
+        return Uuid::isValid($uuid) ? $this->findOneBy(['uuid' => $uuid]) : null;
     }
 
     /** @return PositionGroup[] the department's groups, in display order */

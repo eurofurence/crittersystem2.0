@@ -163,6 +163,34 @@ final class DepartmentImportTest extends DatabaseTestCase
         self::assertCount(0, $dept->getVolunteerTypes());
     }
 
+    /**
+     * A global type is offered to every department already, so an import cannot claim it: doing so
+     * would restrict a type the whole event staffs with to whichever department listed it.
+     */
+    public function testAGlobalTypeCannotBeClaimedByAnImport(): void
+    {
+        $global = (new VolunteerType('Staff'))->setGlobal(true)->setStaffOnly(true)->setHideOnShiftView(true);
+        $ordinary = new VolunteerType('Rigging');
+        $this->em->persist($global);
+        $this->em->persist($ordinary);
+        $this->em->flush();
+
+        $result = $this->importer()->import([
+            ['name' => 'Logistics', 'volunteerTypes' => ['Staff', 'Rigging']],
+        ]);
+
+        self::assertSame(1, $result['imported']);
+        self::assertCount(1, $result['warnings']);
+        self::assertStringContainsString('global', $result['warnings'][0]);
+
+        $this->em->clear();
+        $dept = $this->em->getRepository(Department::class)->findOneBy(['name' => 'Logistics']);
+        self::assertSame(['Rigging'], array_map(
+            static fn (VolunteerType $t): string => $t->getName(),
+            $dept->getVolunteerTypes()->toArray(),
+        ));
+    }
+
     public function testRelationKeysAreOnlyRewrittenWhenPresent(): void
     {
         $location = new Location('Main Hall');

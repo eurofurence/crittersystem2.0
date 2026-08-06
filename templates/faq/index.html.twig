@@ -24,7 +24,7 @@
                             {% for faq in entries %}
                             <div class="accordion-item">
                                 <div class="accordion-header">
-                                    <button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#faq-{{ loop.parent.loop.index }}-{{ faq.id }}" role="tab" aria-expanded="true">
+                                    <button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#faq-{{ loop.parent.loop.index }}-{{ faq.uuid }}" role="tab" aria-expanded="true">
                                         {{ faq.question }}
                                         <div class="accordion-button-toggle">
                                             <!-- Download SVG icon from http://tabler.io/icons/icon/chevron-down -->
@@ -34,7 +34,7 @@
                                         </div>
                                     </button>
                                 </div>
-                                <div id="faq-{{ loop.parent.loop.index }}-{{ faq.id }}" class="accordion-collapse collapse show" role="tabpanel" data-bs-parent="#faq-{{ loop.parent.loop.index }}" style="">
+                                <div id="faq-{{ loop.parent.loop.index }}-{{ faq.uuid }}" class="accordion-collapse collapse show" role="tabpanel" data-bs-parent="#faq-{{ loop.parent.loop.index }}" style="">
                                     <div class="accordion-body pt-0">
                                         <div>
                                                 {{ faq.answer|nl2br }}

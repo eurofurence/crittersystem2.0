@@ -17,48 +17,48 @@
     <input type="hidden" name="_token" value="{{ csrf_token('planner_edit') }}">
 
     <div class="mb-2">
-      <label class="form-label" for="edit-title-{{ shift.id }}">{{ 'common.label.title'|trans }}</label>
-      <input type="text" class="form-control" id="edit-title-{{ shift.id }}" name="title" value="{{ shift.title }}">
+      <label class="form-label" for="edit-title-{{ shift.uuid }}">{{ 'common.label.title'|trans }}</label>
+      <input type="text" class="form-control" id="edit-title-{{ shift.uuid }}" name="title" value="{{ shift.title }}">
     </div>
     <div class="mb-2">
-      <label class="form-label" for="edit-description-{{ shift.id }}">{{ 'common.label.description'|trans }}</label>
-      <textarea class="form-control" id="edit-description-{{ shift.id }}" name="description" rows="3"
+      <label class="form-label" for="edit-description-{{ shift.uuid }}">{{ 'common.label.description'|trans }}</label>
+      <textarea class="form-control" id="edit-description-{{ shift.uuid }}" name="description" rows="3"
                 maxlength="{{ constant('App\\Entity\\Shift::DESCRIPTION_MAX_LENGTH') }}">{{ shift.description }}</textarea>
     </div>
     {# The panel is a narrow sidebar column: side by side these two are too cramped to show a whole
        date AND time, which is exactly what the manager is checking here. #}
     <div class="mb-2">
-      <label class="form-label" for="edit-start-{{ shift.id }}">{{ 'planner.field.starts'|trans }}</label>
-      <input type="datetime-local" class="form-control" id="edit-start-{{ shift.id }}" name="start"
+      <label class="form-label" for="edit-start-{{ shift.uuid }}">{{ 'planner.field.starts'|trans }}</label>
+      <input type="datetime-local" class="form-control" id="edit-start-{{ shift.uuid }}" name="start"
              value="{{ shift.startsAt|date('Y-m-d\\TH:i', timezone) }}">
     </div>
     <div class="mb-2">
-      <label class="form-label" for="edit-end-{{ shift.id }}">{{ 'planner.field.ends'|trans }}</label>
-      <input type="datetime-local" class="form-control" id="edit-end-{{ shift.id }}" name="end"
+      <label class="form-label" for="edit-end-{{ shift.uuid }}">{{ 'planner.field.ends'|trans }}</label>
+      <input type="datetime-local" class="form-control" id="edit-end-{{ shift.uuid }}" name="end"
              value="{{ shift.endsAt|date('Y-m-d\\TH:i', timezone) }}">
     </div>
     <div class="mb-2">
       {% include 'planner/_task_picker.html.twig' with {
-        id: 'edit-task-' ~ shift.id,
+        id: 'edit-task-' ~ shift.uuid,
         tasks: shiftTasks,
         department: shift.department,
-        selected: shift.shiftTask ? shift.shiftTask.id : null
+        selected: shift.shiftTask ? shift.shiftTask.uuid : null
       } only %}
     </div>
     <div class="mb-2">
-      <label class="form-label" for="edit-audience-{{ shift.id }}">{{ 'planner.field.audience'|trans }}</label>
-      <select class="form-select" id="edit-audience-{{ shift.id }}" name="audience">
+      <label class="form-label" for="edit-audience-{{ shift.uuid }}">{{ 'planner.field.audience'|trans }}</label>
+      <select class="form-select" id="edit-audience-{{ shift.uuid }}" name="audience">
         {% for a in audiences %}
           <option value="{{ a.value }}" {{ a.value == shift.audience.value ? 'selected' : '' }}>{{ a.label }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="mb-2">
-      <label class="form-label" for="edit-location-{{ shift.id }}">{{ 'common.label.location'|trans }}</label>
-      <select class="form-select" id="edit-location-{{ shift.id }}" name="location">
+      <label class="form-label" for="edit-location-{{ shift.uuid }}">{{ 'common.label.location'|trans }}</label>
+      <select class="form-select" id="edit-location-{{ shift.uuid }}" name="location">
         <option value="0">{{ 'planner.option.none'|trans }}</option>
         {% for loc in locations %}
-          <option value="{{ loc.id }}" {{ shift.location and shift.location.id == loc.id ? 'selected' : '' }}>{{ loc.name }}</option>
+          <option value="{{ loc.uuid }}" {{ shift.location and shift.location.uuid == loc.uuid ? 'selected' : '' }}>{{ loc.name }}</option>
         {% endfor %}
       </select>
     </div>
@@ -69,18 +69,16 @@
 
     <fieldset class="mb-3">
       <legend class="form-label">{{ 'planner.field.needed_multi'|trans }}</legend>
-      {# Keys are prefixed because Twig's merge filter renumbers integer keys (array_merge
-         semantics), which would drop the volunteer-type id and lose the saved count. #}
       {% set neededByType = {} %}
       {% for need in shift.neededVolunteerTypes %}
-        {% set neededByType = neededByType|merge({('vt' ~ need.volunteerType.id): need.count}) %}
+        {% set neededByType = neededByType|merge({(need.volunteerType.uuid ~ ''): need.count}) %}
       {% endfor %}
       <div class="row g-2">
         {% for vt in volunteerTypes %}
           <div class="col-12 d-flex align-items-center gap-2">
             <span class="text-truncate flex-grow-1">{{ vt.name }}</span>
             <input type="number" min="0" class="form-control form-control-sm" style="max-width: 5rem;"
-                   name="needed[{{ vt.id }}]" value="{{ neededByType['vt' ~ vt.id] ?? 0 }}">
+                   name="needed[{{ vt.uuid }}]" value="{{ neededByType[vt.uuid ~ ''] ?? 0 }}">
           </div>
         {% else %}
           {{ d.empty_inline('planner.empty.no_volunteer_types'|trans, {tag: 'div', class: 'col-12 text-secondary small'}) }}

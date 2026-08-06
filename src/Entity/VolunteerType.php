@@ -75,6 +75,15 @@ class VolunteerType
     #[ORM\Column(name: 'department_only', options: ['default' => false])]
     private bool $departmentOnly = false;
 
+    /**
+     * Part of the shared vocabulary every department draws on. A global type cannot be claimed by a
+     * department (it is not offered on the department form) and cannot be restricted to one, so no
+     * department's edit can take it away from the others. The base types are global: losing Staff or
+     * Volunteer from a department's pickers leaves it unable to staff anything.
+     */
+    #[ORM\Column(name: 'is_global', options: ['default' => false])]
+    private bool $global = false;
+
     /** Ranks the type in every picker; lower comes first, ties break on name */
     #[ORM\Column(name: 'sort_order', options: ['default' => self::SORT_ORDER_DEFAULT])]
     #[Assert\Range(min: 0, max: 9999)]
@@ -244,6 +253,18 @@ class VolunteerType
         return $this->departmentOnly;
     }
 
+    public function isGlobal(): bool
+    {
+        return $this->global;
+    }
+
+    public function setGlobal(bool $global): static
+    {
+        $this->global = $global;
+
+        return $this;
+    }
+
     public function setDepartmentOnly(bool $departmentOnly): static
     {
         $this->departmentOnly = $departmentOnly;
@@ -328,6 +349,18 @@ class VolunteerType
     {
         if ($this->departmentOnly && !$this->staffOnly) {
             $context->buildViolation('"Department only" requires "Staff only".')->atPath('departmentOnly')->addViolation();
+        }
+
+        if ($this->global) {
+            if ($this->departmentOnly) {
+                $context->buildViolation('A global type belongs to every department, so it cannot be "Department only".')->atPath('departmentOnly')->addViolation();
+            }
+            if (!$this->departments->isEmpty()) {
+                $context->buildViolation(\sprintf(
+                    'Remove this type from %s before making it global; a global type cannot be claimed by a department.',
+                    implode(', ', array_map(static fn (Department $d): string => $d->getName(), $this->departments->toArray())),
+                ))->atPath('global')->addViolation();
+            }
         }
 
         if (!$this->staffOnly) {

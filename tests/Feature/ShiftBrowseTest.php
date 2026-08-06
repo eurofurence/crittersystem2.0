@@ -135,12 +135,12 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         $this->client->loginUser($this->scenario->user(memberOf: $this->scenario->type));
         $date = (new \DateTimeImmutable('tomorrow'))->format('Y-m-d');
 
-        $this->client->request('GET', '/shifts?date='.$date.'&location='.$this->scenario->location->getId());
+        $this->client->request('GET', '/shifts?date='.$date.'&location='.$this->scenario->location->getUuid());
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Here');
 
         // Filtering by a location that has no shifts must not fall back to showing everything.
-        $this->client->request('GET', '/shifts?date='.$date.'&location='.$elsewhere->getId());
+        $this->client->request('GET', '/shifts?date='.$date.'&location='.$elsewhere->getUuid());
         self::assertResponseIsSuccessful();
         self::assertSelectorTextNotContains('body', 'Here');
     }

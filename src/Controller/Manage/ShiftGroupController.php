@@ -173,10 +173,7 @@ final class ShiftGroupController extends AbstractController
         $tz = $this->display->timezone();
         [$dayFrom, $dayTo] = $this->dayRange((string) $request->query->get('day'), $tz);
 
-        // Cast rather than getInt()/getBoolean(): those throw a BadRequestException on a value they
-        // cannot convert, and "no filter" arrives from the picker as an empty string. An unset filter
-        // is not a malformed request.
-        $type = (int) $request->query->get('type');
+        $task = $this->shiftTasks->findOneByUuid((string) $request->query->get('type'));
 
         return $this->shifts->findGroupCandidates(
             $group->getDepartment(),
@@ -184,8 +181,11 @@ final class ShiftGroupController extends AbstractController
             $dayFrom,
             $dayTo,
             ShiftAudience::tryFrom((string) $request->query->get('audience')),
-            $type > 0 ? $this->shiftTasks->find($type) : null,
+            $task,
             trim((string) $request->query->get('q')),
+            // Cast rather than getBoolean(): it throws a BadRequestException on a value it cannot
+            // convert, and an unset filter arrives from the picker as an empty string, which is not
+            // a malformed request.
             (bool) (int) $request->query->get('past'),
         );
     }
@@ -207,7 +207,7 @@ final class ShiftGroupController extends AbstractController
             $days[$shift->getStartsAt()->setTimezone($tz)->format('Y-m-d')] = true;
             $audiences[$shift->getAudience()->value] = $shift->getAudience();
             if (($task = $shift->getShiftTask()) !== null) {
-                $tasks[$task->getId()] = $task;
+                $tasks[(string) $task->getUuid()] = $task;
             }
         }
         ksort($days);

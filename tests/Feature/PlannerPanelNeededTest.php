@@ -43,7 +43,7 @@ final class PlannerPanelNeededTest extends DatabaseWebTestCase
         $task->setDepartment($dept);
         $this->em->persist($task);
         $this->em->flush();
-        $vtId = $vt->getId();
+        $vtUuid = (string) $vt->getUuid();
         $this->client->loginUser($user);
 
         // Create a shift and set the requirement through the wizard.
@@ -57,8 +57,8 @@ final class PlannerPanelNeededTest extends DatabaseWebTestCase
             'end_time' => '12:00',
             'slot_minutes' => 120,
             'audience' => 'department_staff',
-            'task' => $task->getId(),
-            'needed' => [(string) $vtId => '3'],
+            'task' => $task->getUuid(),
+            'needed' => [$vtUuid => '3'],
         ]);
 
         $shift = $this->em->getRepository(Shift::class)->findAll()[0];
@@ -66,7 +66,7 @@ final class PlannerPanelNeededTest extends DatabaseWebTestCase
 
         // The panel that opens when the shift is reopened must show 3, not 0.
         $panel = $this->client->request('GET', '/manage-shifts/planner/shift/'.$shift->getUuid().'/panel');
-        $value = $panel->filter('input[name="needed['.$vtId.']"]')->attr('value');
+        $value = $panel->filter('input[name="needed['.$vtUuid.']"]')->attr('value');
         self::assertSame('3', $value, 'the panel must display the saved required count');
     }
 }

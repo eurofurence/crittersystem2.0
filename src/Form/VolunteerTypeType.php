@@ -56,6 +56,11 @@ final class VolunteerTypeType extends AbstractType
                 'label' => 'manage.volunteer_type.field.department_only.label',
                 'required' => false,
             ])
+            ->add('global', CheckboxType::class, [
+                'label' => 'manage.volunteer_type.field.global.label',
+                'help' => 'manage.volunteer_type.field.global.help',
+                'required' => false,
+            ])
             ->add('shiftSelfSignup', CheckboxType::class, [
                 'label' => 'manage.volunteer_type.field.shift_self_signup.label',
                 'required' => false,

@@ -24,6 +24,7 @@
     <div class="row" data-controller="volunteer-type-flags">
         {{ f.switch(form.staffOnly, {col: 'col-12 col-md-4', attr: {'data-volunteer-type-flags-target': 'staffOnly', 'data-action': 'change->volunteer-type-flags#sync'}}) }}
         {{ f.switch(form.departmentOnly, {col: 'col-12 col-md-4', attr: {'data-volunteer-type-flags-target': 'departmentOnly'}}) }}
+        {{ f.switch(form.global, {col: 'col-12 col-md-4', attr: {'data-volunteer-type-flags-target': 'global', 'data-action': 'change->volunteer-type-flags#sync'}}) }}
         {{ f.switch(form.hideOnShiftView, {col: 'col-12 col-md-4', attr: {'data-volunteer-type-flags-target': 'hideOnShiftView'}}) }}
         {{ f.switch(form.showOnDashboard, {col: 'col-12 col-md-4', attr: {'data-volunteer-type-flags-target': 'showOnDashboard'}}) }}
         {{ f.switch(form.restricted, {col: 'col-12 col-md-4'}) }}

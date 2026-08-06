@@ -64,7 +64,7 @@ final class AssignmentController extends AbstractController
      * omitted so they cannot be picked twice.
      */
     #[Route('/search', name: 'app_shift_staffing_search', methods: ['GET'])]
-    public function search(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, UserRepository $users): JsonResponse
+    public function search(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, UserRepository $users, \App\Service\UserSearchResultFormatter $formatter): JsonResponse
     {
         $this->denyAccessUnlessGranted('assignment:manage', $shift->getDepartment());
 
@@ -78,22 +78,12 @@ final class AssignmentController extends AbstractController
             $assigned[$entry->getUser()->getId()] = true;
         }
 
-        $results = [];
-        foreach ($users->searchByName($q) as $user) {
-            if (isset($assigned[$user->getId()])) {
-                continue;
-            }
-            $results[] = [
-                'id' => $user->getId(),
-                'name' => $user->getName(),
-                'staff' => $user->isStaff(),
-                'avatar' => $user->getPersonalData()?->getAvatarPath() !== null
-                    ? $this->generateUrl('app_media_avatar', ['id' => $user->getUuid()])
-                    : null,
-            ];
-        }
+        $candidates = array_filter(
+            $users->searchByName($q),
+            static fn (User $user): bool => !isset($assigned[$user->getId()]),
+        );
 
-        return new JsonResponse(['results' => $results]);
+        return new JsonResponse($formatter->results($candidates));
     }
 
     #[Route('/assign', name: 'app_shift_staffing_assign', methods: ['POST'])]
@@ -104,8 +94,8 @@ final class AssignmentController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        $ids = array_values(array_unique(array_filter(array_map('intval', (array) $request->request->all('users')))));
-        if ($ids === []) {
+        $uuids = array_values(array_unique(array_filter(array_map(strval(...), (array) $request->request->all('users')))));
+        if ($uuids === []) {
             $this->addFlash('danger', new TranslatableMessage('assignment.flash.choose_user'));
 
             return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
@@ -122,8 +112,8 @@ final class AssignmentController extends AbstractController
         $actor = $actor instanceof User ? $actor : null;
 
         $assigned = $notMember = $needOverride = [];
-        foreach ($ids as $id) {
-            $user = $users->find($id);
+        foreach ($uuids as $uuid) {
+            $user = $users->findOneByUuid($uuid);
             if ($user === null) {
                 continue;
             }

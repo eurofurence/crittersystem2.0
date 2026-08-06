@@ -98,7 +98,7 @@ final class ShiftSignupServiceTest extends DatabaseTestCase
 
         self::assertSame('available', $service->eligibilityStatus($shift, $member));
         self::assertSame('ineligible', $service->eligibilityStatus($shift, $stranger));
-        self::assertArrayHasKey($type->getId(), $service->signupOptions($shift, $member));
+        self::assertArrayHasKey((string) $type->getUuid(), $service->signupOptions($shift, $member));
 
         $service->signUp($member, $shift, $type);
         self::assertSame('signed_up', $service->eligibilityStatus($shift, $member));

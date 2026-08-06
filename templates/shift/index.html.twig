@@ -48,14 +48,14 @@
           <label class="form-label small mb-0" for="f-loc">{{ 'common.label.location'|trans }}</label>
           <select id="f-loc" name="location" class="form-select form-select-sm" onchange="this.form.submit()">
             <option value="">{{ 'shift.filter.all'|trans }}</option>
-            {% for l in locations %}<option value="{{ l.id }}" {{ filters.location == l.id ? 'selected' }}>{{ l.name }}</option>{% endfor %}
+            {% for l in locations %}<option value="{{ l.uuid }}" {{ filters.location == l.uuid ? 'selected' }}>{{ l.name }}</option>{% endfor %}
           </select>
         </div>
         <div class="col-6 col-md-3">
           <label class="form-label small mb-0" for="f-type">{{ 'shift.filter.type_label'|trans }}</label>
           <select id="f-type" name="type" class="form-select form-select-sm" onchange="this.form.submit()">
             <option value="">{{ 'shift.filter.all'|trans }}</option>
-            {% for t in shiftTasks %}<option value="{{ t.id }}" {{ filters.type == t.id ? 'selected' }}>{{ t.name }}</option>{% endfor %}
+            {% for t in shiftTasks %}<option value="{{ t.uuid }}" {{ filters.type == t.uuid ? 'selected' }}>{{ t.name }}</option>{% endfor %}
           </select>
         </div>
         <div class="col-12 col-md-6 d-flex gap-3 pb-1">

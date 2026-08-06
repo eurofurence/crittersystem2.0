@@ -115,7 +115,7 @@ final class PlannerOverlappingShiftsTest extends DatabaseWebTestCase
                 '_token' => $token,
                 'department' => $deptId,
                 'audience' => 'department_staff',
-                'task' => $task->getId(),
+                'task' => $task->getUuid(),
                 'intervals' => [['start' => '2026-06-01T22:00:00', 'end' => '2026-06-01T23:30:00']],
             ], JSON_THROW_ON_ERROR),
         );

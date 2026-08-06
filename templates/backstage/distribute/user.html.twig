@@ -109,7 +109,7 @@
               {% if is_granted('goodie:distribute') %}
                 <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.uuid}) }}" class="row g-2 align-items-end">
                   <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
-                  <input type="hidden" name="item" value="{{ r.item.id }}">
+                  <input type="hidden" name="item" value="{{ r.item.uuid }}">
                   <div class="col-4">
                     <label class="form-label small mb-0">{{ 'backstage.label.qty'|trans }}</label>
                     <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm">

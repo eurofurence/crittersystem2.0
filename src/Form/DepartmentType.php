@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\Department;
 use App\Entity\Location;
 use App\Entity\VolunteerType;
+use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -60,6 +61,12 @@ final class DepartmentType extends AbstractType
                 'label' => 'manage.label.volunteer_types',
                 'class' => VolunteerType::class,
                 'choice_label' => 'name',
+                // Global types belong to every department and are not offered here: claiming one
+                // would let a single department's edit restrict a type the whole event relies on.
+                'query_builder' => static fn (EntityRepository $repo) => $repo->createQueryBuilder('t')
+                    ->andWhere('t.global = false')
+                    ->orderBy('t.sortOrder', 'ASC')
+                    ->addOrderBy('t.name', 'ASC'),
                 'multiple' => true,
                 'expanded' => false,
                 'required' => false,

@@ -53,7 +53,7 @@
         data-live-stream-event-value="planner:remote-changed"
         data-planner-department-value="{{ department.uuid }}"
         data-planner-audience-value="department_staff"
-        data-planner-task-value="{{ shiftTasks is not empty ? shiftTasks|first.id : 0 }}"
+        data-planner-task-value="{{ shiftTasks is not empty ? shiftTasks|first.uuid : '' }}"
         data-planner-timezone-value="{{ timezone }}"
         data-planner-raster-value="{{ grid.rasterMinutes }}"
         data-planner-paint-url-value="{{ path('app_manage_shifts_planner_paint') }}"

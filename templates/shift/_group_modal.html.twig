@@ -67,7 +67,7 @@
               </div>
             {% elseif member.type %}
               <div class="text-muted small mt-1">{{ 'shift.group.role'|trans({'%role%': member.type.name}) }}</div>
-              <input type="hidden" name="group_type[{{ member.shift.uuid }}]" value="{{ member.type.id }}">
+              <input type="hidden" name="group_type[{{ member.shift.uuid }}]" value="{{ member.type.uuid }}">
             {% endif %}
 
             {% if member.error %}

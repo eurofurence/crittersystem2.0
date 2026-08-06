@@ -2265,7 +2265,7 @@ msgid "manage.department.field.slug.help"
 msgstr "Leave blank to generate from the name."
 
 msgid "manage.department.field.volunteer_types.help"
-msgstr "Role categories this department uses"
+msgstr "Role categories this department claims. They are listed first in its shift pickers; every other category stays available too."
 
 msgid "manage.department.flash.created"
 msgstr "Department \"%name%\" created."
@@ -3631,6 +3631,15 @@ msgstr "Create the first volunteer type so people can join it."
 
 msgid "manage.volunteer_type.empty.title"
 msgstr "No Critter types yet"
+
+msgid "manage.volunteer_type.field.global.label"
+msgstr "Global type"
+
+msgid "manage.volunteer_type.field.global.help"
+msgstr "Offered to every department and cannot be claimed or restricted by one. Set on the base types, which every department needs to staff its shifts."
+
+msgid "manage.volunteer_type.badge.global"
+msgstr "Global"
 
 msgid "manage.volunteer_type.field.department_only.label"
 msgstr "Department only (requires Staff only)"

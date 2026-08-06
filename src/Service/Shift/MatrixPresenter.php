@@ -31,7 +31,7 @@ final class MatrixPresenter
      * @param Shift[] $shifts
      *
      * @return array{
-     *     groups: list<array{id: int, name: string, positions: list<array{id: int, name: string}>}>,
+     *     groups: list<array{uuid: string, name: string, positions: list<array{id: int, name: string}>}>,
      *     columns: list<array{positionId: int, positionUuid: string, name: string, group: string}>,
      *     rows: list<array{shift: Shift, overnight: bool, cells: array<int, array{
      *         state: string,
@@ -60,7 +60,7 @@ final class MatrixPresenter
                     'group' => $group->getName(),
                 ];
             }
-            $groups[] = ['id' => $group->getId(), 'name' => $group->getName(), 'positions' => $positions];
+            $groups[] = ['uuid' => (string) $group->getUuid(), 'name' => $group->getName(), 'positions' => $positions];
         }
 
         $rows = [];

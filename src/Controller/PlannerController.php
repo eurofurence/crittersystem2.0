@@ -52,7 +52,7 @@ final class PlannerController extends AbstractController
         private readonly EventConfigStore $config,
         private readonly ShiftTaskRepository $tasks,
         private readonly \App\Service\Shift\ShiftTaskAccess $taskAccess,
-        private readonly \App\Service\Shift\VolunteerTypeAccess $typeAccess,
+        private readonly \App\Service\Shift\VolunteerTypeOrdering $typeOrder,
         private readonly \App\Repository\ShiftGroupRepository $shiftGroups,
         private readonly \App\Service\Shift\ShiftGroupAudit $audit,
         private readonly \Symfony\Contracts\Translation\TranslatorInterface $translator,
@@ -108,7 +108,7 @@ final class PlannerController extends AbstractController
             'departments' => $planningDepartments,
             'grid' => $grid,
             'shiftTasks' => $this->taskAccess->forDepartment($this->tasks->findAllOrdered(), $department),
-            'volunteerTypes' => $this->typeAccess->forDepartment($types->findAllOrderedWithDepartments(), $department),
+            'volunteerTypes' => $this->typeOrder->forDepartment($types->findAllOrderedWithDepartments(), $department),
             'locations' => $locations->findAllOrdered(),
             'audiences' => ShiftAudience::cases(),
             // Only this department's groups can be offered: a group and its shifts share one
@@ -154,7 +154,7 @@ final class PlannerController extends AbstractController
         $this->em->persist($task);
         $this->em->flush();
 
-        return new JsonResponse(['ok' => true, 'id' => $task->getId(), 'name' => $task->getName()]);
+        return new JsonResponse(['ok' => true, 'id' => $task->getUuid(), 'name' => $task->getName()]);
     }
 
     #[Route('/paint', name: 'app_manage_shifts_planner_paint', methods: ['POST'])]
@@ -187,11 +187,11 @@ final class PlannerController extends AbstractController
         }
 
         $audience = ShiftAudience::tryFrom((string) ($data['audience'] ?? '')) ?? ShiftAudience::PUBLIC_VOLUNTEER;
-        $task = $this->requiredTask((int) ($data['task'] ?? 0), $department);
+        $task = $this->requiredTask((string) ($data['task'] ?? ''), $department);
         if (!$task instanceof ShiftTask) {
             return $this->fail(self::TASK_REQUIRED);
         }
-        $location = ($lid = (int) ($data['location'] ?? 0)) ? $locations->find($lid) : null;
+        $location = $locations->findOneByUuid((string) ($data['location'] ?? ''));
 
         try {
             $shifts = $this->drafts->createConsolidated(
@@ -230,15 +230,11 @@ final class PlannerController extends AbstractController
         }
 
         $audience = ShiftAudience::tryFrom((string) $request->request->get('audience', '')) ?? ShiftAudience::PUBLIC_VOLUNTEER;
-        // Cast, not getInt(): the task picker's placeholder is <option value="">, so an empty
-        // string is what a caller sends when no task was chosen. getInt() would throw before
-        // requiredTask() could answer with TASK_REQUIRED, leaving that check resting on an HTML
-        // `required` attribute. See docs/tasks/input-bag-empty-value-audit.md.
-        $task = $this->requiredTask((int) $request->request->get('task'), $department);
+        $task = $this->requiredTask((string) $request->request->get('task'), $department);
         if (!$task instanceof ShiftTask) {
             return $this->fail(self::TASK_REQUIRED);
         }
-        $location = ($lid = $request->request->getInt('location')) ? $locations->find($lid) : null;
+        $location = $locations->findOneByUuid((string) $request->request->get('location'));
 
         try {
             $shift = $this->drafts->createDraft(
@@ -259,7 +255,7 @@ final class PlannerController extends AbstractController
         $shift->setRequireCheckin($request->request->getBoolean('require_checkin'));
         $this->applyNeededTypes($shift, $request, $types);
 
-        return new JsonResponse(['ok' => true, 'id' => $shift->getId()]);
+        return new JsonResponse(['ok' => true, 'id' => $shift->getUuid()]);
     }
 
     // No route requirement here: the client generates this URL with an `__ID__` placeholder and
@@ -275,7 +271,7 @@ final class PlannerController extends AbstractController
             'audiences' => ShiftAudience::cases(),
             'shiftTasks' => $this->taskAccess->forDepartment($this->tasks->findAllOrdered(), $shift->getDepartment()),
             'locations' => $locations->findAllOrdered(),
-            'volunteerTypes' => $this->typeAccess->forDepartment($types->findAllOrderedWithDepartments(), $shift->getDepartment()),
+            'volunteerTypes' => $this->typeOrder->forDepartment($types->findAllOrderedWithDepartments(), $shift->getDepartment()),
             'timezone' => $this->display->timezone()->getName(),
         ]);
     }
@@ -300,16 +296,14 @@ final class PlannerController extends AbstractController
             $fields['audience'] = ShiftAudience::tryFrom((string) $request->request->get('audience')) ?? $shift->getAudience();
         }
         if ($request->request->has('task')) {
-            // Cast, not getInt(): an unchosen task arrives as an empty string and must reach
-            // requiredTask()'s TASK_REQUIRED rather than throwing first.
-            $task = $this->requiredTask((int) $request->request->get('task'), $shift->getDepartment());
+            $task = $this->requiredTask((string) $request->request->get('task'), $shift->getDepartment());
             if (!$task instanceof ShiftTask) {
                 return $this->fail(self::TASK_REQUIRED);
             }
             $fields['task'] = $task;
         }
         if ($request->request->has('location')) {
-            $fields['location'] = ($lid = $request->request->getInt('location')) ? $locations->find($lid) : null;
+            $fields['location'] = $locations->findOneByUuid((string) $request->request->get('location'));
         }
         if ($request->request->has('start') && $request->request->has('end')) {
             try {
@@ -376,9 +370,9 @@ final class PlannerController extends AbstractController
          * "not set".
          */
         $duration = (int) $request->request->get('duration_minutes');
-        $needType = ($ntid = (int) $request->request->get('needed_type')) ? $types->find($ntid) : null;
+        $needType = $types->findOneByUuid((string) $request->request->get('needed_type'));
         $needCount = (int) $request->request->get('needed_count');
-        $taskId = (int) $request->request->get('task');
+        $taskId = (string) $request->request->get('task');
         $groupChoice = (string) $request->request->get('shift_group', '');
 
         /*
@@ -388,11 +382,8 @@ final class PlannerController extends AbstractController
          */
         foreach ($selection as $shift) {
             // A blank picker leaves each shift's own task alone; choosing one replaces it.
-            if ($taskId !== 0 && !$this->requiredTask($taskId, $shift->getDepartment()) instanceof ShiftTask) {
+            if ($taskId !== '' && !$this->requiredTask($taskId, $shift->getDepartment()) instanceof ShiftTask) {
                 return $this->fail(self::TASK_REQUIRED);
-            }
-            if ($needType instanceof VolunteerType && !$this->typeAccess->isAvailableTo($needType, $shift->getDepartment())) {
-                return $this->fail('That Critter type is not available to this department.');
             }
         }
 
@@ -423,7 +414,7 @@ final class PlannerController extends AbstractController
             if ($duration >= PlannerDraftStore::MIN_DURATION_MINUTES) {
                 $this->drafts->setDuration($shift, $duration, $this->user());
             }
-            if ($taskId !== 0) {
+            if ($taskId !== '') {
                 $this->drafts->updateDetails($shift, ['task' => $this->requiredTask($taskId, $shift->getDepartment())], $this->user());
             }
             if ($groupChoice !== '') {
@@ -495,7 +486,7 @@ final class PlannerController extends AbstractController
 
         return new JsonResponse([
             'ok' => true,
-            'id' => $group->getId(),
+            'id' => $group->getUuid(),
             'name' => $group->getName(),
             'assigned' => \count($selection),
         ]);
@@ -515,7 +506,7 @@ final class PlannerController extends AbstractController
             return null;
         }
 
-        $group = $this->shiftGroups->find((int) $choice);
+        $group = $this->shiftGroups->findOneByUuid($choice);
         if (!$group instanceof ShiftGroup) {
             throw new \InvalidArgumentException($this->translator->trans('planner.batch.group.unknown'));
         }
@@ -654,12 +645,9 @@ final class PlannerController extends AbstractController
      * creates or saves a shift requires one, so a missing, unknown or foreign task is a rejection
      * rather than a silent "no task".
      */
-    private function requiredTask(int $id, ?Department $department): ?ShiftTask
+    private function requiredTask(string $uuid, ?Department $department): ?ShiftTask
     {
-        if ($id === 0) {
-            return null;
-        }
-        $task = $this->tasks->find($id);
+        $task = $this->tasks->findOneByUuid($uuid);
         if (!$task instanceof ShiftTask) {
             return null;
         }
@@ -675,11 +663,9 @@ final class PlannerController extends AbstractController
     {
         /** @var array<int|string, mixed> $needed */
         $needed = (array) $request->request->all('needed');
-        foreach ($needed as $typeId => $count) {
-            $type = $types->find((int) $typeId);
-            // The form only offers this department's types; a posted id for another department's
-            // type is ignored rather than honoured, so the picker cannot be edited around.
-            if ($type instanceof VolunteerType && $this->typeAccess->isAvailableTo($type, $shift->getDepartment())) {
+        foreach ($needed as $typeUuid => $count) {
+            $type = $types->findOneByUuid((string) $typeUuid);
+            if ($type instanceof VolunteerType) {
                 $this->drafts->setNeededVolunteerType($shift, $type, (int) $count);
             }
         }

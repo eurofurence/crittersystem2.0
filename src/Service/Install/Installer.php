@@ -67,9 +67,10 @@ final class Installer
      * flag interdependencies: name => [staffOnly, showOnDashboard, hideOnShiftView, selfSignup, sortOrder].
      * The two base types sort ahead of everything an admin adds later.
      */
+    /** name => [staffOnly, showOnDashboard, hideOnShiftView, shiftSelfSignup, sortOrder, global] */
     private const SEED_VOLUNTEER_TYPES = [
-        'Volunteer' => [false, true, false, true, 20],
-        'Staff' => [true, false, true, true, 10],
+        'Volunteer' => [false, true, false, true, 20, true],
+        'Staff' => [true, false, true, true, 10, true],
     ];
 
     /**
@@ -152,7 +153,7 @@ final class Installer
             }
         }
 
-        foreach (self::SEED_VOLUNTEER_TYPES as $name => [$staffOnly, $showOnDashboard, $hideOnShiftView, $selfSignup, $sortOrder]) {
+        foreach (self::SEED_VOLUNTEER_TYPES as $name => [$staffOnly, $showOnDashboard, $hideOnShiftView, $selfSignup, $sortOrder, $global]) {
             if ($this->volunteerTypes->findOneByName($name) === null) {
                 $this->entityManager->persist(
                     (new VolunteerType($name))
@@ -161,6 +162,7 @@ final class Installer
                         ->setHideOnShiftView($hideOnShiftView)
                         ->setShiftSelfSignup($selfSignup)
                         ->setSortOrder($sortOrder)
+                        ->setGlobal($global)
                 );
             }
         }

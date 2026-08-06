@@ -31,7 +31,7 @@ final class CallController extends AbstractController
     #[IsGranted('call:trigger')]
     public function trigger(Request $request, \App\Repository\ShiftRepository $shifts): Response
     {
-        $shift = $shifts->find($request->request->getInt('shift'));
+        $shift = $shifts->findOneByUuid((string) $request->request->get('shift'));
         if ($shift === null) {
             throw $this->createNotFoundException();
         }

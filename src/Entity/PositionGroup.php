@@ -2,11 +2,13 @@
 
 namespace App\Entity;
 
+use App\Entity\Concern\HasPublicUuid;
 use App\Repository\PositionGroupRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
 /**
@@ -18,6 +20,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Table(name: 'position_groups')]
 class PositionGroup
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -43,6 +47,7 @@ class PositionGroup
 
     public function __construct(Department $department, string $name)
     {
+        $this->uuid = Uuid::v4();
         $this->department = $department;
         $this->name = $name;
         $this->positions = new ArrayCollection();

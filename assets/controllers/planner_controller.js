@@ -24,8 +24,8 @@ export default class extends Controller {
         paintToken: String,
         editToken: String,
         audience: { type: String, default: 'public_volunteer' },
-        task: { type: Number, default: 0 },
-        location: { type: Number, default: 0 },
+        task: { type: String, default: '' },
+        location: { type: String, default: '' },
         mode: { type: String, default: 'select' },
     };
 
@@ -113,10 +113,10 @@ export default class extends Controller {
             this.audienceValue = detail.audience;
         }
         if (detail.task !== undefined) {
-            this.taskValue = Number(detail.task) || 0;
+            this.taskValue = String(detail.task);
         }
         if (detail.location !== undefined) {
-            this.locationValue = Number(detail.location) || 0;
+            this.locationValue = String(detail.location);
         }
         if (detail.mode !== undefined) {
             this.modeValue = detail.mode === 'paint' ? 'paint' : 'select';

@@ -136,7 +136,7 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/manage-shifts/matrix/shift-position/'.$shiftPosition->getUuid().'/assign', [
             '_token' => $this->token(),
-            'user' => $volunteer->getId(),
+            'user' => $volunteer->getUuid(),
         ]);
 
         self::assertResponseIsSuccessful();
@@ -156,12 +156,12 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
         $second = $this->scenario->user(memberOf: $this->scenario->type);
 
         $this->client->request('POST', '/manage-shifts/matrix/shift-position/'.$shiftPosition->getUuid().'/assign', [
-            '_token' => $token, 'user' => $first->getId(),
+            '_token' => $token, 'user' => $first->getUuid(),
         ]);
         self::assertResponseIsSuccessful();
 
         $this->client->request('POST', '/manage-shifts/matrix/shift-position/'.$shiftPosition->getUuid().'/assign', [
-            '_token' => $token, 'user' => $second->getId(),
+            '_token' => $token, 'user' => $second->getUuid(),
         ]);
 
         self::assertResponseStatusCodeSame(409, 'a position of capacity 1 must not take a second volunteer');
@@ -177,7 +177,7 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
 
         $volunteer = $this->scenario->user(memberOf: $this->scenario->type);
         $this->client->request('POST', '/manage-shifts/matrix/shift-position/'.$shiftPosition->getUuid().'/assign', [
-            '_token' => $token, 'user' => $volunteer->getId(),
+            '_token' => $token, 'user' => $volunteer->getUuid(),
         ]);
         self::assertResponseIsSuccessful();
 
@@ -219,7 +219,7 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
 
         $volunteer = $this->scenario->user(memberOf: $this->scenario->type);
         $this->client->request('POST', '/manage-shifts/matrix/shift-position/'.$shiftPosition->getUuid().'/assign', [
-            '_token' => $token, 'user' => $volunteer->getId(),
+            '_token' => $token, 'user' => $volunteer->getUuid(),
         ]);
 
         self::assertResponseStatusCodeSame(403);
@@ -235,7 +235,7 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
         $volunteer = $this->scenario->user(memberOf: $this->scenario->type);
         $this->client->request('POST', '/manage-shifts/matrix/shift-position/'.$shiftPosition->getUuid().'/assign', [
             '_token' => 'not-a-real-token',
-            'user' => $volunteer->getId(),
+            'user' => $volunteer->getUuid(),
         ]);
 
         self::assertResponseStatusCodeSame(403);

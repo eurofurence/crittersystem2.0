@@ -11,6 +11,7 @@ use App\Repository\VolunteerTypeRepository;
 use App\Service\Assignment\ManualAssignmentService;
 use App\Service\NoShowBanService;
 use App\Service\Shift\ShiftGroupResolver;
+use App\Service\Shift\VolunteerTypeOrdering;
 use App\Service\ShiftSignupService;
 use App\Service\UserSearchResultFormatter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -46,6 +47,7 @@ final class ShiftStaffingController extends AbstractController
         private readonly NoShowBanService $noShowBans,
         private readonly ManualAssignmentService $assignments,
         private readonly ShiftGroupResolver $groups,
+        private readonly VolunteerTypeOrdering $typeOrder,
     ) {
     }
 
@@ -71,7 +73,10 @@ final class ShiftStaffingController extends AbstractController
             'availability' => $this->signup->availability($shift),
             'shiftNeeds' => $shift->getNeededVolunteerTypes(),
             'entries' => $shift->getEntries(),
-            'volunteerTypes' => $this->volunteerTypes->findAllOrdered(),
+            'volunteerTypes' => $this->typeOrder->forDepartment(
+                $this->volunteerTypes->findAllOrderedWithDepartments(),
+                $shift->getDepartment(),
+            ),
             'groupMembers' => $members,
             'partialHeld' => $partial,
         ]);
@@ -94,7 +99,7 @@ final class ShiftStaffingController extends AbstractController
 
         if ($this->isCsrfTokenValid('assign'.$shift->getId(), (string) $request->request->get('_token'))) {
             $user = $this->users->findOneByUuid(trim((string) $request->request->get('user')));
-            $type = $this->volunteerTypes->find((int) $request->request->get('volunteer_type'));
+            $type = $this->volunteerTypes->findOneByUuid((string) $request->request->get('volunteer_type'));
 
             if ($user === null || $type === null) {
                 $this->addFlash('danger', new TranslatableMessage('manage.shift.staffing.flash.choose_volunteer_role'));
@@ -145,7 +150,7 @@ final class ShiftStaffingController extends AbstractController
         $this->denyAccessUnlessGranted('shift:manage', $shift);
 
         if ($this->isCsrfTokenValid('need-add'.$shift->getId(), (string) $request->request->get('_token'))) {
-            $type = $this->volunteerTypes->find((int) $request->request->get('volunteer_type'));
+            $type = $this->volunteerTypes->findOneByUuid((string) $request->request->get('volunteer_type'));
             $count = max(1, (int) $request->request->get('count', 1));
 
             if ($type === null) {

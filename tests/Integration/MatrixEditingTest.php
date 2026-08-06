@@ -61,7 +61,7 @@ final class MatrixEditingTest extends DatabaseTestCase
         $b = $svc->createPosition($group, 'B');
         $c = $svc->createPosition($group, 'C');
 
-        $svc->reorderPositions($group, [$c->getId(), $a->getId(), $b->getId()]);
+        $svc->reorderPositions($group, [(string) $c->getUuid(), (string) $a->getUuid(), (string) $b->getUuid()]);
 
         self::assertSame(1, $c->getDisplayOrder());
         self::assertSame(2, $a->getDisplayOrder());

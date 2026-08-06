@@ -216,6 +216,12 @@ final class DepartmentImporter
                 $warnings[] = "Row $i: unknown volunteer type '$name'.";
                 continue;
             }
+            // A global type is already available to every department; claiming one is refused here
+            // as it is on the department form, so an import cannot restrict it.
+            if ($type->isGlobal()) {
+                $warnings[] = "Row $i: '$name' is a global volunteer type and is offered to every department already.";
+                continue;
+            }
             $dept->addVolunteerType($type);
         }
     }

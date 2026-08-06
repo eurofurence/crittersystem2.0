@@ -62,7 +62,7 @@ final class ShiftSignupHttpTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/shifts/'.$shift->getUuid().'/signup', [
             '_token' => 'not-a-real-token',
-            'volunteer_type' => $this->scenario->type->getId(),
+            'volunteer_type' => $this->scenario->type->getUuid(),
         ]);
 
         self::assertNull($this->entries()->findOneByShiftAndUser($shift, $user), 'a bad CSRF token must never create a sign-up');
@@ -80,7 +80,7 @@ final class ShiftSignupHttpTest extends DatabaseWebTestCase
         // …and posting anyway must not work.
         $this->client->request('POST', '/shifts/'.$shift->getUuid().'/signup', [
             '_token' => 'not-a-real-token',
-            'volunteer_type' => $this->scenario->type->getId(),
+            'volunteer_type' => $this->scenario->type->getUuid(),
         ]);
 
         self::assertNull($this->entries()->findOneByShiftAndUser($shift, $user));
@@ -176,7 +176,7 @@ final class ShiftSignupHttpTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/shifts/'.$past->getUuid().'/signup', [
             '_token' => 'not-a-real-token',
-            'volunteer_type' => $this->scenario->type->getId(),
+            'volunteer_type' => $this->scenario->type->getUuid(),
         ]);
 
         self::assertNull($this->entries()->findOneByShiftAndUser($past, $user), 'a past shift must not accept sign-ups');

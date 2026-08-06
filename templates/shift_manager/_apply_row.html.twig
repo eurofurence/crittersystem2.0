@@ -51,7 +51,7 @@
           <input type="hidden" name="_token" value="{{ csrf_token('apply' ~ shift.id) }}">
           {% if signupOptions|length > 1 %}
             <select name="volunteer_type" class="form-select form-select-sm" style="max-width: 9rem;">
-              {% for type in signupOptions %}<option value="{{ type.id }}">{{ type.name }}</option>{% endfor %}
+              {% for type in signupOptions %}<option value="{{ type.uuid }}">{{ type.name }}</option>{% endfor %}
             </select>
           {% endif %}
           {% if row.overHours %}
