@@ -1,7 +1,7 @@
 {# Standard Planner time×day grid. Blocks are positioned by the percentage offsets
    computed in PlannerPresenter; the `planner` Stimulus controller handles
    paint/move/resize/delete. #}
-<div class="planner-grid" data-planner-target="grid">
+<div class="planner-grid" data-planner-target="grid" data-scroll-nav-target="scroller">
   <div class="planner-axis">
     <div class="planner-axis-head"></div>
     {% for hour in 0..23 %}
@@ -11,22 +11,12 @@
 
   {% for day in grid.days %}
     {% set dayIndex = loop.index0 %}
-    {# A day hiding shifts is marked on the column border rather than with a box in the grid, which
-       would compete for space with the shifts it is describing. #}
-    <div class="planner-day planner-phase-{{ day.phase }}{{ day.hidden > 0 ? ' planner-day-has-hidden' : '' }}{{ day.expanded ? ' planner-day-expanded' : '' }}">
+    {# The column is as many lanes wide as the day's busiest moment needs, so nothing is ever
+       hidden: the grid grows sideways instead and scrolls. #}
+    <div class="planner-day planner-phase-{{ day.phase }}" style="--planner-lanes: {{ day.lanes }};">
       <div class="planner-day-head">
         {% if day.phase != 'main' %}<span class="planner-phase-tag">{{ day.phase }}</span>{% endif %}
         <span class="planner-day-label">{{ day.label }}</span>
-        {% if day.expanded %}
-          <a class="planner-day-toggle"
-             href="{{ path('app_manage_shifts_planner', app.request.query.all|merge({department: department.uuid, expand: null})) }}"
-          >{{ 'planner.grid.collapse'|trans }}</a>
-        {% elseif day.hidden > 0 %}
-          <a class="planner-day-toggle planner-day-toggle-expand"
-             href="{{ path('app_manage_shifts_planner', app.request.query.all|merge({department: department.uuid, expand: day.iso})) }}"
-             title="{{ 'planner.grid.overflow_title'|trans({'%count%': day.hidden}) }}"
-          >{{ 'planner.grid.overflow'|trans({'%count%': day.hidden}) }}</a>
-        {% endif %}
       </div>
       <div
         class="planner-day-body"

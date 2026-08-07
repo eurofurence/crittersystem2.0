@@ -100,7 +100,6 @@ final class PlannerController extends AbstractController
             $tz,
             $this->config->getDate(EventConfigStore::KEY_EVENT_START),
             $this->config->getDate(EventConfigStore::KEY_EVENT_END),
-            $this->expandedDays($request),
         );
 
         return $this->render('planner/index.html.twig', [
@@ -689,25 +688,6 @@ final class PlannerController extends AbstractController
     private function fail(string $message, int $status = 422): JsonResponse
     {
         return new JsonResponse(['ok' => false, 'error' => $message], $status);
-    }
-
-    /**
-     * Days the manager asked to see without the lane cap, from `?expand=2026-07-17,2026-07-18`.
-     * Anything that is not a plain ISO date is dropped rather than passed through, so the value
-     * cannot be used to smuggle content into the links the grid builds from it.
-     *
-     * @return string[]
-     */
-    private function expandedDays(Request $request): array
-    {
-        $raw = array_filter(array_map('trim', explode(',', (string) $request->query->get('expand', ''))));
-
-        return array_values(array_filter($raw, static function (string $day): bool {
-            // createFromFormat returns false, not null, on a malformed date - ?-> would not guard it.
-            $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $day);
-
-            return $parsed !== false && $parsed->format('Y-m-d') === $day;
-        }));
     }
 
     /** @return array{0: \DateTimeImmutable, 1: \DateTimeImmutable} */

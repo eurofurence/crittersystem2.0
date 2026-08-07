@@ -6285,14 +6285,11 @@ msgstr "Paint"
 msgid "planner.mode.paint_title"
 msgstr "Drag anywhere to create a shift, including on top of an existing one."
 
-msgid "planner.grid.overflow"
-msgstr "+%count% more"
+msgid "planner.grid.scroll_earlier"
+msgstr "Scroll to earlier days"
 
-msgid "planner.grid.overflow_title"
-msgstr "%count% more shifts run at this time. Open this day to see them all."
-
-msgid "planner.grid.collapse"
-msgstr "collapse"
+msgid "planner.grid.scroll_later"
+msgstr "Scroll to later days"
 
 # ==========================================================================
 # shift.group.* - shifts that can only be taken together

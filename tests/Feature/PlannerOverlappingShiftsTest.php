@@ -11,7 +11,6 @@ use App\Entity\User;
 use App\Enum\ShiftState;
 use App\Repository\ShiftRepository;
 use App\Service\EventConfigStore;
-use App\Service\Shift\PlannerPresenter;
 use App\Tests\DatabaseWebTestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
@@ -191,10 +190,10 @@ final class PlannerOverlappingShiftsTest extends DatabaseWebTestCase
     }
 
     /**
-     * Past the cap the extra shifts are not drawn. The day says so in its header and on its column
-     * border - never with a box inside the grid, which would sit on top of the shifts it describes.
+     * A busy day renders every parallel shift and widens its column to fit them. Capping the day at
+     * four and hiding the rest behind an "expand" link made a fully planned day read as half empty.
      */
-    public function testADayHidingShiftsSaysSoInItsHeaderAndOnItsBorder(): void
+    public function testEveryParallelShiftIsRenderedAndTheColumnIsSizedForThem(): void
     {
         $this->manager();
         $dept = $this->department();
@@ -208,64 +207,48 @@ final class PlannerOverlappingShiftsTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
         self::assertResponseIsSuccessful();
 
-        self::assertCount(PlannerPresenter::MAX_LANES, $crawler->filter('.planner-block'));
-
-        // Nothing is drawn inside the grid to announce the hidden shifts.
-        self::assertCount(0, $crawler->filter('.planner-day-body .planner-day-toggle'));
-
-        // The column is marked, and the header offers the way in.
-        self::assertCount(1, $crawler->filter('.planner-day-has-hidden'));
-        $toggle = $crawler->filter('.planner-day-head .planner-day-toggle-expand');
-        self::assertCount(1, $toggle);
-        self::assertStringContainsString('+2 more', $toggle->text());
-
-        // Following it renders every parallel shift, and offers the way back.
-        $expanded = $this->client->request('GET', $toggle->attr('href'));
-        self::assertResponseIsSuccessful();
-        self::assertCount(6, $expanded->filter('.planner-block'));
-        self::assertCount(0, $expanded->filter('.planner-day-has-hidden'), 'nothing is hidden any more');
-        self::assertCount(1, $expanded->filter('.planner-day-expanded'));
-        self::assertCount(1, $expanded->filter('.planner-day-head .planner-day-toggle'), 'an expanded day offers a way back');
+        self::assertCount(6, $crawler->filter('.planner-block'));
+        self::assertStringContainsString(
+            '--planner-lanes: 6',
+            (string) $crawler->filter('.planner-day')->first()->attr('style'),
+            'the column is sized for the busiest moment of the day',
+        );
+        self::assertCount(0, $crawler->filter('.planner-day-toggle'), 'there is nothing left to expand');
     }
 
-    /** A day that fits within the cap must not be marked or offer an expand link. */
-    public function testADayWithinTheCapIsNotMarked(): void
+    /** A quiet day is one lane wide, so it does not take the width of a busy neighbour. */
+    public function testAQuietDayStaysOneLaneWide(): void
+    {
+        $this->manager();
+        $dept = $this->department();
+        $this->seedShift($dept, '2026-06-01 10:00', '2026-06-01 12:00', 'Door');
+        $this->seedShift($dept, '2026-06-01 14:00', '2026-06-01 16:00', 'Tech');
+        $this->setRange();
+        $this->em->flush();
+
+        $this->login();
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('--planner-lanes: 1', (string) $crawler->filter('.planner-day')->first()->attr('style'));
+    }
+
+    /** No query parameter may be reflected into the page, whether or not the planner reads it. */
+    public function testAJunkQueryParameterIsNotReflected(): void
     {
         $this->manager();
         $dept = $this->department();
         $this->seedShift($dept, '2026-06-01 22:00', '2026-06-01 23:30', 'Door');
-        $this->seedShift($dept, '2026-06-01 22:00', '2026-06-01 23:30', 'Tech');
         $this->setRange();
         $this->em->flush();
 
         $this->login();
-        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
-
-        self::assertResponseIsSuccessful();
-        self::assertCount(0, $crawler->filter('.planner-day-has-hidden'));
-        self::assertCount(0, $crawler->filter('.planner-day-toggle'));
-    }
-
-    /** A junk expand parameter must be ignored, not reflected into the page or acted on. */
-    public function testAnInvalidExpandParameterIsIgnored(): void
-    {
-        $this->manager();
-        $dept = $this->department();
-        for ($i = 0; $i < 6; ++$i) {
-            $this->seedShift($dept, '2026-06-01 22:00', '2026-06-01 23:30', 'Shift '.$i);
-        }
-        $this->setRange();
-        $this->em->flush();
-
-        $this->login();
-        $crawler = $this->client->request(
+        $this->client->request(
             'GET',
             '/manage-shifts/planner?department='.$dept->getUuid().'&expand='.urlencode('"><script>x</script>'),
         );
 
         self::assertResponseIsSuccessful();
-        self::assertCount(PlannerPresenter::MAX_LANES, $crawler->filter('.planner-block'), 'the cap still applies');
-        self::assertCount(1, $crawler->filter('.planner-day-has-hidden'));
         self::assertStringNotContainsString('<script>x</script>', (string) $this->client->getResponse()->getContent());
     }
 

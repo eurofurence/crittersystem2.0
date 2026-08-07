@@ -40,7 +40,7 @@ final class PlannerPresenterLaneTest extends TestCase
      *
      * @return array{days: array, blocks: array, overflows: array, rasterMinutes: int}
      */
-    private function grid(array $shifts, array $expandedDays = []): array
+    private function grid(array $shifts): array
     {
         $tz = new \DateTimeZone('UTC');
 
@@ -49,9 +49,6 @@ final class PlannerPresenterLaneTest extends TestCase
             new \DateTimeImmutable('2026-07-18 00:00', $tz),
             $shifts,
             $tz,
-            null,
-            null,
-            $expandedDays,
         );
     }
 
@@ -139,10 +136,11 @@ final class PlannerPresenterLaneTest extends TestCase
     }
 
     /**
-     * Two overlapping shifts in the morning must not narrow an unrelated afternoon shift: clusters
-     * are independent.
+     * Clustering still decides which lane a shift lands in - an unrelated afternoon shift takes the
+     * first free lane rather than being pushed past the morning pair - even though the lane width
+     * itself is now the day's.
      */
-    public function testSeparateClustersDoNotAffectEachOther(): void
+    public function testAnUnrelatedLaterShiftTakesTheFirstLane(): void
     {
         $lanes = $this->lanesByTitle($this->grid([
             $this->shift('08:00', '10:00', 1),
@@ -150,65 +148,57 @@ final class PlannerPresenterLaneTest extends TestCase
             $this->shift('15:00', '16:00', 3),
         ]));
 
-        self::assertSame(2, $lanes['S1']['lanes']);
-        self::assertSame(1, $lanes['S3']['lanes'], 'a later, unrelated shift keeps the full width');
-        self::assertSame(100.0, $lanes['S3']['width']);
+        self::assertSame(0, $lanes['S3']['lane']);
+        self::assertSame(0.0, $lanes['S3']['left']);
+        self::assertSame(2, $lanes['S3']['lanes'], 'lane width comes from the busiest moment of the day');
     }
 
-    public function testBeyondTheCapTheDayReportsWhatItIsHiding(): void
+    /**
+     * However many shifts run in parallel, every one of them renders: the column is widened rather
+     * than capped. Hiding the sixth shift behind an "expand" link is what made a busy day look
+     * half-planned.
+     */
+    public function testEveryParallelShiftRendersHoweverManyThereAre(): void
     {
         $shifts = [];
-        for ($i = 1; $i <= 6; ++$i) {
+        for ($i = 1; $i <= 8; ++$i) {
             $shifts[] = $this->shift('22:00', '23:30', $i);
         }
         $grid = $this->grid($shifts);
 
-        self::assertCount(PlannerPresenter::MAX_LANES, $grid['blocks'], 'only the capped lanes render');
-        self::assertSame(2, $grid['days'][0]['hidden'], 'the day carries the hidden count for its header link');
+        self::assertCount(8, $grid['blocks']);
+        self::assertSame(8, $grid['days'][0]['lanes'], 'the day carries its lane count so the column can be sized');
 
         foreach ($grid['blocks'] as $block) {
-            self::assertSame(PlannerPresenter::MAX_LANES, $block['lanes']);
+            self::assertSame(8, $block['lanes']);
         }
+        self::assertSame(range(0, 7), array_column($grid['blocks'], 'lane'));
     }
 
-    /** Hidden counts are summed per day, not per cluster: the header shows one number. */
-    public function testHiddenCountsFromSeveralClustersAreSummedForTheDay(): void
+    /**
+     * Lanes are uniform across the whole day, not per cluster: a quiet morning in a busy day keeps
+     * the same lane width as the afternoon, so every block sits on one vertical grid.
+     */
+    public function testLanesAreUniformAcrossTheWholeDay(): void
     {
-        $shifts = [];
-        for ($i = 1; $i <= 6; ++$i) {
-            $shifts[] = $this->shift('08:00', '09:00', $i);
-        }
-        for ($i = 7; $i <= 11; ++$i) {
+        $shifts = [$this->shift('08:00', '09:00', 1)];
+        for ($i = 2; $i <= 5; ++$i) {
             $shifts[] = $this->shift('20:00', '21:00', $i);
         }
 
         $grid = $this->grid($shifts);
+        $lanes = $this->lanesByTitle($grid);
 
-        self::assertSame(3, $grid['days'][0]['hidden'], '2 hidden in the morning cluster plus 1 in the evening');
+        self::assertSame(4, $grid['days'][0]['lanes']);
+        self::assertSame(25.0, $lanes['S1']['width'], 'the lone morning shift keeps one lane, not the whole column');
+        self::assertSame(25.0, $lanes['S2']['width']);
+        self::assertSame(0.0, $lanes['S1']['left']);
     }
 
-    public function testADayWithinTheCapHidesNothing(): void
+    /** A day nobody is running anything on still has one lane, so its column has a width. */
+    public function testAnEmptyDayHasASingleLane(): void
     {
-        $grid = $this->grid([
-            $this->shift('22:00', '23:30', 1),
-            $this->shift('22:00', '23:30', 2),
-        ]);
-
-        self::assertSame(0, $grid['days'][0]['hidden']);
-        self::assertFalse($grid['days'][0]['expanded']);
-    }
-
-    public function testAnExpandedDayIgnoresTheCap(): void
-    {
-        $shifts = [];
-        for ($i = 1; $i <= 6; ++$i) {
-            $shifts[] = $this->shift('22:00', '23:30', $i);
-        }
-        $grid = $this->grid($shifts, [self::DAY]);
-
-        self::assertCount(6, $grid['blocks'], 'every parallel shift renders when the day is expanded');
-        self::assertSame(0, $grid['days'][0]['hidden']);
-        self::assertTrue($grid['days'][0]['expanded']);
+        self::assertSame(1, $this->grid([])['days'][0]['lanes']);
     }
 
     /**

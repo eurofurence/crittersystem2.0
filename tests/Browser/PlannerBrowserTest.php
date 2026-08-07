@@ -162,6 +162,13 @@ final class PlannerBrowserTest extends BrowserTestCase
                 ->setDepartment($dept)->setShiftTask($task)->setState(ShiftState::DRAFT);
             $this->em->persist($shift);
         }
+
+        // Lane width is now uniform per day, so the full-width case needs a day of its own.
+        $lone = (new Shift())->setTitle('Alone')
+            ->setStartsAt(new \DateTimeImmutable('2026-06-02 09:00', new \DateTimeZone('UTC')))
+            ->setEndsAt(new \DateTimeImmutable('2026-06-02 11:00', new \DateTimeZone('UTC')))
+            ->setDepartment($dept)->setShiftTask($task)->setState(ShiftState::DRAFT);
+        $this->em->persist($lone);
         $this->em->flush();
 
         $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'planner-mgr@example.com']);
@@ -247,6 +254,53 @@ final class PlannerBrowserTest extends BrowserTestCase
             'the new task is selected, so the form the manager is filling stays usable',
         );
         $this->assertNoConsoleErrors('the planner after creating a shift task inline');
+    }
+
+    /**
+     * A department running eight things at once must show all eight. They used to be capped at four
+     * with the rest behind an "expand this day" link, which read as half the day being unplanned.
+     */
+    public function testEveryParallelShiftIsVisibleAndTheColumnWidensToFitThem(): void
+    {
+        $dept = $this->seed();
+        $task = $this->em->getRepository(ShiftTask::class)->findOneBy(['name' => 'General']);
+        for ($i = 0; $i < 8; ++$i) {
+            $shift = (new Shift())->setTitle('Parallel '.$i)
+                ->setStartsAt(new \DateTimeImmutable('2026-06-01 18:00', new \DateTimeZone('UTC')))
+                ->setEndsAt(new \DateTimeImmutable('2026-06-01 20:00', new \DateTimeZone('UTC')))
+                ->setDepartment($dept)->setShiftTask($task)->setState(ShiftState::DRAFT);
+            $this->em->persist($shift);
+        }
+        $this->em->flush();
+
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'planner-mgr@example.com']);
+        $this->browse();
+        $this->signIn($user, self::PASSWORD);
+        $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
+        $this->client->waitFor('.planner-block', 10);
+
+        $measured = $this->client->executeScript(
+            'const blocks = Array.from(document.querySelectorAll(".planner-block"))'
+            .'.filter((b) => b.textContent.includes("18:00"));'
+            .'const day = document.querySelector(".planner-day");'
+            .'return {count: blocks.length,'
+            .' lefts: new Set(blocks.map((b) => Math.round(b.getBoundingClientRect().left))).size,'
+            .' narrowest: Math.min(...blocks.map((b) => b.getBoundingClientRect().width)),'
+            .' dayWidth: Math.round(day.getBoundingClientRect().width),'
+            .' overflows: document.querySelector(".planner-grid").scrollWidth'
+            .'   > document.querySelector(".planner-grid").clientWidth};'
+        );
+
+        self::assertSame(8, $measured['count'], 'every parallel shift renders');
+        self::assertSame(8, $measured['lefts'], 'and each one has a column of its own');
+        self::assertGreaterThan(60, $measured['narrowest'], 'a lane stays wide enough to read');
+        self::assertGreaterThan(1000, $measured['dayWidth'], 'the day column widened rather than hiding shifts');
+        self::assertTrue($measured['overflows'], 'the grid is now wider than its viewport');
+
+        // The arrows are the only hint that the grid scrolls; a manager who does not see them does
+        // not scroll.
+        $this->client->waitFor('.planner-scroll-arrow-next:not([hidden])', 10);
+        $this->assertNoConsoleErrors('the planner with a busy day');
     }
 
     /**

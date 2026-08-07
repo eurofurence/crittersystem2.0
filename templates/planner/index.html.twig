@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/icon/_macros.twig' as i %}
 
 {% block title %}{{ 'planner.page.title_department'|trans({'%name%': department.name}) }}{% endblock %}
 
@@ -60,7 +61,19 @@
         data-planner-paint-token-value="{{ csrf_token('planner_paint') }}"
         data-planner-edit-token-value="{{ csrf_token('planner_edit') }}"
       >
-        {% include 'planner/_grid.html.twig' %}
+        {# The arrows sit level with the day headers, in a zero-height sticky strip, so they stay
+           beside the days while the page is scrolled down a 24-hour column. #}
+        <div class="planner-scroll" data-controller="scroll-nav">
+          <div class="planner-scroll-nav">
+            <button type="button" class="planner-scroll-arrow planner-scroll-arrow-prev"
+                    data-scroll-nav-target="prev" data-action="scroll-nav#prev"
+                    aria-label="{{ 'planner.grid.scroll_earlier'|trans }}" hidden>{{ i.icon('chevron-left') }}</button>
+            <button type="button" class="planner-scroll-arrow planner-scroll-arrow-next"
+                    data-scroll-nav-target="next" data-action="scroll-nav#next"
+                    aria-label="{{ 'planner.grid.scroll_later'|trans }}" hidden>{{ i.icon('chevron-right') }}</button>
+          </div>
+          {% include 'planner/_grid.html.twig' %}
+        </div>
       </div>
     </div>
 

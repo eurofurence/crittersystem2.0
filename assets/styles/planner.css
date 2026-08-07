@@ -7,6 +7,8 @@
     --planner-day-height: calc(var(--planner-hour-height) * 24);
     /* Tall enough for a phase tag stacked above the date on setup/teardown days. */
     --planner-head-height: 48px;
+    /* One parallel shift's worth of column. */
+    --planner-lane-width: 170px;
 }
 
 /* Positioned so the selection band can be placed in the grid's own content coordinates and scroll
@@ -52,13 +54,15 @@
 }
 
 /*
- * Wide enough that a column split between two simultaneous shifts still shows each one's full
- * "10:00-12:00" rather than falling back to the start time alone. The grid scrolls horizontally and
- * the hour axis is sticky precisely so days may be wider than the viewport.
+ * One lane is wide enough that a shift still shows its full "10:00-12:00" rather than falling back
+ * to the start time alone, and a day is as many lanes wide as its busiest moment needs. A day with
+ * eight parallel shifts is therefore eight times as wide as a quiet one, and the grid scrolls
+ * horizontally to reach it: nothing is ever hidden for want of width.
  */
 .planner-day {
-    flex: 1 1 170px;
-    min-width: 170px;
+    --planner-lanes: 1;
+    flex: 1 1 calc(var(--planner-lanes) * var(--planner-lane-width));
+    min-width: calc(var(--planner-lanes) * var(--planner-lane-width));
     border-right: 1px solid var(--tblr-border-color);
 }
 
@@ -278,6 +282,51 @@
     bottom: 0;
     height: 6px;
     cursor: ns-resize;
+}
+
+/* Horizontal scroll affordance. The strip has no height of its own and sticks to the top of the
+   viewport, so the arrows stay level with the day headers however far down the 24-hour column the
+   page is scrolled. */
+.planner-scroll {
+    position: relative;
+}
+
+.planner-scroll-nav {
+    position: sticky;
+    top: 0;
+    height: 0;
+    z-index: 20;
+}
+
+.planner-scroll-arrow {
+    position: absolute;
+    top: calc(var(--planner-head-height) / 2);
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--tblr-border-color);
+    border-radius: 50%;
+    background: var(--tblr-bg-surface);
+    color: var(--tblr-body-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    cursor: pointer;
+}
+
+.planner-scroll-arrow:hover {
+    background: var(--tblr-bg-surface-secondary, var(--tblr-bg-surface));
+}
+
+.planner-scroll-arrow-prev {
+    /* Clear of the hour axis, which is frozen over the left edge of the grid. */
+    left: 60px;
+}
+
+.planner-scroll-arrow-next {
+    right: 4px;
 }
 
 /* The rubber band drawn while selecting a range of shifts. It is a child of the scroll container
@@ -524,35 +573,6 @@ label.avail-swatch-unavailable.active,
 .chat-bubble-body { white-space: pre-wrap; word-break: break-word; }
 .chat-bubble-image { max-width: 240px; border-radius: 6px; margin-top: 4px; }
 .chat-typing { padding: 4px 10px; }
-
-.planner-day-has-hidden {
-    border-left: 2px solid var(--tblr-orange);
-    border-right: 2px solid var(--tblr-orange);
-}
-
-.planner-day.planner-day-has-hidden:last-child {
-    border-right: 2px solid var(--tblr-orange);
-}
-
-.planner-day-expanded {
-    border-left: 2px dashed var(--tblr-orange);
-    border-right: 2px dashed var(--tblr-orange);
-}
-
-.planner-day.planner-day-expanded:last-child {
-    border-right: 2px dashed var(--tblr-orange);
-}
-
-.planner-day-toggle {
-    font-size: 10px;
-    font-weight: 500;
-    line-height: 1.2;
-    text-decoration: underline;
-}
-
-.planner-day-toggle-expand {
-    color: var(--tblr-orange);
-}
 
 .planner.is-painting .planner-day-body,
 .planner.is-painting .planner-block,

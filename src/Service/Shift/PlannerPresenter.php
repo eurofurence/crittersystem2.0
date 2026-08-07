@@ -16,16 +16,10 @@ final class PlannerPresenter
     private const MINUTES_PER_DAY = 1440;
 
     /**
-     * Parallel shifts share the width of their day column.
-     */
-    public const MAX_LANES = 4;
-
-    /**
-     * @param Shift[]  $shifts
-     * @param string[] $expandedDays ISO dates (Y-m-d) to lay out without the lane cap
+     * @param Shift[] $shifts
      *
      * @return array{
-     *     days: list<array{iso: string, label: string, phase: string, expanded: bool, hidden: int}>,
+     *     days: list<array{iso: string, label: string, phase: string, lanes: int}>,
      *     blocks: list<array{shift: Shift, dayIndex: int, top: float, height: float, overnight: bool, lane: int, lanes: int, left: float, width: float}>,
      *     rasterMinutes: int
      * }
@@ -37,15 +31,12 @@ final class PlannerPresenter
         \DateTimeZone $tz,
         ?\DateTimeImmutable $eventStart = null,
         ?\DateTimeImmutable $eventEnd = null,
-        array $expandedDays = [],
     ): array {
         $days = $this->days($rangeStart, $rangeEnd, $tz, $eventStart, $eventEnd);
-        $expanded = array_fill_keys($expandedDays, true);
         $dayIndex = [];
         foreach ($days as $i => $day) {
             $dayIndex[$day['iso']] = $i;
-            $days[$i]['expanded'] = isset($expanded[$day['iso']]);
-            $days[$i]['hidden'] = 0;
+            $days[$i]['lanes'] = 1;
         }
 
         /** @var array<int, list<array<string, mixed>>> $byDay */
@@ -81,9 +72,9 @@ final class PlannerPresenter
         $blocks = [];
         ksort($byDay);
         foreach ($byDay as $index => $dayBlocks) {
-            [$laid, $hidden] = $this->layOutDay($dayBlocks, isset($expanded[$days[$index]['iso']]));
+            [$laid, $lanes] = $this->layOutDay($dayBlocks);
             $blocks = array_merge($blocks, $laid);
-            $days[$index]['hidden'] = $hidden;
+            $days[$index]['lanes'] = $lanes;
         }
 
         return [
@@ -104,11 +95,16 @@ final class PlannerPresenter
      * Touching is not overlapping - a shift ending at 22:00 and one starting at 22:00 each keep the
      * full width - which is why the comparisons below are strict.
      *
+     * Every block is then sized against the busiest cluster of the day rather than its own, so the
+     * whole column sits on one lane grid: blocks line up vertically, and a lane keeps the same width
+     * from midnight to midnight. Nothing is dropped, however many shifts run in parallel; the column
+     * is widened instead, which is what the day's lane count is for.
+     *
      * @param list<array<string, mixed>> $dayBlocks
      *
-     * @return array{0: list<array<string, mixed>>, 1: int} the placed blocks, and how many the cap hid
+     * @return array{0: list<array<string, mixed>>, 1: int} the placed blocks, and the day's lane count
      */
-    private function layOutDay(array $dayBlocks, bool $expanded): array
+    private function layOutDay(array $dayBlocks): array
     {
         // A total order, so lanes cannot shuffle between two renders of the same data. Longest
         // first at equal starts is the usual calendar convention.
@@ -116,7 +112,7 @@ final class PlannerPresenter
             <=> [$b['startMin'], -$b['endMin'], $b['shift']->getId() ?? 0]);
 
         $placed = [];
-        $hiddenTotal = 0;
+        $dayLanes = 1;
 
         foreach ($this->clusters($dayBlocks) as $cluster) {
             /** @var int[] $laneEnds end minute of the last block placed in each lane */
@@ -136,24 +132,22 @@ final class PlannerPresenter
                 $cluster[$i]['lane'] = $lane;
             }
 
-            $needed = \count($laneEnds);
-            $lanes = $expanded ? $needed : min($needed, self::MAX_LANES);
-            $width = round(100 / $lanes, 4);
+            $dayLanes = max($dayLanes, \count($laneEnds));
 
             foreach ($cluster as $block) {
-                if ($block['lane'] >= $lanes) {
-                    ++$hiddenTotal;
-                    continue;
-                }
-                $block['lanes'] = $lanes;
-                $block['left'] = round($block['lane'] * $width, 4);
-                $block['width'] = $width;
                 unset($block['startMin'], $block['endMin'], $block['dayIso']);
                 $placed[] = $block;
             }
         }
 
-        return [$placed, $hiddenTotal];
+        $width = round(100 / $dayLanes, 4);
+        foreach ($placed as $i => $block) {
+            $placed[$i]['lanes'] = $dayLanes;
+            $placed[$i]['left'] = round($block['lane'] * $width, 4);
+            $placed[$i]['width'] = $width;
+        }
+
+        return [$placed, $dayLanes];
     }
 
     /**
