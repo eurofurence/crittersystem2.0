@@ -39,12 +39,23 @@ abstract class BrowserTestCase extends PantherTestCase
         self::ensureKernelShutdown();
     }
 
-    /** Starts the browser. Call after the fixtures are flushed, never before. */
+    /**
+     * Starts the browser. Call after the fixtures are flushed, never before.
+     *
+     * Panther keeps one browser for the whole run, and Chrome's console log is a property of that
+     * browser rather than of a page: whatever an earlier test left unread is handed to the next one
+     * that asks. That made {@see assertNoConsoleErrors()} report a planner error against the apply
+     * screen, so which test failed depended on the order they ran in. Reading the log here throws
+     * away everything from before this test.
+     */
     protected function browse(): Client
     {
-        return $this->client = static::createPantherClient([
+        $this->client = static::createPantherClient([
             'browser' => static::CHROME,
         ]);
+        $this->client->getWebDriver()->manage()->getLog('browser');
+
+        return $this->client;
     }
 
     /**

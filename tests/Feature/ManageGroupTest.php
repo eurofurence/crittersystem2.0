@@ -126,4 +126,92 @@ final class ManageGroupTest extends DatabaseWebTestCase
         $names = array_map(static fn (Privilege $p) => $p->getName(), $group->getPrivileges()->toArray());
         self::assertContains('news:manage', $names);
     }
+
+    /**
+     * The matrix answers "who grants this permission", which the per-group screens cannot: reading
+     * it out of a dozen edit pages is how a stray grant goes unnoticed.
+     */
+    public function testTheMatrixShowsEveryGroupAgainstEveryPermission(): void
+    {
+        $viewer = $this->makeUser('viewer', ['rbac:group:view']);
+        $this->makeUser('editor', ['news:manage']);
+        $this->client->loginUser($viewer);
+
+        $crawler = $this->client->request('GET', '/manage/groups/matrix');
+        self::assertResponseIsSuccessful();
+
+        // A column per group, plus the frozen permission column.
+        self::assertCount(3, $crawler->filter('.perm-matrix thead th'));
+
+        $row = $crawler->filter('tr:has(code:contains("news:manage"))');
+        self::assertCount(1, $row->filter('.perm-matrix-cell.is-granted'), 'exactly the group holding it is ticked');
+        self::assertGreaterThan(0, $crawler->filter('.perm-matrix-category')->count(), 'permissions are grouped by category');
+    }
+
+    /**
+     * A permission granted to a group but missing from the catalogue still has to appear: a grant
+     * nobody can see is a grant nobody reviews.
+     */
+    public function testTheMatrixListsAGrantTheCatalogueDoesNotKnow(): void
+    {
+        $viewer = $this->makeUser('viewer', ['rbac:group:view']);
+        $this->makeUser('legacy', ['legacy:leftover']);
+        $this->client->loginUser($viewer);
+
+        $crawler = $this->client->request('GET', '/manage/groups/matrix');
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString('legacy:leftover', $crawler->filter('.perm-matrix')->text());
+    }
+
+    /**
+     * The picker narrows the columns to the groups asked for. Everything else stays: the rows are
+     * still every permission, so a comparison of two groups is not also a filtered list.
+     */
+    public function testTheMatrixDrawsOnlyThePickedGroups(): void
+    {
+        $viewer = $this->makeUser('viewer', ['rbac:group:view']);
+        $editor = $this->makeUser('editor', ['news:manage']);
+        $editorGroup = $editor->getGroups()->first();
+        $this->client->loginUser($viewer);
+
+        $crawler = $this->client->request('GET', '/manage/groups/matrix?groups%5B0%5D='.$editorGroup->getUuid());
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(2, $crawler->filter('.perm-matrix thead th'), 'one group column plus the permission column');
+        self::assertStringContainsString($editorGroup->getName(), $crawler->filter('.perm-matrix-group')->text());
+        self::assertCount(2, $crawler->filter('input[name="groups[]"]'), 'the picker still offers every group');
+        self::assertCount(1, $crawler->filter('input[name="groups[]"][checked]'));
+    }
+
+    /** No selection is the default, and unticking everything must not leave a matrix with no columns. */
+    public function testTheMatrixFallsBackToEveryGroupWhenNothingIsPicked(): void
+    {
+        $this->makeUser('editor', ['news:manage']);
+        $this->client->loginUser($this->makeUser('viewer', ['rbac:group:view']));
+
+        $bare = $this->client->request('GET', '/manage/groups/matrix');
+        self::assertCount(3, $bare->filter('.perm-matrix thead th'));
+
+        $unpicked = $this->client->request('GET', '/manage/groups/matrix?groups%5B0%5D=');
+        self::assertCount(3, $unpicked->filter('.perm-matrix thead th'));
+        self::assertCount(2, $unpicked->filter('input[name="groups[]"][checked]'));
+    }
+
+    public function testTheMatrixNeedsTheViewPrivilege(): void
+    {
+        $this->client->loginUser($this->makeUser('plain', ['shift:view']));
+        $this->client->request('GET', '/manage/groups/matrix');
+
+        self::assertResponseStatusCodeSame(403);
+    }
+
+    /** The button is on the group list, and only for somebody allowed through the door. */
+    public function testTheGroupListLinksToTheMatrix(): void
+    {
+        $this->client->loginUser($this->makeUser('viewer', ['rbac:group:view']));
+        $crawler = $this->client->request('GET', '/manage/groups');
+
+        self::assertCount(1, $crawler->filter('a[href="/manage/groups/matrix"]'));
+    }
 }

@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
 
 {% block title %}{{ 'shift_manager.apply.title'|trans }}{% endblock %}
 
@@ -50,34 +51,19 @@
           </label>
         </div>
 
-        <div class="dropdown">
-          <span class="form-label mb-1 small d-block">{{ 'shift_manager.apply.filter.departments'|trans }}</span>
-          <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
-                  data-bs-auto-close="outside" aria-expanded="false"
-                  {{ grid.departments is empty ? 'disabled' : '' }}>
-            {% set chosen = grid.departments|filter(option => option.selected)|length %}
-            {{ chosen == grid.departments|length
-              ? 'shift_manager.apply.filter.all_departments'|trans
-              : 'shift_manager.apply.filter.some_departments'|trans({'%count%': chosen}) }}
-          </button>
-          <div class="dropdown-menu apply-department-menu">
-            {% for option in grid.departments %}
-              <label class="dropdown-item form-check mb-0">
-                <input type="checkbox" class="form-check-input" name="departments[]" value="{{ option.department.uuid }}"
-                       {{ option.selected ? 'checked' : '' }}>
-                <span class="form-check-label">
-                  {{ option.department.name }}
-                  <span class="text-secondary small">({{ option.count }})</span>
-                  {% if option.member %}<span class="badge bg-green-lt ms-1">{{ 'shift_manager.apply.filter.member'|trans }}</span>{% endif %}
-                </span>
-              </label>
-            {% endfor %}
-            <div class="dropdown-divider"></div>
-            <div class="px-3 pb-2">
-              <button class="btn btn-sm btn-primary w-100" type="submit">{{ 'shift_manager.apply.filter.show'|trans }}</button>
-            </div>
-          </div>
-        </div>
+        {{ f.checkbox_dropdown('departments', grid.departments|map(option => {
+          value: option.department.uuid,
+          label: option.department.name,
+          hint: option.count,
+          badge: option.member ? 'shift_manager.apply.filter.member'|trans : null,
+          checked: option.selected,
+        }), {
+          label: 'shift_manager.apply.filter.departments'|trans,
+          allLabel: 'shift_manager.apply.filter.all_departments'|trans,
+          someLabel: 'shift_manager.apply.filter.some_departments'|trans({'%count%': '%count%'}),
+          submitLabel: 'shift_manager.apply.filter.show'|trans,
+          emptyLabel: 'shift_manager.apply.filter.no_departments'|trans,
+        }) }}
 
         <noscript><button class="btn btn-sm btn-primary" type="submit">{{ 'shift_manager.apply.filter.show'|trans }}</button></noscript>
       </form>

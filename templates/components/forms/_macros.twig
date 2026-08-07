@@ -276,3 +276,61 @@
     {% endif %}
   </div>
 {% endmacro %}
+
+{# ------------------------------------------------------------------------------------------------------------------ #}
+
+{% macro checkbox_dropdown(name, items, options = {}) %}
+  {# Multi-select combobox: a dropdown of checkboxes that submits `<name>[]` per ticked item, with a
+     button summarising the selection. A plain multi-select is unreadable past a handful of options,
+     and this keeps the whole list scannable while the page around it stays an ordinary GET form.
+
+     The dropdown stays open while ticking (`data-bs-auto-close="outside"`), so the form is submitted
+     by the button inside it rather than on every change: one reload per decision, not per tick.
+
+     items: [{value, label, hint, badge, checked}] - hint and badge are optional
+     options:
+       - label: field label (pass false to omit)
+       - allLabel: button text when everything is ticked
+       - someLabel: button text otherwise, receiving %count%
+       - submitLabel: text of the button that applies the selection
+       - emptyLabel: text shown in place of the list when there is nothing to pick
+  #}
+  {% set chosen = items|filter(item => item.checked)|length %}
+  {% set label = options.label is defined ? options.label : false %}
+  <div class="dropdown">
+    {% if label is not same as(false) %}
+      <span class="form-label mb-1 small d-block">{{ label }}</span>
+    {% endif %}
+    <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
+            data-bs-auto-close="outside" aria-expanded="false" {{ items is empty ? 'disabled' : '' }}>
+      {{ chosen == items|length
+        ? options.allLabel|default('All')
+        : (options.someLabel|default('%count% selected'))|replace({'%count%': chosen}) }}
+    </button>
+    <div class="dropdown-menu checkbox-dropdown-menu">
+      {% for item in items %}
+        <label class="dropdown-item form-check mb-0">
+          <input type="checkbox" class="form-check-input" name="{{ name }}[]" value="{{ item.value }}"
+                 {{ item.checked ? 'checked' : '' }}>
+          <span class="form-check-label">
+            {{ item.label }}
+            {% if item.hint is defined and item.hint is not empty %}
+              <span class="text-secondary small">({{ item.hint }})</span>
+            {% endif %}
+            {% if item.badge is defined and item.badge is not empty %}
+              <span class="badge bg-green-lt ms-1">{{ item.badge }}</span>
+            {% endif %}
+          </span>
+        </label>
+      {% else %}
+        <span class="dropdown-item-text text-secondary small">{{ options.emptyLabel|default('Nothing to pick') }}</span>
+      {% endfor %}
+      {% if items is not empty %}
+        <div class="dropdown-divider"></div>
+        <div class="px-3 pb-2">
+          <button class="btn btn-sm btn-primary w-100" type="submit">{{ options.submitLabel|default('Show') }}</button>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endmacro %}

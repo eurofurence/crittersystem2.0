@@ -8,6 +8,7 @@
     subtitle: 'manage.group.page.subtitle'|trans,
     actions: [
       {label: 'manage.action.back_to_hub'|trans, href: path('app_manage'), class: 'btn btn-outline-secondary'},
+      {label: 'manage.group.action.matrix'|trans, href: path('app_manage_group_matrix'), class: 'btn btn-outline-primary'},
       is_granted('rbac:group:manage')
         ? {label: 'manage.group.action.new'|trans, href: path('app_manage_group_new'), class: 'btn btn-primary'} : null
     ]|filter(a => a is not null)

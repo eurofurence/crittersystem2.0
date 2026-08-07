@@ -37,3 +37,143 @@
 .badge.text-bg-secondary {
     background-color: var(--tblr-gray-600) !important;
 }
+
+/* Permission matrix: every group against every permission. The left column and the header row are
+   frozen, because a tick in the middle of a wide table means nothing once you have scrolled the
+   permission name or the group name off screen. */
+.perm-matrix-wrap {
+    position: relative;
+}
+
+.perm-matrix-scroll {
+    max-height: 75vh;
+    overflow: auto;
+    border: 1px solid var(--tblr-border-color);
+    border-radius: var(--tblr-border-radius);
+}
+
+.perm-matrix {
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.perm-matrix > thead > tr > th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--tblr-bg-surface);
+    border-bottom: 1px solid var(--tblr-border-color);
+    vertical-align: bottom;
+}
+
+.perm-matrix-corner {
+    left: 0;
+    z-index: 4 !important;
+    min-width: 22rem;
+}
+
+.perm-matrix-name {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 22rem;
+    background: var(--tblr-bg-surface);
+    font-weight: 500;
+}
+
+.perm-matrix-group {
+    min-width: 8rem;
+    text-align: center;
+}
+
+.perm-matrix-group-name {
+    display: block;
+    max-width: 10rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* One merged row per category, the same grouping the group edit screen uses. */
+.perm-matrix-category > th {
+    position: sticky;
+    left: 0;
+    background: color-mix(in srgb, var(--tblr-primary) 10%, var(--tblr-bg-surface));
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    font-size: 11px;
+}
+
+.perm-matrix-cell {
+    text-align: center;
+    color: var(--tblr-border-color);
+}
+
+.perm-matrix-cell.is-granted {
+    /*color: var(--tblr-green);*/
+    color: var(--tblr-white);
+    /*background: color-mix(in srgb, var(--tblr-green) 10%, transparent);*/
+    background: color-mix(in srgb, var(--tblr-green) 100%, transparent);
+}
+
+.perm-matrix-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    z-index: 6;
+}
+
+.perm-matrix-arrow {
+    position: absolute;
+    top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--tblr-border-color);
+    border-radius: 50%;
+    background: var(--tblr-bg-surface);
+    color: var(--tblr-body-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    cursor: pointer;
+}
+
+.perm-matrix-arrow-prev {
+    left: calc(22rem + 8px);
+}
+
+.perm-matrix-arrow-next {
+    right: 8px;
+}
+
+/* Multi-select combobox (components/forms `checkbox_dropdown`). A long list of options has to
+   scroll inside the dropdown rather than run off the bottom of the screen. */
+.checkbox-dropdown-menu {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+/* Bootstrap's .form-check hangs its input off the left edge on a negative margin, which the
+   scrolling menu above clips: the box disappeared and there was no way to see what was ticked.
+   Laying the item out as a row puts the input back inside the box it belongs to. */
+.checkbox-dropdown-menu .dropdown-item.form-check {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    padding-left: 1rem;
+    margin-left: 0;
+    white-space: normal;
+}
+
+.checkbox-dropdown-menu .form-check-input {
+    position: static;
+    float: none;
+    flex: 0 0 auto;
+    margin: .2rem 0 0;
+}

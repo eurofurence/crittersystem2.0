@@ -2708,6 +2708,51 @@ msgstr "+ New group"
 msgid "manage.group.badge.core"
 msgstr "Core"
 
+msgid "manage.group.action.matrix"
+msgstr "Permission matrix"
+
+msgid "manage.group.action.back_to_groups"
+msgstr "Back to groups"
+
+msgid "manage.group.matrix.title"
+msgstr "Permission matrix"
+
+msgid "manage.group.matrix.subtitle"
+msgstr "Every group against every permission, so a stray grant is visible without opening each group in turn."
+
+msgid "manage.group.matrix.permission"
+msgstr "Permission"
+
+msgid "manage.group.matrix.filter.groups"
+msgstr "Groups"
+
+msgid "manage.group.matrix.filter.all_groups"
+msgstr "All groups"
+
+msgid "manage.group.matrix.filter.some_groups"
+msgstr "%count% selected"
+
+msgid "manage.group.matrix.filter.show"
+msgstr "Show"
+
+msgid "manage.group.matrix.filter.no_groups"
+msgstr "No groups to show"
+
+msgid "manage.group.matrix.granted"
+msgstr "granted"
+
+msgid "manage.group.matrix.not_granted"
+msgstr "not granted"
+
+msgid "manage.group.matrix.all_access"
+msgstr "Full access"
+
+msgid "manage.group.matrix.scroll_left"
+msgstr "Scroll to earlier groups"
+
+msgid "manage.group.matrix.scroll_right"
+msgstr "Scroll to later groups"
+
 msgid "manage.group.badge.two_factor"
 msgstr "2FA"
 
@@ -5569,6 +5614,9 @@ msgstr "My departments only"
 
 msgid "shift_manager.apply.filter.departments"
 msgstr "Departments"
+
+msgid "shift_manager.apply.filter.no_departments"
+msgstr "No departments with shifts that day"
 
 msgid "shift_manager.apply.filter.all_departments"
 msgstr "All departments"

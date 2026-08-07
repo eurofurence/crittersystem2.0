@@ -234,8 +234,3 @@
 .apply-scroll-arrow-next {
     right: 8px;
 }
-
-.apply-department-menu {
-    max-height: 60vh;
-    overflow-y: auto;
-}
