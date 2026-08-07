@@ -5,9 +5,9 @@ namespace App\Controller;
 use App\Entity\User;
 use App\Entity\UserVolunteerType;
 use App\Entity\VolunteerType;
-use App\Repository\UserGroupAssignmentRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Repository\VolunteerTypeRepository;
+use App\Service\VolunteerTypeVisibility;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,7 +30,7 @@ final class MembershipController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly VolunteerTypeRepository $volunteerTypes,
         private readonly UserVolunteerTypeRepository $memberships,
-        private readonly UserGroupAssignmentRepository $assignments,
+        private readonly VolunteerTypeVisibility $typeVisibility,
     ) {
     }
 
@@ -43,7 +43,7 @@ final class MembershipController extends AbstractController
         $public = [];
         $staff = [];
         foreach ($this->volunteerTypes->findAllOrdered() as $type) {
-            if (!$this->isVisible($type, $user)) {
+            if (!$this->typeVisibility->isVisible($type, $user)) {
                 continue;
             }
             $row = ['type' => $type, 'membership' => $this->memberships->findOneByUserAndType($user, $type)];
@@ -61,7 +61,7 @@ final class MembershipController extends AbstractController
 
         $rows = [];
         foreach ($this->volunteerTypes->findAllOrdered() as $type) {
-            if ($this->isVisible($type, $user)) {
+            if ($this->typeVisibility->isVisible($type, $user)) {
                 $rows[] = ['type' => $type, 'membership' => $this->memberships->findOneByUserAndType($user, $type)];
             }
         }
@@ -74,7 +74,7 @@ final class MembershipController extends AbstractController
     {
         /** @var User $user */
         $user = $this->getUser();
-        if (!$this->isVisible($type, $user)) {
+        if (!$this->typeVisibility->isVisible($type, $user)) {
             throw $this->createNotFoundException();
         }
 
@@ -82,27 +82,6 @@ final class MembershipController extends AbstractController
             'type' => $type,
             'membership' => $this->memberships->findOneByUserAndType($user, $type),
         ]);
-    }
-
-    /** Visibility per the volunteer-type flags. */
-    private function isVisible(VolunteerType $type, User $user): bool
-    {
-        if (!$type->isStaffOnly()) {
-            return true;
-        }
-        if (!$user->isStaff()) {
-            return false;
-        }
-        if (!$type->isDepartmentOnly()) {
-            return true;
-        }
-        foreach ($type->getDepartments() as $department) {
-            if ($this->assignments->userIsMember($user, $department)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     #[Route('/{id}/join', name: 'app_membership_join', methods: ['POST'], requirements: ['id' => Requirement::UUID])]

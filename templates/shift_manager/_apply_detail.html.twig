@@ -1,0 +1,133 @@
+{# The dialog for one shift. Rendered by the server so what the volunteer may do, and every reason
+   they may not, is decided under their own authorization. #}
+{% import 'components/data/_macros.twig' as d %}
+{% set shift = detail.shift %}
+
+<div class="modal-header">
+  <div>
+    <h5 class="modal-title">{{ shift.shiftTask ? shift.shiftTask.name : shift.title }}</h5>
+    <div class="text-secondary small">
+      {{ shift.department ? shift.department.name : '-' }}
+      {% if shift.location %} · {{ shift.location.name }}{% endif %}
+    </div>
+  </div>
+  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'ui.aria.close'|trans }}"></button>
+</div>
+
+<div class="modal-body">
+  <div class="d-flex flex-wrap gap-3 mb-3">
+    <div>
+      <div class="text-secondary small">{{ 'shift_manager.apply.detail.when'|trans }}</div>
+      <div class="fw-bold">{{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}</div>
+    </div>
+    <div>
+      <div class="text-secondary small">{{ 'shift_manager.apply.detail.duration'|trans }}</div>
+      <div class="fw-bold">{{ shift.durationHours|round(2) }} h</div>
+    </div>
+    <div>
+      <div class="text-secondary small">{{ 'shift_manager.apply.detail.your_availability'|trans }}</div>
+      <div>
+        {% if detail.availability.occupied %}
+          {{ d.badge('shift_manager.apply.occupied'|trans, 'bg-secondary-lt') }}
+        {% elseif detail.availability.value %}
+          {{ d.badge(detail.availability.value.label, 'bg-azure-lt') }}
+        {% else %}
+          <span class="text-secondary">{{ 'shift_manager.apply.detail.not_declared'|trans }}</span>
+        {% endif %}
+      </div>
+    </div>
+    <div>
+      <div class="text-secondary small">{{ 'common.label.status'|trans }}</div>
+      <div>{{ d.status_badge(detail.status) }}</div>
+    </div>
+  </div>
+
+  {% if shift.description %}
+    <p class="text-secondary">{{ shift.description }}</p>
+  {% endif %}
+
+  {% if detail.members|length > 1 %}
+    <div class="alert alert-info py-2">
+      <div class="fw-bold">{{ 'shift.group.badge'|trans({'%name%': shift.shiftGroup.name, '%count%': detail.members|length}) }}</div>
+      <ul class="mb-0 ps-3">
+        {% for member in detail.members %}
+          <li>{{ member.startsAt|app_datetime }} – {{ member.endsAt|app_time }} · {{ member.title }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% for reason in detail.blockers %}
+    <div class="alert alert-warning py-2 mb-2">{{ reason|trans }}</div>
+  {% endfor %}
+
+  <div class="fw-bold mb-1">{{ 'shift_manager.apply.detail.roles'|trans }}</div>
+  <div class="list-group list-group-flush mb-3">
+    {% for role in detail.roles %}
+      <div class="list-group-item px-0">
+        <div class="d-flex justify-content-between align-items-center">
+          <div class="fw-bold">{{ role.type.name }}</div>
+          <div class="{{ role.full ? 'text-red' : 'text-green' }}">{{ role.assigned }} / {{ role.needed }}</div>
+        </div>
+        {% if not role.applicable and role.reason %}
+          <div class="text-secondary small mt-1">{{ role.reason }}</div>
+          <div class="mt-1 d-flex flex-wrap gap-2">
+            {# Each fixable reason carries the way to fix it, and only when that page would let this
+               volunteer in: a link that answers 403 is worse than no link. #}
+            {% if role.canRequestType %}
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_membership_show', {id: role.type.uuid}) }}">
+                {{ 'shift_manager.apply.detail.join_type'|trans({'%name%': role.type.name}) }}
+              </a>
+            {% elseif role.membership and not role.membership.confirmed and role.canSeeType %}
+              <span class="badge bg-yellow-lt">{{ 'shift_manager.apply.detail.membership_pending'|trans }}</span>
+            {% endif %}
+            {% for certification in role.missingCertifications %}
+              {% if not certification.staffOnly or app.user.staff %}
+                <a class="btn btn-sm btn-outline-primary" href="{{ path('app_certifications_show', {id: certification.uuid}) }}">
+                  {{ 'shift_manager.apply.detail.get_certification'|trans({'%name%': certification.title}) }}
+                </a>
+              {% else %}
+                <span class="badge bg-secondary-lt">{{ certification.title }}</span>
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="list-group-item px-0 text-secondary">{{ 'shift_manager.reason.no_roles'|trans }}</div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="modal-footer justify-content-between">
+  <button type="button" class="btn btn-link" data-bs-dismiss="modal">{{ 'common.action.close'|trans }}</button>
+
+  {% if detail.status == 'signed_up' %}
+    <form method="post" action="{{ path('app_manage_shifts_apply_cancel', {id: shift.uuid}|merge(filters)) }}"
+          data-turbo="false"
+          data-controller="confirm"
+          data-confirm-message-value="{{ (detail.members|length > 1
+            ? 'shift_manager.apply.confirm_cancel_group'|trans({'%count%': detail.members|length})
+            : 'shift_manager.apply.confirm_cancel'|trans) }}">
+      <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ shift.id) }}">
+      <button class="btn btn-outline-danger">{{ 'shift_manager.apply.detail.cancel_application'|trans }}</button>
+    </form>
+  {% elseif detail.options is not empty %}
+    <form method="post" action="{{ path('app_manage_shifts_apply_do', {id: shift.uuid}|merge(filters)) }}"
+          data-turbo="false" class="d-flex flex-wrap align-items-center gap-2">
+      <input type="hidden" name="_token" value="{{ csrf_token('apply' ~ shift.id) }}">
+      {% if detail.options|length > 1 %}
+        <select name="volunteer_type" class="form-select form-select-sm" style="max-width: 12rem;">
+          {% for type in detail.options %}<option value="{{ type.uuid }}">{{ type.name }}</option>{% endfor %}
+        </select>
+      {% endif %}
+      {% if detail.overHours %}
+        <label class="form-check form-check-inline small text-orange mb-0">
+          <input type="checkbox" class="form-check-input" name="acknowledge_hours" value="1" required>
+          <span class="form-check-label">{{ 'shift_manager.apply.acknowledge_hours'|trans({'%max%': detail.recommendedMax}) }}</span>
+        </label>
+      {% endif %}
+      <button class="btn btn-primary">{{ 'common.action.apply'|trans }}</button>
+    </form>
+  {% endif %}
+</div>

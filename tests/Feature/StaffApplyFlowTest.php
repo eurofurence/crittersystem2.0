@@ -118,12 +118,14 @@ final class StaffApplyFlowTest extends DatabaseWebTestCase
         self::assertSame(1, $this->em->getRepository(ShiftEntry::class)->count(['shift' => $shift->getId()]), 'only one applicant takes the single slot');
     }
 
-    /** Read the apply/cancel CSRF token from the rendered apply page for a shift. */
+    /** Read the apply/cancel CSRF token from the shift dialog, which is where the forms now live. */
     private function formToken(Shift $shift, string $action): string
     {
-        $suffix = $action === 'apply' ? '/apply/'.$shift->getUuid() : '/apply/'.$shift->getUuid().'/cancel';
-        $crawler = $this->client->request('GET', '/manage-shifts/apply');
+        $prefix = $action === 'apply'
+            ? '/manage-shifts/apply/'.$shift->getUuid()
+            : '/manage-shifts/apply/'.$shift->getUuid().'/cancel';
+        $crawler = $this->client->request('GET', '/manage-shifts/apply/shift/'.$shift->getUuid());
 
-        return $crawler->filter('form[action$="'.$suffix.'"] input[name="_token"]')->attr('value');
+        return $crawler->filter('form[action^="'.$prefix.'"] input[name="_token"]')->attr('value');
     }
 }

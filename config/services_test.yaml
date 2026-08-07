@@ -35,7 +35,10 @@ services:
     App\Service\Invite\RequestLinkService:
         public: true
 
-    App\Service\Shift\StaffApplicationService:
+    App\Service\Shift\StaffApplyGrid:
+        public: true
+
+    App\Service\Shift\ShiftApplyDetail:
         public: true
 
     App\Service\Assignment\ManualAssignmentService:

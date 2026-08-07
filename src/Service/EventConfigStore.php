@@ -7,6 +7,7 @@ use App\Audit\AuditLogger;
 use App\Entity\EventConfig;
 use App\Repository\EventConfigRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * Read/write access to the event_config key-value store
@@ -14,7 +15,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * Values are persisted as JSON; callers deal in plain PHP scalars/arrays.
  * Well-known keys are exposed as constants so other services can share them.
  */
-class EventConfigStore
+class EventConfigStore implements ResetInterface
 {
     public const KEY_NAME = 'event.name';
     public const KEY_WELCOME_MESSAGE = 'event.welcome_message';
@@ -113,6 +114,19 @@ class EventConfigStore
     public const DEFAULT_HOURS_NOSHOW_MULTIPLIER = -2.0; // No-show Multiplier
     public const DEFAULT_SESSION_IDLE_MINUTES = 60;      // Minutes without a request
 
+    /**
+     * Values already read, so a screen that asks the same question on every row asks the database
+     * once. A shift grid reads the event dates for each of its shifts, which alone was two hundred
+     * and fifty queries on a busy day.
+     *
+     * Bounded to one request: Symfony resets services implementing ResetInterface between requests
+     * and between messenger messages, so a long-lived worker cannot serve a value that another
+     * process has since changed.
+     *
+     * @var array<string, mixed>
+     */
+    private array $memo = [];
+
     public function __construct(
         private readonly EventConfigRepository $repository,
         private readonly EntityManagerInterface $em,
@@ -120,11 +134,18 @@ class EventConfigStore
     ) {
     }
 
+    public function reset(): void
+    {
+        $this->memo = [];
+    }
+
     public function get(string $key, mixed $default = null): mixed
     {
-        $config = $this->repository->findOneByKey($key);
+        if (!\array_key_exists($key, $this->memo)) {
+            $this->memo[$key] = $this->repository->findOneByKey($key)?->getValue();
+        }
 
-        return $config?->getValue() ?? $default;
+        return $this->memo[$key] ?? $default;
     }
 
     /**
@@ -192,6 +213,7 @@ class EventConfigStore
     {
         $config = $this->repository->findOneByKey($key);
         $previous = $config?->getValue();
+        $this->memo[$key] = $value;
 
         if ($config === null) {
             $this->em->persist(new EventConfig($key, $value));

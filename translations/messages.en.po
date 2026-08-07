@@ -5519,9 +5519,6 @@ msgstr "Your applications, assignments and worklog."
 msgid "shift_manager.action.overview.title"
 msgstr "My shifts & duties"
 
-msgid "shift_manager.apply.acknowledge"
-msgstr "I understand (over hours)"
-
 msgid "shift_manager.apply.confirm_cancel"
 msgstr "Cancel this application?"
 
@@ -5531,14 +5528,8 @@ msgstr "There are no published staff shifts you can apply to right now."
 msgid "shift_manager.apply.empty.title"
 msgstr "No staff shifts available"
 
-msgid "shift_manager.apply.fill"
-msgstr "Fill"
-
 msgid "shift_manager.apply.occupied"
 msgstr "Occupied"
-
-msgid "shift_manager.apply.other_departments"
-msgstr "Other departments"
 
 msgid "shift_manager.apply.over_hours"
 msgstr "<strong>%amount% h over</strong> the recommendation."
@@ -5552,8 +5543,89 @@ msgstr "Staff shifts you are eligible to see and apply for."
 msgid "shift_manager.apply.title"
 msgstr "Apply to staff shifts"
 
-msgid "shift_manager.apply.your_departments"
-msgstr "Your departments"
+msgid "common.action.close"
+msgstr "Close"
+
+msgid "shift_manager.apply.axis_head"
+msgstr "Time"
+
+msgid "shift_manager.apply.scroll_left"
+msgstr "Scroll to earlier departments"
+
+msgid "shift_manager.apply.scroll_right"
+msgstr "Scroll to later departments"
+
+msgid "shift_manager.apply.acknowledge_hours"
+msgstr "I understand this puts me over the recommended %max% hours"
+
+msgid "shift_manager.apply.filter.day"
+msgstr "Day"
+
+msgid "shift_manager.apply.filter.no_days"
+msgstr "No days with shifts"
+
+msgid "shift_manager.apply.filter.mine_only"
+msgstr "My departments only"
+
+msgid "shift_manager.apply.filter.departments"
+msgstr "Departments"
+
+msgid "shift_manager.apply.filter.all_departments"
+msgstr "All departments"
+
+msgid "shift_manager.apply.filter.some_departments"
+msgstr "%count% selected"
+
+msgid "shift_manager.apply.filter.show"
+msgstr "Show"
+
+msgid "shift_manager.apply.filter.member"
+msgstr "member"
+
+msgid "shift_manager.apply.detail.when"
+msgstr "When"
+
+msgid "shift_manager.apply.detail.duration"
+msgstr "Duration"
+
+msgid "shift_manager.apply.detail.your_availability"
+msgstr "Your availability"
+
+msgid "shift_manager.apply.detail.not_declared"
+msgstr "Not declared"
+
+msgid "shift_manager.apply.detail.roles"
+msgstr "Roles on this shift"
+
+msgid "shift_manager.apply.detail.join_type"
+msgstr "Join %name%"
+
+msgid "shift_manager.apply.detail.membership_pending"
+msgstr "Membership awaiting approval"
+
+msgid "shift_manager.apply.detail.get_certification"
+msgstr "About %name%"
+
+msgid "shift_manager.apply.detail.cancel_application"
+msgstr "Cancel my application"
+
+msgid "shift_manager.apply.confirm_cancel_group"
+msgstr "This cancels your application for all %count% shifts in the group. Continue?"
+
+msgid "shift_manager.reason.past"
+msgstr "This shift has already ended."
+
+msgid "shift_manager.reason.check_in"
+msgstr "You have to be checked in at the event before you can apply to this shift."
+
+msgid "shift_manager.reason.overlap"
+msgstr "You are already booked for a shift that overlaps this one."
+
+msgid "shift_manager.reason.no_roles"
+msgstr "No roles are requested for this shift yet, so there is nothing to apply for."
+
+msgid "shift_manager.reason.group_hidden"
+msgstr "This shift is taken together with others, and at least one of them is not visible to you."
 
 msgid "shift_manager.flash.application_cancelled"
 msgstr "Application cancelled."

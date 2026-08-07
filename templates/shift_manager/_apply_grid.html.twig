@@ -1,0 +1,77 @@
+{# One day of staff shifts: a column per department, blocks placed against a shared time axis.
+   The axis and the department headers stay put; only the grid scrolls, in both directions. #}
+{% import 'components/icon/_macros.twig' as i %}
+{% import 'components/data/_macros.twig' as d %}
+
+<div class="apply-grid-wrap" data-controller="scroll-nav" data-apply-grid-target="region">
+  <div class="apply-scroll-nav">
+    <button type="button" class="apply-scroll-arrow apply-scroll-arrow-prev"
+            data-scroll-nav-target="prev" data-action="scroll-nav#prev"
+            aria-label="{{ 'shift_manager.apply.scroll_left'|trans }}" hidden>{{ i.icon('chevron-left') }}</button>
+    <button type="button" class="apply-scroll-arrow apply-scroll-arrow-next"
+            data-scroll-nav-target="next" data-action="scroll-nav#next"
+            aria-label="{{ 'shift_manager.apply.scroll_right'|trans }}" hidden>{{ i.icon('chevron-right') }}</button>
+  </div>
+
+  {% if grid.columns is empty %}
+    {{ d.empty_state('shift_manager.apply.empty.title'|trans, {message: 'shift_manager.apply.empty.message'|trans}) }}
+  {% else %}
+    <div class="apply-grid" data-scroll-nav-target="scroller"
+         style="--apply-hours: {{ ((grid.windowEnd - grid.windowStart) / 60)|round(2) }};">
+      <div class="apply-axis">
+        <div class="apply-axis-head">{{ 'shift_manager.apply.axis_head'|trans }}</div>
+        <div class="apply-axis-body">
+          {# The volunteer's own declared availability, so a shift can be read against the hours they
+             said they could work without leaving the page. #}
+          {% for band in grid.availability %}
+            <div class="apply-availability apply-availability-{{ band.value }}"
+                 style="top: {{ band.top }}%; height: {{ band.height }}%;"
+                 title="{{ band.label }}"></div>
+          {% endfor %}
+          {% for hour in grid.hours %}
+            <div class="apply-hour" style="top: {{ hour.top }}%;"><span>{{ hour.label }}</span></div>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% for column in grid.columns %}
+        <div class="apply-department" style="--apply-lanes: {{ column.lanes }};">
+          <div class="apply-department-head" title="{{ column.department.name }}">{{ column.department.name }}</div>
+          <div class="apply-department-body">
+            {% for hour in grid.hours %}
+              <div class="apply-hour-line" style="top: {{ hour.top }}%;"></div>
+            {% endfor %}
+            {% for block in column.blocks %}
+              {% set shift = block.shift %}
+              <button type="button"
+                      class="apply-block apply-status-{{ block.status }}{{ block.mine ? ' apply-block-mine' : '' }}"
+                      style="top: {{ block.top }}%; height: {{ block.height }}%; left: {{ block.left }}%; width: calc({{ block.width }}% - 4px);"
+                      data-action="apply-grid#open"
+                      data-apply-grid-shift-param="{{ shift.uuid }}"
+                      title="{{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }} {{ shift.title }}">
+                <span class="apply-block-head">
+                  {% if block.mine %}{{ i.icon('checklist', {class: 'apply-block-icon'}) }}{% endif %}
+                  {% if block.groupSize > 1 %}{{ i.icon('puzzle', {class: 'apply-block-icon'}) }}{% endif %}
+                  <span class="apply-block-time">{{ shift.startsAt|app_time }}<span class="apply-block-to">–{{ shift.endsAt|app_time }}</span></span>
+                </span>
+                <span class="apply-block-title">{{ shift.shiftTask ? shift.shiftTask.name : shift.title }}</span>
+                <span class="apply-block-fill{{ block.needed > 0 and block.assigned >= block.needed ? ' is-full' : '' }}">
+                  {{ block.assigned }}/{{ block.needed }}
+                </span>
+              </button>
+            {% endfor %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+
+{# One announcer per department on screen. They carry no markup: the grid owns its refresh, because
+   replacing it while the volunteer has a shift dialog open would pull it out from under them. #}
+{% for column in grid.columns %}
+  <div hidden
+       data-controller="live-stream"
+       data-live-stream-topic-value="{{ mercure_topic_department(column.department) }}"
+       data-live-stream-event-value="apply-grid:changed"></div>
+{% endfor %}

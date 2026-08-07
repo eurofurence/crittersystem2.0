@@ -169,6 +169,87 @@ class ShiftEntryRepository extends ServiceEntityRepository
     }
 
     /**
+     * How many volunteers are booked on each shift, per volunteer type, in one query.
+     *
+     * @param Shift[] $shifts
+     *
+     * @return array<int, array<int, int>> shift id => volunteer type id => count
+     */
+    public function assignedCountsForShifts(array $shifts): array
+    {
+        $shifts = array_values(array_filter($shifts, static fn (Shift $s): bool => $s->getId() !== null));
+        if ($shifts === []) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('e')
+            ->select('IDENTITY(e.shift) AS shiftId', 'IDENTITY(e.volunteerType) AS typeId', 'COUNT(e.id) AS total')
+            ->andWhere('e.shift IN (:shifts)')
+            ->setParameter('shifts', $shifts)
+            ->groupBy('e.shift', 'e.volunteerType')
+            ->getQuery()
+            ->getResult();
+
+        $counts = [];
+        foreach ($rows as $row) {
+            $counts[(int) $row['shiftId']][(int) $row['typeId']] = (int) $row['total'];
+        }
+
+        return $counts;
+    }
+
+    /**
+     * The user's own entries on the given shifts, keyed by shift id.
+     *
+     * @param Shift[] $shifts
+     *
+     * @return array<int, ShiftEntry>
+     */
+    public function findByUserAndShifts(User $user, array $shifts): array
+    {
+        $shifts = array_values(array_filter($shifts, static fn (Shift $s): bool => $s->getId() !== null));
+        if ($shifts === []) {
+            return [];
+        }
+
+        $entries = $this->createQueryBuilder('e')
+            ->andWhere('e.user = :user')
+            ->andWhere('e.shift IN (:shifts)')
+            ->setParameter('user', $user)
+            ->setParameter('shifts', $shifts)
+            ->getQuery()
+            ->getResult();
+
+        $byShift = [];
+        foreach ($entries as $entry) {
+            $byShift[$entry->getShift()->getId()] = $entry;
+        }
+
+        return $byShift;
+    }
+
+    /**
+     * Every window the user is already booked for, as [start, end] pairs.
+     *
+     * @return list<array{0: \DateTimeImmutable, 1: \DateTimeImmutable, 2: int}> start, end, shift id
+     */
+    public function bookedIntervals(User $user): array
+    {
+        $rows = $this->createQueryBuilder('e')
+            ->select('s.startsAt AS startsAt', 's.endsAt AS endsAt', 's.id AS shiftId')
+            ->join('e.shift', 's')
+            ->andWhere('e.user = :user')
+            ->setParameter('user', $user)
+            ->getQuery()
+            ->getResult();
+
+        return array_map(
+            static fn (array $row): array => [$row['startsAt'], $row['endsAt'], (int) $row['shiftId']],
+            $rows,
+        );
+    }
+
+    /**
      * Whether the user already has an entry for a shift that overlaps the given
      * window (used to prevent double-booking).
      *

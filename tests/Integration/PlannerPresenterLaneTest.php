@@ -5,6 +5,7 @@ namespace App\Tests\Integration;
 use App\Entity\Department;
 use App\Entity\Shift;
 use App\Enum\ShiftState;
+use App\Service\Shift\LaneLayout;
 use App\Service\Shift\PlannerPresenter;
 use PHPUnit\Framework\TestCase;
 
@@ -44,7 +45,7 @@ final class PlannerPresenterLaneTest extends TestCase
     {
         $tz = new \DateTimeZone('UTC');
 
-        return (new PlannerPresenter())->buildGrid(
+        return (new PlannerPresenter(new LaneLayout()))->buildGrid(
             new \DateTimeImmutable(self::DAY.' 00:00', $tz),
             new \DateTimeImmutable('2026-07-18 00:00', $tz),
             $shifts,

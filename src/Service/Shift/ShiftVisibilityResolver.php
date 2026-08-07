@@ -35,6 +35,50 @@ final class ShiftVisibilityResolver
      */
     public function isVisibleTo(Shift $shift, ?User $user): bool
     {
+        return $this->decide(
+            $shift,
+            $user,
+            fn (): bool => $user !== null && $shift->getDepartment() !== null
+                && $this->memberships->userIsMember($user, $shift->getDepartment()),
+            fn (): bool => $user !== null && $this->entries->findOneByShiftAndUser($shift, $user) !== null,
+        );
+    }
+
+    /**
+     * The same decision for a whole list, with the two per-shift lookups resolved once for the set
+     * instead of once per shift. A screen that filters several hundred shifts one at a time spends a
+     * query per shift before it can draw anything.
+     *
+     * @param Shift[] $shifts
+     *
+     * @return list<Shift>
+     */
+    public function filterVisible(array $shifts, ?User $user): array
+    {
+        if ($user === null) {
+            return array_values(array_filter($shifts, fn (Shift $shift): bool => $this->isVisibleTo($shift, null)));
+        }
+
+        $memberDepartments = [];
+        foreach ($this->memberships->findActiveDepartmentsForUser($user) as $department) {
+            $memberDepartments[$department->getId()] = true;
+        }
+        $invited = $this->entries->findByUserAndShifts($user, $shifts);
+
+        return array_values(array_filter($shifts, fn (Shift $shift): bool => $this->decide(
+            $shift,
+            $user,
+            static fn (): bool => isset($memberDepartments[$shift->getDepartment()?->getId()]),
+            static fn (): bool => isset($invited[$shift->getId()]),
+        )));
+    }
+
+    /**
+     * The audience rules, with the two lookups they need supplied by the caller so a single shift
+     * and a whole list can be answered by the same code.
+     */
+    private function decide(Shift $shift, ?User $user, callable $isDepartmentMember, callable $hasEntry): bool
+    {
         // Draft shifts are only ever visible to managers working the planner,
         // never through normal browsing. Managers reach drafts via the planner
         // controllers directly, which do their own permission checks.
@@ -45,11 +89,8 @@ final class ShiftVisibilityResolver
         return match ($shift->getAudience()) {
             ShiftAudience::PUBLIC_VOLUNTEER => true,
             ShiftAudience::ALL_STAFF => $user !== null && $user->isStaff(),
-            ShiftAudience::DEPARTMENT_STAFF => $user !== null && $user->isStaff()
-                && $shift->getDepartment() !== null
-                && $this->memberships->userIsMember($user, $shift->getDepartment()),
-            ShiftAudience::INVITE_ONLY => $user !== null
-                && $this->entries->findOneByShiftAndUser($shift, $user) !== null,
+            ShiftAudience::DEPARTMENT_STAFF => $user !== null && $user->isStaff() && $isDepartmentMember(),
+            ShiftAudience::INVITE_ONLY => $user !== null && $hasEntry(),
         };
     }
 

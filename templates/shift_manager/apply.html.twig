@@ -9,40 +9,92 @@
     actions: [{label: 'shift_manager.action.back_to_manager'|trans, href: path('app_manage_shifts'), class: 'btn btn-outline-secondary'}]
   }) }}
 
-  {% if recommendedMax > 0 %}
-    <div class="alert {{ overHours > 0 ? 'alert-warning' : 'alert-info' }} d-flex align-items-center">
+  {% if grid.recommendedMax > 0 %}
+    <div class="alert {{ grid.overHours > 0 ? 'alert-warning' : 'alert-info' }} d-flex align-items-center">
       <div>
-        {{ 'shift_manager.apply.planned_hours'|trans({'%hours%': plannedHours|round(1), '%max%': recommendedMax})|raw }}
-        {% if overHours > 0 %}{{ 'shift_manager.apply.over_hours'|trans({'%amount%': overHours|round(1)})|raw }}{% endif %}
+        {{ 'shift_manager.apply.planned_hours'|trans({'%hours%': grid.planned|round(1), '%max%': grid.recommendedMax})|raw }}
+        {% if grid.overHours > 0 %}{{ 'shift_manager.apply.over_hours'|trans({'%amount%': grid.overHours|round(1)})|raw }}{% endif %}
       </div>
     </div>
   {% endif %}
 
-  {% set hasAny = groups.member|length > 0 or groups.other|length > 0 %}
-  {% if not hasAny %}
-    {{ d.empty_state('shift_manager.apply.empty.title'|trans, {message: 'shift_manager.apply.empty.message'|trans}) }}
-  {% else %}
-    {% for section, label in {'member': 'shift_manager.apply.your_departments'|trans, 'other': 'shift_manager.apply.other_departments'|trans} %}
-      {% for group in groups[section] %}
-        <div class="card mb-3">
-          <div class="card-header">
-            <h3 class="card-title">{{ group.department.name }}</h3>
-            <span class="ms-2 badge {{ section == 'member' ? 'bg-green-lt' : 'bg-secondary-lt' }}">{{ label }}</span>
-          </div>
-          {# One live region per department, not one per row.
-             Every row used to be its own Turbo Frame with its own twenty-second timer, so a
-             sixty-shift day cost a hundred and eighty requests a minute from a single viewer, each
-             running its own availability, eligibility and hours queries. Now one signal on the
-             department's topic refreshes the whole group in one request, and only when something
-             actually changed. #}
-          <div class="list-group list-group-flush"
-               data-controller="live-stream"
-               data-live-stream-topic-value="{{ mercure_topic_department(group.department) }}"
-               data-live-stream-url-value="{{ path('app_manage_shifts_apply_department', {id: group.department.uuid}) }}">
-            {% include 'shift_manager/_apply_rows.html.twig' with {rows: group.shifts} only %}
+  <div data-controller="apply-grid"
+       data-apply-grid-detail-url-value="{{ path('app_manage_shifts_apply_detail', {id: '__ID__'}) }}"
+       data-apply-grid-grid-url-value="{{ path('app_manage_shifts_apply_grid') }}">
+
+    {{ d.card_start(null, {bodyClass: 'card-body py-2'}) }}
+      <form method="get" action="{{ path('app_manage_shifts_apply') }}"
+            class="d-flex flex-wrap align-items-end gap-3"
+            data-apply-grid-target="filters">
+        <div>
+          <label class="form-label mb-1 small" for="apply-day">{{ 'shift_manager.apply.filter.day'|trans }}</label>
+          <select id="apply-day" name="day" class="form-select form-select-sm" data-action="change->apply-grid#submitFilters">
+            {% for day in grid.days %}
+              <option value="{{ day.iso }}" {{ day.iso == grid.day ? 'selected' : '' }}>
+                {{ day.label }} ({{ day.count }})
+              </option>
+            {% else %}
+              <option value="">{{ 'shift_manager.apply.filter.no_days'|trans }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div>
+          {# The hidden field is what an unticked box posts: without it the parameter would be absent,
+             which is how a first visit looks, and unticking would silently do nothing. #}
+          <input type="hidden" name="scope" value="all">
+          <label class="form-check mb-1">
+            <input type="checkbox" class="form-check-input" name="scope" value="mine"
+                   {{ grid.mineOnly ? 'checked' : '' }} data-action="change->apply-grid#submitFilters">
+            <span class="form-check-label">{{ 'shift_manager.apply.filter.mine_only'|trans }}</span>
+          </label>
+        </div>
+
+        <div class="dropdown">
+          <span class="form-label mb-1 small d-block">{{ 'shift_manager.apply.filter.departments'|trans }}</span>
+          <button class="btn btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown"
+                  data-bs-auto-close="outside" aria-expanded="false"
+                  {{ grid.departments is empty ? 'disabled' : '' }}>
+            {% set chosen = grid.departments|filter(option => option.selected)|length %}
+            {{ chosen == grid.departments|length
+              ? 'shift_manager.apply.filter.all_departments'|trans
+              : 'shift_manager.apply.filter.some_departments'|trans({'%count%': chosen}) }}
+          </button>
+          <div class="dropdown-menu apply-department-menu">
+            {% for option in grid.departments %}
+              <label class="dropdown-item form-check mb-0">
+                <input type="checkbox" class="form-check-input" name="departments[]" value="{{ option.department.uuid }}"
+                       {{ option.selected ? 'checked' : '' }}>
+                <span class="form-check-label">
+                  {{ option.department.name }}
+                  <span class="text-secondary small">({{ option.count }})</span>
+                  {% if option.member %}<span class="badge bg-green-lt ms-1">{{ 'shift_manager.apply.filter.member'|trans }}</span>{% endif %}
+                </span>
+              </label>
+            {% endfor %}
+            <div class="dropdown-divider"></div>
+            <div class="px-3 pb-2">
+              <button class="btn btn-sm btn-primary w-100" type="submit">{{ 'shift_manager.apply.filter.show'|trans }}</button>
+            </div>
           </div>
         </div>
-      {% endfor %}
-    {% endfor %}
-  {% endif %}
+
+        <noscript><button class="btn btn-sm btn-primary" type="submit">{{ 'shift_manager.apply.filter.show'|trans }}</button></noscript>
+      </form>
+    {{ d.card_end({bodyClass: 'card-body py-2'}) }}
+
+    <div data-apply-grid-target="grid">
+      {% include 'shift_manager/_apply_grid.html.twig' %}
+    </div>
+
+    {# Inside the controller element, because a Stimulus target outside it is not a target at all:
+       the dialog would never be found and clicking a shift would do nothing.
+       Filled by the server for whichever shift was clicked, so what may be done with it, and every
+       reason it may not, is decided there rather than in the browser. #}
+    <div class="modal fade" id="apply-shift-modal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content" data-apply-grid-target="dialog"></div>
+      </div>
+    </div>
+  </div>
 {% endblock %}

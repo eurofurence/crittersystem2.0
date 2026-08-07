@@ -2,15 +2,14 @@
 
 namespace App\Controller;
 
-use App\Entity\Department;
 use App\Entity\Shift;
 use App\Entity\User;
 use App\Exception\CapacityConflictException;
-use App\Repository\DepartmentRepository;
 use App\Service\Assignment\EventHoursGuard;
+use App\Service\Shift\ShiftApplyDetail;
 use App\Service\Shift\ShiftGroupResolver;
 use App\Service\Shift\ShiftVisibilityResolver;
-use App\Service\Shift\StaffApplicationService;
+use App\Service\Shift\StaffApplyGrid;
 use App\Service\ShiftSignupService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,16 +21,16 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Translation\TranslatableMessage;
 
 /**
- * Staff Shift Manager module. A permission-scoped landing plus
- * the staff shift application view: departments with open staff shifts grouped
- * into member and other departments, live capacity via polling, and
- * transactional apply/cancel that surfaces conflicts without a full-page refresh.
+ * Staff Shift Manager module. A permission-scoped landing plus the staff shift application view:
+ * one day of staff shifts as a department-by-time grid, a dialog per shift carrying the staffing,
+ * the reasons the volunteer cannot apply and what to do about each, and transactional apply/cancel.
  */
 #[IsGranted('manageshifts:view')]
 final class ShiftManagerController extends AbstractController
 {
     public function __construct(
-        private readonly StaffApplicationService $applications,
+        private readonly StaffApplyGrid $grid,
+        private readonly ShiftApplyDetail $detail,
         private readonly ShiftVisibilityResolver $visibility,
         private readonly ShiftSignupService $signup,
         private readonly EventHoursGuard $hoursGuard,
@@ -46,49 +45,102 @@ final class ShiftManagerController extends AbstractController
     }
 
     #[Route('/manage-shifts/apply', name: 'app_manage_shifts_apply', methods: ['GET'])]
-    public function apply(Request $request, DepartmentRepository $departments): Response
+    public function apply(Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        $groups = $this->applications->departmentGroups($user);
-
-        // A shift invitation link filters to one department.
-        if ($uuid = $request->query->get('department')) {
-            $keep = static fn (array $entry) => (string) $entry['department']->getUuid() === $uuid;
-            $groups = [
-                'member' => array_values(array_filter($groups['member'], $keep)),
-                'other' => array_values(array_filter($groups['other'], $keep)),
-            ];
-        }
-
         return $this->render('shift_manager/apply.html.twig', [
-            'groups' => $groups,
-            'plannedHours' => $this->hoursGuard->plannedHours($user),
-            'recommendedMax' => $this->hoursGuard->recommendedMax(),
-            'overHours' => $this->hoursGuard->overBy($user),
+            'grid' => $this->grid->build($user, ...$this->filters($request)),
+            'filters' => $this->filterParams($request),
         ]);
     }
 
     /**
-     * Every row this user may apply to in one department.
+     * The dialog for one shift.
      *
-     * Replaces the per-row frame each shift used to carry: one signal on the department's topic
-     * refreshes the group in a single request, rather than one request per row per timer tick.
-     *
-     * No department check is needed, and none would help: applicableShifts() filters by
-     * ShiftVisibilityResolver, so a department the caller may see nothing in renders as an empty
-     * list rather than refusing and thereby confirming it exists.
+     * Rendered by the server rather than assembled in the browser: what a volunteer may do with a
+     * shift, and every reason they may not, is decided here and cannot be widened by the page.
+     * A shift this viewer may not see is a 404, so the dialog cannot be used to confirm that one
+     * exists.
      */
-    #[Route('/manage-shifts/apply/department/{id}', name: 'app_manage_shifts_apply_department', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
-    public function departmentRows(#[MapEntity(mapping: ['id' => 'uuid'])] Department $department): Response
+    // No route requirement on the id: the page generates this URL once with an `__ID__` placeholder
+    // and substitutes the shift uuid per click, so the placeholder has to pass URL generation. The
+    // lookup below still resolves by uuid, so anything else is a 404.
+    #[Route('/manage-shifts/apply/shift/{id}', name: 'app_manage_shifts_apply_detail', methods: ['GET'])]
+    public function shiftDetail(#[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, Request $request): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+        if (!$this->visibility->isVisibleTo($shift, $user)) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->render('shift_manager/_apply_detail.html.twig', [
+            'detail' => $this->detail->build($shift, $user),
+            'filters' => $this->filterParams($request),
+        ]);
+    }
+
+    /**
+     * The grid on its own, for the live region: one signal on a department topic re-reads the day
+     * the volunteer is looking at, with their filters intact.
+     */
+    #[Route('/manage-shifts/apply/grid', name: 'app_manage_shifts_apply_grid', methods: ['GET'])]
+    public function applyGrid(Request $request): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        return $this->render('shift_manager/_apply_rows.html.twig', [
-            'rows' => $this->applications->applicableShifts($department, $user),
+        return $this->render('shift_manager/_apply_grid.html.twig', [
+            'grid' => $this->grid->build($user, ...$this->filters($request)),
         ]);
+    }
+
+    /**
+     * Back to the grid the volunteer was looking at. Only the filter keys travel: the day and the
+     * departments they had chosen, never whatever else was on the query string.
+     */
+    private function backToGrid(Request $request): Response
+    {
+        return $this->redirectToRoute('app_manage_shifts_apply', $this->filterParams($request));
+    }
+
+    /**
+     * The filters as route parameters, so a redirect or a form action carries the volunteer back to
+     * the day and departments they were looking at. Only these keys travel.
+     *
+     * @return array<string, mixed>
+     */
+    private function filterParams(Request $request): array
+    {
+        [$day, $mineOnly, $departments] = $this->filters($request);
+
+        // Only what differs from the default travels: my-departments-only is how the screen opens,
+        // so carrying it would put a parameter on every URL that says nothing.
+        return array_filter([
+            'day' => $day,
+            'scope' => $mineOnly ? null : 'all',
+            'departments' => $departments,
+        ]);
+    }
+
+    /**
+     * @return array{0: ?string, 1: bool, 2: string[]} day, my-departments-only, department uuids
+     */
+    private function filters(Request $request): array
+    {
+        $day = trim((string) $request->query->get('day', ''));
+        $departments = array_values(array_filter(
+            $request->query->all('departments'),
+            static fn (mixed $uuid): bool => \is_string($uuid) && \Symfony\Component\Uid\Uuid::isValid($uuid),
+        ));
+
+        // Absent means first load, which starts on the volunteer's own departments; an explicit
+        // empty value is the box being unticked, and must not read as absent.
+        $mineOnly = !$request->query->has('scope') || $request->query->get('scope') === 'mine';
+
+        return [$day === '' ? null : $day, $mineOnly, $departments];
     }
 
     #[Route('/manage-shifts/apply/{id}', name: 'app_manage_shifts_apply_do', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
@@ -138,7 +190,7 @@ final class ShiftManagerController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute('app_manage_shifts_apply');
+        return $this->backToGrid($request);
     }
 
     /**
@@ -177,6 +229,6 @@ final class ShiftManagerController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute('app_manage_shifts_apply');
+        return $this->backToGrid($request);
     }
 }

@@ -15,6 +15,10 @@ final class PlannerPresenter
 {
     private const MINUTES_PER_DAY = 1440;
 
+    public function __construct(private readonly LaneLayout $lanes)
+    {
+    }
+
     /**
      * @param Shift[] $shifts
      *
@@ -86,19 +90,11 @@ final class PlannerPresenter
 
     /**
      * Place one day's blocks into lanes so that shifts running at the same time sit side by side
-     * instead of on top of each other.
+     * instead of on top of each other, and size every block against the busiest cluster of the day
+     * so the whole column sits on one lane grid.
      *
-     * Blocks are grouped into clusters of transitively overlapping shifts, and each cluster is
-     * divided into as many lanes as it needs. Clustering matters: two shifts overlapping each other
-     * must not narrow a third that merely runs later in the same day.
-     *
-     * Touching is not overlapping - a shift ending at 22:00 and one starting at 22:00 each keep the
-     * full width - which is why the comparisons below are strict.
-     *
-     * Every block is then sized against the busiest cluster of the day rather than its own, so the
-     * whole column sits on one lane grid: blocks line up vertically, and a lane keeps the same width
-     * from midnight to midnight. Nothing is dropped, however many shifts run in parallel; the column
-     * is widened instead, which is what the day's lane count is for.
+     * Nothing is dropped, however many shifts run in parallel; the column is widened instead, which
+     * is what the day's lane count is for.
      *
      * @param list<array<string, mixed>> $dayBlocks
      *
@@ -111,72 +107,17 @@ final class PlannerPresenter
         usort($dayBlocks, static fn (array $a, array $b): int => [$a['startMin'], -$a['endMin'], $a['shift']->getId() ?? 0]
             <=> [$b['startMin'], -$b['endMin'], $b['shift']->getId() ?? 0]);
 
-        $placed = [];
-        $dayLanes = 1;
-
-        foreach ($this->clusters($dayBlocks) as $cluster) {
-            /** @var int[] $laneEnds end minute of the last block placed in each lane */
-            $laneEnds = [];
-            foreach ($cluster as $i => $block) {
-                $lane = null;
-                foreach ($laneEnds as $index => $endsAt) {
-                    if ($endsAt <= $block['startMin']) {
-                        $lane = $index;
-                        break;
-                    }
-                }
-                if ($lane === null) {
-                    $lane = \count($laneEnds);
-                }
-                $laneEnds[$lane] = $block['endMin'];
-                $cluster[$i]['lane'] = $lane;
-            }
-
-            $dayLanes = max($dayLanes, \count($laneEnds));
-
-            foreach ($cluster as $block) {
-                unset($block['startMin'], $block['endMin'], $block['dayIso']);
-                $placed[] = $block;
-            }
-        }
-
+        [$placed, $dayLanes] = $this->lanes->assign($dayBlocks);
         $width = round(100 / $dayLanes, 4);
+
         foreach ($placed as $i => $block) {
             $placed[$i]['lanes'] = $dayLanes;
             $placed[$i]['left'] = round($block['lane'] * $width, 4);
             $placed[$i]['width'] = $width;
+            unset($placed[$i]['startMin'], $placed[$i]['endMin'], $placed[$i]['dayIso']);
         }
 
         return [$placed, $dayLanes];
-    }
-
-    /**
-     * Split a day's blocks (already in start order) into runs of transitively overlapping shifts.
-     *
-     * @param list<array<string, mixed>> $dayBlocks
-     *
-     * @return list<list<array<string, mixed>>>
-     */
-    private function clusters(array $dayBlocks): array
-    {
-        $clusters = [];
-        $current = [];
-        $clusterEnd = null;
-
-        foreach ($dayBlocks as $block) {
-            if ($current !== [] && $clusterEnd !== null && $block['startMin'] >= $clusterEnd) {
-                $clusters[] = $current;
-                $current = [];
-                $clusterEnd = null;
-            }
-            $current[] = $block;
-            $clusterEnd = max($clusterEnd ?? 0, $block['endMin']);
-        }
-        if ($current !== []) {
-            $clusters[] = $current;
-        }
-
-        return $clusters;
     }
 
     /**

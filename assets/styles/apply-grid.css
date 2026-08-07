@@ -1,0 +1,241 @@
+/* Staff shift application grid: one day, a column per department, shifts placed against a shared
+   time axis. The axis and the department headers are frozen; only the grid scrolls, both ways. */
+
+.apply-grid-wrap {
+    position: relative;
+}
+
+.apply-grid {
+    --apply-hour-height: 56px;
+    --apply-head-height: 40px;
+    --apply-lane-width: 150px;
+    --apply-hours: 12;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    max-height: 70vh;
+    overflow: auto;
+    border: 1px solid var(--tblr-border-color);
+    border-radius: var(--tblr-border-radius);
+    background: var(--tblr-bg-surface);
+}
+
+/* Frozen to the left edge: over a wide day the grid scrolls sideways and this is the only time
+   reference on screen. */
+.apply-axis {
+    position: sticky;
+    left: 0;
+    z-index: 12;
+    flex: 0 0 76px;
+    background: var(--tblr-bg-surface);
+    border-right: 1px solid var(--tblr-border-color);
+}
+
+.apply-axis-head {
+    position: sticky;
+    top: 0;
+    z-index: 13;
+    height: var(--apply-head-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--tblr-secondary);
+    background: var(--tblr-bg-surface);
+    border-bottom: 1px solid var(--tblr-border-color);
+}
+
+.apply-axis-body,
+.apply-department-body {
+    position: relative;
+    height: calc(var(--apply-hours) * var(--apply-hour-height));
+}
+
+.apply-hour {
+    position: absolute;
+    left: 0;
+    right: 4px;
+    transform: translateY(-50%);
+    text-align: right;
+    font-size: 11px;
+    color: var(--tblr-secondary);
+}
+
+.apply-hour-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px solid var(--tblr-border-color-light, rgba(98, 105, 118, .16));
+    pointer-events: none;
+}
+
+/* The volunteer's own declared availability, behind the hour labels. */
+.apply-availability {
+    position: absolute;
+    left: 0;
+    width: 6px;
+    border-radius: 3px;
+}
+
+.apply-availability-preferred { background: var(--tblr-green); }
+.apply-availability-available { background: var(--tblr-teal); }
+.apply-availability-avoid { background: var(--tblr-orange); }
+.apply-availability-unavailable { background: var(--tblr-red); }
+
+.apply-department {
+    --apply-lanes: 1;
+    flex: 1 1 calc(var(--apply-lanes) * var(--apply-lane-width));
+    min-width: calc(var(--apply-lanes) * var(--apply-lane-width));
+    border-right: 1px solid var(--tblr-border-color);
+}
+
+.apply-department:last-child {
+    border-right: 0;
+}
+
+.apply-department-head {
+    position: sticky;
+    top: 0;
+    z-index: 11;
+    height: var(--apply-head-height);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: var(--tblr-bg-surface);
+    border-bottom: 1px solid var(--tblr-border-color);
+}
+
+.apply-block {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-left: 2px;
+    padding: 2px 4px;
+    overflow: hidden;
+    text-align: left;
+    font-size: 11px;
+    line-height: 1.25;
+    border: 1px solid var(--tblr-border-color);
+    border-radius: 4px;
+    background: var(--tblr-bg-surface-secondary, var(--tblr-bg-surface));
+    color: var(--tblr-body-color);
+    cursor: pointer;
+}
+
+.apply-block:hover,
+.apply-block:focus-visible {
+    outline: 2px solid var(--tblr-primary);
+    outline-offset: 1px;
+    z-index: 5;
+}
+
+.apply-block-head {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.apply-block-icon {
+    width: 12px;
+    height: 12px;
+    flex: 0 0 auto;
+}
+
+.apply-block-time {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.apply-block-title {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.apply-block-fill {
+    font-variant-numeric: tabular-nums;
+    color: var(--tblr-green);
+}
+
+.apply-block-fill.is-full {
+    color: var(--tblr-red);
+}
+
+/* A block reads first as what the volunteer can do with it. */
+.apply-status-available {
+    background: color-mix(in srgb, var(--tblr-blue) 16%, var(--tblr-bg-surface));
+    border-color: var(--tblr-blue);
+}
+
+.apply-status-signed_up {
+    background: color-mix(in srgb, var(--tblr-green) 20%, var(--tblr-bg-surface));
+    border-color: var(--tblr-green);
+}
+
+.apply-status-full,
+.apply-status-ineligible,
+.apply-status-past {
+    background: color-mix(in srgb, var(--tblr-secondary) 12%, var(--tblr-bg-surface));
+    border-style: dashed;
+    color: var(--tblr-secondary);
+}
+
+.apply-status-overlap {
+    background: color-mix(in srgb, var(--tblr-orange) 16%, var(--tblr-bg-surface));
+    border-color: var(--tblr-orange);
+}
+
+.apply-block-mine .apply-block-time {
+    text-decoration: none;
+}
+
+/* Same affordance as the planner: without it people do not discover that the grid scrolls. */
+.apply-scroll-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 0;
+    z-index: 20;
+}
+
+.apply-scroll-arrow {
+    position: absolute;
+    top: calc(var(--apply-head-height, 40px) / 2 + 8px);
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--tblr-border-color);
+    border-radius: 50%;
+    background: var(--tblr-bg-surface);
+    color: var(--tblr-body-color);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .2);
+    cursor: pointer;
+}
+
+.apply-scroll-arrow-prev {
+    left: 82px;
+}
+
+.apply-scroll-arrow-next {
+    right: 8px;
+}
+
+.apply-department-menu {
+    max-height: 60vh;
+    overflow-y: auto;
+}

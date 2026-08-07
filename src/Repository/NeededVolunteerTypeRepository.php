@@ -48,6 +48,84 @@ class NeededVolunteerTypeRepository extends ServiceEntityRepository
         return $effective;
     }
 
+    /**
+     * The same three-tier resolution for a whole list of shifts, in one query.
+     *
+     * A shift list that asks per shift spends a query per row before it has read a single volunteer
+     * type, which is what made the staff application screen slow enough to be reported as broken.
+     *
+     * @param Shift[] $shifts
+     *
+     * @return array<int, array<int, NeededVolunteerType>> shift id => volunteer type id => need
+     */
+    public function findEffectiveForShifts(array $shifts): array
+    {
+        $shifts = array_values(array_filter($shifts, static fn (Shift $s): bool => $s->getId() !== null));
+        if ($shifts === []) {
+            return [];
+        }
+
+        $locations = [];
+        $tasks = [];
+        foreach ($shifts as $shift) {
+            if (($location = $shift->getLocation()) !== null) {
+                $locations[$location->getId()] = $location;
+            }
+            if (($task = $shift->getShiftTask()) !== null) {
+                $tasks[$task->getId()] = $task;
+            }
+        }
+
+        $qb = $this->createQueryBuilder('n');
+        $conditions = ['n.shift IN (:shifts)'];
+        $qb->setParameter('shifts', $shifts);
+        if ($locations !== []) {
+            $conditions[] = 'n.location IN (:locations)';
+            $qb->setParameter('locations', array_values($locations));
+        }
+        if ($tasks !== []) {
+            $conditions[] = 'n.shiftTask IN (:tasks)';
+            $qb->setParameter('tasks', array_values($tasks));
+        }
+
+        /** @var NeededVolunteerType[] $candidates */
+        $candidates = $qb->andWhere(implode(' OR ', $conditions))->getQuery()->getResult();
+
+        $byShift = [];
+        $byLocation = [];
+        $byTask = [];
+        foreach ($candidates as $need) {
+            if (($shift = $need->getShift()) !== null) {
+                $byShift[$shift->getId()][] = $need;
+            } elseif (($location = $need->getLocation()) !== null) {
+                $byLocation[$location->getId()][] = $need;
+            } elseif (($task = $need->getShiftTask()) !== null) {
+                $byTask[$task->getId()][] = $need;
+            }
+        }
+
+        $effective = [];
+        foreach ($shifts as $shift) {
+            $applicable = array_merge(
+                $byShift[$shift->getId()] ?? [],
+                $byLocation[$shift->getLocation()?->getId()] ?? [],
+                $byTask[$shift->getShiftTask()?->getId()] ?? [],
+            );
+
+            $resolved = [];
+            foreach ($applicable as $need) {
+                $typeId = $need->getVolunteerType()->getId();
+                $existing = $resolved[$typeId] ?? null;
+                if ($existing === null || $this->tier($need) < $this->tier($existing)) {
+                    $resolved[$typeId] = $need;
+                }
+            }
+            $effective[$shift->getId()] = $resolved;
+        }
+
+        return $effective;
+    }
+
     /** Lower tier number = higher priority: shift (0) < location (1) < shift type (2). */
     private function tier(NeededVolunteerType $needed): int
     {

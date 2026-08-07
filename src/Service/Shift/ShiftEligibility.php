@@ -35,6 +35,24 @@ final class ShiftEligibility
      */
     private array $heldCertifications = [];
 
+    /** The user {@see warmUp()} was called for, or null while nothing is preloaded. */
+    private ?int $warmUserId = null;
+
+    /** @var array<int, array<int, \App\Entity\NeededVolunteerType>> shift id => type id => need */
+    private array $warmNeeds = [];
+
+    /** @var array<int, array<int, int>> shift id => type id => booked count */
+    private array $warmAssigned = [];
+
+    /** @var array<int, \App\Entity\ShiftEntry> shift id => the warm user's own entry */
+    private array $warmOwnEntries = [];
+
+    /** @var array<int, true> volunteer type ids the warm user is a confirmed member of */
+    private array $warmConfirmedTypes = [];
+
+    /** @var list<array{0: \DateTimeImmutable, 1: \DateTimeImmutable, 2: int}> the warm user's bookings */
+    private array $warmBookings = [];
+
     public function __construct(
         private readonly ShiftEntryRepository $entries,
         private readonly UserVolunteerTypeRepository $memberships,
@@ -42,6 +60,110 @@ final class ShiftEligibility
         private readonly CheckInPolicy $checkIn,
         private readonly UserCertificationRepository $certifications,
     ) {
+    }
+
+    /**
+     * Preload everything the rules ask about a list of shifts, so answering for a whole screen costs
+     * a handful of queries instead of a handful per row.
+     *
+     * The rules themselves do not change: each lookup below consults the preloaded data when it
+     * covers the question and falls back to its repository otherwise, so a warm and a cold instance
+     * cannot answer differently.
+     *
+     * Read paths only, and always paired with {@see coolDown()} around the one render it serves.
+     * What is preloaded are entities, and an entity outlives its entity manager badly: once that is
+     * cleared or replaced the entity is detached, and handing a detached volunteer type to a new
+     * sign-up makes Doctrine treat it as an unsaved record and refuse the write. The counts and the
+     * volunteer's own entries are also exactly what a write changes, so nothing here may be left
+     * standing for the next thing that happens.
+     *
+     * @param Shift[] $shifts
+     */
+    public function warmUp(User $user, array $shifts): void
+    {
+        $this->warmUserId = $user->getId();
+        $this->warmNeeds = $this->needed->findEffectiveForShifts($shifts);
+        $this->warmAssigned = $this->entries->assignedCountsForShifts($shifts);
+        $this->warmOwnEntries = $this->entries->findByUserAndShifts($user, $shifts);
+        $this->warmBookings = $this->entries->bookedIntervals($user);
+
+        $this->warmConfirmedTypes = [];
+        foreach ($this->memberships->findByUser($user) as $membership) {
+            if ($membership->isConfirmed()) {
+                $this->warmConfirmedTypes[$membership->getVolunteerType()->getId()] = true;
+            }
+        }
+    }
+
+    /** Drop everything {@see warmUp()} preloaded, so the rules answer from the database again. */
+    public function coolDown(): void
+    {
+        $this->warmUserId = null;
+        $this->warmNeeds = [];
+        $this->warmAssigned = [];
+        $this->warmOwnEntries = [];
+        $this->warmConfirmedTypes = [];
+        $this->warmBookings = [];
+    }
+
+    private function hasWarmShift(Shift $shift): bool
+    {
+        return isset($this->warmNeeds[$shift->getId()]);
+    }
+
+    private function isWarmUser(User $user): bool
+    {
+        return $this->warmUserId !== null && $this->warmUserId === $user->getId();
+    }
+
+    /** @return array<int, \App\Entity\NeededVolunteerType> */
+    private function effectiveNeeds(Shift $shift): array
+    {
+        return $this->warmNeeds[$shift->getId()] ?? $this->needed->findEffectiveForShift($shift);
+    }
+
+    private function assignedCount(Shift $shift, VolunteerType $type): int
+    {
+        if ($this->hasWarmShift($shift)) {
+            return $this->warmAssigned[$shift->getId()][$type->getId()] ?? 0;
+        }
+
+        return $this->entries->countForShiftAndType($shift, $type);
+    }
+
+    private function ownEntry(Shift $shift, User $user): ?\App\Entity\ShiftEntry
+    {
+        if ($this->isWarmUser($user) && $this->hasWarmShift($shift)) {
+            return $this->warmOwnEntries[$shift->getId()] ?? null;
+        }
+
+        return $this->entries->findOneByShiftAndUser($shift, $user);
+    }
+
+    private function isConfirmedMember(User $user, VolunteerType $type): bool
+    {
+        if ($this->isWarmUser($user)) {
+            return isset($this->warmConfirmedTypes[$type->getId()]);
+        }
+
+        return $this->memberships->isConfirmedMember($user, $type);
+    }
+
+    /** @param Shift[] $exclude */
+    private function isDoubleBooked(User $user, \DateTimeImmutable $start, \DateTimeImmutable $end, array $exclude): bool
+    {
+        if (!$this->isWarmUser($user)) {
+            return $this->entries->hasOverlap($user, $start, $end, $exclude);
+        }
+
+        $excludedIds = array_filter(array_map(static fn (?Shift $s): ?int => $s?->getId(), $exclude));
+        foreach ($this->warmBookings as [$bookedStart, $bookedEnd, $shiftId]) {
+            if (!\in_array($shiftId, $excludedIds, true) && $bookedStart < $end && $bookedEnd > $start) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -93,12 +215,12 @@ final class ShiftEligibility
     public function availability(Shift $shift): array
     {
         $rows = [];
-        foreach ($this->needed->findEffectiveForShift($shift) as $need) {
+        foreach ($this->effectiveNeeds($shift) as $need) {
             $type = $need->getVolunteerType();
             $rows[] = [
                 'type' => $type,
                 'needed' => $need->getCount(),
-                'assigned' => $this->entries->countForShiftAndType($shift, $type),
+                'assigned' => $this->assignedCount($shift, $type),
             ];
         }
 
@@ -113,7 +235,7 @@ final class ShiftEligibility
      */
     public function signupOptions(Shift $shift, User $user): array
     {
-        if ($shift->isPast() || $this->entries->findOneByShiftAndUser($shift, $user) !== null) {
+        if ($shift->isPast() || $this->ownEntry($shift, $user) !== null) {
             return [];
         }
 
@@ -123,7 +245,7 @@ final class ShiftEligibility
             // so leaving it in the list puts a button on screen that can only fail. The reason is
             // still reachable - signUpError names the missing certification when asked.
             if ($row['assigned'] < $row['needed']
-                && $this->memberships->isConfirmedMember($user, $row['type'])
+                && $this->isConfirmedMember($user, $row['type'])
                 && $this->missingCertifications($user, $row['type']) === []
             ) {
                 $options[(string) $row['type']->getUuid()] = $row['type'];
@@ -141,7 +263,7 @@ final class ShiftEligibility
      */
     public function eligibilityStatus(Shift $shift, User $user, array $ignoreOverlapWith = []): string
     {
-        if ($this->entries->findOneByShiftAndUser($shift, $user) !== null) {
+        if ($this->ownEntry($shift, $user) !== null) {
             return 'signed_up';
         }
         if ($shift->isPast()) {
@@ -176,7 +298,7 @@ final class ShiftEligibility
             return 'This shift has already ended.';
         }
 
-        if ($this->entries->findOneByShiftAndUser($shift, $user) !== null) {
+        if ($this->ownEntry($shift, $user) !== null) {
             return 'You are already signed up for this shift.';
         }
 
@@ -190,7 +312,7 @@ final class ShiftEligibility
             return $checkInError;
         }
 
-        if (!$this->memberships->isConfirmedMember($user, $type)) {
+        if (!$this->isConfirmedMember($user, $type)) {
             return 'You are not a confirmed member of this volunteer type.';
         }
 
@@ -203,11 +325,11 @@ final class ShiftEligibility
             );
         }
 
-        $need = $this->needed->findEffectiveForShift($shift)[$type->getId()] ?? null;
+        $need = $this->effectiveNeeds($shift)[$type->getId()] ?? null;
         if ($need === null) {
             return 'This role is not requested for this shift.';
         }
-        if ($this->entries->countForShiftAndType($shift, $type) >= $need->getCount()) {
+        if ($this->assignedCount($shift, $type) >= $need->getCount()) {
             return 'This role is already fully staffed.';
         }
 
@@ -219,7 +341,7 @@ final class ShiftEligibility
     {
         // The shift itself is always excluded: an entry on it is "already signed up", not an
         // overlap, and the two produce different messages.
-        return $this->entries->hasOverlap(
+        return $this->isDoubleBooked(
             $user,
             $shift->getStartsAt(),
             $shift->getEndsAt(),

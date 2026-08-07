@@ -15,6 +15,7 @@ import "@tabler/core/dist/css/tabler.min.css";
 
 import './styles/app.css';
 import './styles/planner.css';
+import './styles/apply-grid.css';
 import './styles/user-select.css';
 import "./js/forms.js"
 import "./js/notifications.js"

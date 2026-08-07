@@ -62,8 +62,8 @@ final class ShiftGroupPageTest extends DatabaseWebTestCase
 
     /**
      * Staff-audience shifts never reach /shifts; they are applied to from the staff shift manager.
-     * That path has its own row template and its own service, so it needs its own proof that the
-     * group is both shown and enforced.
+     * That path renders its own grid and dialog, so it needs its own proof that the group is both
+     * shown and enforced.
      */
     public function testTheStaffApplyScreenMarksAndEnforcesAGroup(): void
     {
@@ -83,15 +83,18 @@ final class ShiftGroupPageTest extends DatabaseWebTestCase
         $this->scenario->departmentMember($user);
         $this->client->loginUser($user);
 
-        $crawler = $this->client->request('GET', '/manage-shifts/apply');
+        $this->client->request('GET', '/manage-shifts/apply');
+        self::assertResponseIsSuccessful();
+
+        $dialog = $this->client->request('GET', '/manage-shifts/apply/shift/'.$rehearsal->getUuid());
         self::assertResponseIsSuccessful();
         self::assertStringContainsString(
             'Staff Show',
             (string) $this->client->getResponse()->getContent(),
-            'The staff apply row must name the group.',
+            'The dialog must name the group the shift belongs to.',
         );
 
-        $this->client->submit($crawler->filter('form[action*="/manage-shifts/apply/"]')->first()->form());
+        $this->client->submit($dialog->filter('form[action*="/manage-shifts/apply/"]')->first()->form());
 
         self::assertSame(
             2,
