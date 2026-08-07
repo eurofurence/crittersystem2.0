@@ -4,50 +4,83 @@
   <meta charset="utf-8">
   <style>
     * { font-family: 'DejaVu Sans', sans-serif; }
-    body { font-size: 9px; color: #1a2230; }
-    h1 { font-size: 14px; margin: 0 0 2px; }
-    .sub { color: #666; font-size: 9px; margin: 0 0 8px; }
+    body { font-size: {{ layout.fontPt }}px; color: #1a2230; }
+    h1 { font-size: 13px; margin: 0 0 2px; }
+    .sub { color: #666; font-size: 8px; margin: 0 0 6px; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { border: 1px solid #cfd6e4; padding: 2px 3px; vertical-align: top; }
-    th { background: #eef1f7; text-align: left; }
-    .user { width: 90px; font-weight: bold; }
-    .block { background: #dbe7fb; border: 1px solid #4b7bd6; border-radius: 2px; padding: 1px 2px; margin-bottom: 2px; }
-    .time { font-weight: bold; }
-    /* Location rotated 90° so long names fit the narrow print columns. */
-    .loc { display: inline-block; transform: rotate(-90deg); transform-origin: left top; color: #33507f; white-space: nowrap; }
+    th, td { border: 1px solid #cfd6e4; padding: 1px 2px; }
+    /* Repeated by the renderer at the top of every page the table runs onto, which is what keeps
+       the names attached to the hours. */
+    thead th { background: #eef1f7; text-align: center; font-size: {{ layout.fontPt }}px; }
+    .when { width: 78px; background: #f6f8fc; font-weight: bold; text-align: left; white-space: nowrap; }
+    .day { display: block; color: #33507f; }
+    .name { width: {{ layout.columnPt }}px; }
+    .busy { background: #dbe7fb; }
+    .hours { display: block; font-weight: bold; }
+    .title { display: block; }
+    .location { display: block; color: #33507f; }
+    .missing { background: #fdd8d8; color: #8a1c1c; font-weight: bold; }
+    .continued { page-break-before: always; }
   </style>
 </head>
 <body>
-  <h1>{{ 'schedule.page.title'|trans({'%department%': department.name}) }}</h1>
-  <p class="sub">{{ 'schedule.pdf.subtitle'|trans }}</p>
+  {% for chunk in layout.chunks %}
+    <div class="{{ loop.first ? '' : 'continued' }}">
+      <h1>{{ 'schedule.page.title'|trans({'%department%': department.name}) }}</h1>
+      <p class="sub">
+        {{ 'schedule.pdf.subtitle'|trans }}
+        {% if layout.chunks|length > 1 %}
+          · {{ 'schedule.pdf.part'|trans({'%number%': loop.index, '%total%': layout.chunks|length}) }}
+        {% endif %}
+      </p>
 
-  <table>
-    <thead>
-      <tr>
-        <th class="user">{{ 'common.label.user'|trans }}</th>
-        {% for day in days %}<th>{{ day.label }}</th>{% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in rows %}
-        <tr>
-          <td class="user">{{ row.user.name }}</td>
-          {% for day in days %}
-            {% set dayIndex = loop.index0 %}
-            <td>
-              {% for block in row.blocks|filter(b => b.dayIndex == dayIndex) %}
-                <div class="block">
-                  <span class="time">{{ block.startsAt|app_time }}–{{ block.endsAt|app_time }}</span>
-                  {% if block.location %}<span class="loc">{{ block.location }}</span>{% endif %}
-                </div>
-              {% endfor %}
-            </td>
+      <table>
+        <thead>
+          <tr>
+            <th class="when">{{ 'schedule.table.when'|trans }}</th>
+            {% for user in chunk %}
+              <th class="name">{{ user.name }}</th>
+            {% else %}
+              <th class="name">{{ 'schedule.table.nobody'|trans }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              <td class="when">
+                {% if row.dayLabel %}<span class="day">{{ row.dayLabel }}</span>{% endif %}
+                <span class="time">{{ row.time }}</span>
+              </td>
+              {% if row.kind == 'missing' %}
+                <td class="missing" colspan="{{ max(chunk|length, 1) }}">
+                  {{ 'schedule.missing.staff'|trans({
+                    '%title%': row.missing.title,
+                    '%from%': row.missing.from,
+                    '%to%': row.missing.to,
+                  }) }}{% if row.missing.location %} · {{ row.missing.location }}{% endif %}
+                </td>
+              {% else %}
+                {% for user in chunk %}
+                  {% set cell = row.cells[user.id] ?? null %}
+                  <td class="{{ cell ? 'busy' : '' }}">
+                    {% if cell and cell.start %}
+                      <span class="hours">{{ cell.from }}–{{ cell.to }}</span>
+                      <span class="title">{{ cell.title }}</span>
+                      {% if cell.location %}<span class="location">{{ cell.location }}</span>{% endif %}
+                    {% endif %}
+                  </td>
+                {% else %}
+                  <td></td>
+                {% endfor %}
+              {% endif %}
+            </tr>
+          {% else %}
+            <tr><td colspan="{{ 1 + max(chunk|length, 1) }}">{{ 'schedule.pdf.empty'|trans }}</td></tr>
           {% endfor %}
-        </tr>
-      {% else %}
-        <tr><td colspan="{{ 1 + days|length }}">{{ 'schedule.pdf.empty'|trans }}</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        </tbody>
+      </table>
+    </div>
+  {% endfor %}
 </body>
 </html>

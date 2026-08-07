@@ -113,6 +113,18 @@ final class ShiftSignupService
     }
 
     /**
+     * Why this volunteer cannot take this shift at all, or null when they can - or already have.
+     *
+     * Group-aware, and worded for the person reading it: a surface that can only say "ineligible"
+     * leaves them with nothing to act on. The dialog on the web and the bot both ask this, so they
+     * cannot give different answers about the same shift.
+     */
+    public function refusalFor(User $user, Shift $shift): ?string
+    {
+        return $this->plan($user, $shift, null)->error;
+    }
+
+    /**
      * What applying would actually commit the volunteer to: every member shift, the role on each,
      * the added hours, and anything that blocks it. Read by the confirmation modal, the bot and the
      * submit handlers so all three agree.

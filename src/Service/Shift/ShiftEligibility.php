@@ -10,6 +10,7 @@ use App\Repository\NeededVolunteerTypeRepository;
 use App\Repository\ShiftEntryRepository;
 use App\Repository\UserCertificationRepository;
 use App\Repository\UserVolunteerTypeRepository;
+use Symfony\Contracts\Service\ResetInterface;
 
 /**
  * The per-shift sign-up rules, with no knowledge of shift groups.
@@ -22,7 +23,7 @@ use App\Repository\UserVolunteerTypeRepository;
  * A role's certification requirements are enforced here: a volunteer who does not currently hold
  * one is neither offered the role nor accepted for it, and the refusal names what is missing.
  */
-final class ShiftEligibility
+final class ShiftEligibility implements ResetInterface
 {
     /**
      * Certification ids each user currently holds, filled once per user.
@@ -94,6 +95,18 @@ final class ShiftEligibility
                 $this->warmConfirmedTypes[$membership->getVolunteerType()->getId()] = true;
             }
         }
+    }
+
+    /**
+     * Symfony empties this between requests and between messenger messages. The preload is scoped to
+     * one render by its caller, but a leak would be silent and expensive to find: the rules would go
+     * on answering for whoever was warmed, so a volunteer could be refused a shift because somebody
+     * else is already on it.
+     */
+    public function reset(): void
+    {
+        $this->coolDown();
+        $this->heldCertifications = [];
     }
 
     /** Drop everything {@see warmUp()} preloaded, so the rules answer from the database again. */

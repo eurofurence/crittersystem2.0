@@ -47,6 +47,7 @@ final class BotShiftController extends AbstractController
         private readonly ShiftGroupSignupService $groupSignup,
         private readonly ShiftVisibilityResolver $visibility,
         private readonly BotShiftNormalizer $normalizer,
+        private readonly \App\Service\Shift\ShiftEligibility $eligibility,
     ) {
     }
 
@@ -100,22 +101,30 @@ final class BotShiftController extends AbstractController
         $openOnly = $request->query->getBoolean('open_only');
         $suitable = $request->query->getBoolean('suitable_for_me');
 
-        $out = [];
-        foreach ($shifts as $shift) {
-            // Audience, not just publication state: staff-only and invite-only
-            // shifts must never reach a volunteer through the bot.
-            if (!$this->visibility->isVisibleTo($shift, $actor)) {
-                continue;
-            }
+        // Audience, not just publication state: staff-only and invite-only shifts must never reach
+        // a volunteer through the bot.
+        $visible = array_values(array_filter(
+            $shifts,
+            fn (Shift $shift): bool => $this->visibility->isVisibleTo($shift, $actor),
+        ));
 
-            $row = $this->normalizer->shift($shift, $actor);
-            if ($openOnly && $row['open_slots'] < 1) {
-                continue;
+        // Each row asks the same questions about staffing, membership and the volunteer's own
+        // bookings, which is a handful of queries per shift without this.
+        $this->eligibility->warmUp($actor, $visible);
+        try {
+            $out = [];
+            foreach ($visible as $shift) {
+                $row = $this->normalizer->shift($shift, $actor);
+                if ($openOnly && $row['open_slots'] < 1) {
+                    continue;
+                }
+                if ($suitable && $row['my_state'] !== 'available') {
+                    continue;
+                }
+                $out[] = $row;
             }
-            if ($suitable && $row['my_state'] !== 'available') {
-                continue;
-            }
-            $out[] = $row;
+        } finally {
+            $this->eligibility->coolDown();
         }
 
         return $this->json(['shifts' => $out]);

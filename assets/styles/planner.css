@@ -517,51 +517,118 @@ label.avail-swatch-unavailable.active,
     z-index: 3;
 }
 
-/* Staff schedule timeline: users on the Y-axis, time across days on
-   the X-axis, colored assignment blocks with accessible labels. */
-.schedule-scroll { overflow-x: auto; }
-.schedule { min-width: 640px; }
-.schedule-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--tblr-border-color); }
-.schedule-headrow { position: sticky; top: 0; background: var(--tblr-bg-surface); z-index: 2; font-weight: 600; }
-.schedule-user {
-    flex: 0 0 130px;
-    padding: 4px 8px;
-    border-right: 1px solid var(--tblr-border-color);
-    display: flex;
-    align-items: center;
-    font-size: 13px;
+/* Staff schedule: a column per person, a row per half hour. The time column and the name row are
+   frozen, because a block in the middle of a wide schedule says nothing once the name or the hour
+   has scrolled away. */
+.schedule-scroll {
+    max-height: 78vh;
+    overflow: auto;
+    border: 1px solid var(--tblr-border-color);
+    border-radius: var(--tblr-border-radius);
 }
-.schedule-day-head { flex: 1 1 0; text-align: center; padding: 4px; font-size: 12px; border-right: 1px solid var(--tblr-border-color); }
+
+.schedule-table {
+    margin-bottom: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 12px;
+}
+
+.schedule-table > thead > tr > th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--tblr-bg-surface);
+    border-bottom: 1px solid var(--tblr-border-color);
+    text-align: center;
+    vertical-align: bottom;
+}
+
+.schedule-corner {
+    left: 0;
+    z-index: 4 !important;
+    min-width: 7rem;
+}
+
+.schedule-when {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    min-width: 7rem;
+    background: var(--tblr-bg-surface);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
 .schedule-day {
-    flex: 1 1 0;
-    position: relative;
-    height: 30px;
-    border-right: 1px solid var(--tblr-border-color);
-    background-image: repeating-linear-gradient(to right,
-        var(--tblr-border-color-light, rgba(98,105,118,.12)) 0,
-        var(--tblr-border-color-light, rgba(98,105,118,.12)) 1px,
-        transparent 1px, transparent 12.5%);
+    display: block;
+    font-size: 11px;
+    color: var(--tblr-primary);
 }
-.schedule-block {
-    position: absolute;
-    top: 3px;
-    bottom: 3px;
-    min-width: 3px;
-    border-radius: 3px;
+
+.schedule-name {
+    min-width: 6rem;
+    max-width: 9rem;
     overflow: hidden;
-    font-size: 9px;
-    line-height: 1.4;
-    padding: 0 2px;
-    color: #10233f;
-    border: 1px solid rgba(0,0,0,.15);
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
-.schedule-block-label { white-space: nowrap; }
-.schedule-hue-0 { background: color-mix(in srgb, var(--tblr-blue) 45%, white); }
-.schedule-hue-1 { background: color-mix(in srgb, var(--tblr-green) 45%, white); }
-.schedule-hue-2 { background: color-mix(in srgb, var(--tblr-orange) 45%, white); }
-.schedule-hue-3 { background: color-mix(in srgb, var(--tblr-purple) 45%, white); }
-.schedule-hue-4 { background: color-mix(in srgb, var(--tblr-cyan) 45%, white); }
-.schedule-hue-5 { background: color-mix(in srgb, var(--tblr-pink) 45%, white); }
+
+/* The half hours of one day read as a block, with a line where the next day begins. */
+.schedule-day-start > th,
+.schedule-day-start > td {
+    border-top: 2px solid var(--tblr-border-color);
+}
+
+/* Tabler paints every cell with an inset shadow the width of the cell, which covers a plain
+   background and left only the border showing. Setting the state variable is what actually fills
+   the cell, and the fill is the point: it is how an occupied half hour reads at a glance. */
+.schedule-busy {
+    --tblr-table-bg-state: color-mix(in srgb, var(--tblr-blue) 22%, var(--tblr-bg-surface));
+}
+
+/* Only the slot a shift starts in carries its detail; the rest are the same block continuing, and
+   the line is what separates two shifts that run back to back. */
+.schedule-busy.is-start {
+    border-top: 2px solid var(--tblr-blue);
+}
+
+.schedule-hours {
+    display: block;
+    font-weight: 600;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.schedule-title {
+    display: block;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.schedule-location {
+    display: block;
+    font-size: 10px;
+    color: var(--tblr-secondary);
+    white-space: nowrap;
+}
+
+/* A staff shift with nobody on it belongs to no column, so it takes a row of its own and has to be
+   impossible to scroll past. */
+.schedule-missing > td {
+    --tblr-table-bg-state: color-mix(in srgb, var(--tblr-red) 25%, var(--tblr-bg-surface));
+    color: var(--tblr-red-fg, #7a1414);
+    font-weight: 600;
+}
+
+.schedule-missing > th {
+    --tblr-table-bg-state: color-mix(in srgb, var(--tblr-red) 14%, var(--tblr-bg-surface));
+    background: color-mix(in srgb, var(--tblr-red) 14%, var(--tblr-bg-surface));
+}
 
 /* Info Desk chat. Simple, theme-aware bubbles. */
 .chat-thread { max-height: 55vh; overflow-y: auto; }

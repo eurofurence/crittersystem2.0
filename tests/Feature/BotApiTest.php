@@ -204,6 +204,50 @@ final class BotApiTest extends DatabaseWebTestCase
         self::assertSame(2, $shifts[0]['total_slots']);
     }
 
+    /**
+     * A shift the volunteer cannot take has to say why, in words they can act on. "Ineligible" with
+     * nothing after it is what sends somebody to the Info Desk to ask.
+     */
+    public function testAClosedShiftCarriesTheReasonItIsClosed(): void
+    {
+        $shift = $this->scenario->shift('Yesterday', '-1 day', '+2 hours');
+        $user = $this->scenario->user(['shift:view'], $this->scenario->type);
+
+        $this->request('GET', '/api/bot/shifts/'.$shift->getUuid(), $user);
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('past', $this->json()['my_state']);
+        self::assertSame('This shift has already ended.', $this->json()['my_state_reason']);
+    }
+
+    /** Nothing to explain when the volunteer can simply apply. */
+    public function testAnOpenShiftCarriesNoReason(): void
+    {
+        $shift = $this->scenario->shift('Morning Gate');
+        $user = $this->scenario->user(['shift:view'], $this->scenario->type);
+
+        $this->request('GET', '/api/bot/shifts/'.$shift->getUuid(), $user);
+
+        self::assertResponseIsSuccessful();
+        self::assertSame('available', $this->json()['my_state']);
+        self::assertNull($this->json()['my_state_reason']);
+    }
+
+    /** The reason is the same sentence the write would refuse with, never a different story. */
+    public function testTheReasonMatchesWhatApplyingWouldSay(): void
+    {
+        $shift = $this->scenario->shift('Morning Gate');
+        $user = $this->scenario->user(['shift:view', 'shift:apply']);
+
+        $this->request('GET', '/api/bot/shifts/'.$shift->getUuid(), $user);
+        $reason = $this->json()['my_state_reason'];
+        self::assertNotNull($reason);
+
+        $this->request('POST', '/api/bot/shifts/'.$shift->getUuid().'/apply', $user);
+        self::assertSame(409, $this->client->getResponse()->getStatusCode());
+        self::assertSame($reason, $this->json()['message']);
+    }
+
     /** Draft shifts are unpublished; the bot must never see them. */
     public function testDraftShiftsAreNotListed(): void
     {

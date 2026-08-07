@@ -48,6 +48,7 @@ final class BotShiftNormalizer
         $location = $shift->getLocation();
         $task = $shift->getShiftTask();
         $department = $shift->getDepartment();
+        $state = $actor !== null ? $this->signup->eligibilityStatus($shift, $actor) : null;
 
         return [
             'id' => (string) $shift->getUuid(),
@@ -67,9 +68,25 @@ final class BotShiftNormalizer
             'status' => $this->status($shift, $needed, $assigned),
             'staff_only' => $shift->getAudience()->isStaffOnly(),
             'map_url' => $location?->getMapUrl(),
-            'my_state' => $actor !== null ? $this->signup->eligibilityStatus($shift, $actor) : null,
+            'my_state' => $state,
+            'my_state_reason' => $this->refusal($shift, $actor, $state),
             'group' => $this->group($shift, $actor),
         ];
+    }
+
+    /**
+     * Why the shift is closed to this volunteer, in the same words every other surface uses, so the
+     * bot never has to answer "ineligible" with nothing they can do about it.
+     *
+     * Null when there is nothing to explain: they can apply, or they are already on it.
+     */
+    private function refusal(Shift $shift, ?User $actor, ?string $state): ?string
+    {
+        if ($actor === null || $state === 'available' || $state === 'signed_up') {
+            return null;
+        }
+
+        return $this->signup->refusalFor($actor, $shift);
     }
 
     /**

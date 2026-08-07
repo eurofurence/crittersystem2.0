@@ -7,6 +7,7 @@ use App\Pdf\PdfRenderer;
 use App\Repository\DepartmentRepository;
 use App\Service\DisplaySettings;
 use App\Service\EventConfigStore;
+use App\Service\Shift\SchedulePdfLayout;
 use App\Service\Shift\ScheduleTimelineService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\HeaderUtils;
@@ -16,9 +17,9 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Staff schedule timeline: an interactive users×time view and a
- * dompdf export for posting outside the application. Location labels rotate in
- * the PDF when space is tight.
+ * Staff schedule: a column per person against half-hour rows, and a PDF of the same for posting
+ * outside the application. Shifts nobody is assigned to are called out in the grid rather than left
+ * to be noticed by their absence.
  */
 #[Route('/manage-shifts/schedule')]
 #[IsGranted('shift:manage')]
@@ -30,6 +31,7 @@ final class ScheduleController extends AbstractController
         private readonly DisplaySettings $display,
         private readonly EventConfigStore $config,
         private readonly PdfRenderer $pdf,
+        private readonly SchedulePdfLayout $layout,
     ) {
     }
 
@@ -55,11 +57,14 @@ final class ScheduleController extends AbstractController
             throw $this->createNotFoundException();
         }
 
+        $data = $this->timelineData($department);
+        $layout = $this->layout->forUsers($data['users']);
+
         $html = $this->renderView('schedule/timeline_pdf.html.twig', array_merge(
-            ['department' => $department],
-            $this->timelineData($department),
+            ['department' => $department, 'layout' => $layout],
+            $data,
         ));
-        $pdf = $this->pdf->renderHtml($html, 'A4', 'landscape');
+        $pdf = $this->pdf->renderHtml($html, $layout['paper'], $layout['orientation']);
 
         $response = new Response($pdf, Response::HTTP_OK, ['Content-Type' => 'application/pdf']);
         $response->headers->set('Content-Disposition', HeaderUtils::makeDisposition(
@@ -70,29 +75,25 @@ final class ScheduleController extends AbstractController
         return $response;
     }
 
-    /** @return array{days: mixed, rows: mixed, timezone: string} */
+    /** @return array{users: list<\App\Entity\User>, rows: list<array<string, mixed>>, timezone: string} */
     private function timelineData(Department $department): array
     {
         $tz = $this->display->timezone();
         [$from, $to] = $this->range();
-        $data = $this->timeline->build(
-            $department,
-            $from,
-            $to,
-            $tz,
-            $this->config->getDate(EventConfigStore::KEY_EVENT_START),
-            $this->config->getDate(EventConfigStore::KEY_EVENT_END),
-        );
+        $data = $this->timeline->build($department, $from, $to, $tz);
 
-        return ['days' => $data['days'], 'rows' => $data['rows'], 'timezone' => $tz->getName()];
+        return ['users' => $data['users'], 'rows' => $data['rows'], 'timezone' => $tz->getName()];
     }
 
     /** @return array{0: ?Department, 1: list<Department>} */
     private function resolveDepartment(Request $request): array
     {
+        // Only the departments this manager may actually open. shift:manage is scoped, so offering
+        // the rest puts options in the picker that answer 403 when chosen; an unscoped holder or an
+        // admin still sees them all.
         $planning = array_values(array_filter(
             $this->departments->findAllOrdered(),
-            static fn (Department $d) => !$d->isOrganizational(),
+            fn (Department $d) => !$d->isOrganizational() && $this->isGranted('shift:manage', $d),
         ));
         if ($planning === []) {
             return [null, []];

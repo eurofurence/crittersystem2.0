@@ -12,7 +12,7 @@
     ]
   }) }}
 
-  {{ d.card_start() }}
+  {{ d.card_start(null, {bodyClass: 'card-body py-2'}) }}
       <form method="get" class="d-flex align-items-end gap-2">
         <div>
           <label class="form-label mb-1" for="sched-department">{{ 'common.label.department'|trans }}</label>
@@ -23,40 +23,66 @@
           </select>
         </div>
       </form>
-  {{ d.card_end() }}
+  {{ d.card_end({bodyClass: 'card-body py-2'}) }}
 
   {% if rows is empty %}
     {{ d.empty_state('schedule.empty.title'|trans, {message: 'schedule.empty.message'|trans}) }}
   {% else %}
-    {{ d.card_start(null, {class: '', bodyClass: ''}) }}
-      <div class="schedule-scroll">
-        <div class="schedule">
-          <div class="schedule-row schedule-headrow">
-            <div class="schedule-user schedule-corner"></div>
-            {% for day in days %}<div class="schedule-day-head">{{ day.label }}</div>{% endfor %}
-          </div>
+    {# The time column and the name row are frozen: a tick in the middle of a wide schedule means
+       nothing once the name or the hour has scrolled off. #}
+    <div class="schedule-scroll">
+      <table class="table table-sm schedule-table">
+        <thead>
+          <tr>
+            <th class="schedule-corner">{{ 'schedule.table.when'|trans }}</th>
+            {% for user in users %}
+              <th class="schedule-name" title="{{ user.name }}">{{ user.name }}</th>
+            {% else %}
+              <th class="schedule-name">{{ 'schedule.table.nobody'|trans }}</th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
           {% for row in rows %}
-            <div class="schedule-row">
-              <div class="schedule-user">{{ row.user.name }}</div>
-              {% for day in days %}
-                {% set dayIndex = loop.index0 %}
-                <div class="schedule-day">
-                  {% for block in row.blocks|filter(b => b.dayIndex == dayIndex) %}
-                    <div class="schedule-block schedule-hue-{{ loop.index0 % 6 }}"
-                         style="left: {{ block.left }}%; width: {{ block.width }}%;"
-                         title="{{ block.title }} {{ block.startsAt|app_time }}–{{ block.endsAt|app_time }}{{ block.location ? ' @ ' ~ block.location : '' }}"
-                         aria-label="{{ block.location
-                           ? 'schedule.block.aria_at'|trans({'%user%': row.user.name, '%title%': block.title, '%start%': block.startsAt|app_time, '%end%': block.endsAt|app_time, '%location%': block.location})
-                           : 'schedule.block.aria'|trans({'%user%': row.user.name, '%title%': block.title, '%start%': block.startsAt|app_time, '%end%': block.endsAt|app_time}) }}">
-                      <span class="schedule-block-label">{{ block.location ?: block.title }}</span>
-                    </div>
-                  {% endfor %}
-                </div>
-              {% endfor %}
-            </div>
+            {% if row.kind == 'missing' %}
+              <tr class="schedule-missing">
+                <th class="schedule-when">
+                  {% if row.dayLabel %}<span class="schedule-day">{{ row.dayLabel }}</span>{% endif %}
+                  <span class="schedule-time">{{ row.time }}</span>
+                </th>
+                <td colspan="{{ max(users|length, 1) }}">
+                  {{ 'schedule.missing.staff'|trans({
+                    '%title%': row.missing.title,
+                    '%from%': row.missing.from,
+                    '%to%': row.missing.to,
+                  }) }}{% if row.missing.location %} · {{ row.missing.location }}{% endif %}
+                </td>
+              </tr>
+            {% else %}
+              <tr class="{{ row.isDayStart ? 'schedule-day-start' : '' }}">
+                <th class="schedule-when">
+                  {% if row.dayLabel %}<span class="schedule-day">{{ row.dayLabel }}</span>{% endif %}
+                  <span class="schedule-time">{{ row.time }}</span>
+                </th>
+                {% for user in users %}
+                  {% set cell = row.cells[user.id] ?? null %}
+                  <td class="{{ cell ? (cell.start ? 'schedule-busy is-start' : 'schedule-busy') : '' }}">
+                    {% if cell and cell.start %}
+                      {# The shift's own times, not the row's: one running 10:15 to 12:45 is drawn
+                         from the 10:00 slot and would otherwise read half an hour out. #}
+                      <span class="schedule-hours">{{ cell.from }}–{{ cell.to }}</span>
+                      <span class="schedule-title">{{ cell.title }}</span>
+                      {% if cell.location %}<span class="schedule-location">{{ cell.location }}</span>{% endif %}
+                    {% endif %}
+                  </td>
+                {% else %}
+                  <td></td>
+                {% endfor %}
+              </tr>
+            {% endif %}
           {% endfor %}
-        </div>
-      </div>
-    {{ d.card_end({bodyClass: ''}) }}
+        </tbody>
+      </table>
+    </div>
   {% endif %}
 {% endblock %}
