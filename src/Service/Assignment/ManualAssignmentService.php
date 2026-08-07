@@ -49,6 +49,7 @@ final class ManualAssignmentService
         private readonly AuditLogger $audit,
         private readonly ShiftSignal $live,
         private readonly \App\Service\Shift\ShiftEligibility $eligibility,
+        private readonly \App\Service\Shift\OverlapPolicy $overlapPolicy,
     ) {
     }
 
@@ -86,13 +87,11 @@ final class ManualAssignmentService
 
         foreach ($missing as $member) {
             $label = $grouped ? \sprintf('"%s": ', $member->getTitle()) : '';
-            // Members of one group are taken together, so one must never be reported as occupying
-            // another.
             $siblings = array_values(array_filter($members, static fn (Shift $m): bool => $m !== $member));
             $state = $this->availability->planningState($user, $member->getStartsAt(), $member->getEndsAt(), $member, $siblings);
 
             if ($state['occupied']) {
-                $needsOverride = true;
+                $needsOverride = $needsOverride || $this->overlapPolicy->blocks($user);
                 $warnings[] = ['key' => 'occupied', 'message' => $label.'The user already has a confirmed assignment overlapping this shift.'];
             } elseif ($state['value'] !== null && $state['value']->needsOverride()) {
                 $needsOverride = true;

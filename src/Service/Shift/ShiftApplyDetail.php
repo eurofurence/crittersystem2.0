@@ -31,6 +31,7 @@ final class ShiftApplyDetail
         private readonly AvailabilityService $availability,
         private readonly EventHoursGuard $hoursGuard,
         private readonly CheckInPolicy $checkIn,
+        private readonly OverlapPolicy $overlapPolicy,
     ) {
     }
 
@@ -39,6 +40,7 @@ final class ShiftApplyDetail
      *     shift: Shift,
      *     status: string,
      *     options: array<string, \App\Entity\VolunteerType>,
+     *     canApply: bool,
      *     roles: list<array<string, mixed>>,
      *     members: list<Shift>,
      *     overHours: bool,
@@ -53,6 +55,7 @@ final class ShiftApplyDetail
         $members = $this->groups->membersFor($shift);
         $siblings = $this->groups->siblingsOf($shift);
         $options = $this->signup->signupOptions($shift, $user);
+        $status = $this->signup->eligibilityStatus($shift, $user);
 
         $roles = [];
         foreach ($this->eligibility->availability($shift) as $row) {
@@ -75,8 +78,9 @@ final class ShiftApplyDetail
 
         return [
             'shift' => $shift,
-            'status' => $this->signup->eligibilityStatus($shift, $user),
+            'status' => $status,
             'options' => $options,
+            'canApply' => $status === 'available' && $options !== [],
             'roles' => $roles,
             'members' => $members,
             'overHours' => $this->hoursGuard->wouldExceedGroup($user, $shift),
@@ -110,7 +114,8 @@ final class ShiftApplyDetail
         if (($this->checkIn->checkInError($shift, $user)) !== null) {
             $blockers[] = 'shift_manager.reason.check_in';
         }
-        if ($this->availability->planningState($user, $shift->getStartsAt(), $shift->getEndsAt(), $shift, $this->groups->siblingsOf($shift))['occupied']) {
+        $occupied = $this->availability->planningState($user, $shift->getStartsAt(), $shift->getEndsAt(), $shift, $this->groups->siblingsOf($shift))['occupied'];
+        if ($occupied && $this->overlapPolicy->blocks($user)) {
             $blockers[] = 'shift_manager.reason.overlap';
         }
         if ($roles === []) {

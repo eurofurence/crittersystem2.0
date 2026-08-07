@@ -3,6 +3,7 @@
 namespace App\Tests\Integration;
 
 use App\Entity\Department;
+use App\Entity\Group;
 use App\Entity\Shift;
 use App\Entity\ShiftEntry;
 use App\Entity\User;
@@ -39,18 +40,29 @@ final class ManualAssignmentServiceTest extends DatabaseTestCase
         return $u;
     }
 
-    private function shift(): Shift
+    private function shift(string $start = '2026-06-01 10:00', string $end = '2026-06-01 12:00'): Shift
     {
         $dept = new Department('D '.bin2hex(random_bytes(3)), 'd-'.bin2hex(random_bytes(3)));
         $this->em->persist($dept);
         $shift = (new Shift())->setTitle('S')
-            ->setStartsAt(new \DateTimeImmutable('2026-06-01 10:00'))
-            ->setEndsAt(new \DateTimeImmutable('2026-06-01 12:00'))
+            ->setStartsAt(new \DateTimeImmutable($start))
+            ->setEndsAt(new \DateTimeImmutable($end))
             ->setDepartment($dept);
         $this->em->persist($shift);
         $this->em->flush();
 
         return $shift;
+    }
+
+    private function makeStaff(): User
+    {
+        $group = new Group('Staff', 'staff-'.bin2hex(random_bytes(3)), 'ROLE_STAFF');
+        $this->em->persist($group);
+        $user = $this->user();
+        $user->addGroup($group);
+        $this->em->flush();
+
+        return $user;
     }
 
     private function type(): VolunteerType
@@ -110,6 +122,45 @@ final class ManualAssignmentServiceTest extends DatabaseTestCase
         $inspection = $this->service()->inspect($shift, $user);
         self::assertTrue($inspection['needsOverride']);
         self::assertNotEmpty($inspection['warnings']);
+    }
+
+    /**
+     * A volunteer is held to one shift at a time, so double-booking one is a decision the manager
+     * has to take deliberately.
+     */
+    public function testAssigningAVolunteerOverAnOverlapNeedsAnOverride(): void
+    {
+        $user = $this->user();
+        $type = $this->type();
+        $first = $this->shift('2026-06-01 10:00', '2026-06-01 12:00');
+        $second = $this->shift('2026-06-01 11:00', '2026-06-01 13:00');
+        $this->service()->assign($first, $user, $type);
+
+        $inspection = $this->service()->inspect($second, $user);
+
+        self::assertTrue($inspection['needsOverride']);
+        self::assertSame(['occupied'], array_column($inspection['warnings'], 'key'));
+    }
+
+    /**
+     * Staff may work parallel shifts, so the manager is told about the clash but is not made to
+     * override a rule that does not apply to this person.
+     */
+    public function testAssigningStaffOverAnOverlapIsAllowedWithoutAnOverride(): void
+    {
+        $user = $this->makeStaff();
+        $type = $this->type();
+        $first = $this->shift('2026-06-01 10:00', '2026-06-01 12:00');
+        $second = $this->shift('2026-06-01 11:00', '2026-06-01 13:00');
+        $this->service()->assign($first, $user, $type);
+
+        $inspection = $this->service()->inspect($second, $user);
+        self::assertFalse($inspection['needsOverride']);
+        self::assertSame(['occupied'], array_column($inspection['warnings'], 'key'), 'the clash is still reported');
+
+        $entry = $this->service()->assign($second, $user, $type);
+        self::assertFalse($entry->isOverridden());
+        self::assertCount(2, $this->em->getRepository(ShiftEntry::class)->findBy(['user' => $user]));
     }
 
     public function testRemoveDeletesTheEntry(): void

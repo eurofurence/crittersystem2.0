@@ -112,7 +112,7 @@
       <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ shift.id) }}">
       <button class="btn btn-outline-danger">{{ 'shift_manager.apply.detail.cancel_application'|trans }}</button>
     </form>
-  {% elseif detail.options is not empty %}
+  {% elseif detail.canApply %}
     <form method="post" action="{{ path('app_manage_shifts_apply_do', {id: shift.uuid}|merge(filters)) }}"
           data-turbo="false" class="d-flex flex-wrap align-items-center gap-2">
       <input type="hidden" name="_token" value="{{ csrf_token('apply' ~ shift.id) }}">

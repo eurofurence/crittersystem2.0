@@ -2,6 +2,7 @@
 
 namespace App\Tests\Integration;
 
+use App\Entity\Group;
 use App\Entity\NeededVolunteerType;
 use App\Entity\Shift;
 use App\Entity\ShiftEntry;
@@ -154,7 +155,7 @@ final class ShiftSignupServiceTest extends DatabaseTestCase
         self::assertSame('This role is already fully staffed.', $this->service()->signUpError($second, $shift, $type));
     }
 
-    public function testOverlappingShiftIsRejected(): void
+    public function testOverlappingShiftIsRejectedForAVolunteer(): void
     {
         $type = $this->makeType('Roaming');
         $user = $this->makeUser('finn');
@@ -166,5 +167,37 @@ final class ShiftSignupServiceTest extends DatabaseTestCase
         $this->service()->signUp($user, $a, $type);
 
         self::assertSame('You are already booked for an overlapping shift.', $this->service()->signUpError($user, $b, $type));
+        self::assertSame('overlap', $this->service()->eligibilityStatus($b, $user));
+    }
+
+    /**
+     * Staff work parallel shifts as a matter of course - a lead covering two rooms, a duty running
+     * alongside an Info Desk shift - and refusing them meant the second one simply never got
+     * recorded. Only volunteers are held to one shift at a time.
+     */
+    public function testStaffMayTakeAnOverlappingShift(): void
+    {
+        $type = $this->makeType('Roaming');
+        $staffGroup = new Group('Staff', 'staff-'.bin2hex(random_bytes(3)), 'ROLE_STAFF');
+        $this->em->persist($staffGroup);
+
+        $user = $this->makeUser('grace');
+        $user->addGroup($staffGroup);
+        $this->confirmMember($user, $type);
+        $a = $this->makeShift('+1 day 10:00', '+1 day 14:00', $type);
+        $b = $this->makeShift('+1 day 12:00', '+1 day 16:00', $type);
+        $this->em->flush();
+
+        $this->service()->signUp($user, $a, $type);
+
+        self::assertNull($this->service()->signUpError($user, $b, $type));
+        self::assertSame('available', $this->service()->eligibilityStatus($b, $user));
+
+        $this->service()->signUp($user, $b, $type);
+        self::assertCount(
+            2,
+            $this->em->getRepository(ShiftEntry::class)->findBy(['user' => $user]),
+            'both parallel shifts are recorded',
+        );
     }
 }

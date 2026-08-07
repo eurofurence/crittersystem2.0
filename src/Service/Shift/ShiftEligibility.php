@@ -59,6 +59,7 @@ final class ShiftEligibility
         private readonly NeededVolunteerTypeRepository $needed,
         private readonly CheckInPolicy $checkIn,
         private readonly UserCertificationRepository $certifications,
+        private readonly OverlapPolicy $overlapPolicy,
     ) {
     }
 
@@ -241,9 +242,6 @@ final class ShiftEligibility
 
         $options = [];
         foreach ($this->availability($shift) as $row) {
-            // A role whose certification the volunteer lacks is not offered: signUpError refuses it,
-            // so leaving it in the list puts a button on screen that can only fail. The reason is
-            // still reachable - signUpError names the missing certification when asked.
             if ($row['assigned'] < $row['needed']
                 && $this->isConfirmedMember($user, $row['type'])
                 && $this->missingCertifications($user, $row['type']) === []
@@ -269,6 +267,9 @@ final class ShiftEligibility
         if ($shift->isPast()) {
             return 'past';
         }
+        if ($this->overlaps($user, $shift, $ignoreOverlapWith)) {
+            return 'overlap';
+        }
         if (!empty($this->signupOptions($shift, $user))) {
             return 'available';
         }
@@ -278,9 +279,6 @@ final class ShiftEligibility
         $assigned = array_sum(array_column($availability, 'assigned'));
         if ($needed > 0 && $assigned >= $needed) {
             return 'full';
-        }
-        if ($this->overlaps($user, $shift, $ignoreOverlapWith)) {
-            return 'overlap';
         }
 
         return 'ineligible';
@@ -306,8 +304,6 @@ final class ShiftEligibility
             return 'You are already booked for an overlapping shift.';
         }
 
-        // Event-phase check-in gate: main-event shifts and shifts with
-        // the per-shift override require the applicant to be checked in.
         if (($checkInError = $this->checkIn->checkInError($shift, $user)) !== null) {
             return $checkInError;
         }
@@ -316,8 +312,6 @@ final class ShiftEligibility
             return 'You are not a confirmed member of this volunteer type.';
         }
 
-        // The missing one is named: "you are not qualified" is not something a volunteer can act on,
-        // and the name is what they take to whoever issues it.
         if (($missing = $this->missingCertifications($user, $type)) !== []) {
             return \sprintf(
                 'This role requires %s, which you do not currently hold.',
@@ -336,9 +330,18 @@ final class ShiftEligibility
         return null;
     }
 
-    /** @param Shift[] $ignoreOverlapWith */
+    /**
+     * Whether a shift running at the same time stands in this user's way, which for staff it does
+     * not - see {@see OverlapPolicy}.
+     *
+     * @param Shift[] $ignoreOverlapWith
+     */
     private function overlaps(User $user, Shift $shift, array $ignoreOverlapWith): bool
     {
+        if (!$this->overlapPolicy->blocks($user)) {
+            return false;
+        }
+
         // The shift itself is always excluded: an entry on it is "already signed up", not an
         // overlap, and the two produce different messages.
         return $this->isDoubleBooked(
