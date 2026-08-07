@@ -5231,12 +5231,6 @@ msgstr "← Department grid"
 msgid "schedule.action.download_pdf"
 msgstr "Download PDF"
 
-msgid "schedule.block.aria"
-msgstr "%user%: %title% %start% to %end%"
-
-msgid "schedule.block.aria_at"
-msgstr "%user%: %title% %start% to %end% at %location%"
-
 msgid "schedule.empty.message"
 msgstr "Assign staff to shifts to populate the schedule."
 
@@ -5254,6 +5248,18 @@ msgstr "Staff schedule - %department%"
 
 msgid "schedule.pdf.empty"
 msgstr "No confirmed assignments."
+
+msgid "schedule.table.when"
+msgstr "Date / time"
+
+msgid "schedule.table.nobody"
+msgstr "Nobody assigned"
+
+msgid "schedule.missing.staff"
+msgstr "Staff missing: %title% %from%-%to%"
+
+msgid "schedule.pdf.part"
+msgstr "part %number% of %total%"
 
 msgid "schedule.pdf.subtitle"
 msgstr "Confirmed assignments. Generated for posting."
