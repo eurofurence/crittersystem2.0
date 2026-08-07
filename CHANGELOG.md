@@ -10,6 +10,92 @@ Critter 2.0 is production. **`1.0.2`**
 
 ## [Unreleased]
 
+### Added
+
+- feat(live): a Mercure transport for live updates. `TopicBuilder` returns the exact topic set one
+  user may subscribe to, signed into a short-lived token, so the browser cannot widen it (`21fa882`)
+- feat(live): the notification bell and status widget refresh on a signal instead of polling every
+  page; clock-driven transitions name the instant they happen rather than being caught by a timer
+  (`0418376`)
+- feat(live): the chat thread and typing indicator (`efff9cd`), the bounty board and Info Desk queue
+  (`298fd12`), and the digital ID card, which retires the last polling timer (`f2ebf34`)
+- feat(live): two managers working one department now see each other's edits. The planner and matrix
+  are announced to rather than replaced, so a change never lands mid-drag (`3134aca`)
+- feat(shifts): shift groups - a rehearsal and the performance it prepares are one commitment.
+  Applying to a member signs the volunteer up for all of them, or none, and cancelling cancels all
+  (`2f3c1f5`)
+- feat(certifications): a certification lists everyone who applied for it and everyone who holds it
+  (`70aa316`); applications can be approved, declined and revoked, and the volunteer is told
+  (`a11536e`); a manager can grant one by hand for a paper certificate (`37c9d83`); decisions can be
+  taken in bulk (`9089874`); holders export, a compliance report and overview counts (`0cce2dc`)
+- feat(certifications): warn before one lapses, and let volunteers renew or withdraw. `app:certifications:lifecycle`
+  runs daily, because a certification used to run out at an instant nobody was watching (`a6d7529`)
+- feat(shift): the optional description is usable end to end - the planner can write it, and the
+  API, JSON export and iCal feed return it (`12a8f02`)
+- feat(chat): a command to purge the empty support conversations the defect below left behind
+  (`9cecb76`)
+- feat(shifts): rebuild the staff apply screen as one day of shifts, a column per department against
+  a shared time axis, with a day picker, a my-departments-only toggle and a department combobox.
+  Clicking a shift opens a server-rendered dialog that says why it is closed and links to the fix:
+  join the volunteer type, or read about the certification the role needs (`0ee1c73`)
+- feat(planner): select a range of shifts by dragging a band across empty grid, and select the
+  focused block with Enter or Space (`af92d66`)
+- feat(planner): scroll arrows on the day headers, so a grid wider than the screen looks scrollable
+  (`3da6df6`)
+- feat(rbac): a permission matrix at `/manage/groups/matrix` showing every group against every
+  permission, with a group picker and a frozen permission column (`5710a90`, `b0fc254`)
+- feat(bot): carry `my_state_reason` beside `my_state`, the same sentence the sign-up refuses with,
+  so a volunteer reads the obstacle instead of "ineligible" (`16750d6`)
+
+### Changed
+
+- feat(shifts)!: a role that requires a certification is closed to volunteers who do not hold one.
+  The requirement described the role and never governed it (`a04e422`)
+- feat(shifts)!: only volunteers are held to one shift at a time. Staff, sub-admins and admins may
+  apply to and be assigned to parallel shifts; a manager is still told about the clash but no longer
+  has to override it. Auto-assignment and help calls keep avoiding overlaps deliberately (`5033508`)
+- feat(shifts)!: staff are checked in when they finish onboarding, because the check-in gate
+  otherwise refuses every main-event application. `app:onboarding:checkin-staff` catches up the
+  accounts that onboarded earlier (`875b482`)
+- feat(planner)!: drop the four-lane cap and the expand/collapse link. Every parallel shift renders
+  and the day column widens to fit, uniformly across the whole day so blocks line up (`3da6df6`)
+- feat(volunteer-types)!: the base types stay global and out of any department's reach. A department
+  claiming a type used to hide it everywhere else, which left production offering two of ten
+  (`6228735`, `e458a15`)
+- perf(shifts): the apply screen cost 285 queries for 60 shifts and now costs 43. `EventConfigStore`
+  memoises per request rather than reading the database for every lookup, and shift eligibility
+  preloads a screen at a time (`0ee1c73`)
+- perf(live): the apply screen was a Turbo Frame per row on a twenty-second timer - a sixty-shift day
+  cost 180 requests a minute from one viewer. One region per department now refreshes on a signal
+  (`62938b1`)
+- docs(api): document `my_state_reason`, the `my_state` precedence and the overlap policy (`16750d6`)
+
+### Fixed
+
+- fix(live): restore the navbar widgets and stop admin tokens outgrowing the response. Live regions
+  were gated on onboarding, which administrators are exempt from, so an admin got no bell, no status
+  widget and no hub URL - silently taking chat and the planner with it (`e823a1c`)
+- fix(chat): opening `/messages` contacted the Info Desk. The list created the conversation merely by
+  asking for it, so every visitor queued one (`88b6f1e`)
+- fix(availability): keep every day of a multi-day span on the grid. Painting two consecutive whole
+  days lost the second on reload, and the volunteer's work looked deleted (`779e449`)
+- fix: read optional numeric request values with a cast, not `getInt()`. A present but blank field
+  never reached its default and answered 400 for exactly the case the default was written for
+  (`02e7629`)
+- fix(certifications): a grant made through the user picker answered 400, because the picker submits
+  `user[]` and the handler read a scalar (`9089874`)
+- fix(planner): a click selects a shift instead of nudging it. Any pointer movement counted as a
+  drag, so an ordinary click saved a move, reloaded the grid and lost the selection; a refresh
+  arriving mid-drag also sent the shift to an unrelated time (`af92d66`)
+- fix(shifts): a shift is reported as overlapping before it is reported as available, so a volunteer
+  already booked at that hour is no longer offered a button the write refuses (`5033508`)
+- fix(shifts): a shift that no longer exists renders a page saying so instead of an error, and the
+  FAQ and navigation templates were corrected alongside it (`4e4c8d6`)
+- fix(profile): add a worklog from your own profile. The form minted a CSRF token for the wrong id,
+  and the post was refused (`9da0f76`)
+- fix(ui): the checkboxes in a multi-select combobox were clipped outside the scrolling menu, so
+  there was no way to see what was selected (`b0fc254`)
+
 ## [1.0.2] - 2026-07-29
 
 ### Added
