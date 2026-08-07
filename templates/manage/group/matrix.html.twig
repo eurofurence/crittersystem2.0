@@ -1,0 +1,93 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/icon/_macros.twig' as i %}
+{% import 'components/forms/_macros.twig' as f %}
+
+{% block title %}{{ 'manage.group.matrix.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('manage.group.matrix.title'|trans, {
+    subtitle: 'manage.group.matrix.subtitle'|trans,
+    actions: [{label: 'manage.group.action.back_to_groups'|trans, href: path('app_manage_group_index'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ d.card_start(null, {bodyClass: 'card-body py-2'}) }}
+    <form method="get" action="{{ path('app_manage_group_matrix') }}" class="d-flex flex-wrap align-items-end gap-3">
+      {{ f.checkbox_dropdown('groups', picker|map(entry => {
+        value: entry.group.uuid,
+        label: entry.group.name,
+        hint: entry.group.privileges|length,
+        badge: entry.group.role == 'ROLE_ADMIN' ? 'manage.group.matrix.all_access'|trans : null,
+        checked: entry.selected,
+      }), {
+        label: 'manage.group.matrix.filter.groups'|trans,
+        allLabel: 'manage.group.matrix.filter.all_groups'|trans,
+        someLabel: 'manage.group.matrix.filter.some_groups'|trans({'%count%': '%count%'}),
+        submitLabel: 'manage.group.matrix.filter.show'|trans,
+        emptyLabel: 'manage.group.matrix.filter.no_groups'|trans,
+      }) }}
+      <noscript><button class="btn btn-sm btn-primary" type="submit">{{ 'manage.group.matrix.filter.show'|trans }}</button></noscript>
+    </form>
+  {{ d.card_end({bodyClass: 'card-body py-2'}) }}
+
+  {# A group carrying ROLE_ADMIN satisfies every permission check whatever its ticks say, so the
+     matrix has to say so: read without that, a row of empty cells means the opposite of the truth. #}
+  <div class="perm-matrix-wrap" data-controller="scroll-nav">
+    <div class="perm-matrix-nav">
+      <button type="button" class="perm-matrix-arrow perm-matrix-arrow-prev"
+              data-scroll-nav-target="prev" data-action="scroll-nav#prev"
+              aria-label="{{ 'manage.group.matrix.scroll_left'|trans }}" hidden>{{ i.icon('chevron-left') }}</button>
+      <button type="button" class="perm-matrix-arrow perm-matrix-arrow-next"
+              data-scroll-nav-target="next" data-action="scroll-nav#next"
+              aria-label="{{ 'manage.group.matrix.scroll_right'|trans }}" hidden>{{ i.icon('chevron-right') }}</button>
+    </div>
+
+    <div class="perm-matrix-scroll" data-scroll-nav-target="scroller">
+      <table class="table table-sm perm-matrix">
+        <thead>
+          <tr>
+            <th class="perm-matrix-corner">{{ 'manage.group.matrix.permission'|trans }}</th>
+            {% for group in groups %}
+              <th class="perm-matrix-group" title="{{ group.name }}">
+                <span class="perm-matrix-group-name">{{ group.name }}</span>
+                {% if group.role == 'ROLE_ADMIN' %}
+                  <span class="badge bg-red-lt d-block mt-1">{{ 'manage.group.matrix.all_access'|trans }}</span>
+                {% elseif group.role %}
+                  <span class="badge bg-azure-lt d-block mt-1">{{ group.role }}</span>
+                {% endif %}
+              </th>
+            {% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for category in categories %}
+            <tr class="perm-matrix-category">
+              <th colspan="{{ groups|length + 1 }}">{{ category.name }}</th>
+            </tr>
+            {% for permission in category.permissions %}
+              <tr>
+                <th class="perm-matrix-name">
+                  <code>{{ permission.name }}</code>
+                  {% if permission.twoFactor %}
+                    {{ d.badge('manage.group.badge.two_factor'|trans, 'text-bg-purple', {class: 'ms-1', attrs: {title: 'manage.group.badge.two_factor_title'|trans}}) }}
+                  {% endif %}
+                  <span class="d-block text-muted small">{{ permission.description }}</span>
+                </th>
+                {% for granted in permission.held %}
+                  <td class="perm-matrix-cell align-middle{{ granted ? ' is-granted' : '' }}">
+                    {% if granted %}
+                      {{ i.icon('check', {class: 'icon-xl'}) }}
+                      <span class="visually-hidden">{{ 'manage.group.matrix.granted'|trans }}</span>
+                    {% else %}
+                      <span class="visually-hidden">{{ 'manage.group.matrix.not_granted'|trans }}</span>
+                    {% endif %}
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endblock %}
