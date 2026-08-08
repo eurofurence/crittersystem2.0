@@ -5,6 +5,7 @@
 
 {% block body %}
   {% set u = header.user %}
+<div class="row g-3">
   {{ d.card_start() }}
       <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
         <div>
@@ -47,9 +48,40 @@
         </div>
       </div>
   {{ d.card_end() }}
-
+</div>
   <div class="row g-3">
-    <div class="col-12">
+      <div class="card col-2">
+          <div class="card-body reward">
+              <div class="card-title d-flex align-items-center gap-2">
+                  <i class="ti"></i> {{ 'profile.card.goodies'|trans }}
+              </div>
+
+          {% if goodies is null %}
+              <div class="card-body align-items-center">
+                  <i class="ti"></i> {{ 'profile.card.no_goodies'|trans }}
+              </div>
+          {% else %}
+              <ul class="reward-timeline">
+              {% set flag_next = true %}
+              {% for goodie in goodies.rows %}
+                {% set claim_status =
+                    goodie.tier == 'claimed'  ? { li_class : 'is-collected', i_class: 'ti ti-check'} :
+                    goodie.tier == 'eligible' ? { li_class : 'is-available', i_class: 'ti ti-gift'} :
+                    goodie.tier == 'pending'  ? ( flag_next == true ? { li_class : 'is-next', i_class: 'ti ti-chevron-right'} :
+                                                { li_class : 'is-locked', i_class: 'ti ti-lock'})
+                %}
+                {% if flag_next and goodie.tier == 'pending' %}
+                  {% set flag_next = false %}
+                {% endif %}
+
+              <li class="{{ claim_status.li_class }}"><span class="rw-dot"><i class="{{ claim_status.i_class }}"></i></span><span class="rw-hours badge bg-secondary-lt">{{ goodie.gap }} h</span><span class="rw-name flex-fill">{{ goodie.item.name }}</span></li>
+              {% endfor %}
+           </ul>
+          {% endif %}
+          </div>
+      </div>
+
+    <div class="col-10">
       {% set workHistoryActions %}
           {% if canAddWorklog %}
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-worklog-modal">{{ 'profile.action.add_worklog'|trans }}</button>
@@ -129,26 +161,26 @@
       {{ d.card_end() }}
     </div>
 
-    {% if goodies is not null %}
-      <div class="col-12 col-lg-6">
-        {% set goodiesActions %}<span class="text-secondary">{{ 'profile.goodies.credited'|trans({'%hours%': goodies.hours|round(1)}) }}</span>{% endset %}
-        {{ d.card_start('profile.card.goodies'|trans, {class: 'h-100', headerActions: goodiesActions}) }}
-            <div class="mb-2">
-              <div class="fw-bold small text-uppercase text-muted">{{ 'profile.goodies.claimable_now'|trans }}</div>
-              {% for r in goodies.eligible %}{{ d.badge(r.item.name, 'bg-green-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('profile.empty.none_yet'|trans, {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
-            </div>
-            <div class="mb-2">
-              <div class="fw-bold small text-uppercase text-muted">{{ 'profile.goodies.next_targets'|trans }}</div>
-              {% for r in goodies.pending %}{{ d.badge('profile.goodies.gap'|trans({'%name%': r.item.name, '%hours%': r.gap|round(1)}), 'bg-secondary-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('profile.empty.none'|trans, {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
-            </div>
-            <div>
-              <div class="fw-bold small text-uppercase text-muted">{{ 'profile.goodies.collected'|trans }}</div>
-              {% for r in goodies.claimed %}{{ d.badge('profile.goodies.claimed'|trans({'%name%': r.item.name, '%count%': r.claimed}), 'bg-blue-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('profile.empty.none'|trans, {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}
-            </div>
-        {{ d.card_end() }}
-      </div>
-    {% endif %}
-  </div>
+{#    {% if goodies is not null %}#}
+{#      <div class="col-12 col-lg-6">#}
+{#        {% set goodiesActions %}<span class="text-secondary">{{ 'profile.goodies.credited'|trans({'%hours%': goodies.hours|round(1)}) }}</span>{% endset %}#}
+{#        {{ d.card_start('profile.card.goodies'|trans, {class: 'h-100', headerActions: goodiesActions}) }}#}
+{#            <div class="mb-2">#}
+{#              <div class="fw-bold small text-uppercase text-muted">{{ 'profile.goodies.claimable_now'|trans }}</div>#}
+{#              {% for r in goodies.eligible %}{{ d.badge(r.item.name, 'bg-green-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('profile.empty.none_yet'|trans, {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}#}
+{#            </div>#}
+{#            <div class="mb-2">#}
+{#              <div class="fw-bold small text-uppercase text-muted">{{ 'profile.goodies.next_targets'|trans }}</div>#}
+{#              {% for r in goodies.pending %}{{ d.badge('profile.goodies.gap'|trans({'%name%': r.item.name, '%hours%': r.gap|round(1)}), 'bg-secondary-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('profile.empty.none'|trans, {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}#}
+{#            </div>#}
+{#            <div>#}
+{#              <div class="fw-bold small text-uppercase text-muted">{{ 'profile.goodies.collected'|trans }}</div>#}
+{#              {% for r in goodies.claimed %}{{ d.badge('profile.goodies.claimed'|trans({'%name%': r.item.name, '%count%': r.claimed}), 'bg-blue-lt', {class: 'me-1'}) }}{% else %}{{ d.empty_inline('profile.empty.none'|trans, {tag: 'span', class: 'text-secondary small'}) }}{% endfor %}#}
+{#            </div>#}
+{#        {{ d.card_end() }}#}
+{#      </div>#}
+{#    {% endif %}#}
+{#  </div>#}
 
   {% if banReview is not null %}
     {{ d.card_start('profile.card.ban_review'|trans, {class: 'mt-3 border-danger'}) }}
@@ -194,4 +226,6 @@
       </div>
     </div>
   {% endif %}
+
+</div>
 {% endblock %}

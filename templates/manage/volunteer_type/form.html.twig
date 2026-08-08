@@ -81,4 +81,9 @@
 
     <button class="btn btn-primary mt-3">{{ 'common.action.save'|trans }}</button>
   {{ form_end(form) }}
+
+  {% if type is defined and type is not null %}
+    <h2 class="h3 mt-4">{{ 'manage.volunteer_type.card.members'|trans }}</h2>
+    {{ include('manage/volunteer_type/_manage_members.html.twig') }}
+  {% endif %}
 {% endblock %}

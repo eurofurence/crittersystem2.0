@@ -5,6 +5,7 @@ namespace App\Controller\Manage;
 use App\Entity\VolunteerType;
 use App\Form\VolunteerTypeType;
 use App\Repository\CertificationRepository;
+use App\Repository\UserVolunteerTypeRepository;
 use App\Repository\VolunteerTypeRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -24,6 +25,7 @@ final class VolunteerTypeController extends AbstractController
         private readonly EntityManagerInterface $em,
         private readonly VolunteerTypeRepository $volunteerTypes,
         private readonly CertificationRepository $certifications,
+        private readonly UserVolunteerTypeRepository $memberships,
     ) {
     }
 
@@ -90,6 +92,8 @@ final class VolunteerTypeController extends AbstractController
             'form' => $form,
             'heading' => 'manage.volunteer_type.form.heading_edit',
             'certifications' => $this->certificationsById(),
+            'type' => $volunteerType,
+            'members' => $this->memberships->findByVolunteerType($volunteerType),
         ]);
     }
 

@@ -12,6 +12,7 @@ bootstrap.Dropdown.Default.popperConfig = (config) => ({ ...config, strategy: 'f
 
 // Tabler 1.4 design system (Bootstrap 5 theme) - replaces stock Bootstrap CSS.
 import "@tabler/core/dist/css/tabler.min.css";
+import "@tabler/icons-webfont/dist/tabler-icons.min.css";
 
 import './styles/app.css';
 import './styles/planner.css';

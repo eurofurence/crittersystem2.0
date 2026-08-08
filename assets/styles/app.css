@@ -177,3 +177,67 @@
     flex: 0 0 auto;
     margin: .2rem 0 0;
 }
+
+/* ===== Goodies / reward progress tracker (Tabler add-on) ===== */
+.reward {
+    --rw-collected: var(--tblr-green, #2fb344);
+    --rw-available: var(--tblr-orange, #f76707);
+    --rw-next:      var(--tblr-primary, #206bc4);
+    --rw-locked:    var(--tblr-border-color, #dbe0e5);
+    --rw-muted:     var(--tblr-secondary, #667382);
+    --rw-surface:   var(--tblr-bg-surface, #fff);
+}
+
+/* --- Compact bar (profile) --- */
+.reward-track {
+    position: relative; height: 8px; border-radius: 999px;
+    background: var(--rw-locked); margin: 1.5rem .5rem;
+}
+.reward-track__fill {
+    position: absolute; inset: 0 auto 0 0; border-radius: 999px;
+    background: var(--rw-collected);
+}
+.reward-marker {
+    position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%;
+    transform: translate(-50%, -50%); cursor: default;
+    background: var(--rw-locked);
+    border: 2px solid var(--rw-surface);
+    box-shadow: 0 0 0 1px var(--rw-locked);
+}
+.reward-marker.is-collected { background: var(--rw-collected); box-shadow: 0 0 0 1px var(--rw-collected); }
+.reward-marker.is-available { background: var(--rw-available); box-shadow: 0 0 0 1px var(--rw-available); }
+.reward-marker.is-next {
+    width: 16px; height: 16px; background: var(--rw-surface);
+    border-color: var(--rw-next); box-shadow: 0 0 0 2px var(--rw-next);
+}
+.reward-key { display: inline-block; width: 10px; height: 10px; border-radius: 50%; vertical-align: middle; margin-right: .3rem; }
+
+/* --- Full timeline (info desk) --- */
+.reward-timeline { list-style: none; margin: 0; padding: 0; position: relative; }
+.reward-timeline > li { position: relative; display: flex; align-items: center; gap: .75rem; padding: .4rem 0; }
+.reward-timeline > li::before {
+    content: ""; position: absolute; left: 15px; top: 0; bottom: 0; width: 2px;
+    background: var(--rw-locked); z-index: 0;
+}
+.reward-timeline > li:first-child::before { top: 50%; }
+.reward-timeline > li:last-child::before  { bottom: 50%; }
+.reward-timeline .rw-dot {
+    position: relative; z-index: 1; flex-shrink: 0;
+    width: 32px; height: 32px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 1rem;
+    color: #fff; background: var(--rw-muted);
+}
+.reward-timeline .rw-name { font-weight: 500; }
+.reward-timeline li.is-collected .rw-dot { background: var(--rw-collected); }
+.reward-timeline li.is-available .rw-dot { background: var(--rw-available); }
+.reward-timeline li.is-next     .rw-dot { background: var(--rw-surface); border: 2px solid var(--rw-next); color: var(--rw-next); }
+.reward-timeline li.is-locked   .rw-dot { background: var(--rw-locked); color: var(--rw-muted); }
+.reward-timeline li.is-locked   .rw-name { color: var(--rw-muted); }
+
+/* --- Horizontal orientation (same markup, add .is-horizontal) --- */
+.reward-timeline.is-horizontal { display: flex; flex-direction: row; overflow-x: auto; padding-bottom: .5rem; }
+.reward-timeline.is-horizontal > li { flex-direction: column; text-align: center; gap: .4rem; min-width: 116px; padding: 0 .25rem; }
+.reward-timeline.is-horizontal > li::before { left: 0; top: 15px; bottom: auto; width: 100%; height: 2px; }
+.reward-timeline.is-horizontal > li:first-child::before { left: 50%; width: 50%; }
+.reward-timeline.is-horizontal > li:last-child::before  { left: 0;  width: 50%; }
+.reward-timeline.is-horizontal .rw-name { font-size: .8rem; line-height: 1.15; }

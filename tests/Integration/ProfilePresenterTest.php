@@ -3,6 +3,7 @@
 namespace App\Tests\Integration;
 
 use App\Entity\GoodieCategory;
+use App\Entity\GoodieDistribution;
 use App\Entity\GoodieItem;
 use App\Entity\Shift;
 use App\Entity\ShiftEntry;
@@ -91,7 +92,11 @@ final class ProfilePresenterTest extends DatabaseTestCase
         self::assertSame('Stage', $rows[0]['type']->getName());
     }
 
-    public function testGoodiesGroupedByTier(): void
+    /**
+     * The tracker reads one flat row list and styles each entry from its own tier, so the
+     * presenter hands back the evaluation unchanged rather than three pre-grouped buckets.
+     */
+    public function testGoodiesReturnsCreditedHoursAndOneTieredRowPerItem(): void
     {
         $user = $this->makeUser('gwen');
         $category = new GoodieCategory('Swag');
@@ -101,8 +106,65 @@ final class ProfilePresenterTest extends DatabaseTestCase
         $this->em->flush();
 
         $goodies = $this->presenter()->goodies($user);
-        // Zero required hours => immediately claimable.
-        self::assertNotEmpty($goodies['eligible']);
-        self::assertSame('T-Shirt', $goodies['eligible'][0]['item']->getName());
+
+        self::assertSame(['hours', 'rows'], array_keys($goodies));
+        self::assertSame(0.0, $goodies['hours']);
+        self::assertCount(1, $goodies['rows']);
+
+        $row = $goodies['rows'][0];
+        self::assertSame('T-Shirt', $row['item']->getName());
+        self::assertSame('eligible', $row['tier'], 'zero required hours is claimable straight away');
+        self::assertSame(0.0, $row['gap']);
+        self::assertSame(0, $row['claimed']);
+    }
+
+    /**
+     * The timeline marks the first pending row as the next target and locks the ones after it,
+     * so rows have to arrive cheapest-first within a category or the marker lands on the
+     * wrong goodie.
+     */
+    public function testGoodiesRowsRunCheapestFirstWithinACategory(): void
+    {
+        $user = $this->makeUser('gil');
+        $category = new GoodieCategory('Swag');
+        $this->em->persist($category);
+        foreach (['Hoodie' => 20.0, 'Badge' => 0.0, 'Mug' => 5.0] as $name => $hours) {
+            $this->em->persist((new GoodieItem($category, $name))->setRequiredHours($hours)->setIsActive(true));
+        }
+        $this->em->flush();
+
+        $rows = $this->presenter()->goodies($user)['rows'];
+
+        self::assertSame(['Badge', 'Mug', 'Hoodie'], array_map(fn (array $r) => $r['item']->getName(), $rows));
+        self::assertSame(['eligible', 'pending', 'pending'], array_column($rows, 'tier'));
+        self::assertSame([0.0, 5.0, 20.0], array_column($rows, 'gap'));
+    }
+
+    public function testAnItemAtItsPerPersonLimitIsReportedAsClaimed(): void
+    {
+        $user = $this->makeUser('gus');
+        $category = new GoodieCategory('Swag');
+        $this->em->persist($category);
+        $item = (new GoodieItem($category, 'Pin'))->setRequiredHours(0.0)->setIsActive(true)->setMaxPerPerson(1);
+        $this->em->persist($item);
+        $this->em->persist(new GoodieDistribution($user, $item));
+        $this->em->flush();
+
+        $row = $this->presenter()->goodies($user)['rows'][0];
+
+        self::assertSame('claimed', $row['tier']);
+        self::assertSame(1, $row['claimed']);
+        self::assertSame(0, $row['remaining']);
+    }
+
+    public function testAnInactiveItemIsNotOfferedAtAll(): void
+    {
+        $user = $this->makeUser('gwyn');
+        $category = new GoodieCategory('Swag');
+        $this->em->persist($category);
+        $this->em->persist((new GoodieItem($category, 'Retired Tee'))->setRequiredHours(0.0)->setIsActive(false));
+        $this->em->flush();
+
+        self::assertSame([], $this->presenter()->goodies($user)['rows']);
     }
 }

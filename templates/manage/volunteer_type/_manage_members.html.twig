@@ -1,0 +1,61 @@
+{# Member management for one volunteer type: the add picker plus the member table.
+   Rendered by the members page and by the type edit page, where it must stay OUTSIDE the
+   edit form - every action here is a form of its own and forms cannot nest.
+   Expects: type (VolunteerType), members (UserVolunteerType[]). #}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/forms/_macros.twig' as f %}
+
+{{ d.card_start('manage.volunteer_type.members.card.add'|trans) }}
+  <form method="post" action="{{ path('app_manage_vt_member_add', {id: type.uuid}) }}" class="row g-2 align-items-start">
+    <input type="hidden" name="_token" value="{{ csrf_token('addmember' ~ type.id) }}">
+    {{ f.user_select('users', {
+      url: path('app_manage_vt_member_search', {id: type.uuid}),
+      label: 'manage.volunteer_type.members.add_label'|trans,
+      col: 'col-12 col-md-9',
+      id: 'vt-add-member',
+      placeholder: 'manage.volunteer_type.members.add_placeholder'|trans,
+      help: 'manage.volunteer_type.members.add_help'|trans,
+    }) }}
+    <div class="col-12 col-md-3">
+      <label class="form-label d-none d-md-block">&nbsp;</label>
+      <button class="btn btn-primary w-100">{{ 'common.action.add'|trans }}</button>
+    </div>
+  </form>
+{{ d.card_end() }}
+
+{% if members is empty %}
+  {{ d.empty_state('manage.volunteer_type.members.empty_title'|trans, {message: 'manage.volunteer_type.members.empty_message'|trans}) }}
+{% else %}
+  {{ d.table_start({hover: false}) }}
+    <thead><tr><th>{{ 'manage.label.volunteer'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
+    <tbody>
+      {% for m in members %}
+        <tr>
+          <td>{{ m.user.name }}</td>
+          <td>
+            {% if m.supporter %}{{ d.badge('manage.volunteer_type.badge.supporter'|trans, 'text-bg-primary') }}
+            {% elseif m.confirmed %}{{ d.badge('manage.volunteer_type.badge.member'|trans, 'text-bg-success') }}
+            {% else %}{{ d.badge('common.state.pending'|trans, 'text-bg-warning') }}{% endif %}
+          </td>
+          <td class="text-end text-nowrap">
+            {% if not m.confirmed %}
+              <form method="post" action="{{ path('app_manage_vt_member_confirm', {id: type.uuid, membershipId: m.uuid}) }}" class="d-inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('confirm' ~ m.uuid) }}">
+                <button class="btn btn-sm btn-outline-success">{{ 'common.action.confirm'|trans }}</button>
+              </form>
+            {% endif %}
+            <form method="post" action="{{ path('app_manage_vt_member_supporter', {id: type.uuid, membershipId: m.uuid}) }}" class="d-inline">
+              <input type="hidden" name="_token" value="{{ csrf_token('supporter' ~ m.uuid) }}">
+              <button class="btn btn-sm btn-outline-primary">{{ m.supporter ? 'manage.volunteer_type.members.demote'|trans : 'manage.volunteer_type.members.make_supporter'|trans }}</button>
+            </form>
+            <form method="post" action="{{ path('app_manage_vt_member_remove', {id: type.uuid, membershipId: m.uuid}) }}" class="d-inline"
+                  data-controller="confirm" data-confirm-message-value="{{ 'manage.volunteer_type.members.confirm_remove'|trans({'%name%': m.user.name}) }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('remove' ~ m.uuid) }}">
+              <button class="btn btn-sm btn-outline-danger">{{ 'common.action.remove'|trans }}</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  {{ d.table_end() }}
+{% endif %}

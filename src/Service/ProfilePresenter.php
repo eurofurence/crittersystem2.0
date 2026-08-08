@@ -144,17 +144,19 @@ class ProfilePresenter
     /**
      * Goodies grouped by tier for the tracker.
      *
-     * @return array{hours: float, eligible: array<int, array<string, mixed>>, pending: array<int, array<string, mixed>>, claimed: array<int, array<string, mixed>>}
+//     * @return array{hours: float, eligible: array<int, array<string, mixed>>, pending: array<int, array<string, mixed>>, claimed: array<int, array<string, mixed>>}
+     * @return array{array<string, mixed>>}
      */
     public function goodies(User $user): array
     {
-        $evaluation = $this->goodies->evaluate($user);
-        $grouped = ['hours' => $evaluation['hours'], 'eligible' => [], 'pending' => [], 'claimed' => []];
-        foreach ($evaluation['rows'] as $row) {
-            $grouped[$row['tier']][] = $row;
-        }
-
-        return $grouped;
+//        $evaluation = $this->goodies->evaluate($user);
+//        $grouped = ['hours' => $evaluation['hours'], 'eligible' => [], 'pending' => [], 'claimed' => []];
+//        foreach ($evaluation['rows'] as $row) {
+//            $grouped[$row['tier']][] = $row;
+//        }
+//
+//        return $grouped;
+        return $this->goodies->evaluate($user);
     }
 
     private function shiftStatus(ShiftEntry $entry, \DateTimeImmutable $now): string

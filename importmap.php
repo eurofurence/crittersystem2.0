@@ -29,6 +29,7 @@ return [
     'bootstrap' => ['version' => '5.3.8'],
     '@popperjs/core' => ['version' => '2.11.8'],
     '@tabler/core/dist/css/tabler.min.css' => ['version' => '1.4.0', 'type' => 'css'],
+    '@tabler/icons-webfont/dist/tabler-icons.min.css' => ['version' => '3.46.0', 'type' => 'css'],
     '@sentry/browser' => ['version' => '10.67.0'],
     '@sentry/feedback' => ['version' => '10.67.0'],
     '@sentry/core/browser' => ['version' => '10.67.0'],

@@ -25,58 +25,69 @@
 {% block body %}
   {{ d.page_header('shift.page.title'|trans, {
     subtitle: 'shift.page.subtitle'|trans,
-    actions: [{label: 'shift.action.my_shifts'|trans, href: path('app_my_shifts'), class: 'btn btn-outline-primary'}]
+    actions: [{label: 'shift.action.my_shifts'|trans, href: path('app_my_shifts'), class: 'btn btn-primary'}]
   }) }}
 
-  {# Date links preserve the other active filters. #}
-  <div class="d-flex flex-wrap gap-1 mb-2" role="group" aria-label="{{ 'shift.filter.date_aria'|trans }}">
-    {% for day in days %}
-      {% set isSel = day == selectedDate|date('Y-m-d') %}
-      <a class="btn btn-md {{ isSel ? 'btn-primary' : 'btn-outline-secondary' }}"
-         href="{{ path('app_shift_index', {date: day, location: filters.location, type: filters.type, available: filters.available ? 1 : null, mine: filters.mine ? 1 : null}) }}">
-        {{ day|date('D d M') }}
-      </a>
-    {% endfor %}
-    {% if days is empty %}{{ d.empty_inline('shift.empty.no_upcoming'|trans, {tag: 'span', class: 'text-muted small'}) }}{% endif %}
-  </div>
 
-  {# The filter controls auto-submit; the form carries the selected date. #}
-  {{ d.card_start(null, {tag: 'form', class: 'mb-3', attrs: {method: 'get', action: path('app_shift_index')}}) }}
-      <input type="hidden" name="date" value="{{ selectedDate|date('Y-m-d') }}">
-      <div class="row g-2 align-items-end">
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-0" for="f-loc">{{ 'common.label.location'|trans }}</label>
-          <select id="f-loc" name="location" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="">{{ 'shift.filter.all'|trans }}</option>
-            {% for l in locations %}<option value="{{ l.uuid }}" {{ filters.location == l.uuid ? 'selected' }}>{{ l.name }}</option>{% endfor %}
-          </select>
+    <div class="card mb-4">
+        <div class="mt-2 mx-2">
+            {# Date links preserve the other active filters. #}
+            <nav class="nav nav-segmented nav-2 w-100" role="tablist" aria-label="{{ 'shift.filter.date_aria'|trans }}">
+                {% for day in days %}
+                    {% set isSel = day == selectedDate|date('Y-m-d') %}
+                    <a class="btn nav-link{{ isSel ? ' bg-primary text-primary-fg' : '' }}{{ isSel ? ' active' : '' }}"
+                       role="tab"
+                       aria-selected="{{ isSel ? 'true' : 'false' }}"
+                       href="{{ path('app_shift_index', {date: day, location: filters.location, type: filters.type, available: filters.available ? 1 : null, mine: filters.mine ? 1 : null}) }}">
+                        {{ day|date('D d M') }}
+                    </a>
+                {% endfor %}
+                {% if days is empty %}{{ d.empty_inline('shift.empty.no_upcoming'|trans, {tag: 'span', class: 'text-muted small'}) }}{% endif %}
+            </nav>
         </div>
-        <div class="col-6 col-md-3">
-          <label class="form-label small mb-0" for="f-type">{{ 'shift.filter.type_label'|trans }}</label>
-          <select id="f-type" name="type" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="">{{ 'shift.filter.all'|trans }}</option>
-            {% for t in shiftTasks %}<option value="{{ t.uuid }}" {{ filters.type == t.uuid ? 'selected' }}>{{ t.name }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-12 col-md-6 d-flex gap-3 pb-1">
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="available" value="1" id="f-avail" {{ filters.available ? 'checked' }} onchange="this.form.submit()">
-            <label class="form-check-label small" for="f-avail">{{ 'shift.filter.available'|trans }}</label>
-          </div>
-          <div class="form-check">
-            <input class="form-check-input" type="checkbox" name="mine" value="1" id="f-mine" {{ filters.mine ? 'checked' }} onchange="this.form.submit()">
-            <label class="form-check-label small" for="f-mine">{{ 'shift.filter.mine'|trans }}</label>
-          </div>
-          <noscript><button class="btn btn-sm btn-primary">{{ 'common.action.apply'|trans }}</button></noscript>
-        </div>
-      </div>
-  {{ d.card_end({tag: 'form'}) }}
 
+
+
+        {# The filter controls auto-submit; the form carries the selected date. #}
+        {{ d.card_start(null, {tag: 'form', class: 'mx-2 my-2', attrs: {method: 'get', action: path('app_shift_index')}}) }}
+        <input type="hidden" name="date" value="{{ selectedDate|date('Y-m-d') }}">
+        <div class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+                <label class="form-label small mb-0" for="f-loc">{{ 'common.label.location'|trans }}</label>
+                <select id="f-loc" name="location" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">{{ 'shift.filter.all'|trans }}</option>
+                    {% for l in locations %}<option value="{{ l.uuid }}" {{ filters.location == l.uuid ? 'selected' }}>{{ l.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-3">
+                <label class="form-label small mb-0" for="f-type">{{ 'shift.filter.type_label'|trans }}</label>
+                <select id="f-type" name="type" class="form-select form-select-sm" onchange="this.form.submit()">
+                    <option value="">{{ 'shift.filter.all'|trans }}</option>
+                    {% for t in shiftTasks %}<option value="{{ t.uuid }}" {{ filters.type == t.uuid ? 'selected' }}>{{ t.name }}</option>{% endfor %}
+                </select>
+            </div>
+            <div class="col-6 col-md-3 d-flex gap-3 align-bottom">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="available" value="1" id="f-avail" {{ filters.available ? 'checked' }} onchange="this.form.submit()">
+                    <label class="form-check-label small" for="f-avail">{{ 'shift.filter.available'|trans }}</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="mine" value="1" id="f-mine" {{ filters.mine ? 'checked' }} onchange="this.form.submit()">
+                    <label class="form-check-label small" for="f-mine">{{ 'shift.filter.mine'|trans }}</label>
+                </div>
+                <noscript><button class="btn btn-sm btn-primary">{{ 'common.action.apply'|trans }}</button></noscript>
+            </div>
+        </div>
+        {{ d.card_end({tag: 'form'}) }}
+    </div>
+
+
+  {# SHIFTS / HOURS RENDERING #}
   {% if byHour is empty %}
     {{ d.empty_state('shift.empty.title'|trans, {message: 'shift.empty.filtered'|trans({'%date%': selectedDate|app_date})}) }}
   {% else %}
     {% for hour, cards in byHour %}
-      {{ d.section_header(hour, {size: 'h2', class: 'mt-3'}) }}
+      {{ d.section_header(hour, {size: 'h2', class: 'mb-1'}) }}
       {% for card in cards %}
         {% set shift = card.shift %}
         {{ d.card_start(null, {

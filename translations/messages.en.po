@@ -3944,6 +3944,9 @@ msgstr "Contacts"
 msgid "manage.volunteer_type.card.flags"
 msgstr "Configuration flags"
 
+msgid "manage.volunteer_type.card.members"
+msgstr "Members"
+
 msgid "manage.volunteer_type.confirm.delete"
 msgstr "Delete volunteer type \"%name%\"?"
 
@@ -4013,8 +4016,20 @@ msgstr "New volunteer type"
 msgid "manage.volunteer_type.label.phone"
 msgstr "Phone %phone%"
 
+msgid "manage.volunteer_type.members.add_help"
+msgstr "Added members are confirmed straight away, so they do not have to apply."
+
+msgid "manage.volunteer_type.members.add_label"
+msgstr "Add volunteers"
+
+msgid "manage.volunteer_type.members.add_placeholder"
+msgstr "Search by username…"
+
 msgid "manage.volunteer_type.members.back"
 msgstr "← Critter types"
+
+msgid "manage.volunteer_type.members.card.add"
+msgstr "Add members"
 
 msgid "manage.volunteer_type.members.confirm_remove"
 msgstr "Remove %name%?"
@@ -4027,6 +4042,12 @@ msgstr "Nobody has joined this volunteer type."
 
 msgid "manage.volunteer_type.members.empty_title"
 msgstr "No members yet"
+
+msgid "manage.volunteer_type.members.flash.added"
+msgstr "Added %names%."
+
+msgid "manage.volunteer_type.members.flash.added_hidden"
+msgstr "%names% cannot open this critter type yet, because it is limited to staff or to its departments."
 
 msgid "manage.volunteer_type.members.flash.confirmed"
 msgstr "Confirmed %name%."
@@ -4924,6 +4945,9 @@ msgstr "Ban & no-show review"
 
 msgid "profile.card.goodies"
 msgstr "Goodies"
+
+msgid "profile.card.no_goodies"
+msgstr "No Goodies available"
 
 msgid "profile.card.volunteer_types"
 msgstr "Critter Types"
