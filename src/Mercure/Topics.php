@@ -72,6 +72,24 @@ final class Topics
     }
 
     /**
+     * Activity on all-staff shifts, wherever they are run.
+     *
+     * Staff see other departments' all-staff shifts on the apply screen, so those rows have to
+     * update too. Naming the departments that happen to run one is unbounded - an event where most
+     * departments do puts every staff member past the browser's 4 KB cookie limit and past nginx's
+     * response-header buffer, which answers 502 rather than serving the page. One topic covers them
+     * all and grants nothing extra: a subscriber learns only that an all-staff shift changed, which
+     * every staff member is entitled to see anyway, and re-reads the grid under their own
+     * authorization.
+     *
+     * Only for staff. {@see \App\Mercure\TopicBuilder} decides.
+     */
+    public static function allStaffShifts(): string
+    {
+        return self::PREFIX.'shifts:all-staff';
+    }
+
+    /**
      * The Info Desk queue.
      *
      * Info Desk members may watch any support conversation, which would otherwise mean one topic per

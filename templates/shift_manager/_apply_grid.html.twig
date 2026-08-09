@@ -67,11 +67,18 @@
   {% endif %}
 </div>
 
-{# One announcer per department on screen. They carry no markup: the grid owns its refresh, because
-   replacing it while the volunteer has a shift dialog open would pull it out from under them. #}
+{# One announcer per department on screen, plus one for all-staff shifts wherever they run: a viewer
+   is entitled to watch their own departments, and sees other departments' all-staff rows without
+   being entitled to watch those departments as a whole. They carry no markup: the grid owns its
+   refresh, because replacing it while the volunteer has a shift dialog open would pull it out from
+   under them. #}
 {% for column in grid.columns %}
   <div hidden
        data-controller="live-stream"
        data-live-stream-topic-value="{{ mercure_topic_department(column.department) }}"
        data-live-stream-event-value="apply-grid:changed"></div>
 {% endfor %}
+<div hidden
+     data-controller="live-stream"
+     data-live-stream-topic-value="{{ mercure_topic('all_staff_shifts') }}"
+     data-live-stream-event-value="apply-grid:changed"></div>

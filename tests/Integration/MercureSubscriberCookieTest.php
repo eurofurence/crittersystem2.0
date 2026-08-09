@@ -5,7 +5,10 @@ namespace App\Tests\Integration;
 use App\Entity\Department;
 use App\Entity\Group;
 use App\Entity\Privilege;
+use App\Entity\Shift;
 use App\Entity\User;
+use App\Enum\ShiftAudience;
+use App\Enum\ShiftState;
 use App\Mercure\SubscriberCookieFactory;
 use App\Mercure\Topics;
 use App\Tests\DatabaseTestCase;
@@ -180,6 +183,53 @@ final class MercureSubscriberCookieTest extends DatabaseTestCase
             10,
             \count($subscribe),
             'an administrator must not carry one topic per department',
+        );
+        self::assertLessThan(
+            2048,
+            \strlen((string) $cookie->getValue()),
+            'the token must stay well inside the browser cookie limit and the header buffer',
+        );
+    }
+
+    /**
+     * An ordinary staff member's token stays small however many departments run all-staff shifts.
+     *
+     * Their apply screen shows other departments' all-staff rows, and naming those departments made
+     * the token grow with the event: at forty of them it is past 4 KB, which the browser drops as an
+     * oversized cookie and which nginx refuses as an oversized response header - so the first page
+     * after signing in returned 502 and the user could not get in at all. One all-staff topic covers
+     * the same rows in constant space.
+     */
+    public function testAStaffMembersTokenDoesNotGrowWithTheNumberOfDepartmentsRunningAllStaffShifts(): void
+    {
+        $group = new Group('Staff', 'staff-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
+        $this->em->persist($group);
+
+        for ($i = 0; $i < 40; ++$i) {
+            $department = new Department('Dept '.$i, 'dept-'.$i.'-'.bin2hex(random_bytes(2)));
+            $this->em->persist($department);
+            $this->em->persist(
+                (new Shift())->setTitle('Gate '.$i)
+                    ->setStartsAt(new \DateTimeImmutable('+2 days 10:00'))
+                    ->setEndsAt(new \DateTimeImmutable('+2 days 12:00'))
+                    ->setDepartment($department)
+                    ->setAudience(ShiftAudience::ALL_STAFF)
+                    ->setState(ShiftState::PUBLISHED)
+            );
+        }
+
+        $user = $this->user('staffsizecheck');
+        $user->addGroup($group);
+        $this->em->flush();
+
+        $cookie = $this->factory()->create($user, true);
+        $subscribe = ((array) $this->claims($cookie)['mercure'])['subscribe'];
+
+        self::assertContains(Topics::allStaffShifts(), $subscribe);
+        self::assertLessThan(
+            10,
+            \count($subscribe),
+            'a staff member must not carry one topic per department running an all-staff shift',
         );
         self::assertLessThan(
             2048,

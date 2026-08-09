@@ -24,6 +24,7 @@ export default class extends Controller {
     }
 
     disconnect() {
+        clearTimeout(this.refreshTimer);
         window.removeEventListener('apply-grid:changed', this.onRemoteChange);
         document.removeEventListener('hidden.bs.modal', this.onDialogClosed);
     }
@@ -77,9 +78,15 @@ export default class extends Controller {
         this.modal()?.hide();
     }
 
+    /*
+     * One change can announce itself twice: an all-staff shift wakes both its own department and
+     * the all-staff topic, and a viewer who is a member of that department listens to both. The
+     * refresh is coalesced so that costs one request rather than two.
+     */
     queueRefresh() {
         this.pending = true;
-        this.applyRefreshIfIdle();
+        clearTimeout(this.refreshTimer);
+        this.refreshTimer = setTimeout(() => this.applyRefreshIfIdle(), 50);
     }
 
     applyRefreshIfIdle() {

@@ -83,6 +83,8 @@ final class MercureTopicExtension extends AbstractExtension
             'user_calls' => Topics::userCalls($user),
             // Not user-specific, but only reachable by a claim holder: the token decides, not this.
             'info_desk_queue' => Topics::infoDeskQueue(),
+            // Likewise staff-only, and likewise decided by the token rather than by naming it here.
+            'all_staff_shifts' => Topics::allStaffShifts(),
             default => throw new \InvalidArgumentException(\sprintf('Unknown Mercure topic "%s".', $name)),
         };
     }

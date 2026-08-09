@@ -5,6 +5,7 @@ namespace App\Mercure;
 use App\Entity\Department;
 use App\Entity\Shift;
 use App\Entity\User;
+use App\Enum\ShiftAudience;
 
 /**
  * "This shift's staffing changed."
@@ -37,6 +38,11 @@ final class ShiftSignal
         // shift task instead would leave task-less shifts unaddressed.
         if (($department = $shift->getDepartment()) !== null) {
             $topics[] = Topics::departmentShifts($department);
+        }
+        // Staff outside the owning department see this row on their apply screen, and subscribe to
+        // it here rather than to the department, which they are not entitled to watch as a whole.
+        if ($shift->getAudience() === ShiftAudience::ALL_STAFF) {
+            $topics[] = Topics::allStaffShifts();
         }
         if ($user !== null) {
             $topics[] = Topics::userStatus($user);

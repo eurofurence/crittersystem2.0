@@ -5,7 +5,6 @@ namespace App\Mercure;
 use App\Entity\Department;
 use App\Entity\User;
 use App\Repository\ConversationRepository;
-use App\Repository\ShiftRepository;
 use App\Repository\UserGroupAssignmentRepository;
 use App\Security\PrivilegeScopeResolver;
 use App\Service\Chat\ConversationService;
@@ -18,7 +17,7 @@ use App\Service\Chat\ConversationService;
  * cannot influence it: a page that asks to listen on a topic outside this list simply receives
  * nothing.
  *
- * Two rules hold everything together:
+ * Three rules hold everything together:
  *
  *  - Department scope comes from {@see PrivilegeScopeResolver}, which is also what
  *    {@see \App\Security\PrivilegeVoter} votes with. Asking `is_granted('shift:manage')` here
@@ -27,8 +26,13 @@ use App\Service\Chat\ConversationService;
  *  - Nothing is templated, with exactly one deliberate exception: a grant that is event-wide
  *    (an administrator, or a privilege held through an unscoped assignment) yields
  *    {@see Topics::allDepartmentShifts()} rather than one entry per department. That authorizes the
- *    same set, but enumerating it is unbounded - 62 departments produced a 6.6 KB token, past both
- *    the browser's cookie limit and nginx's header buffer, so every page 502'd.
+ *    same set, but enumerating it is unbounded.
+ *  - No branch here may add topics in proportion to the size of the event. The token is carried in
+ *    a cookie the browser drops over roughly 4 KB, and it is a response header nginx answers 502
+ *    for over its buffer, so an unbounded list does not degrade - it takes the page down. Both
+ *    exceptions above exist for that reason, as does {@see Topics::allStaffShifts()}: a right that
+ *    is genuinely event-wide gets one topic, never a list. A per-user set that cannot grow with the
+ *    event (their own departments, their own conversations) may still be enumerated.
  */
 final class TopicBuilder
 {
@@ -44,7 +48,6 @@ final class TopicBuilder
         private readonly UserGroupAssignmentRepository $assignments,
         private readonly ConversationRepository $conversations,
         private readonly ConversationService $chat,
-        private readonly ShiftRepository $shifts,
     ) {
     }
 
@@ -87,6 +90,12 @@ final class TopicBuilder
             }
         }
 
+        // Other departments' all-staff shifts appear on their apply screen, as one bounded topic
+        // rather than one per department running such a shift.
+        if ($user->isStaff()) {
+            $topics[] = Topics::allStaffShifts();
+        }
+
         $topics = array_values(array_unique($topics));
         sort($topics);
 
@@ -116,18 +125,6 @@ final class TopicBuilder
 
         foreach ($this->assignments->findActiveDepartmentsForUser($user) as $department) {
             $scoped[(string) $department->getUuid()] = $department;
-        }
-
-        /*
-         * Staff also see other departments' all-staff shifts on the apply screen, and those rows
-         * have to update too. Scoped to departments actually running such a shift rather than to
-         * every department: the token has a browser cookie's worth of room, and enumerating an
-         * entire event's departments for every staff member would spend it for nothing.
-         */
-        if ($user->isStaff()) {
-            foreach ($this->shifts->findDepartmentsWithUpcomingAllStaffShifts() as $department) {
-                $scoped[(string) $department->getUuid()] = $department;
-            }
         }
 
         return array_values($scoped);

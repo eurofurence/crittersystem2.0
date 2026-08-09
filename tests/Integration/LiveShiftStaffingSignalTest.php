@@ -172,26 +172,72 @@ final class LiveShiftStaffingSignalTest extends DatabaseTestCase
     }
 
     /**
-     * A member of one department must not be handed another's topic.
+     * A member of one department must not be handed another's topic - not even to keep an all-staff
+     * row up to date.
      *
-     * The exception is deliberate: staff see other departments' all-staff shifts on the apply
-     * screen, so those departments' capacity changes have to reach them or those rows would never
-     * update. It is scoped to departments actually running such a shift, not to every department.
+     * Staff do see other departments' all-staff shifts on the apply screen, so those capacity
+     * changes have to reach them; they arrive on the one all-staff topic. Naming the departments
+     * instead grew the token with the size of the event until it passed the browser's cookie limit
+     * and nginx's header buffer, and the first page after signing in returned 502.
      */
     public function testDepartmentTopicsFollowWhatTheUserCanActuallySee(): void
     {
         $alphaOnly = $this->member('alphastaff', $this->alpha);
 
+        // Bravo runs an all-staff shift too, which this user may apply to without being entitled to
+        // watch Bravo as a whole.
+        $bravoShift = (new Shift())->setTitle('Bravo gate')
+            ->setStartsAt(new \DateTimeImmutable('+2 days 10:00'))
+            ->setEndsAt(new \DateTimeImmutable('+2 days 12:00'))
+            ->setDepartment($this->bravo)
+            ->setAudience(ShiftAudience::ALL_STAFF)
+            ->setState(ShiftState::PUBLISHED);
+        $this->em->persist($bravoShift);
+        $this->em->flush();
+
         $topics = $this->topics()->forUser($alphaOnly);
 
+        self::assertContains(Topics::departmentShifts($this->alpha), $topics, 'their own department');
         self::assertContains(
-            Topics::departmentShifts($this->alpha),
+            Topics::allStaffShifts(),
             $topics,
-            'their own department, and it runs an all-staff shift they can apply to',
+            'the all-staff rows on their apply screen have to update',
         );
+        self::assertNotContains(
+            Topics::departmentShifts($this->bravo),
+            $topics,
+            'an all-staff shift does not entitle them to watch the whole department',
+        );
+    }
 
-        // Bravo runs nothing this user can see, so it stays out of their token.
-        self::assertNotContains(Topics::departmentShifts($this->bravo), $topics);
+    /** An all-staff shift reaches staff outside the department that runs it. */
+    public function testAnAllStaffShiftWakesTheAllStaffTopicAsWellAsItsDepartment(): void
+    {
+        $user = $this->member('applicant');
+
+        $this->signup()->signUp($user, $this->shift, $this->type);
+        $this->flush();
+
+        self::assertCount(1, RecordedUpdates::forTopic(Topics::departmentShifts($this->alpha)));
+        self::assertCount(
+            1,
+            RecordedUpdates::forTopic(Topics::allStaffShifts()),
+            'staff of other departments see this row and subscribe to it here',
+        );
+    }
+
+    /** A shift only its own department can see must not be announced event-wide. */
+    public function testADepartmentOnlyShiftDoesNotWakeTheAllStaffTopic(): void
+    {
+        $this->shift->setAudience(ShiftAudience::DEPARTMENT_STAFF);
+        $this->em->flush();
+        $user = $this->member('applicant', $this->alpha);
+
+        $this->signup()->signUp($user, $this->shift, $this->type);
+        $this->flush();
+
+        self::assertCount(1, RecordedUpdates::forTopic(Topics::departmentShifts($this->alpha)));
+        self::assertCount(0, RecordedUpdates::forTopic(Topics::allStaffShifts()));
     }
 
     /** A volunteer with no staff role sees no department topics at all. */
@@ -210,5 +256,10 @@ final class LiveShiftStaffingSignalTest extends DatabaseTestCase
 
         self::assertNotContains(Topics::departmentShifts($this->alpha), $topics);
         self::assertNotContains(Topics::departmentShifts($this->bravo), $topics);
+        self::assertNotContains(
+            Topics::allStaffShifts(),
+            $topics,
+            'all-staff shifts are staff-only; a volunteer must not learn that one changed',
+        );
     }
 }

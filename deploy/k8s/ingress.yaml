@@ -6,6 +6,10 @@ metadata:
   annotations:
     # Adjust for your ingress controller / cert-manager setup.
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    # The controller buffers an upstream response header block in one buffer and answers 502 if it
+    # does not fit; its default is 4 KB, which a signed-in page's Set-Cookie headers can exceed.
+    # The in-pod sidecar raises its own equivalent in the critter-nginx ConfigMap.
+    nginx.ingress.kubernetes.io/proxy-buffer-size: 16k
 spec:
   ingressClassName: nginx
   tls:

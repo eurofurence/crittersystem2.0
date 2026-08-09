@@ -131,34 +131,6 @@ class ShiftRepository extends ServiceEntityRepository
     }
 
     /**
-     * Departments currently offering a shift any staff member may see.
-     *
-     * The staff apply screen lists these under "other departments", so their capacity changes have
-     * to reach a viewer who is not a member of them - otherwise the only rows that ever update are
-     * the ones in the viewer's own departments.
-     *
-     * Deliberately only the all-staff audience: a department-staff shift is already covered by
-     * membership, and anything narrower is not visible to a non-member at all.
-     *
-     * @return Department[]
-     */
-    public function findDepartmentsWithUpcomingAllStaffShifts(?\DateTimeImmutable $from = null): array
-    {
-        return $this->getEntityManager()->createQueryBuilder()
-            ->select('DISTINCT d')
-            ->from(Department::class, 'd')
-            ->join(Shift::class, 's', 'WITH', 's.department = d')
-            ->andWhere('s.endsAt >= :now')
-            ->andWhere('s.state = :published')
-            ->andWhere('s.audience = :allStaff')
-            ->setParameter('now', $from ?? new \DateTimeImmutable())
-            ->setParameter('published', ShiftState::PUBLISHED->value)
-            ->setParameter('allStaff', ShiftAudience::ALL_STAFF->value)
-            ->getQuery()
-            ->getResult();
-    }
-
-    /**
      * @return Shift[] every shift (draft and published) owned by the department
      *                 that starts within [$from, $to), for the planner grid
      */

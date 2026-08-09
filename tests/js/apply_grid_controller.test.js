@@ -46,9 +46,15 @@ async function mount() {
     );
 }
 
-afterEach(() => {
-    application?.stop();
+/*
+ * Emptying the document is what makes Stimulus disconnect the controller, and it notices through a
+ * MutationObserver, which runs a tick later. Without that tick the controller keeps its window
+ * listener and the next test is served by the previous test's grid as well as its own.
+ */
+afterEach(async () => {
     document.body.innerHTML = '';
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    application?.stop();
     delete window.bootstrap;
     vi.unstubAllGlobals();
 });
@@ -73,6 +79,20 @@ describe('apply grid', () => {
 
         window.dispatchEvent(new CustomEvent('apply-grid:changed'));
         await vi.waitFor(() => expect(document.querySelector('.apply-grid').textContent).toBe('fresh'));
+    });
+
+    /*
+     * An all-staff shift announces itself on its department's topic and on the all-staff topic, and
+     * a member of that department listens to both. That is one change, so it is one request.
+     */
+    it('refreshes once when the same change is announced on two topics', async () => {
+        await mount();
+
+        window.dispatchEvent(new CustomEvent('apply-grid:changed'));
+        window.dispatchEvent(new CustomEvent('apply-grid:changed'));
+        await vi.waitFor(() => expect(document.querySelector('.apply-grid').textContent).toBe('fresh'));
+
+        expect(fetch.mock.calls.filter(([url]) => url.startsWith('/manage-shifts/apply/grid'))).toHaveLength(1);
     });
 
     /* Replacing the grid under an open dialog closes the shift the volunteer was reading. */
