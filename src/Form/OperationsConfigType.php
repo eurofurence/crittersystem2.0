@@ -13,6 +13,11 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class OperationsConfigType extends AbstractType
 {
+    /**
+     * Every textarea here sets `empty_data`: a cleared box submits null, and the non-nullable string
+     * properties behind them reject that with a 500 before validation can report it. Requiredness is
+     * expressed with a constraint on the model, never by omitting `empty_data`.
+     */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $seconds = ['attr' => ['min' => 1]];
@@ -25,6 +30,7 @@ final class OperationsConfigType extends AbstractType
             ->add('banScreenMessage', TextareaType::class, [
                 'label' => 'manage.operations_config.field.ban_screen_message.label',
                 'required' => true,
+                'empty_data' => '',
                 'attr' => ['rows' => 2],
                 'help' => 'manage.operations_config.field.ban_screen_message.help',
             ])
@@ -35,14 +41,30 @@ final class OperationsConfigType extends AbstractType
             ->add('infoDeskWelcome', TextareaType::class, [
                 'label' => 'manage.operations_config.field.infodesk_welcome.label',
                 'required' => true,
+                'empty_data' => '',
                 'attr' => ['rows' => 2],
             ])
             ->add('infoDeskFinalization', TextareaType::class, [
                 'label' => 'manage.operations_config.field.infodesk_finalization.label',
                 'required' => true,
+                'empty_data' => '',
                 'attr' => ['rows' => 2],
             ])
             ->add('infoDeskClaimTimeout', IntegerType::class, ['label' => 'manage.operations_config.field.infodesk_claim_timeout.label'] + $seconds)
+            ->add('checkInMessageEn', TextareaType::class, [
+                'label' => 'manage.operations_config.field.checkin_message_en.label',
+                'required' => true,
+                'empty_data' => '',
+                'attr' => ['rows' => 2],
+                'help' => 'manage.operations_config.field.checkin_message_en.help',
+            ])
+            ->add('checkInMessageDe', TextareaType::class, [
+                'label' => 'manage.operations_config.field.checkin_message_de.label',
+                'required' => false,
+                'empty_data' => '',
+                'attr' => ['rows' => 2],
+                'help' => 'manage.operations_config.field.checkin_message_de.help',
+            ])
             ->add('messageEditWindow', IntegerType::class, ['label' => 'manage.operations_config.field.message_edit_window.label'] + $seconds)
             ->add('callResponseTimeout', IntegerType::class, ['label' => 'manage.operations_config.field.call_response_timeout.label'] + $seconds)
             ->add('callManagerLead', IntegerType::class, ['label' => 'manage.operations_config.field.call_manager_lead.label'] + $seconds)

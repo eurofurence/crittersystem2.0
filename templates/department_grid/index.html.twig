@@ -49,7 +49,7 @@
                       {% if shift.draft %}{{ d.badge('department_grid.badge.draft'|trans, 'bg-yellow-lt') }}{% endif %}
                     </td>
                     <td class="text-nowrap">{{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}</td>
-                    <td>{{ shift.location ? shift.location.name : '-' }}</td>
+                    <td>{{ shift.location ? shift.location.fullName : '-' }}</td>
                     <td>{{ d.badge(shift.audience.label, shift.audience.isPublic ? 'bg-blue-lt' : 'bg-purple-lt') }}</td>
                     <td>
                       {% if row.fillState == 'full' %}{{ d.badge(row.assigned ~ '/' ~ row.needed, 'bg-green-lt') }}

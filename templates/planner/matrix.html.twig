@@ -90,7 +90,7 @@
                       {{ shift.startsAt|app_datetime }}<br>
                       <span class="text-secondary">– {{ shift.endsAt|app_time }}{% if row.overnight %} <span title="{{ 'planner.matrix.overnight'|trans }}">▾</span>{% endif %}</span>
                     </td>
-                    <td>{{ shift.location ? shift.location.name : '-' }}</td>
+                    <td>{{ shift.location ? shift.location.fullName : '-' }}</td>
                     <td>{{ shift.shiftTask ? shift.shiftTask.name : '-' }}</td>
                     <td>
                       {{ shift.title }}

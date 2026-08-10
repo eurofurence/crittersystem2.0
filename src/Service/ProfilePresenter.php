@@ -6,6 +6,7 @@ use App\Entity\ShiftEntry;
 use App\Entity\User;
 use App\Repository\BannedIdentityRepository;
 use App\Repository\ShiftEntryRepository;
+use App\Repository\UserGroupAssignmentRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Repository\WorklogRepository;
 
@@ -25,6 +26,7 @@ class ProfilePresenter
         private readonly GoodieEligibilityService $goodies,
         private readonly BannedIdentityRepository $bans,
         private readonly NoShowBanService $noShowBans,
+        private readonly UserGroupAssignmentRepository $assignments,
     ) {
     }
 
@@ -123,6 +125,18 @@ class ProfilePresenter
         usort($rows, static fn ($a, $b) => $a['sort'] <=> $b['sort']);
 
         return $rows;
+    }
+
+    /**
+     * Departments the user belongs to, by the same definition every other surface uses: an active
+     * department-scoped group assignment. An unscoped assignment makes someone a member of nothing
+     * and is excluded, so this cannot report an event-wide grant as membership of every department.
+     *
+     * @return \App\Entity\Department[]
+     */
+    public function departments(User $user): array
+    {
+        return $this->assignments->findActiveDepartmentsForUser($user);
     }
 
     /**

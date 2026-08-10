@@ -108,7 +108,7 @@ final class PlannerController extends AbstractController
             'grid' => $grid,
             'shiftTasks' => $this->taskAccess->forDepartment($this->tasks->findAllOrdered(), $department),
             'volunteerTypes' => $this->typeOrder->forDepartment($types->findAllOrderedWithDepartments(), $department),
-            'locations' => $locations->findAllOrdered(),
+            'locations' => $locations->findAllOrderedByPath(),
             'audiences' => ShiftAudience::cases(),
             // Only this department's groups can be offered: a group and its shifts share one
             // department, which is what makes the batch assignment safe to scope.
@@ -269,7 +269,7 @@ final class PlannerController extends AbstractController
             'shift' => $shift,
             'audiences' => ShiftAudience::cases(),
             'shiftTasks' => $this->taskAccess->forDepartment($this->tasks->findAllOrdered(), $shift->getDepartment()),
-            'locations' => $locations->findAllOrdered(),
+            'locations' => $locations->findAllOrderedByPath(),
             'volunteerTypes' => $this->typeOrder->forDepartment($types->findAllOrderedWithDepartments(), $shift->getDepartment()),
             'timezone' => $this->display->timezone()->getName(),
         ]);

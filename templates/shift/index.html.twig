@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/notification/_macros.twig' as n %}
 
 {% block title %}{{ 'shift.page.title'|trans }}{% endblock %}
 
@@ -7,9 +8,9 @@
    `map`/`label` options. #}
 {% set shiftStatusStyles = {
   'signed_up': 'text-bg-success',
-  'available': 'text-bg-primary',
+  'available': 'text-bg-warning',
   'full': 'text-bg-secondary',
-  'overlap': 'text-bg-warning',
+  'overlap': 'text-bg-danger',
   'ineligible': 'text-bg-light',
   'past': 'text-bg-light'
 } %}
@@ -22,11 +23,42 @@
   'past': 'shift.status.past'|trans
 } %}
 
+{# The same six states on the card's time column, in solid colours rather than the badge's soft
+   ones, so a long list is scannable without reading every badge. #}
+{% set shiftTimeStyles = {
+  'signed_up': 'bg-green',
+  'available': 'bg-blue',
+  'full': 'bg-secondary',
+  'overlap': 'bg-secondary',
+  'ineligible': 'bg-secondary',
+  'past': 'bg-secondary'
+} %}
+
 {% block body %}
   {{ d.page_header('shift.page.title'|trans, {
     subtitle: 'shift.page.subtitle'|trans,
     actions: [{label: 'shift.action.my_shifts'|trans, href: path('app_my_shifts'), class: 'btn btn-primary'}]
   }) }}
+
+  {% if checkInMessage %}
+    {% set checkInBanner %}
+      <strong>{{ 'shift.checkin.banner.title'|trans }}</strong> {{ checkInMessage }}
+    {% endset %}
+    {{ n.alert('warning', null, {messageHtml: checkInBanner}) }}
+  {% endif %}
+
+  {% if is_granted('manageshifts:view') %}
+    {% set staffBanner %}
+      <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+        <div>
+          <strong>{{ 'shift.staff_apply.banner.title'|trans }}</strong>
+          <div>{{ 'shift.staff_apply.banner.body'|trans }}</div>
+        </div>
+        <a class="btn btn-info" href="{{ path('app_manage_shifts_apply') }}">{{ 'shift.staff_apply.banner.action'|trans }}</a>
+      </div>
+    {% endset %}
+    {{ n.alert('info', null, {messageHtml: staffBanner}) }}
+  {% endif %}
 
 
     <div class="card mb-4">
@@ -56,7 +88,7 @@
                 <label class="form-label small mb-0" for="f-loc">{{ 'common.label.location'|trans }}</label>
                 <select id="f-loc" name="location" class="form-select form-select-sm" onchange="this.form.submit()">
                     <option value="">{{ 'shift.filter.all'|trans }}</option>
-                    {% for l in locations %}<option value="{{ l.uuid }}" {{ filters.location == l.uuid ? 'selected' }}>{{ l.name }}</option>{% endfor %}
+                    {% for l in locations %}<option value="{{ l.uuid }}" {{ filters.location == l.uuid ? 'selected' }}>{{ l.fullName }}</option>{% endfor %}
                 </select>
             </div>
             <div class="col-6 col-md-3">
@@ -87,85 +119,20 @@
     {{ d.empty_state('shift.empty.title'|trans, {message: 'shift.empty.filtered'|trans({'%date%': selectedDate|app_date})}) }}
   {% else %}
     {% for hour, cards in byHour %}
-      {{ d.section_header(hour, {size: 'h2', class: 'mb-1'}) }}
-      {% for card in cards %}
-        {% set shift = card.shift %}
-        {{ d.card_start(null, {
-          class: ('mb-2 ' ~ (shift.past ? 'opacity-75' : ''))|trim,
-          bodyClass: 'card-body py-2'
-        }) }}
-            <div class="d-flex justify-content-between align-items-start gap-2">
-              <div>
-                <a href="{{ path('app_shift_show', {id: shift.uuid}) }}" class="fw-semibold text-decoration-none">{{ shift.title }}</a>
-                <div class="text-muted small">
-                  {{ shift.startsAt|app_time }}-{{ shift.endsAt|app_time }}
-                  {% if shift.location %} · {{ shift.location.name }}{% endif %}
-                  {% if shift.shiftTask %} · {{ 'shift.browse.task_label'|trans }} {{ shift.shiftTask.name }}{% endif %}
-                </div>
-                {% if card.groupSize > 1 %}
-                  {# Counted, not listed: the members are described in the dialog, which is rendered
-                     server-side and leaves out any shift this viewer may not see. #}
-                  <div class="mt-1">
-                    {{ d.badge('shift.group.badge'|trans({'%name%': shift.shiftGroup.name, '%count%': card.groupSize}), 'text-bg-info') }}
-                  </div>
-                {% endif %}
-                {% if shift.description %}
-                  <div class="text-secondary small mt-1">
-                    {{ shift.description|length > 120 ? shift.description|slice(0, 120) ~ '…' : shift.description|raw }}
-                  </div>
-                {% endif %}
-              </div>
-              {{ d.status_badge(card.status, {map: shiftStatusStyles, label: shiftStatusLabels[card.status]}) }}
-            </div>
+      <div class="hr-text hr-text-start mb-4"><h1 class="m-0 text-primary">{{ hour }}</h1></div>
+        <div class="row">
+        {% for card in cards %}
+          {{ include('shift/_card.html.twig', {
+            card: card,
+            statusStyles: shiftStatusStyles,
+            statusLabels: shiftStatusLabels,
+            timeStyles: shiftTimeStyles
+          }) }}
+        {% endfor %}
 
-            {% if card.availability is not empty %}
-              <div class="d-flex flex-wrap gap-1 mt-2">
-                {% for row in card.availability %}
-                  {{ d.badge(
-                    row.type.name ~ ' ' ~ row.assigned ~ '/' ~ row.needed,
-                    row.assigned >= row.needed ? 'text-bg-success' : 'text-bg-secondary'
-                  ) }}
-                {% endfor %}
-              </div>
-            {% endif %}
+        </div>
 
-            <div class="d-flex flex-wrap gap-2 mt-2">
-              {% if card.myEntry %}
-                {% if card.groupSize > 1 %}
-                  <form method="post" action="{{ path('app_shift_cancel', {id: card.myEntry.uuid}) }}"
-                        {{ include('shift/_group_attrs.html.twig', {shift: shift, count: card.groupSize, mode: 'cancel'}) }}>
-                    <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ card.myEntry.id) }}">
-                    <button class="btn btn-sm btn-outline-danger">{{ 'shift.action.cancel_signup'|trans }}</button>
-                  </form>
-                {% else %}
-                  {{ d.delete_form(
-                    path('app_shift_cancel', {id: card.myEntry.uuid}),
-                    csrf_token('cancel' ~ card.myEntry.id),
-                    {label: 'shift.action.cancel_signup'|trans, message: 'shift.confirm.cancel_signup'|trans}
-                  ) }}
-                {% endif %}
-              {% elseif card.options is not empty %}
-                <form method="post" action="{{ path('app_shift_signup', {id: shift.uuid}) }}" class="d-flex gap-2 align-items-center"
-                      {% if card.groupSize > 1 %}
-                        {{ include('shift/_group_attrs.html.twig', {shift: shift, count: card.groupSize, mode: 'apply'}) }}
-                      {% endif %}>
-                  <input type="hidden" name="_token" value="{{ csrf_token('signup' ~ shift.id) }}">
-                  <select name="volunteer_type" class="form-select form-select-sm" style="width:auto">
-                    {% for id, type in card.options %}<option value="{{ id }}">{{ type.name }}</option>{% endfor %}
-                  </select>
-                  <button class="btn btn-sm btn-primary">{{ 'shift.action.signup'|trans }}</button>
-                  {% if card.groupSize > 1 %}
-                    <a href="#" class="small" data-action="shift-group#info">{{ 'shift.group.info_link_short'|trans }}</a>
-                  {% endif %}
-                </form>
-              {% endif %}
 
-              {% if is_granted('shift:manage') %}
-                <a class="btn btn-sm btn-outline-secondary" href="{{ path('app_manage_shift_needs', {id: shift.uuid}) }}">{{ 'shift.action.manage'|trans }}</a>
-              {% endif %}
-            </div>
-        {{ d.card_end({bodyClass: 'card-body py-2'}) }}
-      {% endfor %}
     {% endfor %}
   {% endif %}
 {% endblock %}

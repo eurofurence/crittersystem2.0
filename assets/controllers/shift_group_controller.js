@@ -34,6 +34,10 @@ export default class extends Controller {
         mode: { type: String, default: 'apply' },
         loadError: { type: String, default: 'The details of these linked shifts could not be loaded. Please try again.' },
         noDialog: { type: String, default: 'These shifts are taken together. Open the shift page to see them all.' },
+        detailUrl: String,
+        detailLabel: { type: String, default: 'Open shift page' },
+        manageUrl: String,
+        manageLabel: { type: String, default: 'Manage' },
     };
 
     connect() {
@@ -56,6 +60,17 @@ export default class extends Controller {
         event.preventDefault();
 
         return this.open({ readOnly: true });
+    }
+
+    /**
+     * Opens the dialog with a working confirm button, from a link rather than a submit. The browse
+     * card's only control is a link to the shift page, so there is no submit event to intercept;
+     * without JavaScript that link simply navigates there.
+     */
+    trigger(event) {
+        event.preventDefault();
+
+        return this.open({ readOnly: false });
     }
 
     /**
@@ -159,8 +174,16 @@ export default class extends Controller {
      * Moves what the volunteer chose in the dialog onto the real form and submits it. The dialog's
      * fields live outside the form element, so they are copied across as hidden inputs rather than
      * relying on the browser to associate them.
+     *
+     * A card the volunteer can only read is hosted on a plain element instead of a form: there is
+     * nothing to submit, and the read-only dialog offers no confirm button to reach this from.
      */
     accept() {
+        if (typeof this.element.requestSubmit !== 'function' && typeof this.element.submit !== 'function') {
+            this.modal.hide();
+            return;
+        }
+
         this.element.querySelectorAll('[data-shift-group-field]').forEach((node) => node.remove());
 
         this.element_
@@ -201,10 +224,13 @@ export default class extends Controller {
             '<div class="modal-body"></div>' +
             '<div class="modal-footer">' +
             '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal" data-role="cancel"></button>' +
+            '<span data-role="links"></span>' +
             (readOnly ? '' : '<button type="button" class="btn" data-role="confirm"></button>') +
             '</div></div></div>';
 
         el.querySelector('.modal-title').textContent = this.titleValue;
+        this.addLink(el, this.detailUrlValue, this.detailLabelValue);
+        this.addLink(el, this.manageUrlValue, this.manageLabelValue);
         // The body is our own server-rendered template, so it is inserted as markup; nothing from the
         // volunteer reaches it unescaped, Twig having escaped it already.
         el.querySelector('.modal-body').innerHTML = bodyHtml;
@@ -219,6 +245,19 @@ export default class extends Controller {
         }
 
         return el;
+    }
+
+    /** A footer link, skipped when the server left its url empty because the viewer may not follow it. */
+    addLink(el, url, label) {
+        if (!url) {
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.className = 'btn btn-outline-secondary';
+        link.href = url;
+        link.textContent = label;
+        el.querySelector('[data-role="links"]').appendChild(link);
     }
 
     teardown() {

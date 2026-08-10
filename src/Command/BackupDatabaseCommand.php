@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Backup\BackupRetention;
+use App\Backup\BackupStoreFactory;
 use App\Backup\DatabaseDumper;
-use App\Backup\S3BackupStore;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -31,8 +31,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 )]
 final class BackupDatabaseCommand extends Command
 {
-    public function __construct(private readonly DatabaseDumper $dumper)
-    {
+    public function __construct(
+        private readonly DatabaseDumper $dumper,
+        private readonly BackupStoreFactory $stores,
+    ) {
         parent::__construct();
     }
 
@@ -40,22 +42,13 @@ final class BackupDatabaseCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
 
-        $bucket = $this->env('BACKUP_S3_BUCKET');
-        if ($bucket === '') {
+        if ($this->stores->bucket() === '') {
             $io->error('BACKUP_S3_BUCKET is not set; nothing to back up to.');
 
             return Command::FAILURE;
         }
 
-        $store = new S3BackupStore(
-            endpoint: $this->env('BACKUP_S3_ENDPOINT'),
-            region: $this->env('BACKUP_S3_REGION'),
-            bucket: $bucket,
-            prefix: $this->env('BACKUP_S3_PREFIX'),
-            pathStyle: filter_var($this->env('BACKUP_S3_PATH_STYLE'), \FILTER_VALIDATE_BOOL),
-            accessKeyId: $this->env('BACKUP_S3_ACCESS_KEY_ID'),
-            secretAccessKey: $this->env('BACKUP_S3_SECRET_ACCESS_KEY'),
-        );
+        $store = $this->stores->create();
 
         $dumpFile = (string) tempnam(sys_get_temp_dir(), 'critter-db-');
         $key = 'critter-' . gmdate('Ymd-His') . '.dump';
@@ -91,7 +84,7 @@ final class BackupDatabaseCommand extends Command
 
         // Pruning runs only after a confirmed upload above, so a failed backup
         // never removes the older dumps that are still the last good copy.
-        $retentionDays = (int) ($this->env('BACKUP_RETENTION_DAYS') ?: '14');
+        $retentionDays = (int) ($this->stores->env('BACKUP_RETENTION_DAYS') ?: '14');
         if ($retentionDays < 1) {
             $io->warning('BACKUP_RETENTION_DAYS < 1 - retention disabled, keeping all dumps.');
 
@@ -107,13 +100,6 @@ final class BackupDatabaseCommand extends Command
         $io->writeln(sprintf('Pruned %d dump(s) older than %d day(s).', $pruned, $retentionDays));
 
         return Command::SUCCESS;
-    }
-
-    private function env(string $key): string
-    {
-        $value = $_SERVER[$key] ?? $_ENV[$key] ?? getenv($key);
-
-        return is_string($value) ? trim($value) : '';
     }
 
     private function humanBytes(int $bytes): string

@@ -25,15 +25,13 @@
         <p>{{ 'telegram.pending.instructions'|trans({'%time%': pending.expiresAt|app_time}) }}</p>
       {% endif %}
       <p class="display-6"><code>{{ pending.code }}</code></p>
-      <p class="text-muted small" id="tg-wait">{{ 'telegram.pending.waiting'|trans }}</p>
+      <p class="text-muted small" id="tg-wait"
+         data-controller="telegram-link-status"
+         data-telegram-link-status-url-value="{{ path('app_profile_telegram_status') }}"
+         data-telegram-link-status-expires-at-value="{{ pending.expiresAt|date('c') }}">
+        {{ 'telegram.pending.waiting'|trans }}
+      </p>
       <form method="post" action="{{ path('app_profile_telegram_start') }}"><button class="btn btn-link">{{ 'telegram.action.generate_new_code'|trans }}</button></form>
-      <script>
-        (function poll(){
-          fetch('{{ path('app_profile_telegram_status') }}').then(r=>r.json()).then(d=>{
-            if (d.linked) { window.location.reload(); } else { setTimeout(poll, 3000); }
-          }).catch(()=>setTimeout(poll, 5000));
-        })();
-      </script>
     {% else %}
       <form method="post" action="{{ path('app_profile_telegram_start') }}">
         <button class="btn btn-primary">{{ 'telegram.action.link'|trans }}</button>

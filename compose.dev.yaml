@@ -46,6 +46,74 @@ services:
       - critter-dev-net
 
   # -----------------------------------------------------------------------------------------------------------------
+  # The database the test suite runs against, and only the suite. Start it on its own with
+  #   docker compose -f compose.dev.yaml up -d test-database
+  #
+  # It is separate from `database` so it can trade every durability guarantee for speed. The suite
+  # resets the schema before each of ~1250 tests, and that reset is the single largest cost in the
+  # run: on a durable, disk-backed Postgres it takes 1.5s, which is half an hour of the suite doing
+  # nothing but waiting on fsync. On this one it takes milliseconds.
+  #
+  # Storage is a tmpfs and the WAL settings below are unsafe by design: this database does not
+  # survive a container restart and is not meant to. Never point anything but APP_ENV=test at it,
+  # and never copy these settings into `database` - the dev database holds imported production data
+  # and an unclean shutdown would corrupt it silently.
+  test-database:
+    image: postgres:${POSTGRES_VERSION:-16}-alpine
+
+    # The WAL caps are not tuning, they are what keeps this container alive: the tmpfs below is the
+    # whole disk, and Postgres will happily grow the WAL to the default max_wal_size of 1GB and fill
+    # it. It then PANICs on ENOSPC, takes the run down mid-suite, and reports as a wall of
+    # "server closed the connection unexpectedly" errors that look nothing like a full disk.
+    # Checkpointing this often is free here precisely because fsync is off.
+    command:
+      - "-c"
+      - "fsync=off"
+      - "-c"
+      - "synchronous_commit=off"
+      - "-c"
+      - "full_page_writes=off"
+      - "-c"
+      - "wal_level=minimal"
+      - "-c"
+      - "max_wal_senders=0"
+      - "-c"
+      - "max_wal_size=256MB"
+      - "-c"
+      - "min_wal_size=64MB"
+      - "-c"
+      - "shared_buffers=512MB"
+
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-app}
+      POSTGRES_USER: ${POSTGRES_USER:-app}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-!ChangeMe!}
+
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "${POSTGRES_DB:-app}", "-U", "${POSTGRES_USER:-app}"]
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+    # A different port from `database`, so both can run at once and a mistyped DSN fails loudly
+    # instead of quietly running the suite against the dev data.
+    ports:
+      - "127.0.0.1:5433:5432"
+
+    # initdb runs on every container start because the data directory is a fresh tmpfs each time,
+    # which is what keeps this script the reliable place to create the databases the suite needs.
+    volumes:
+      - ./docker/db/test-init.sql:/docker-entrypoint-initdb.d/10-test-databases.sql:ro
+
+    # Sized for a parallel run: 17 databases plus the capped WAL. tmpfs only consumes the RAM it
+    # actually holds, so headroom here costs nothing and running out costs the whole run.
+    tmpfs:
+      - /var/lib/postgresql/data:rw,size=3g
+
+    networks:
+      - critter-dev-net
+
+  # -----------------------------------------------------------------------------------------------------------------
   app:
     build:
       context: .
@@ -59,6 +127,10 @@ services:
       # Auto-migrate the dev database on start for a turnkey environment.
       RUN_MIGRATIONS_ON_START: "1"
       DATABASE_URL: "postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@database:5432/${POSTGRES_DB:-app}?serverVersion=16&charset=utf8"
+      # Read by .env.test only, so running the suite in this container reaches the throwaway test
+      # database rather than the dev one. DATABASE_URL above cannot express it: it is a real
+      # environment variable, and those win over anything .env.test sets.
+      DATABASE_URL_TEST: "postgresql://${POSTGRES_USER:-app}:${POSTGRES_PASSWORD:-!ChangeMe!}@test-database:5432/${POSTGRES_DB:-app}?serverVersion=16&charset=utf8"
       MAILER_DSN: "smtp://mailer:1025"
       # Set to enable the web installer; unset to manage setup from the console.
       INSTALL_PASSWORD: "${INSTALL_PASSWORD:-devinstall}"

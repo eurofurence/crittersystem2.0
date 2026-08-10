@@ -27,7 +27,7 @@
             {% if shift.past %}{{ d.badge('manage.shift_group.picker.past'|trans, 'text-bg-secondary') }}{% endif %}
             <span class="text-muted small d-block">
               {{ shift.startsAt|app_datetime }} - {{ shift.endsAt|app_time }}
-              {% if shift.location %} · {{ shift.location.name }}{% endif %}
+              {% if shift.location %} · {{ shift.location.fullName }}{% endif %}
               {% if shift.shiftTask %} · {{ shift.shiftTask.name }}{% endif %}
               · {{ shift.audience.label }}
               {% if shift.draft %} · {{ 'common.state.draft'|trans }}{% endif %}

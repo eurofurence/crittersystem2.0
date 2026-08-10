@@ -161,6 +161,18 @@
       {{ d.card_end() }}
     </div>
 
+    <div class="col-12 col-lg-6">
+      {{ d.card_start('profile.card.departments'|trans, {class: 'h-100'}) }}
+          {% if departments is empty %}
+            {{ d.empty_inline('profile.empty.departments'|trans, {tag: 'div', class: 'text-secondary'}) }}
+          {% else %}
+            {% for department in departments %}
+              {{ d.badge(department.name, 'bg-azure-lt', {class: 'me-1 mb-1'}) }}
+            {% endfor %}
+          {% endif %}
+      {{ d.card_end() }}
+    </div>
+
 {#    {% if goodies is not null %}#}
 {#      <div class="col-12 col-lg-6">#}
 {#        {% set goodiesActions %}<span class="text-secondary">{{ 'profile.goodies.credited'|trans({'%hours%': goodies.hours|round(1)}) }}</span>{% endset %}#}

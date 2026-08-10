@@ -7,6 +7,9 @@ use App\Entity\State;
 use App\Entity\User;
 use App\Repository\GoodieDistributionRepository;
 use App\Repository\GoodieItemRepository;
+use App\Audit\AuditEvents;
+use App\Audit\AuditLogger;
+use App\Entity\Certification;
 use App\Repository\ShiftEntryRepository;
 use App\Repository\UserRepository;
 use App\Service\Chat\ConversationService;
@@ -39,6 +42,7 @@ final class DistributionController extends AbstractController
         private readonly GoodieItemRepository $items,
         private readonly GoodieDistributionRepository $distributions,
         private readonly GoodieEligibilityService $eligibility,
+        private readonly AuditLogger $audit,
         private readonly HoursCacheService $hoursCache,
         private readonly DigitalIdService $digitalId,
         private readonly ContactMethodResolver $contacts,
@@ -140,7 +144,14 @@ final class DistributionController extends AbstractController
             if ($item === null) {
                 $this->addFlash('danger', new TranslatableMessage('backstage.flash.unknown_item'));
             } else {
-                $error = $this->eligibility->distributionError($user, $item, $quantity);
+                $overrideReason = trim((string) $request->request->get('override_reason', ''));
+                $missing = $this->eligibility->missingCertifications($user, $item);
+                $overriding = $missing !== [] && $overrideReason !== '';
+
+                $error = $overriding
+                    ? $this->eligibility->distributionErrorIgnoringCertifications($user, $item, $quantity)
+                    : $this->eligibility->distributionError($user, $item, $quantity);
+
                 if ($error !== null) {
                     $this->addFlash('danger', $error);
                 } else {
@@ -149,9 +160,25 @@ final class DistributionController extends AbstractController
                     $distribution = new GoodieDistribution($user, $item, $quantity);
                     $distribution->setHoursAtDistribution($this->hoursCache->get($user)->getTotalHours())
                         ->setDistributedBy($actor)
-                        ->setNotes((string) $request->request->get('notes') ?: null);
+                        ->setNotes((string) $request->request->get('notes') ?: null)
+                        ->setCertificationOverrideReason($overriding ? $overrideReason : null);
                     $this->em->persist($distribution);
                     $this->em->flush();
+
+                    if ($overriding) {
+                        $this->audit->log(AuditEvents::CERTIFICATION, AuditEvents::OVERRIDE, [
+                            'resourceType' => 'GoodieDistribution',
+                            'resourceId' => (string) $user->getUuid(),
+                            'details' => [
+                                'item' => $item->getName(),
+                                'reason' => $overrideReason,
+                                'missing_certifications' => array_map(
+                                    static fn (Certification $c): string => $c->getTitle(),
+                                    $missing,
+                                ),
+                            ],
+                        ]);
+                    }
                     $this->addFlash('success', new TranslatableMessage('backstage.flash.gave', [
                         '%count%' => $quantity,
                         '%item%' => $item->getName(),

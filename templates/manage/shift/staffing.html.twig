@@ -6,7 +6,7 @@
 
 {% block body %}
   {{ d.page_header('manage.shift.staffing.heading'|trans({'%name%': shift.title}), {
-    subtitle: shift.startsAt|app_datetime ~ ' – ' ~ shift.endsAt|app_time ~ (shift.location ? ' · ' ~ shift.location.name : ''),
+    subtitle: shift.startsAt|app_datetime ~ ' – ' ~ shift.endsAt|app_time ~ (shift.location ? ' · ' ~ shift.location.fullName : ''),
     actions: [{label: 'manage.shift.action.back'|trans, href: path('app_manage_shift_index'), class: 'btn btn-outline-secondary'}]
   }) }}
 

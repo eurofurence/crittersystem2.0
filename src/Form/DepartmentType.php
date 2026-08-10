@@ -5,6 +5,7 @@ namespace App\Form;
 use App\Entity\Department;
 use App\Entity\Location;
 use App\Entity\VolunteerType;
+use App\Repository\LocationRepository;
 use Doctrine\ORM\EntityRepository;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -19,8 +20,10 @@ use Symfony\Component\String\Slugger\SluggerInterface;
 
 final class DepartmentType extends AbstractType
 {
-    public function __construct(private readonly SluggerInterface $slugger)
-    {
+    public function __construct(
+        private readonly SluggerInterface $slugger,
+        private readonly LocationRepository $locations,
+    ) {
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -50,7 +53,8 @@ final class DepartmentType extends AbstractType
             ->add('locations', EntityType::class, [
                 'label' => 'manage.label.locations',
                 'class' => Location::class,
-                'choice_label' => 'name',
+                'choice_label' => fn (Location $l) => $l->fullName(),
+                'choices' => $this->locations->findAllOrderedByPath(),
                 'multiple' => true,
                 'expanded' => false,
                 'required' => false,

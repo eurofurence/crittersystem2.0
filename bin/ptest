@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Runs the PHPUnit suite in parallel, one database per worker.
+#
+#   bin/ptest                     # one worker per core
+#   bin/ptest -p 4                # four workers
+#   bin/ptest tests/Feature       # a subset; paratest takes ONE path, not a list
+#
+# Every argument is passed through to paratest, so its flags (--filter, --stop-on-failure, …) work
+# unchanged, and passing -p or --testsuite yourself overrides the defaults applied here.
+#
+# Workers are isolated by database, not by transaction: Doctrine appends TEST_TOKEN to the database
+# name (config/packages/doctrine.yaml), so worker 3 owns app_test3 and cannot see what the others
+# write. That is what makes a parallel run safe where a second concurrent `php bin/phpunit` is not -
+# that one shares app_test with the first, and each truncates it under the other.
+#
+# Browser tests are excluded. They drive a real Chrome through a server Panther starts itself, and
+# parallel workers fight over it; run those with `php bin/phpunit --testsuite Browser`.
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$root"
+
+args=("$@")
+
+given=" $* "
+
+# When the caller sets the worker count, paratest owns it and this script never learns the number,
+# so it prepares databases for a generous upper bound instead.
+workers="$(nproc 2>/dev/null || echo 4)"
+if [[ "$given" == *" -p"* || "$given" == *" --processes"* ]]; then
+  workers=16
+else
+  args+=(--processes "$workers")
+fi
+
+[[ "$given" == *" --testsuite"* ]] || args+=(--testsuite "Project Test Suite")
+
+# Doctrine is asked to name the databases rather than this script deriving them from .env.test, so
+# the DSN and the `_test%TEST_TOKEN%` suffix keep a single source of truth. The untokenised call
+# doubles as the reachability check: it talks to the server's maintenance database, so it succeeds
+# even on a test-database whose init script never ran.
+#
+# initdb pre-creates app_test1..16; this covers a machine with more cores than that, and a container
+# started before those databases were part of the script.
+create_database() {
+  APP_ENV=test php bin/console doctrine:database:create --if-not-exists >/dev/null 2>&1
+}
+
+if ! create_database; then
+  echo "The test database is not reachable. Start it with:" >&2
+  echo "  docker compose -f compose.dev.yaml up -d test-database" >&2
+  exit 1
+fi
+
+for token in $(seq 1 "$workers"); do
+  TEST_TOKEN="$token" create_database
+done
+
+exec vendor/bin/paratest --runner=WrapperRunner "${args[@]}"

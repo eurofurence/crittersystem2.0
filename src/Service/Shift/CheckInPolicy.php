@@ -5,6 +5,7 @@ namespace App\Service\Shift;
 use App\Entity\Shift;
 use App\Entity\User;
 use App\Service\EventConfigStore;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Event-phase check-in rules for public shift application.
@@ -25,8 +26,10 @@ final class CheckInPolicy
     public const PHASE_MAIN = 'main';
     public const PHASE_TEARDOWN = 'teardown';
 
-    public function __construct(private readonly EventConfigStore $config)
-    {
+    public function __construct(
+        private readonly EventConfigStore $config,
+        private readonly TranslatorInterface $translator,
+    ) {
     }
 
     /** The event phase a shift falls in, or null when event dates are unset. */
@@ -72,7 +75,7 @@ final class CheckInPolicy
     public function checkInError(Shift $shift, User $user): ?string
     {
         if ($this->requiresCheckin($shift) && !$this->isCheckedIn($user)) {
-            return 'You must be checked in at the event before applying to this shift.';
+            return $this->translator->trans('shift.refusal.not_checked_in');
         }
 
         return null;

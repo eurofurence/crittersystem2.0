@@ -91,6 +91,7 @@
   {% set eligible = eligibility.rows|filter(r => r.tier == 'eligible') %}
   {% set pending = eligibility.rows|filter(r => r.tier == 'pending') %}
   {% set claimed = eligibility.rows|filter(r => r.tier == 'claimed') %}
+  {% set blocked = eligibility.rows|filter(r => r.tier == 'blocked') %}
 
   {% if is_granted('goodie:view') %}
     <h2 class="h5">{{ 'backstage.locate.section.can_claim'|trans }}</h2>
@@ -116,6 +117,51 @@
                   </div>
                   <div class="col-8">
                     <button class="btn btn-sm btn-primary w-100">{{ 'backstage.locate.action.give'|trans }}</button>
+                  </div>
+                </form>
+              {% endif %}
+            {{ d.card_end() }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <h2 class="h5">{{ 'backstage.locate.section.blocked'|trans }}</h2>
+    {% if blocked is empty %}
+      {{ d.empty_inline('backstage.locate.empty.nothing_blocked'|trans, {class: 'text-muted'}) }}
+    {% else %}
+      <div class="row g-2 mb-3">
+        {% for r in blocked %}
+          <div class="col-12 col-md-6">
+            {{ d.card_start(null, {class: 'h-100 border-warning'}) }}
+              <div class="d-flex justify-content-between">
+                <div class="fw-semibold">{{ r.item.name }}</div>
+                <span class="text-muted small">{{ r.item.requiredHours|round(2) }}h</span>
+              </div>
+              <div class="small mt-1">
+                {{ 'backstage.locate.missing_certifications'|trans }}
+                {% for certification in r.missingCertifications %}
+                  {{ d.badge(certification.title, 'text-bg-warning', {class: 'me-1'}) }}
+                {% endfor %}
+              </div>
+              {% if is_granted('goodie:distribute') %}
+                <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.uuid}) }}" class="row g-2 align-items-end mt-1"
+                      data-controller="confirm"
+                      data-confirm-message-value="{{ 'backstage.locate.confirm.override'|trans({'%name%': r.item.name}) }}"
+                      data-confirm-variant-value="warning">
+                  <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
+                  <input type="hidden" name="item" value="{{ r.item.uuid }}">
+                  <div class="col-4">
+                    <label class="form-label small mb-0">{{ 'backstage.label.qty'|trans }}</label>
+                    <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm">
+                  </div>
+                  <div class="col-8">
+                    <label class="form-label small mb-0" for="override-{{ r.item.uuid }}">{{ 'backstage.locate.label.override_reason'|trans }}</label>
+                    <input type="text" id="override-{{ r.item.uuid }}" name="override_reason" maxlength="255" required
+                           class="form-control form-control-sm" placeholder="{{ 'backstage.locate.placeholder.override_reason'|trans }}">
+                  </div>
+                  <div class="col-12">
+                    <button class="btn btn-sm btn-outline-warning w-100">{{ 'backstage.locate.action.give_anyway'|trans }}</button>
                   </div>
                 </form>
               {% endif %}
@@ -163,7 +209,7 @@
             <tr>
               <td class="small">{{ shift.startsAt|app_date }} · {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}</td>
               <td>{{ shift.title }}</td>
-              <td class="small text-muted">{{ shift.location ? shift.location.name : '-' }}</td>
+              <td class="small text-muted">{{ shift.location ? shift.location.fullName : '-' }}</td>
               <td>
                 {% if entry.noshow %}{{ d.badge('common.state.no_show'|trans, 'bg-red-lt') }}
                 {% else %}{{ d.badge(entry.assignment ? 'backstage.state.assigned'|trans : 'backstage.state.applied'|trans, entry.assignment ? 'bg-green-lt' : 'bg-secondary-lt') }}{% endif %}

@@ -23,6 +23,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Shift browsing and sign-up for the Telegram bot.
@@ -48,6 +49,7 @@ final class BotShiftController extends AbstractController
         private readonly ShiftVisibilityResolver $visibility,
         private readonly BotShiftNormalizer $normalizer,
         private readonly \App\Service\Shift\ShiftEligibility $eligibility,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -279,11 +281,11 @@ final class BotShiftController extends AbstractController
     {
         $availability = $this->signup->availability($shift);
         if ($availability === []) {
-            return 'This shift is not open for sign-up.';
+            return $this->translator->trans('shift.refusal.not_open');
         }
 
         return $this->signup->signUpError($actor, $shift, $availability[0]['type'])
-            ?? 'You are not eligible for this shift.';
+            ?? $this->translator->trans('shift.refusal.not_eligible');
     }
 
     /**

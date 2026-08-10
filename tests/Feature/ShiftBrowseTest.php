@@ -95,6 +95,34 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         self::assertGreaterThan(0, $crawler->filter('form[action*="/cancel"]')->count());
     }
 
+    /**
+     * The card's only control is a link to the shift page, upgraded into the dialog by Stimulus.
+     * A volunteer with JavaScript off must still reach somewhere useful, so it may never be a
+     * bare "#" or a submit button.
+     */
+    public function testTheViewControlIsALinkToTheShiftPage(): void
+    {
+        $shift = $this->scenario->shift('Open Shift', 'tomorrow 10:00');
+        $this->client->loginUser($this->scenario->user(memberOf: $this->scenario->type));
+
+        $crawler = $this->client->request('GET', '/shifts?date='.(new \DateTimeImmutable('tomorrow'))->format('Y-m-d'));
+        $view = $crawler->filter('a[data-action="shift-group#trigger"]');
+
+        self::assertGreaterThan(0, $view->count(), 'an eligible volunteer opens the dialog with a working confirm button');
+        self::assertSame('/shifts/'.$shift->getUuid(), $view->first()->attr('href'));
+    }
+
+    public function testAVolunteerWhoCannotActGetsTheReadOnlyDialog(): void
+    {
+        $this->scenario->shift('Open Shift', 'tomorrow 10:00');
+        $this->client->loginUser($this->scenario->user()); // no confirmed membership
+
+        $crawler = $this->client->request('GET', '/shifts?date='.(new \DateTimeImmutable('tomorrow'))->format('Y-m-d'));
+
+        self::assertGreaterThan(0, $crawler->filter('a[data-action="shift-group#info"]')->count());
+        self::assertSame(0, $crawler->filter('a[data-action="shift-group#trigger"]')->count());
+    }
+
     public function testAFullyStaffedShiftIsShownAsFull(): void
     {
         $shift = $this->scenario->shift('Full Shift', 'tomorrow 12:00', needed: 1);

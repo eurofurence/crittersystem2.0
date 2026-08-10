@@ -9,6 +9,7 @@ use App\Entity\ShiftGroup;
 use App\Entity\ShiftTask;
 use App\Enum\ShiftAudience;
 use App\Repository\DepartmentRepository;
+use App\Repository\LocationRepository;
 use App\Repository\ShiftGroupRepository;
 use App\Service\DisplaySettings;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
@@ -24,8 +25,10 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class ShiftFormType extends AbstractType
 {
-    public function __construct(private readonly DisplaySettings $display)
-    {
+    public function __construct(
+        private readonly DisplaySettings $display,
+        private readonly LocationRepository $locations,
+    ) {
     }
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
@@ -80,7 +83,8 @@ final class ShiftFormType extends AbstractType
             ->add('location', EntityType::class, [
                 'label' => 'common.label.location',
                 'class' => Location::class,
-                'choice_label' => 'name',
+                'choice_label' => fn (Location $l) => $l->fullName(),
+                'choices' => $this->locations->findAllOrderedByPath(),
                 'required' => false,
                 'placeholder' => 'manage.shift.placeholder.none',
             ])

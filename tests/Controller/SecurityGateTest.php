@@ -2,14 +2,19 @@
 
 namespace App\Tests\Controller;
 
+use App\Tests\DatabaseWebTestCase;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 /**
- * Verifies the access_control gate without needing a database: anonymous users
- * are redirected to the login page, and the login page itself stays public.
+ * Verifies the access_control gate: anonymous users are redirected to the login page, and the login
+ * page itself stays public.
+ *
+ * The gate is pure configuration, but rendering the login page is not - it reads event_config for
+ * the site's own settings. Building the schema is therefore part of the test, not incidental to it:
+ * without it the page answers 500 and the assertion fails for a reason that has nothing to do with
+ * the gate.
  */
-final class SecurityGateTest extends WebTestCase
+final class SecurityGateTest extends DatabaseWebTestCase
 {
     /** @return iterable<string, array{string}> */
     public static function gatedUrls(): iterable
@@ -42,16 +47,14 @@ final class SecurityGateTest extends WebTestCase
     #[DataProvider('gatedUrls')]
     public function testGatedPagesRedirectAnonymousToLogin(string $url): void
     {
-        $client = static::createClient();
-        $client->request('GET', $url);
+        $this->client->request('GET', $url);
 
         self::assertResponseRedirects('/login');
     }
 
     public function testLoginPageIsPublic(): void
     {
-        $client = static::createClient();
-        $client->request('GET', '/login');
+        $this->client->request('GET', '/login');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('button[type="submit"]', 'Sign in');

@@ -48,6 +48,13 @@ class GoodieDistribution
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $notes = null;
 
+    /**
+     * Why this handover went ahead despite the recipient missing a certification the item requires.
+     * Non-null is the record that a requirement was overridden; {@see $distributedBy} says by whom.
+     */
+    #[ORM\Column(name: 'certification_override_reason', type: Types::TEXT, nullable: true)]
+    private ?string $certificationOverrideReason = null;
+
     public function __construct(User $user, GoodieItem $item, int $quantity = 1)
     {
         $this->user = $user;
@@ -133,5 +140,22 @@ class GoodieDistribution
     public function onPrePersist(): void
     {
         $this->distributedAt ??= new \DateTimeImmutable();
+    }
+
+    public function getCertificationOverrideReason(): ?string
+    {
+        return $this->certificationOverrideReason;
+    }
+
+    public function setCertificationOverrideReason(?string $reason): static
+    {
+        $this->certificationOverrideReason = $reason;
+
+        return $this;
+    }
+
+    public function isCertificationOverridden(): bool
+    {
+        return $this->certificationOverrideReason !== null;
     }
 }

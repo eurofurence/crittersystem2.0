@@ -8,7 +8,7 @@
     <h5 class="modal-title">{{ shift.shiftTask ? shift.shiftTask.name : shift.title }}</h5>
     <div class="text-secondary small">
       {{ shift.department ? shift.department.name : '-' }}
-      {% if shift.location %} · {{ shift.location.name }}{% endif %}
+      {% if shift.location %} · {{ shift.location.fullName }}{% endif %}
     </div>
   </div>
   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ 'ui.aria.close'|trans }}"></button>

@@ -39,7 +39,7 @@
             </td>
             <td class="small">
               {{ shift.shiftTask ? shift.shiftTask.name : '-' }}
-              <div class="text-muted">{{ shift.location ? shift.location.name : 'manage.shift.label.no_location'|trans }}</div>
+              <div class="text-muted">{{ shift.location ? shift.location.fullName : 'manage.shift.label.no_location'|trans }}</div>
             </td>
             <td>{{ shift.entries|length }}</td>
             {% set del %}

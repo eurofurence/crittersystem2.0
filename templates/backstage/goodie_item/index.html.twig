@@ -27,6 +27,9 @@
             <td>
               <div class="fw-semibold">{{ i.name }}</div>
               {% if i.description %}<div class="text-muted small">{{ i.description }}</div>{% endif %}
+              {% for certification in i.certifications %}
+                {{ d.badge(certification.title, certification.active ? 'bg-purple-lt' : 'bg-secondary-lt', {class: 'me-1 mt-1'}) }}
+              {% endfor %}
             </td>
             <td>{{ i.category.name }}</td>
             <td>{{ i.requiredHours|round(2) }}</td>

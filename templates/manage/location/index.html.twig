@@ -1,6 +1,9 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
+{# Rows arrive from the repository with each child directly after its own parent; the indent and
+   the parent prefix are what make a row like "Hall 5" readable without opening it. #}
+
 {% block title %}{{ 'manage.location.page.title'|trans }}{% endblock %}
 
 {% block body %}
@@ -65,7 +68,9 @@
         {% for location in locations %}
           <tr>
             <td>
-              <div class="fw-semibold">{{ location.name }}</div>
+              <div class="fw-semibold" style="padding-left: {{ location.depth * 1.5 }}rem;">
+                {% if location.parent %}<span class="text-muted">{{ location.parent.name }} - </span>{% endif %}{{ location.name }}
+              </div>
               <code class="small text-muted">{{ location.alias }}</code>
               {% if location.description %}<div class="text-muted small">{{ location.description }}</div>{% endif %}
             </td>

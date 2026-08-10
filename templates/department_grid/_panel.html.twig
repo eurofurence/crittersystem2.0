@@ -4,7 +4,7 @@
   {{ d.card_start(shift.title, {class: ''}) }}
       {{ d.definition_list([
         {label: 'common.label.when'|trans,     value: (shift.startsAt|app_datetime) ~ ' – ' ~ (shift.endsAt|app_time)},
-        {label: 'common.label.location'|trans, value: shift.location ? shift.location.name : '-'},
+        {label: 'common.label.location'|trans, value: shift.location ? shift.location.fullName : '-'},
         {label: 'department_grid.label.task'|trans,     value: shift.shiftTask ? shift.shiftTask.name : '-'},
         {label: 'department_grid.col.audience'|trans, value: shift.audience.label},
         {label: 'department_grid.col.fill'|trans,     value: row.assigned ~ ' / ' ~ row.needed}

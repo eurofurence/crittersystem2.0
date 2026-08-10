@@ -21,6 +21,12 @@ final class OperationsConfigData
 
     public string $infoDeskFinalization = "";
 
+    /** Every locale without its own text falls back to this one, so it may not be left empty. */
+    #[Assert\NotBlank]
+    public string $checkInMessageEn = "";
+
+    public string $checkInMessageDe = "";
+
     #[Assert\Positive]
     public int $infoDeskClaimTimeout = 300;
 

@@ -57,7 +57,7 @@ final class BotShiftNormalizer
             'department_id' => $department !== null ? (string) $department->getUuid() : null,
             'department_name' => $department?->getName() ?? '',
             'location_id' => $location !== null ? (string) $location->getUuid() : null,
-            'location_name' => $location?->getName() ?? '',
+            'location_name' => $location?->fullName() ?? '',
             'shift_task_id' => $task !== null ? (string) $task->getUuid() : null,
             'shift_task_name' => $task?->getName() ?? '',
             'start' => $shift->getStartsAt()->format(\DATE_ATOM),
@@ -114,7 +114,7 @@ final class BotShiftNormalizer
                 'title' => $member->getTitle(),
                 'start' => $member->getStartsAt()->format(\DATE_ATOM),
                 'end' => $member->getEndsAt()->format(\DATE_ATOM),
-                'location_name' => $memberLocation?->getName() ?? '',
+                'location_name' => $memberLocation?->fullName() ?? '',
                 'is_this_shift' => $member === $shift,
             ];
         }

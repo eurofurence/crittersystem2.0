@@ -51,7 +51,7 @@
               <select class="form-select" id="add-location" name="location">
                 <option value="0">{{ 'planner.option.none'|trans }}</option>
                 {% for loc in locations %}
-                  <option value="{{ loc.uuid }}">{{ loc.name }}</option>
+                  <option value="{{ loc.uuid }}">{{ loc.fullName }}</option>
                 {% endfor %}
               </select>
             </div>

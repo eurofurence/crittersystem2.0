@@ -11,10 +11,14 @@ use App\Repository\ShiftEntryRepository;
 use App\Repository\ShiftRepository;
 use App\Repository\ShiftTaskRepository;
 use App\Repository\UserVolunteerTypeRepository;
+use App\Service\CheckInMessageProvider;
 use App\Service\DisplaySettings;
 use App\Service\HoursCalculator;
+use App\Service\Shift\CheckInPolicy;
+use App\Service\Shift\ShiftEligibility;
 use App\Service\Shift\ShiftGroupResolver;
 use App\Service\Shift\ShiftGroupSignupService;
+use App\Service\Shift\ShiftRequirementsResolver;
 use App\Service\Shift\ShiftVisibilityResolver;
 use App\Service\ShiftSignupService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -43,9 +47,19 @@ final class ShiftBrowseController extends AbstractController
         private readonly ShiftVisibilityResolver $visibility,
         private readonly ShiftGroupResolver $groups,
         private readonly DisplaySettings $display,
+        private readonly ShiftEligibility $eligibility,
+        private readonly CheckInPolicy $checkIn,
+        private readonly CheckInMessageProvider $checkInMessage,
     ) {
     }
 
+    /**
+     * The browsable shift list for one day, grouped by local start hour.
+     *
+     * The eligibility rules are preloaded for the whole day and dropped again in a `finally`: what
+     * they hold is entities, the volunteer's own entries and the live capacity counts, so a preload
+     * left standing would answer the next caller with this render's data.
+     */
     #[IsGranted('shift:view')]
     #[Route('/shifts', name: 'app_shift_index', methods: ['GET'])]
     public function index(Request $request, LocationRepository $locationRepo, ShiftTaskRepository $shiftTaskRepo): Response
@@ -61,37 +75,45 @@ final class ShiftBrowseController extends AbstractController
         $onlyAvailable = $request->query->getBoolean('available');
         $onlyMine = $request->query->getBoolean('mine');
 
+        $shifts = $this->shifts->findForDay($selectedDate, $tz, $location, $shiftTask);
+
         $byHour = [];
-        foreach ($this->shifts->findForDay($selectedDate, $tz, $location, $shiftTask) as $shift) {
-            $availability = $this->signup->availability($shift);
-            $status = $this->signup->eligibilityStatus($shift, $user);
-            $relevant = $this->isRelevant($availability, $user);
+        $this->eligibility->warmUp($user, $shifts);
+        try {
+            foreach ($shifts as $shift) {
+                $availability = $this->signup->availability($shift);
+                $status = $this->signup->eligibilityStatus($shift, $user);
+                $relevant = $this->isRelevant($availability, $user);
 
-            if ($onlyAvailable && $status !== 'available') {
-                continue;
-            }
-            if ($onlyMine && !$relevant) {
-                continue;
-            }
+                if ($onlyAvailable && $status !== 'available') {
+                    continue;
+                }
+                if ($onlyMine && !$relevant) {
+                    continue;
+                }
 
-            $hour = $shift->getStartsAt()->setTimezone($tz)->format('H:00');
-            $byHour[$hour][] = [
-                'shift' => $shift,
-                'availability' => $availability,
-                'status' => $status,
-                'options' => $this->signup->signupOptions($shift, $user),
-                'myEntry' => $this->entries->findOneByShiftAndUser($shift, $user),
-                // Only counted, not described: the card shows "part of N shifts" and the modal
-                // fetches the detail, which is where the visibility filter runs.
-                'groupSize' => \count($this->groups->membersFor($shift)),
-            ];
+                $hour = $shift->getStartsAt()->setTimezone($tz)->format('H:00');
+                $byHour[$hour][] = [
+                    'shift' => $shift,
+                    'availability' => $availability,
+                    'status' => $status,
+                    'options' => $this->signup->signupOptions($shift, $user),
+                    'myEntry' => $this->entries->findOneByShiftAndUser($shift, $user),
+                    // Only counted, not described: the card shows "part of N shifts" and the modal
+                    // fetches the detail, which is where the visibility filter runs.
+                    'groupSize' => \count($this->groups->membersFor($shift)),
+                ];
+            }
+        } finally {
+            $this->eligibility->coolDown();
         }
 
         return $this->render('shift/index.html.twig', [
             'days' => $days,
             'selectedDate' => $selectedDate,
             'byHour' => $byHour,
-            'locations' => $locationRepo->findAllOrdered(),
+            'checkInMessage' => $this->checkIn->isCheckedIn($user) ? null : $this->checkInMessage->message(),
+            'locations' => $locationRepo->findAllOrderedByPath(),
             'shiftTasks' => $shiftTaskRepo->findAllOrdered(),
             'filters' => [
                 'location' => $location !== null ? (string) $location->getUuid() : null,
@@ -112,8 +134,7 @@ final class ShiftBrowseController extends AbstractController
         // The volunteer browser only exposes published public shifts; a draft or
         // staff-only shift reached by id must not leak here.
         if (!$this->visibility->isVisibleTo($shift, $user)) {
-//            throw $this->createNotFoundException();
-            return $this->render('shift/not_found.html.twig');
+            throw $this->createNotFoundException();
         }
 
         return $this->render('shift/show.html.twig', [
@@ -127,6 +148,14 @@ final class ShiftBrowseController extends AbstractController
         ]);
     }
 
+    /**
+     * Sign up for a shift, and for every member of its group.
+     *
+     * The role arrives one of two ways. A page that carries its own dropdown posts
+     * `volunteer_type`; the dialog, which is where the browse list asks, posts the answer under
+     * `group_type` keyed by shift uuid, the origin included. Either way it is looked up in
+     * `signupOptions()`, so what the form posts never widens what the volunteer may take.
+     */
     #[IsGranted('shift:view')]
     #[Route('/shifts/{id}/signup', name: 'app_shift_signup', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function signUp(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
@@ -140,7 +169,10 @@ final class ShiftBrowseController extends AbstractController
 
         if ($this->isCsrfTokenValid('signup'.$shift->getId(), (string) $request->request->get('_token'))) {
             $options = $this->signup->signupOptions($shift, $user);
-            $type = $options[(string) $request->request->get('volunteer_type')] ?? null;
+            $choices = $this->typeChoices($request);
+            $requested = (string) $request->request->get('volunteer_type')
+                ?: ($choices[(string) $shift->getUuid()] ?? '');
+            $type = $options[$requested] ?? null;
 
             if ($type === null) {
                 $this->addFlash('danger', new TranslatableMessage('shift.flash.choose_type'));
@@ -150,7 +182,7 @@ final class ShiftBrowseController extends AbstractController
                         $user,
                         $shift,
                         $type,
-                        $this->typeChoices($request),
+                        $choices,
                         (string) $request->request->get('comment') ?: null,
                         $request->request->getBoolean('acknowledge_hours'),
                     );
@@ -170,17 +202,22 @@ final class ShiftBrowseController extends AbstractController
     }
 
     /**
-     * The confirmation body for a grouped shift: every member, the role on each, the capacity and the
-     * hours the whole thing adds.
+     * The body of the shift dialog: every shift the action covers, the role on each, the capacity,
+     * the hours it adds, and what the viewer would need to qualify for the roles they cannot take.
+     * A shift with no group is a group of one, so the same body serves both.
      *
      * Rendered here rather than built in the browser from a data attribute. Capacity and eligibility
      * are per viewer and move between the page render and the click, and the visibility filter has to
      * run on the server - a stale attribute could show a full shift as open, or carry a member this
      * viewer may not see.
+     *
+     * The requirements are keyed by the members the plan exposes, never by the group: a group
+     * holding a shift this viewer may not see produces no member list at all, and describing that
+     * shift's roles here would confirm it exists.
      */
     #[IsGranted('shift:view')]
     #[Route('/shifts/{id}/group', name: 'app_shift_group_modal', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
-    public function groupModal(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
+    public function groupModal(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, ShiftRequirementsResolver $requirements): Response
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -191,10 +228,17 @@ final class ShiftBrowseController extends AbstractController
 
         $options = $this->signup->signupOptions($shift, $user);
         $typeUuid = (string) $request->query->get('volunteer_type');
+        $plan = $this->signup->plan($user, $shift, $options[$typeUuid] ?? null);
+
+        $byMember = [];
+        foreach ($plan->members as $member) {
+            $byMember[(string) $member->shift->getUuid()] = $requirements->forShift($member->shift, $user);
+        }
 
         return $this->render('shift/_group_modal.html.twig', [
-            'plan' => $this->signup->plan($user, $shift, $options[$typeUuid] ?? null),
+            'plan' => $plan,
             'mode' => $request->query->get('mode') === 'cancel' ? 'cancel' : 'apply',
+            'requirements' => $byMember,
         ]);
     }
 

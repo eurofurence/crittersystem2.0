@@ -16,9 +16,11 @@ use App\Repository\PrivacyNoticeRepository;
 use App\Repository\TelegramConfigurationRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Repository\VolunteerTypeRepository;
+use App\Service\EventConfigStore;
 use App\Service\PrivacyNoticeProvider;
 use App\Service\StaffCheckInService;
 use App\Service\TextVariables;
+use App\Theme\ThemeCatalog;
 use App\Telegram\TelegramLinkService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -58,6 +60,8 @@ final class OnboardingController extends AbstractController
         private readonly TelegramLinkService $telegramLinks,
         private readonly TelegramConfigurationRepository $telegramConfig,
         private readonly StaffCheckInService $staffCheckIn,
+        private readonly ThemeCatalog $themes,
+        private readonly EventConfigStore $config,
     ) {
     }
 
@@ -112,6 +116,8 @@ final class OnboardingController extends AbstractController
         if ($request->isMethod('POST')) {
             $personal->setPronoun($request->request->get('pronoun') ?: null);
             $contact->setMobile($request->request->get('mobile') ?: null);
+            $personal->setPlannedArrivalDate(self::parseDate($request->request->get('planned_arrival')));
+            $personal->setPlannedDepartureDate(self::parseDate($request->request->get('planned_departure')));
             if ($user->canEditFullName()) {
                 $personal->setFirstName($request->request->get('first_name') ?: null);
                 $personal->setLastName($request->request->get('last_name') ?: null);
@@ -210,7 +216,7 @@ final class OnboardingController extends AbstractController
                     'scope' => 'visibility', 'name' => $showName, 'email' => $showEmail, 'phone' => $showPhone, 'telegram' => $showTelegram,
                 ]]);
 
-                return $this->redirectToRoute('app_onboarding_finish');
+                return $this->redirectToRoute('app_onboarding_theme');
             }
         }
 
@@ -222,6 +228,58 @@ final class OnboardingController extends AbstractController
         ]);
     }
 
+    /**
+     * Theme choice, with a live preview.
+     *
+     * The preview costs no JavaScript and stores nothing: {@see \App\Theme\ThemeResolver} honours
+     * `?theme=` ahead of the stored setting, so each card is an ordinary link that reloads this step
+     * rendered in that theme. Only Confirm writes the choice.
+     *
+     * The step cannot be skipped, but it also cannot be failed: the event default is preselected, so
+     * confirming without touching anything stores that default explicitly.
+     */
+    #[Route('/theme', name: 'app_onboarding_theme', methods: ['GET', 'POST'])]
+    public function theme(Request $request): Response
+    {
+        if ($redirect = $this->redirectIfDone()) {
+            return $redirect;
+        }
+        $user = $this->currentUser();
+        $settings = $user->getSettings() ?? new Settings($user);
+
+        if ($request->isMethod('POST')) {
+            $chosen = $this->themes->find((string) $request->request->get('theme', ''))?->slug
+                ?? $this->defaultThemeSlug();
+            $settings->setTheme($chosen);
+            $user->setSettings($settings);
+            $this->em->persist($settings);
+            $this->em->flush();
+
+            return $this->redirectToRoute('app_onboarding_finish');
+        }
+
+        $previewed = $this->themes->find((string) $request->query->get('theme', ''))?->slug;
+
+        return $this->render('onboarding/theme.html.twig', [
+            'themes' => $this->themes->all(),
+            'selected' => $previewed ?? $settings->getTheme() ?? $this->defaultThemeSlug(),
+        ]);
+    }
+
+    /** The admin-set default, or the catalog's own fallback when none is configured. */
+    private function defaultThemeSlug(): string
+    {
+        $configured = (string) $this->config->get(EventConfigStore::KEY_DEFAULT_THEME, '');
+
+        return $this->themes->find($configured)?->slug ?? $this->themes->fallback()->slug;
+    }
+
+    /**
+     * The last step: sets a password for a locally-managed account, then completes onboarding.
+     *
+     * Staff are sent on to their availability because the planners build the roster from it;
+     * everyone else lands on the news.
+     */
     #[Route('/finish', name: 'app_onboarding_finish', methods: ['GET', 'POST'])]
     public function finish(Request $request): Response
     {
@@ -249,7 +307,7 @@ final class OnboardingController extends AbstractController
             $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, ['details' => ['onboarding' => 'completed']]);
             $this->addFlash('success', new TranslatableMessage('onboarding.flash.complete'));
 
-            return $this->redirectToRoute('app_news_index');
+            return $this->redirectToRoute($user->isStaff() ? 'app_availability' : 'app_news_index');
         }
 
         return $this->render('onboarding/finish.html.twig', ['user' => $user]);
@@ -284,6 +342,22 @@ final class OnboardingController extends AbstractController
                 $user->addGroup($group);
             }
         }
+    }
+
+    /**
+     * A date from a `<input type="date">`, or null when it was left blank or holds anything that is
+     * not a plain calendar date. Travel plans are optional here and a typo must not stop someone
+     * finishing onboarding.
+     */
+    private static function parseDate(mixed $value): ?\DateTimeImmutable
+    {
+        if (!\is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', trim($value));
+
+        return $date === false ? null : $date;
     }
 
     private function currentUser(): User

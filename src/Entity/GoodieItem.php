@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use App\Repository\GoodieItemRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
@@ -50,11 +52,23 @@ class GoodieItem
     #[ORM\Column(name: 'display_order')]
     private int $displayOrder = 0;
 
+    /**
+     * Certifications the recipient must hold before this item may be handed over. Every one of them
+     * is required, and a certification that has been deactivated stops counting - see
+     * {@see \App\Service\GoodieEligibilityService::missingCertifications()}.
+     *
+     * @var Collection<int, Certification>
+     */
+    #[ORM\ManyToMany(targetEntity: Certification::class)]
+    #[ORM\JoinTable(name: 'goodie_item_certifications')]
+    private Collection $certifications;
+
     public function __construct(GoodieCategory $category, string $name)
     {
         $this->uuid = Uuid::v4();
         $this->category = $category;
         $this->name = $name;
+        $this->certifications = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -147,6 +161,28 @@ class GoodieItem
     public function setDisplayOrder(int $displayOrder): static
     {
         $this->displayOrder = $displayOrder;
+
+        return $this;
+    }
+
+    /** @return Collection<int, Certification> */
+    public function getCertifications(): Collection
+    {
+        return $this->certifications;
+    }
+
+    public function addCertification(Certification $certification): static
+    {
+        if (!$this->certifications->contains($certification)) {
+            $this->certifications->add($certification);
+        }
+
+        return $this;
+    }
+
+    public function removeCertification(Certification $certification): static
+    {
+        $this->certifications->removeElement($certification);
 
         return $this;
     }

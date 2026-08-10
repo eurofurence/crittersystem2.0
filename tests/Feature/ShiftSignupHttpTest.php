@@ -40,15 +40,29 @@ final class ShiftSignupHttpTest extends DatabaseWebTestCase
         return $this->client->request('GET', '/shifts?date='.$shift->getStartsAt()->format('Y-m-d'));
     }
 
+    /**
+     * The card's sign-up form carrying the role the volunteer picked in the dialog.
+     *
+     * The card itself holds no role dropdown: the dialog asks, and copies the answer onto this form
+     * as `group_type[<shift uuid>]` before submitting it. Posting the bare form the way a browser
+     * without the dialog would is a different case, covered separately.
+     */
+    private function submitCardSignUp(Shift $shift, \Symfony\Component\DomCrawler\Crawler $crawler): void
+    {
+        $form = $crawler->filter('form[action*="/signup"]')->form();
+
+        $this->client->request('POST', $form->getUri(), $form->getPhpValues() + [
+            'group_type' => [(string) $shift->getUuid() => (string) $this->scenario->type->getUuid()],
+        ]);
+    }
+
     public function testAConfirmedMemberCanSignUp(): void
     {
         $shift = $this->scenario->shift('Sign Me Up', 'tomorrow 10:00');
         $user = $this->scenario->user(memberOf: $this->scenario->type);
         $this->client->loginUser($user);
 
-        $crawler = $this->browse($shift);
-        $form = $crawler->filter('form[action*="/signup"]')->form();
-        $this->client->submit($form);
+        $this->submitCardSignUp($shift, $this->browse($shift));
 
         self::assertResponseRedirects();
         self::assertNotNull($this->entries()->findOneByShiftAndUser($shift, $user), 'the sign-up must be persisted');
@@ -93,9 +107,8 @@ final class ShiftSignupHttpTest extends DatabaseWebTestCase
         $this->client->loginUser($user);
 
         $crawler = $this->browse($shift);
-        $form = $crawler->filter('form[action*="/signup"]')->form();
-        $this->client->submit($form);
-        $this->client->submit($form); // replay the same request
+        $this->submitCardSignUp($shift, $crawler);
+        $this->submitCardSignUp($shift, $crawler); // replay the same request
 
         self::assertCount(
             1,

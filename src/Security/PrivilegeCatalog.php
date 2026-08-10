@@ -234,7 +234,7 @@ final class PrivilegeCatalog
             'name' => 'Department staff',
             'role' => 'ROLE_STAFF',
             'permissions' => [
-                'department:view', 'shift:view', 'shift:apply', 'shift:self',
+                'manageshifts:view', 'department:view', 'shift:view', 'shift:apply', 'shift:self',
                 'location:view', 'volunteertype:view', 'worklog:self',
             ],
         ],
@@ -250,22 +250,22 @@ final class PrivilegeCatalog
         'communications-manager' => [
             'name' => 'Communications Manager',
             'role' => 'ROLE_STAFF',
-            'permissions' => ['news:manage', 'news:view', 'faq:manage', 'faq:view', 'question:answer'],
+            'permissions' => ['manageshifts:view', 'news:manage', 'news:view', 'faq:manage', 'faq:view', 'question:answer'],
         ],
         'certification-manager' => [
             'name' => 'Certification Manager',
             'role' => 'ROLE_STAFF',
-            'permissions' => ['certification:manage', 'certification:approve', 'certification:view', 'certification:apply'],
+            'permissions' => ['manageshifts:view', 'certification:manage', 'certification:approve', 'certification:view', 'certification:apply'],
         ],
         'goodies-manager' => [
             'name' => 'Goodies Manager',
             'role' => 'ROLE_STAFF',
-            'permissions' => ['goodie:manage', 'goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
+            'permissions' => ['manageshifts:view', 'goodie:manage', 'goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
         ],
         'goodies-staff' => [
             'name' => 'Goodies Staff',
             'role' => 'ROLE_STAFF',
-            'permissions' => ['goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
+            'permissions' => ['manageshifts:view', 'goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
         ],
     ];
 

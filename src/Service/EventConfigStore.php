@@ -92,6 +92,14 @@ class EventConfigStore implements ResetInterface
     public const KEY_HOURS_NOSHOW_MULTIPLIER = 'hours.noshow_multiplier';
 
     /*
+     * Where a volunteer has to go to be checked in, in each language the UI is offered in. It names
+     * a physical desk at a particular venue, so it cannot live in the translation catalogs - it
+     * changes per event, and only the organisers know it.
+     */
+    public const KEY_CHECKIN_MESSAGE_EN = 'checkin.message.en';
+    public const KEY_CHECKIN_MESSAGE_DE = 'checkin.message.de';
+
+    /*
      * How long a session survives without a request. It lives here rather than in framework.yaml because
      * `framework.session.*` is compile-time container configuration and cannot read the database; see
      * App\EventSubscriber\SessionIdleSubscriber, which enforces it per request.
@@ -113,6 +121,8 @@ class EventConfigStore implements ResetInterface
     public const DEFAULT_HOURS_NIGHT_MULTIPLIER = 2.0;   // Night factor
     public const DEFAULT_HOURS_NOSHOW_MULTIPLIER = -2.0; // No-show Multiplier
     public const DEFAULT_SESSION_IDLE_MINUTES = 60;      // Minutes without a request
+    public const DEFAULT_CHECKIN_MESSAGE_EN = 'Please go the info-desk for the Critter Check-in';
+    public const DEFAULT_CHECKIN_MESSAGE_DE = 'Bitte gehe zum Info-Desk für den Critter Check-in';
 
     /**
      * Values already read, so a screen that asks the same question on every row asks the database

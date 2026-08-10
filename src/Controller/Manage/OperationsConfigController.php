@@ -35,6 +35,8 @@ final class OperationsConfigController extends AbstractController
             $this->store->set(EventConfigStore::KEY_INFODESK_WELCOME, $data->infoDeskWelcome);
             $this->store->set(EventConfigStore::KEY_INFODESK_FINALIZATION, $data->infoDeskFinalization);
             $this->store->set(EventConfigStore::KEY_INFODESK_CLAIM_TIMEOUT, $data->infoDeskClaimTimeout);
+            $this->store->set(EventConfigStore::KEY_CHECKIN_MESSAGE_EN, $data->checkInMessageEn);
+            $this->store->set(EventConfigStore::KEY_CHECKIN_MESSAGE_DE, $data->checkInMessageDe);
             $this->store->set(EventConfigStore::KEY_MESSAGE_EDIT_WINDOW, $data->messageEditWindow);
             $this->store->set(EventConfigStore::KEY_CALL_RESPONSE_TIMEOUT, $data->callResponseTimeout);
             $this->store->set(EventConfigStore::KEY_CALL_MANAGER_LEAD, $data->callManagerLead);
@@ -68,6 +70,8 @@ final class OperationsConfigController extends AbstractController
         $data->infoDeskWelcome = $store->get(EventConfigStore::KEY_INFODESK_WELCOME, EventConfigStore::DEFAULT_INFODESK_WELCOME);
         $data->infoDeskFinalization = $store->get(EventConfigStore::KEY_INFODESK_FINALIZATION, EventConfigStore::DEFAULT_INFODESK_FINALIZATION);
         $data->infoDeskClaimTimeout = $store->getInt(EventConfigStore::KEY_INFODESK_CLAIM_TIMEOUT, EventConfigStore::DEFAULT_INFODESK_CLAIM_TIMEOUT);
+        $data->checkInMessageEn = $store->getString(EventConfigStore::KEY_CHECKIN_MESSAGE_EN, EventConfigStore::DEFAULT_CHECKIN_MESSAGE_EN);
+        $data->checkInMessageDe = $store->getString(EventConfigStore::KEY_CHECKIN_MESSAGE_DE, EventConfigStore::DEFAULT_CHECKIN_MESSAGE_DE);
         $data->messageEditWindow = $store->getInt(EventConfigStore::KEY_MESSAGE_EDIT_WINDOW, EventConfigStore::DEFAULT_MESSAGE_EDIT_WINDOW);
         $data->callResponseTimeout = $store->getInt(EventConfigStore::KEY_CALL_RESPONSE_TIMEOUT, EventConfigStore::DEFAULT_CALL_RESPONSE_TIMEOUT);
         $data->callManagerLead = $store->getInt(EventConfigStore::KEY_CALL_MANAGER_LEAD, EventConfigStore::DEFAULT_CALL_MANAGER_LEAD);

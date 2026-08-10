@@ -1,13 +1,15 @@
 {% import 'components/data/_macros.twig' as d %}
 
 {#
-  The body of the shift-group confirmation dialog, fetched by shift_group_controller when the
-  volunteer opens or submits a grouped application.
+  The body of the shift dialog, fetched by shift_group_controller when the volunteer opens, applies
+  to or cancels a shift. A shift with no group is a group of one, so this one body serves every
+  surface and the group wording only appears when there really is a group.
 
   Rendered server-side on every open, never cached into a data attribute: capacity and eligibility
   are per viewer and move between the page render and the click, and the visibility filter has to run
   here. A member the viewer may not see leaves `plan.members` empty and only the neutral refusal is
-  shown, so nothing confirms that the hidden shift exists.
+  shown, so nothing confirms that the hidden shift exists - which is also why the requirements below
+  are keyed by the members the plan exposes and never built from the group itself.
 #}
 
 <div class="shift-group-modal">
@@ -18,13 +20,15 @@
       <p class="text-secondary">{{ plan.group.description }}</p>
     {% endif %}
 
-    <p class="mb-2">
-      {% if mode == 'cancel' %}
-        {{ 'shift.group.cancel_intro'|trans({'%count%': plan.memberCount}) }}
-      {% else %}
-        {{ 'shift.group.apply_intro'|trans({'%count%': plan.memberCount}) }}
-      {% endif %}
-    </p>
+    {% if plan.isGrouped %}
+      <p class="mb-2">
+        {% if mode == 'cancel' %}
+          {{ 'shift.group.cancel_intro'|trans({'%count%': plan.memberCount}) }}
+        {% else %}
+          {{ 'shift.group.apply_intro'|trans({'%count%': plan.memberCount}) }}
+        {% endif %}
+      </p>
+    {% endif %}
 
     <ul class="list-group list-group-flush mb-3">
       {% for member in plan.members %}
@@ -36,7 +40,7 @@
               <div class="text-muted small">
                 {{ member.shift.startsAt|app_datetime }} - {{ member.shift.endsAt|app_time }}
                 ({{ 'shift.group.hours'|trans({'%hours%': member.shift.durationHours|round(1)}) }})
-                {% if member.shift.location %} · {{ member.shift.location.name }}{% endif %}
+                {% if member.shift.location %} · {{ member.shift.location.fullName }}{% endif %}
               </div>
             </div>
             {% if member.needed > 0 %}
@@ -82,6 +86,64 @@
     </ul>
 
     {% if mode != 'cancel' %}
+      {# Every role the shift asks for, not only the blocking ones: a shift that offers this
+         volunteer nothing has to be able to say why, and where to go about it. #}
+      {% for member in plan.members %}
+        {% set roles = requirements[member.shift.uuid]|default([]) %}
+        {% if roles is not empty %}
+          <div class="mb-3">
+            <div class="fw-semibold small mb-1">
+              {% if plan.isGrouped %}
+                {{ 'shift.requirement.heading_for'|trans({'%shift%': member.shift.title}) }}
+              {% else %}
+                {{ 'shift.requirement.heading'|trans }}
+              {% endif %}
+            </div>
+            <ul class="list-unstyled mb-0">
+              {% for role in roles %}
+                <li class="d-flex justify-content-between align-items-start gap-2 py-1">
+                  <div>
+                    <span class="fw-semibold">{{ role.type.name }}</span>
+                    {% if role.state == 'eligible' %}
+                      <div class="text-success small">{{ 'shift.requirement.state.eligible'|trans }}</div>
+                    {% elseif role.state == 'pending' %}
+                      <div class="text-warning small">
+                        {{ 'shift.requirement.state.pending'|trans }}
+                        {% if role.typeLinkable %}
+                          <a href="{{ path('app_membership_show', {id: role.type.uuid}) }}">{{ 'shift.requirement.action.view_type'|trans }}</a>
+                        {% endif %}
+                      </div>
+                    {% elseif role.state == 'not_member' %}
+                      <div class="text-muted small">
+                        {{ 'shift.requirement.state.not_member'|trans({'%name%': role.type.name}) }}
+                        {% if role.typeLinkable %}
+                          <a href="{{ path('app_membership_show', {id: role.type.uuid}) }}">{{ 'shift.requirement.action.join_type'|trans }}</a>
+                        {% endif %}
+                      </div>
+                    {% elseif role.state == 'missing_certification' %}
+                      <div class="text-muted small">
+                        {{ 'shift.requirement.state.missing_certification'|trans }}
+                        {% for certification in role.missingCertifications %}
+                          {%- if certification in role.linkableCertifications -%}
+                            <a href="{{ path('app_certifications_show', {id: certification.uuid}) }}">{{ certification.title }}</a>
+                          {%- else -%}
+                            {{ certification.title }}
+                          {%- endif -%}
+                          {{- loop.last ? '' : ', ' -}}
+                        {% endfor %}
+                      </div>
+                    {% else %}
+                      <div class="text-muted small">{{ 'shift.requirement.state.full'|trans }}</div>
+                    {% endif %}
+                  </div>
+                  <span class="text-muted small text-nowrap">{{ role.assigned }}/{{ role.needed }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      {% endfor %}
+
       <div class="d-flex justify-content-between small text-muted mb-2">
         <span>{{ 'shift.group.total_hours'|trans({'%hours%': plan.totalHours|round(1)}) }}</span>
       </div>
@@ -106,8 +168,15 @@
   {% endif %}
 </div>
 
-{# Read by the controller to label and enable the primary button. #}
+{#
+  Read by the controller to label and enable the primary button.
+
+  `applicable` reports only what the browser cannot re-evaluate: whether anything blocks the
+  application outright. The outstanding role choices are deliberately excluded - the volunteer makes
+  them in this dialog, and a flag computed before they did would stay 0 for the rest of its life.
+  The controller enables the button on applicable AND every choice made.
+#}
 <div data-shift-group-meta
-     data-applicable="{{ plan.isApplicable and plan.members is not empty ? '1' : '0' }}"
+     data-applicable="{{ plan.error is null and plan.members is not empty ? '1' : '0' }}"
      data-count="{{ plan.memberCount }}"
      hidden></div>

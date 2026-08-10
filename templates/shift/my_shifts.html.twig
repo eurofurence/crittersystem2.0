@@ -1,12 +1,34 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 
+{# Each feed button is offered only to a viewer whose privilege the endpoint actually accepts,
+   so nobody is handed a link that answers 403. #}
+
 {% block title %}{{ 'shift.my.page.title'|trans }}{% endblock %}
 
 {% block body %}
+  {% set feedActions = [] %}
+  {% if is_granted('export:atom') %}
+    {% set feedActions = feedActions|merge([
+      {label: 'shift.action.feed_atom'|trans, href: url('app_feed_atom', {key: app.user.apiKey}), class: 'btn btn-outline-secondary'}
+    ]) %}
+  {% endif %}
+  {% if is_granted('export:ical') %}
+    {% set feedActions = feedActions|merge([
+      {label: 'shift.action.feed_ical'|trans, href: url('app_feed_ical', {key: app.user.apiKey}), class: 'btn btn-outline-secondary'}
+    ]) %}
+  {% endif %}
+  {% if is_granted('export:atom') %}
+    {% set feedActions = feedActions|merge([
+      {label: 'shift.action.feed_rss'|trans, href: url('app_feed_rss', {key: app.user.apiKey}), class: 'btn btn-outline-secondary'}
+    ]) %}
+  {% endif %}
+
   {{ d.page_header('shift.my.page.title'|trans, {
     subtitle: 'shift.my.page.subtitle'|trans,
-    actions: [{label: 'shift.action.browse_shifts'|trans, href: path('app_shift_index'), class: 'btn btn-outline-primary'}]
+    actions: feedActions|merge([
+      {label: 'shift.action.browse_shifts'|trans, href: path('app_shift_index'), class: 'btn btn-outline-primary'}
+    ])
   }) }}
 
   {{ d.card_start(null, {bodyClass: 'card-body d-flex justify-content-between align-items-center'}) }}
@@ -42,11 +64,11 @@
             <td class="text-end">
               {% if not shift.past %}
                 <form method="post" action="{{ path('app_shift_cancel', {id: entry.uuid}) }}" class="d-inline"
-                      {% if shift.grouped %}
-                        {{ include('shift/_group_attrs.html.twig', {shift: shift, count: shift.shiftGroup.shifts|length, mode: 'cancel'}) }}
-                      {% else %}
-                        data-controller="confirm" data-confirm-message-value="{{ 'shift.confirm.cancel_this_signup'|trans }}"
-                      {% endif %}>
+                      {{ include('shift/_group_attrs.html.twig', {
+                        shift: shift,
+                        count: shift.grouped ? shift.shiftGroup.shifts|length : 1,
+                        mode: 'cancel'
+                      }) }}>
                   <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ entry.id) }}">
                   <button class="btn btn-sm btn-outline-danger">{{ 'common.action.cancel'|trans }}</button>
                 </form>

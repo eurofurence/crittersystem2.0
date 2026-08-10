@@ -32,7 +32,7 @@ final class LocationController extends AbstractController
     public function index(): Response
     {
         return $this->render('manage/location/index.html.twig', [
-            'locations' => $this->locations->findAllOrdered(),
+            'locations' => $this->locations->findAllOrderedByPath(),
         ]);
     }
 

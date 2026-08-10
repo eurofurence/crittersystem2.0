@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Runs app:db:import-prod inside the dev app container, which is the only place
+# the PostgreSQL client tools are installed. Every argument is passed through;
+# a --file path is rewritten to its location inside the container, so the dump
+# has to sit within the project directory that is bind-mounted there.
+set -euo pipefail
+
+root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+compose=(docker compose -f "$root/compose.dev.yaml")
+
+args=()
+for arg in "$@"; do
+  case "$arg" in
+    --file=*)
+      path="${arg#--file=}"
+      [[ "$path" = /* ]] || path="$PWD/$path"
+      case "$path" in
+        "$root"/*) args+=("--file=/app/${path#"$root"/}") ;;
+        *)
+          echo "The dump must live inside $root so the container can read it." >&2
+          echo "Move it to $root/var/db-dumps/ and point --file there." >&2
+          exit 1
+          ;;
+      esac
+      ;;
+    *) args+=("$arg") ;;
+  esac
+done
+
+if ! "${compose[@]}" ps --services --status running 2>/dev/null | grep -qx app; then
+  echo "The dev stack is not running. Start it with:" >&2
+  echo "  docker compose -f compose.dev.yaml up -d" >&2
+  exit 1
+fi
+
+exec "${compose[@]}" exec app php bin/console app:db:import-prod ${args[@]+"${args[@]}"}

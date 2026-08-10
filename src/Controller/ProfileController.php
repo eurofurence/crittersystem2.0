@@ -71,6 +71,7 @@ final class ProfileController extends AbstractController
             'worklogForm' => $canAddWorklog ? $this->worklogForm($subject) : null,
             'workHistory' => $canViewHistory ? $this->presenter->workHistory($subject) : null,
             'memberships' => $this->presenter->memberships($subject),
+            'departments' => $this->presenter->departments($subject),
             'goodies' => $canViewGoodies ? $this->presenter->goodies($subject) : null,
             'banReview' => $canViewBans ? $this->presenter->banReview($subject) : null,
         ]);

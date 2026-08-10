@@ -180,6 +180,36 @@ final class BotApiTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
     }
 
+    /**
+     * A goodie the volunteer is barred from must never be reported as one they have earned. The
+     * progress loop matches every tier by name for exactly this reason.
+     */
+    public function testAGoodieBlockedByACertificationIsNotReportedAsEarned(): void
+    {
+        $certification = (new \App\Entity\Certification('First Aid'))->setIsActive(true);
+        $this->em->persist($certification);
+
+        $category = new \App\Entity\GoodieCategory('Swag '.bin2hex(random_bytes(3)));
+        $this->em->persist($category);
+        $item = (new \App\Entity\GoodieItem($category, 'First Aid Pin'))->setRequiredHours(0.0);
+        $item->addCertification($certification);
+        $this->em->persist($item);
+
+        $user = $this->scenario->user();
+        $this->em->flush();
+
+        $this->request('GET', '/api/bot/users/'.$user->getUuid().'/overview', $user);
+
+        self::assertResponseIsSuccessful();
+        $goodies = $this->json()['goodies'];
+
+        $earned = array_column($goodies['eligible'], 'name');
+        self::assertNotContains('First Aid Pin', $earned, 'a blocked goodie must not be reported as earned');
+
+        self::assertSame(['First Aid Pin'], array_column($goodies['blocked'], 'name'));
+        self::assertSame(['First Aid'], $goodies['blocked'][0]['missing_certifications']);
+    }
+
     // --- shifts ---------------------------------------------------------
 
     public function testShiftListRequiresShiftViewPrivilege(): void

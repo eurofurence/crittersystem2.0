@@ -58,7 +58,7 @@
       <select class="form-select" id="edit-location-{{ shift.uuid }}" name="location">
         <option value="0">{{ 'planner.option.none'|trans }}</option>
         {% for loc in locations %}
-          <option value="{{ loc.uuid }}" {{ shift.location and shift.location.uuid == loc.uuid ? 'selected' : '' }}>{{ loc.name }}</option>
+          <option value="{{ loc.uuid }}" {{ shift.location and shift.location.uuid == loc.uuid ? 'selected' : '' }}>{{ loc.fullName }}</option>
         {% endfor %}
       </select>
     </div>

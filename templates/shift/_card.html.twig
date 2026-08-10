@@ -1,0 +1,104 @@
+{% import 'components/data/_macros.twig' as d %}
+
+{#
+  One shift on the browse list.
+
+  Every action lives in the dialog, so the card's only control is `View`. It is always a real link
+  to the shift page: without JavaScript it navigates there, and with JavaScript the shift-group
+  controller opens the dialog instead. Which host element carries the controller decides what the
+  dialog can do - a form when the volunteer may act, a plain element when they may only read.
+
+  Parameters: `card` (one row of the controller's byHour list), `statusStyles`, `statusLabels`,
+  `timeStyles`.
+#}
+
+{% set shift = card.shift %}
+{% set canAct = card.myEntry or card.options is not empty %}
+{% set mode = card.myEntry ? 'cancel' : 'apply' %}
+{% set action = card.myEntry
+  ? path('app_shift_cancel', {id: card.myEntry.uuid})
+  : path('app_shift_signup', {id: shift.uuid}) %}
+
+<div class="col-12 mt-2" style="min-height: 115px">
+  <div class="card{{ shift.past ? ' opacity-75' : '' }} h-100">
+
+    <{{ canAct ? 'form' : 'div' }} class="position-absolute top-0 end-0 mt-2 me-2 d-flex flex-column align-items-end"
+        {% if canAct %}method="post" action="{{ action }}"{% endif %}
+        {{ include('shift/_group_attrs.html.twig', {shift: shift, count: card.groupSize, mode: mode}) }}>
+      {% if canAct %}
+        <input type="hidden" name="_token" value="{{ card.myEntry
+          ? csrf_token('cancel' ~ card.myEntry.id)
+          : csrf_token('signup' ~ shift.id) }}">
+      {% endif %}
+      {{ d.status_badge(card.status, {map: statusStyles, label: statusLabels[card.status], class: 'mb-2'}) }}
+      <a href="{{ path('app_shift_show', {id: shift.uuid}) }}"
+         class="btn btn-sm btn-primary text-uppercase"
+         data-action="shift-group#{{ canAct ? 'trigger' : 'info' }}">{{ 'shift.action.view'|trans }}</a>
+    </{{ canAct ? 'form' : 'div' }}>
+
+
+    {% if shift.location %}
+        <div class="position-absolute bottom-0 end-0 mb-2 me-2 d-flex flex-column">
+            <span class="text-truncate">{{ shift.location.fullName }}</span>
+        </div>
+    {% endif %}
+
+
+
+    <div class="row row-0 rounded h-100">
+
+      <div class="col-auto text-center text-white rounded d-flex flex-column justify-content-center px-3 {{ timeStyles[card.status] }}" style="min-width: 7rem">
+        <h3 class="mt-2 mb-0">{{ shift.startsAt|app_time }}</h3>
+        <h3 class="m-0">{{ shift.endsAt|app_time }}</h3>
+        <div class="mb-2 text-uppercase small">{{ shift.startsAt|date('D') }}</div>
+      </div>
+
+      <div class="col m-2">
+        <div class="row m-0 h-auto">
+          <div class="col-9 col-xl-10 m-0 p-0">
+            <h3 class="mb-0">{{ shift.title }}</h3>
+            {% if card.groupSize > 1 %}
+              {# Counted, not listed: the members are described in the dialog, which is rendered
+                 server-side and leaves out any shift this viewer may not see. #}
+              {{ d.badge('shift.group.badge'|trans({'%name%': shift.shiftGroup.name, '%count%': card.groupSize}), 'text-bg-info') }}
+            {% endif %}
+          </div>
+        </div>
+
+        {% if shift.shiftTask %}
+          <div class="row m-0 h-auto">
+            <div class="col-9 col-xl-10 p-0">
+              <span class="text-secondary"><strong>{{ 'shift.browse.task_label'|trans }}</strong> {{ shift.shiftTask.name }}</span>
+            </div>
+          </div>
+        {% endif %}
+
+        {% if shift.description %}
+          {# The card shows a preview, not the description: the text is cut here rather than merely
+             hidden with CSS, so a day of long descriptions does not ship in full to every browser.
+             Tags come out first - slicing the markup itself would leave an unclosed element - and
+             text-truncate then clips whatever still overflows the line. #}
+          {% set preview = shift.description|striptags %}
+          <div class="row m-0 h-auto">
+            <div class="col-9 col-xl-10 p-0 text-muted small text-truncate">
+              {{- preview|length > 120 ? preview|slice(0, 120) ~ '…' : preview -}}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="row m-0 h-auto">
+          <div class="col p-0">
+            {% for row in card.availability %}
+              {{ d.badge(
+                row.type.name ~ ' ' ~ row.assigned ~ '/' ~ row.needed,
+                row.assigned >= row.needed ? 'bg-green-lt' : 'bg-secondary-lt',
+                {class: 'mt-2 me-2'}
+              ) }}
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

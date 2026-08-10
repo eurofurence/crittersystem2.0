@@ -848,8 +848,14 @@ msgstr "Rewards volunteers can claim once they reach the required hours."
 msgid "backstage.goodie.item.title"
 msgstr "Goodie Items"
 
+msgid "backstage.goodie.item.field.certifications.help"
+msgstr "The recipient must hold all of these before the item can be handed over. A deactivated certification stops applying but is remembered."
+
 msgid "backstage.goodie.label.category"
 msgstr "Category"
+
+msgid "backstage.goodie.label.certifications"
+msgstr "Required certifications"
 
 msgid "backstage.goodie.label.display_order"
 msgstr "Display order"
@@ -886,6 +892,9 @@ msgstr "← Search"
 
 msgid "backstage.locate.action.check_in"
 msgstr "Check in"
+
+msgid "backstage.locate.action.give_anyway"
+msgstr "Give anyway"
 
 msgid "backstage.locate.action.give"
 msgstr "Give"
@@ -932,6 +941,9 @@ msgstr "No goodies distributed yet."
 msgid "backstage.locate.empty.no_shifts"
 msgstr "No shifts assigned."
 
+msgid "backstage.locate.empty.nothing_blocked"
+msgstr "Nothing is held back by a certification."
+
 msgid "backstage.locate.empty.nothing_pending"
 msgstr "Nothing pending."
 
@@ -956,6 +968,18 @@ msgstr "Locate User"
 msgid "backstage.locate.registration_number"
 msgstr "Registration number"
 
+msgid "backstage.locate.confirm.override"
+msgstr "%name% needs a certification this volunteer does not hold. Hand it over anyway?"
+
+msgid "backstage.locate.label.override_reason"
+msgstr "Reason for overriding"
+
+msgid "backstage.locate.missing_certifications"
+msgstr "Missing:"
+
+msgid "backstage.locate.placeholder.override_reason"
+msgstr "Why this is being handed over regardless"
+
 msgid "backstage.locate.remaining"
 msgstr "%count% left"
 
@@ -964,6 +988,9 @@ msgstr "Exact email, registration number, name, or scan a badge…"
 
 msgid "backstage.locate.section.already_claimed"
 msgstr "Already claimed (at limit)"
+
+msgid "backstage.locate.section.blocked"
+msgstr "Held back by a certification"
 
 msgid "backstage.locate.section.can_claim"
 msgstr "Can claim now"
@@ -3257,6 +3284,18 @@ msgstr "Manager call start window before shift (seconds)"
 msgid "manage.operations_config.field.call_response_timeout.label"
 msgstr "Global call response timeout (seconds)"
 
+msgid "manage.operations_config.field.checkin_message_de.help"
+msgstr "Shown to German-speaking volunteers. Leave empty to show the English text to everyone."
+
+msgid "manage.operations_config.field.checkin_message_de.label"
+msgstr "Check-in message (German)"
+
+msgid "manage.operations_config.field.checkin_message_en.help"
+msgstr "Shown on the shift list to anyone who has not been checked in yet. Say where they have to go."
+
+msgid "manage.operations_config.field.checkin_message_en.label"
+msgstr "Check-in message (English)"
+
 msgid "manage.operations_config.field.infodesk_claim_timeout.label"
 msgstr "Info Desk claim idle timeout (seconds)"
 
@@ -3319,6 +3358,9 @@ msgstr "Bans"
 
 msgid "manage.operations_config.section.calls"
 msgstr "Calls & Reminders"
+
+msgid "manage.operations_config.section.checkin"
+msgstr "Event check-in"
 
 msgid "manage.operations_config.section.messaging"
 msgstr "Messaging & Info Desk"
@@ -4523,6 +4565,12 @@ msgstr "Mobile"
 msgid "onboarding.profile.name_managed"
 msgstr "Your name is managed by your organisation and cannot be changed here."
 
+msgid "onboarding.profile.planned_arrival_label"
+msgstr "Planned arrival"
+
+msgid "onboarding.profile.planned_departure_label"
+msgstr "Planned departure"
+
 msgid "onboarding.profile.pronoun_label"
 msgstr "Pronoun"
 
@@ -4531,6 +4579,21 @@ msgstr "Your details"
 
 msgid "onboarding.action.continue"
 msgstr "Continue"
+
+msgid "onboarding.theme.body"
+msgstr "Pick how the site should look. Selecting one shows it straight away; nothing is saved until you confirm."
+
+msgid "onboarding.theme.confirm"
+msgstr "Confirm this theme"
+
+msgid "onboarding.theme.heading"
+msgstr "Choose your theme"
+
+msgid "onboarding.theme.previewing"
+msgstr "Currently shown"
+
+msgid "onboarding.theme.title"
+msgstr "Theme"
 
 msgid "onboarding.telegram.body"
 msgstr "You can link your Telegram account to receive shift notifications via the bot. You can also do this later from your profile."
@@ -4943,6 +5006,9 @@ msgstr "No-shows counting toward the ban threshold:"
 msgid "profile.card.ban_review"
 msgstr "Ban & no-show review"
 
+msgid "profile.card.departments"
+msgstr "Departments"
+
 msgid "profile.card.goodies"
 msgstr "Goodies"
 
@@ -4960,6 +5026,9 @@ msgstr "Delete this worklog entry?"
 
 msgid "profile.empty.ban_history"
 msgstr "No ban history."
+
+msgid "profile.empty.departments"
+msgstr "No departments."
 
 msgid "profile.empty.memberships"
 msgstr "No memberships."
@@ -5420,6 +5489,15 @@ msgstr "Browse shifts"
 msgid "shift.action.cancel_signup"
 msgstr "Cancel sign-up"
 
+msgid "shift.action.feed_atom"
+msgstr "Atom"
+
+msgid "shift.action.feed_ical"
+msgstr "iCal"
+
+msgid "shift.action.feed_rss"
+msgstr "RSS"
+
 msgid "shift.action.manage"
 msgstr "Manage"
 
@@ -5429,14 +5507,11 @@ msgstr "My shifts"
 msgid "shift.action.signup"
 msgstr "Sign up"
 
+msgid "shift.checkin.banner.title"
+msgstr "Not checked in yet."
+
 msgid "shift.browse.task_label"
 msgstr "Task:"
-
-msgid "shift.confirm.cancel_signup"
-msgstr "Cancel your sign-up?"
-
-msgid "shift.confirm.cancel_this_signup"
-msgstr "Cancel this sign-up?"
 
 msgid "shift.empty.filtered"
 msgstr "No shifts match your filters for %date%."
@@ -5492,9 +5567,6 @@ msgstr "Browse and sign up for shifts."
 msgid "shift.page.title"
 msgstr "Shifts"
 
-msgid "shift.show.cannot_signup"
-msgstr "You can't sign up for this shift. You must be a confirmed member of a requested role with open capacity. Manage your roles under %link%."
-
 msgid "shift.show.comment_label"
 msgstr "Comment (optional)"
 
@@ -5528,14 +5600,23 @@ msgstr "%start% – %end% (%hours%h)"
 msgid "shift.show.your_signup"
 msgstr "Your sign-up"
 
+msgid "shift.staff_apply.banner.action"
+msgstr "Open staff shifts"
+
+msgid "shift.staff_apply.banner.body"
+msgstr "Staff shifts are taken on their own screen, where you can see every department at once."
+
+msgid "shift.staff_apply.banner.title"
+msgstr "Looking for staff shifts?"
+
 msgid "shift.status.available"
-msgstr "Open"
+msgstr "Needs Help"
 
 msgid "shift.status.ineligible"
-msgstr "Not eligible"
+msgstr "Not available"
 
 msgid "shift.status.overlap"
-msgstr "Overlaps"
+msgstr "Blocked - Shift Overlaps"
 
 msgid "shift.status.past"
 msgstr "Past"
@@ -6469,12 +6550,6 @@ msgstr "Cancel all of these shifts?"
 msgid "shift.group.cancel_intro"
 msgstr "These %count% shifts go together, so cancelling takes you off all of them:"
 
-msgid "shift.group.info_link"
-msgstr "See all %count% shifts in this group"
-
-msgid "shift.group.info_link_short"
-msgstr "See all"
-
 msgid "shift.group.this_shift"
 msgstr "This shift"
 
@@ -6775,3 +6850,103 @@ msgstr "That form expired. Reload the page and try again."
 
 msgid "manage.shift_group.confirm.partial_members"
 msgstr "%count% volunteer(s) would end up on only part of this group. They are not added automatically; assign them from each shift's staffing screen. Continue?"
+
+# ==========================================================================
+# Shift sign-up refusals - shared by the web modal, the flashes and /api/bot.
+# The English wording is pinned by BotApiTest, ShiftSignupServiceTest and
+# critterbot's dummy client; do not reword without changing all three.
+# ==========================================================================
+
+msgid "shift.refusal.past"
+msgstr "This shift has already ended."
+
+msgid "shift.refusal.already_signed_up"
+msgstr "You are already signed up for this shift."
+
+msgid "shift.refusal.already_signed_up_group"
+msgstr "You are already signed up for every shift in this group."
+
+msgid "shift.refusal.overlap"
+msgstr "You are already booked for an overlapping shift."
+
+msgid "shift.refusal.not_checked_in"
+msgstr "You must be checked in at the event before applying to this shift."
+
+msgid "shift.refusal.not_confirmed_member"
+msgstr "You are not a confirmed member of this volunteer type."
+
+msgid "shift.refusal.missing_certifications"
+msgstr "This role requires %certifications%, which you do not currently hold."
+
+msgid "shift.refusal.role_not_requested"
+msgstr "This role is not requested for this shift."
+
+msgid "shift.refusal.role_full"
+msgstr "This role is already fully staffed."
+
+msgid "shift.refusal.not_open"
+msgstr "This shift is not open for sign-up."
+
+msgid "shift.refusal.not_eligible"
+msgstr "You are not eligible for this shift."
+
+msgid "shift.refusal.group_member"
+msgstr "\"%title%\" cannot be taken: %reason%"
+
+msgid "shift.refusal.choose_roles"
+msgstr "Choose a role for every shift in this group."
+
+msgid "shift.refusal.hours_acknowledgement"
+msgstr "These shifts add %hours% hours and would take you past the recommended maximum of %maximum%. Confirm to continue."
+
+msgid "shift.refusal.cancel_window"
+msgstr "Cancellation closed %hours% hour(s) before the shift starts."
+
+msgid "shift.refusal.group_cancel_started"
+msgstr "These shifts are taken together and \"%title%\" has already started. Contact a manager to be taken off them."
+
+msgid "shift.refusal.group_cancel_window"
+msgstr "These shifts are taken together and cancellation for \"%title%\" closed %hours% hour(s) before it starts. Contact a manager to be taken off them."
+
+# ==========================================================================
+# The shift dialog and its requirements block.
+# ==========================================================================
+
+msgid "shift.action.view"
+msgstr "View"
+
+msgid "shift.modal.open_page"
+msgstr "Open shift page"
+
+msgid "shift.show.cannot_signup_short"
+msgstr "You cannot apply for this shift right now."
+
+msgid "shift.requirement.heading"
+msgstr "Roles on this shift"
+
+msgid "shift.requirement.heading_for"
+msgstr "Roles on \"%shift%\""
+
+msgid "shift.requirement.state.eligible"
+msgstr "You can take this role."
+
+msgid "shift.requirement.state.pending"
+msgstr "Your membership is waiting for confirmation."
+
+msgid "shift.requirement.state.not_member"
+msgstr "Requires the \"%name%\" volunteer type."
+
+msgid "shift.requirement.state.missing_certification"
+msgstr "Requires:"
+
+msgid "shift.requirement.state.full"
+msgstr "Fully staffed."
+
+msgid "shift.requirement.action.join_type"
+msgstr "Join"
+
+msgid "shift.requirement.action.view_type"
+msgstr "View volunteer type"
+
+msgid "shift.requirement.action.why"
+msgstr "Why can I not apply?"

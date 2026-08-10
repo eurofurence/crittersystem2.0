@@ -26,6 +26,12 @@
       {{ f.field(form.infoDeskFinalization, {col: 'col-12 col-md-6'}) }}
     </div>
 
+    <h2 class="h6 mt-2">{{ 'manage.operations_config.section.checkin'|trans }}</h2>
+    <div class="row">
+      {{ f.field(form.checkInMessageEn, {col: 'col-12 col-md-6'}) }}
+      {{ f.field(form.checkInMessageDe, {col: 'col-12 col-md-6'}) }}
+    </div>
+
     <h2 class="h6 mt-2">{{ 'manage.operations_config.section.calls'|trans }}</h2>
     <div class="row">
       {{ f.field(form.callResponseTimeout, {col: 'col-12 col-md-4'}) }}

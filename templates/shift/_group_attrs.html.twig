@@ -1,21 +1,31 @@
 {#-
-  The data attributes that wire a form to the shift-group confirmation dialog.
+  The data attributes that wire an element to the shift confirmation dialog.
 
-  Shared by every surface that can apply to or cancel a grouped shift (the browse list, the shift
-  page, the staff apply rows, my shifts), so the five call sites cannot drift apart and every string
-  in the dialog stays translatable.
+  Shared by every surface that can apply to or cancel a shift (the browse list, the shift page, my
+  shifts), so the call sites cannot drift apart and every string in the dialog stays translatable.
+  A shift with no group is a group of one; `count` says which wording the confirm button gets.
 
-  Parameters: `shift` (the member being acted on), `count` (members in the group), and `mode`
-  ('apply' or 'cancel').
+  Parameters: `shift` (the shift being acted on), `count` (shifts the action covers, 1 when
+  ungrouped), and `mode` ('apply' or 'cancel').
+
+  The manage link is re-checked here with the shift as the subject. PrivilegeVoter applies its
+  department scoping only when handed the resource, so an unscoped `is_granted('shift:manage')`
+  would put the link on every shift for a manager of any one department.
 -#}
 data-controller="shift-group"
 data-shift-group-url-value="{{ path('app_shift_group_modal', {id: shift.uuid}) }}"
 data-shift-group-mode-value="{{ mode|default('apply') }}"
-data-shift-group-title-value="{{ (mode|default('apply') == 'cancel' ? 'shift.group.cancel_title' : 'shift.group.apply_title')|trans }}"
+data-shift-group-title-value="{{ shift.title }}"
 data-shift-group-confirm-label-value="{{ mode|default('apply') == 'cancel'
   ? 'shift.action.cancel_signup'|trans
-  : 'shift.group.apply_confirm'|trans({'%count%': count}) }}"
+  : (count|default(1) > 1 ? 'shift.group.apply_confirm'|trans({'%count%': count}) : 'shift.action.signup'|trans) }}"
 data-shift-group-cancel-label-value="{{ 'common.action.cancel'|trans }}"
 data-shift-group-variant-value="{{ mode|default('apply') == 'cancel' ? 'danger' : 'primary' }}"
 data-shift-group-load-error-value="{{ 'shift.group.error.load_failed'|trans }}"
 data-shift-group-no-dialog-value="{{ 'shift.group.error.no_dialog'|trans }}"
+data-shift-group-detail-url-value="{{ path('app_shift_show', {id: shift.uuid}) }}"
+data-shift-group-detail-label-value="{{ 'shift.modal.open_page'|trans }}"
+{% if is_granted('shift:manage', shift) %}
+data-shift-group-manage-url-value="{{ path('app_manage_shift_needs', {id: shift.uuid}) }}"
+data-shift-group-manage-label-value="{{ 'shift.action.manage'|trans }}"
+{% endif %}

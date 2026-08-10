@@ -238,13 +238,25 @@ class ShiftRepository extends ServiceEntityRepository
             ->setParameter('visAudience', ShiftAudience::PUBLIC_VOLUNTEER->value);
     }
 
-    /** @return Shift[] published public shifts that start on the given calendar day, with optional filters */
+    /**
+     * Published public shifts that start on the given calendar day, with optional filters.
+     *
+     * The day is resolved against the display timezone because shifts are stored as UTC instants.
+     *
+     * The location's ancestors are selected with the rows: the cards label each shift with the
+     * location's full path, which walks the parent chain, so without these joins a day's list costs
+     * one query per shift plus one per distinct ancestor.
+     *
+     * @return Shift[]
+     */
     public function findForDay(\DateTimeImmutable $day, \DateTimeZone $tz, ?Location $location = null, ?ShiftTask $shiftTask = null): array
     {
-        // Shifts are stored in UTC
         $from = $day->setTimezone($tz)->setTime(0, 0);
         $to = $from->modify('+1 day');
         $qb = $this->createQueryBuilder('s')
+            ->leftJoin('s.location', 'loc')->addSelect('loc')
+            ->leftJoin('loc.parent', 'locp')->addSelect('locp')
+            ->leftJoin('locp.parent', 'locgp')->addSelect('locgp')
             ->andWhere('s.startsAt >= :from AND s.startsAt < :to')
             ->setParameter('from', $from)
             ->setParameter('to', $to)

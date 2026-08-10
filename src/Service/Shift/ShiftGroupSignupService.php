@@ -13,6 +13,7 @@ use App\Service\Assignment\EventHoursGuard;
 use App\Service\EventConfigStore;
 use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * Sign-up and cancellation across a whole shift group.
@@ -38,6 +39,7 @@ final class ShiftGroupSignupService
         private readonly EventHoursGuard $hoursGuard,
         private readonly EventConfigStore $config,
         private readonly ShiftSignal $live,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -61,7 +63,7 @@ final class ShiftGroupSignupService
                 [],
                 0.0,
                 false,
-                'This shift is not open for sign-up at the moment.',
+                $this->translator->trans('shift.group.not_available'),
                 true,
             );
         }
@@ -94,7 +96,7 @@ final class ShiftGroupSignupService
                     $error = $this->eligibility->signUpError($user, $member, $type, $siblings);
                 }
             } else {
-                $warnings[] = 'You are already signed up for this shift.';
+                $warnings[] = $this->translator->trans('shift.refusal.already_signed_up');
             }
 
             [$assigned, $needed] = $this->capacityFor($member, $type);
@@ -114,14 +116,17 @@ final class ShiftGroupSignupService
 
         $error = null;
         if ($alreadyOnAll) {
-            $error = \count($members) > 1
-                ? 'You are already signed up for every shift in this group.'
-                : 'You are already signed up for this shift.';
+            $error = $this->translator->trans(\count($members) > 1
+                ? 'shift.refusal.already_signed_up_group'
+                : 'shift.refusal.already_signed_up');
         } else {
             foreach ($rows as $row) {
                 if ($row->error !== null) {
                     $error = \count($members) > 1
-                        ? \sprintf('"%s" cannot be taken: %s', $row->shift->getTitle(), lcfirst($row->error))
+                        ? $this->translator->trans('shift.refusal.group_member', [
+                            '%title%' => $row->shift->getTitle(),
+                            '%reason%' => $row->error,
+                        ])
                         : $row->error;
                     break;
                 }
@@ -187,7 +192,7 @@ final class ShiftGroupSignupService
                 return $entries;
             });
         } catch (UniqueConstraintViolationException) {
-            throw new CapacityConflictException('You are already signed up for this shift.');
+            throw new CapacityConflictException($this->translator->trans('shift.refusal.already_signed_up'));
         }
 
         // After the commit: a signal that overtakes its own transaction tells the browser to re-read
@@ -224,17 +229,15 @@ final class ShiftGroupSignupService
             $member = $held->getShift();
 
             if ($member->getStartsAt() <= $now) {
-                return \sprintf(
-                    'These shifts are taken together and "%s" has already started. Contact a manager to be taken off them.',
-                    $member->getTitle(),
-                );
+                return $this->translator->trans('shift.refusal.group_cancel_started', [
+                    '%title%' => $member->getTitle(),
+                ]);
             }
             if ($windowHours > 0 && $now > $member->getStartsAt()->modify(\sprintf('-%d hours', $windowHours))) {
-                return \sprintf(
-                    'These shifts are taken together and cancellation for "%s" closed %d hour(s) before it starts. Contact a manager to be taken off them.',
-                    $member->getTitle(),
-                    $windowHours,
-                );
+                return $this->translator->trans('shift.refusal.group_cancel_window', [
+                    '%title%' => $member->getTitle(),
+                    '%hours%' => $windowHours,
+                ]);
             }
         }
 
@@ -272,14 +275,14 @@ final class ShiftGroupSignupService
     private function singleCancelError(Shift $shift): ?string
     {
         if ($shift->isPast()) {
-            return 'This shift has already ended.';
+            return $this->translator->trans('shift.refusal.past');
         }
 
         $windowHours = (int) $this->config->get(self::KEY_LAST_UNSUBSCRIBE, 0);
         if ($windowHours > 0) {
             $deadline = $shift->getStartsAt()->modify(\sprintf('-%d hours', $windowHours));
             if (new \DateTimeImmutable() > $deadline) {
-                return \sprintf('Cancellation closed %d hour(s) before the shift starts.', $windowHours);
+                return $this->translator->trans('shift.refusal.cancel_window', ['%hours%' => $windowHours]);
             }
         }
 
@@ -293,16 +296,15 @@ final class ShiftGroupSignupService
             throw $exception($plan->error);
         }
         if ($plan->needsChoice()) {
-            throw $exception('Choose a role for every shift in this group.');
+            throw $exception($this->translator->trans('shift.refusal.choose_roles'));
         }
         // Only a grouped application asks for the acknowledgement here; a single shift keeps the
         // acknowledgement where its own screen already handles it.
         if ($plan->isGrouped() && $plan->needsHoursAcknowledgement && !$acknowledgeHours) {
-            throw $exception(\sprintf(
-                'These shifts add %.1f hours and would take you past the recommended maximum of %d. Confirm to continue.',
-                $plan->totalHours,
-                $this->hoursGuard->recommendedMax(),
-            ));
+            throw $exception($this->translator->trans('shift.refusal.hours_acknowledgement', [
+                '%hours%' => \sprintf('%.1f', $plan->totalHours),
+                '%maximum%' => $this->hoursGuard->recommendedMax(),
+            ]));
         }
     }
 
@@ -350,11 +352,11 @@ final class ShiftGroupSignupService
     {
         $availability = $this->eligibility->availability($member);
         if ($availability === []) {
-            return 'This shift is not open for sign-up.';
+            return $this->translator->trans('shift.refusal.not_open');
         }
 
         return $this->eligibility->signUpError($user, $member, $availability[0]['type'], $siblings)
-            ?? 'You are not eligible for this shift.';
+            ?? $this->translator->trans('shift.refusal.not_eligible');
     }
 
     /** @return array{0: int, 1: int} assigned and needed for the resolved role, or the whole shift */

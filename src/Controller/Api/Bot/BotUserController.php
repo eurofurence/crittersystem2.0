@@ -3,6 +3,7 @@
 namespace App\Controller\Api\Bot;
 
 use App\Api\Bot\BotShiftNormalizer;
+use App\Entity\Certification;
 use App\Entity\User;
 use App\Repository\ShiftEntryRepository;
 use App\Security\Bot\ActingUserAccess;
@@ -129,6 +130,9 @@ final class BotUserController extends AbstractController
      * "level" ladder; goodies gated on required hours are the only thing that
      * actually exists, so the bot reports those rather than invent a level.
      *
+     * Every tier is matched explicitly. Treating "not pending" as earned would report a goodie the
+     * volunteer is barred from as one they have already won, which is worse than not mentioning it.
+     *
      * @return array<string, mixed>
      */
     private function goodieProgress(User $user): array
@@ -136,14 +140,30 @@ final class BotUserController extends AbstractController
         $evaluation = $this->goodies->evaluate($user);
 
         $earned = [];
+        $blocked = [];
         $next = null;
         foreach ($evaluation['rows'] as $row) {
+            $item = $row['item'];
+
+            if ($row['tier'] === 'blocked') {
+                $blocked[] = [
+                    'id' => (string) $item->getUuid(),
+                    'name' => $item->getName(),
+                    'missing_certifications' => array_map(
+                        static fn (Certification $c): string => $c->getTitle(),
+                        $row['missingCertifications'],
+                    ),
+                ];
+
+                continue;
+            }
+
             if ($row['tier'] === 'pending') {
                 if ($next === null || $row['gap'] < $next['hours_remaining']) {
                     $next = [
-                        'id' => (string) $row['item']->getUuid(),
-                        'name' => $row['item']->getName(),
-                        'required_hours' => $row['item']->getRequiredHours(),
+                        'id' => (string) $item->getUuid(),
+                        'name' => $item->getName(),
+                        'required_hours' => $item->getRequiredHours(),
                         'hours_remaining' => $row['gap'],
                     ];
                 }
@@ -152,13 +172,13 @@ final class BotUserController extends AbstractController
             }
 
             $earned[] = [
-                'id' => (string) $row['item']->getUuid(),
-                'name' => $row['item']->getName(),
+                'id' => (string) $item->getUuid(),
+                'name' => $item->getName(),
                 'claimed' => $row['claimed'],
             ];
         }
 
-        return ['eligible' => $earned, 'next' => $next];
+        return ['eligible' => $earned, 'next' => $next, 'blocked' => $blocked];
     }
 
     /** @return array<string, mixed> */

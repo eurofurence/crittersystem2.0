@@ -98,7 +98,7 @@ final class FeedController extends AbstractController
                 $lines[] = 'DESCRIPTION:'.self::escapeIcal($shift->getDescription());
             }
             if ($shift->getLocation() !== null) {
-                $lines[] = 'LOCATION:'.self::escapeIcal($shift->getLocation()->getName());
+                $lines[] = 'LOCATION:'.self::escapeIcal($shift->getLocation()->fullName());
             }
             $lines[] = 'END:VEVENT';
         }

@@ -49,7 +49,7 @@
               {{ shift.startsAt|app_datetime }}<br>
               – {{ shift.endsAt|app_time }}{% if row.overnight %} (+1){% endif %}
             </td>
-            <td class="left">{{ shift.location ? shift.location.name : '-' }}</td>
+            <td class="left">{{ shift.location ? shift.location.fullName : '-' }}</td>
             <td class="left">{{ shift.shiftTask ? shift.shiftTask.name : '-' }}</td>
             <td class="left">{{ shift.title }}</td>
             {% for column in matrix.columns %}

@@ -72,7 +72,7 @@ final class ShiftWizardController extends AbstractController
             'days' => $days,
             'audiences' => ShiftAudience::cases(),
             'shiftTasks' => $this->taskAccess->forDepartment($this->tasks->findAllOrdered(), $department),
-            'locations' => $locations->findAllOrdered(),
+            'locations' => $locations->findAllOrderedByPath(),
             'volunteerTypes' => $this->typeOrder->forDepartment($types->findAllOrderedWithDepartments(), $department),
         ]);
     }

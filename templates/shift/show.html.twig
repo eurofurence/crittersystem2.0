@@ -15,7 +15,7 @@
           {# Not definition_list(): the optional "Link" value is an <a>, not a scalar. #}
           <dl class="row mb-0">
             <dt class="col-4">{{ 'common.label.type'|trans }}</dt><dd class="col-8">{{ shift.shiftTask ? shift.shiftTask.name : '-' }}</dd>
-            <dt class="col-4">{{ 'common.label.location'|trans }}</dt><dd class="col-8">{{ shift.location ? shift.location.name : '-' }}</dd>
+            <dt class="col-4">{{ 'common.label.location'|trans }}</dt><dd class="col-8">{{ shift.location ? shift.location.fullName : '-' }}</dd>
             {% if shift.url %}<dt class="col-4">{{ 'shift.show.link'|trans }}</dt><dd class="col-8"><a href="{{ shift.url }}">{{ shift.url }}</a></dd>{% endif %}
           </dl>
           {% if shift.description %}<hr><p class="mb-0">{{ shift.description|nl2br }}</p>{% endif %}
@@ -35,7 +35,7 @@
                   <a href="{{ path('app_shift_show', {id: sibling.uuid}) }}" class="text-decoration-none">{{ sibling.title }}</a>
                   <span class="text-muted small d-block">
                     {{ sibling.startsAt|app_datetime }} - {{ sibling.endsAt|app_time }}
-                    {% if sibling.location %} · {{ sibling.location.name }}{% endif %}
+                    {% if sibling.location %} · {{ sibling.location.fullName }}{% endif %}
                   </span>
                 </li>
               {% endfor %}
@@ -64,34 +64,26 @@
 
     <div class="col-12 col-lg-5">
       {{ d.card_start('shift.show.your_signup'|trans, {class: '', headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''}) }}
+          {# Applying and cancelling both go through the dialog, which is the one place that lists
+             what the action covers, asks for the comment and explains a refusal. #}
           {% if myEntry %}
             <p>{{ 'shift.show.signed_up_as'|trans({'%type%': '<strong>' ~ (myEntry.volunteerType.name|e) ~ '</strong>'})|raw }}</p>
-            {% if groupSiblings is not empty %}
-              {# The whole commitment goes at once, so the dialog lists what is being dropped rather
-                 than asking about this shift alone. #}
-              <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.uuid}) }}"
-                    {{ include('shift/_group_attrs.html.twig', {shift: shift, count: groupSiblings|length + 1, mode: 'cancel'}) }}>
-                <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ myEntry.id) }}">
-                <button class="btn btn-outline-danger">{{ 'shift.action.cancel_signup'|trans }}</button>
-              </form>
-            {% else %}
-              <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.uuid}) }}"
-                    data-controller="confirm" data-confirm-message-value="{{ 'shift.confirm.cancel_signup'|trans }}">
-                <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ myEntry.id) }}">
-                <button class="btn btn-outline-danger">{{ 'shift.action.cancel_signup'|trans }}</button>
-              </form>
-            {% endif %}
+            <form method="post" action="{{ path('app_shift_cancel', {id: myEntry.uuid}) }}"
+                  {{ include('shift/_group_attrs.html.twig', {shift: shift, count: groupSiblings|length + 1, mode: 'cancel'}) }}>
+              <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ myEntry.id) }}">
+              <button class="btn btn-outline-danger">{{ 'shift.action.cancel_signup'|trans }}</button>
+            </form>
           {% elseif shift.past %}
             <p class="text-muted mb-0">{{ 'shift.show.ended'|trans }}</p>
           {% elseif signupOptions is empty %}
-            <p class="text-muted mb-0">
-              {{ 'shift.show.cannot_signup'|trans({'%link%': '<a href="' ~ path('app_membership_index') ~ '">' ~ 'ui.nav.volunteer_types'|trans ~ '</a>'})|raw }}
-            </p>
+            <p class="text-muted">{{ 'shift.show.cannot_signup_short'|trans }}</p>
+            <div {{ include('shift/_group_attrs.html.twig', {shift: shift, count: groupSiblings|length + 1, mode: 'apply'}) }}>
+              <a href="{{ path('app_shift_show', {id: shift.uuid}) }}" class="btn btn-outline-secondary w-100"
+                 data-action="shift-group#info">{{ 'shift.requirement.action.why'|trans }}</a>
+            </div>
           {% else %}
             <form method="post" action="{{ path('app_shift_signup', {id: shift.uuid}) }}"
-                  {% if groupSiblings is not empty %}
-                    {{ include('shift/_group_attrs.html.twig', {shift: shift, count: groupSiblings|length + 1, mode: 'apply'}) }}
-                  {% endif %}>
+                  {{ include('shift/_group_attrs.html.twig', {shift: shift, count: groupSiblings|length + 1, mode: 'apply'}) }}>
               <input type="hidden" name="_token" value="{{ csrf_token('signup' ~ shift.id) }}">
               <div class="mb-3">
                 <label class="form-label" for="volunteer_type">{{ 'shift.show.signup_as_label'|trans }}</label>
@@ -99,17 +91,6 @@
                   {% for id, type in signupOptions %}<option value="{{ id }}">{{ type.name }}</option>{% endfor %}
                 </select>
               </div>
-              {% if groupSiblings is empty %}
-                <div class="mb-3">
-                  <label class="form-label" for="comment">{{ 'shift.show.comment_label'|trans }}</label>
-                  <textarea id="comment" name="comment" class="form-control" rows="2"></textarea>
-                </div>
-              {% else %}
-                {# The comment is asked for inside the dialog instead, alongside the shifts it covers. #}
-                <p class="small mb-2">
-                  <a href="#" data-action="shift-group#info">{{ 'shift.group.info_link'|trans({'%count%': groupSiblings|length + 1}) }}</a>
-                </p>
-              {% endif %}
               <button class="btn btn-primary w-100">{{ 'shift.action.signup'|trans }}</button>
             </form>
           {% endif %}

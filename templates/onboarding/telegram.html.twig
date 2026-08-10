@@ -24,16 +24,14 @@
       <p>{{ 'telegram.pending.instructions'|trans({'%time%': pending.expiresAt|app_time}) }}</p>
       <p class="display-6"><code>{{ pending.code }}</code></p>
     {% endif %}
-    <p class="text-muted small" id="tg-wait">{{ 'telegram.pending.waiting'|trans }}</p>
+    <p class="text-muted small" id="tg-wait"
+       data-controller="telegram-link-status"
+       data-telegram-link-status-url-value="{{ path('app_onboarding_telegram_status') }}"
+       data-telegram-link-status-expires-at-value="{{ pending ? pending.expiresAt|date('c') : '' }}">
+      {{ 'telegram.pending.waiting'|trans }}
+    </p>
     <form method="post">
       <button class="btn btn-secondary w-100">{{ 'onboarding.telegram.skip'|trans }}</button>
     </form>
-    <script>
-      (function poll(){
-        fetch('{{ path('app_onboarding_telegram_status') }}').then(r=>r.json()).then(d=>{
-          if (d.linked) { window.location.reload(); } else { setTimeout(poll, 3000); }
-        }).catch(()=>setTimeout(poll, 5000));
-      })();
-    </script>
   {% endif %}
 {% endblock %}

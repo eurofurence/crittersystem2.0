@@ -14,6 +14,15 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
 
 final class LocationType extends AbstractType
 {
+    public function __construct(private readonly LocationRepository $locations)
+    {
+    }
+
+    /**
+     * The parent picker excludes the location being edited, because a location cannot be its own
+     * parent. Nesting deeper than two levels is left to Location::validateDepth() rather than hidden
+     * from the list, so an admin who tries it is told why instead of finding the option missing.
+     */
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $current = $builder->getData();
@@ -31,16 +40,10 @@ final class LocationType extends AbstractType
                 'required' => false,
                 'placeholder' => 'manage.location.field.parent.placeholder',
                 'choice_label' => fn (Location $l) => $l->fullName(),
-                // Only roots and first-level children can be parents (max depth 2),
-                // and a location cannot be its own parent.
-                'query_builder' => function (LocationRepository $repo) use ($current) {
-                    $qb = $repo->createQueryBuilder('l')->orderBy('l.name', 'ASC');
-                    if ($current instanceof Location && $current->getId() !== null) {
-                        $qb->andWhere('l.id != :self')->setParameter('self', $current->getId());
-                    }
-
-                    return $qb;
-                },
+                'choices' => array_values(array_filter(
+                    $this->locations->findAllOrderedByPath(),
+                    static fn (Location $l): bool => !($current instanceof Location && $current->getId() !== null && $l->getId() === $current->getId()),
+                )),
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'common.label.description',

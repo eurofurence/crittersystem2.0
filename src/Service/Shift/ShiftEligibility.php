@@ -11,6 +11,7 @@ use App\Repository\ShiftEntryRepository;
 use App\Repository\UserCertificationRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use Symfony\Contracts\Service\ResetInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 /**
  * The per-shift sign-up rules, with no knowledge of shift groups.
@@ -61,6 +62,7 @@ final class ShiftEligibility implements ResetInterface
         private readonly CheckInPolicy $checkIn,
         private readonly UserCertificationRepository $certifications,
         private readonly OverlapPolicy $overlapPolicy,
+        private readonly TranslatorInterface $translator,
     ) {
     }
 
@@ -301,20 +303,24 @@ final class ShiftEligibility implements ResetInterface
      * First reason the user cannot sign up for this shift as this type, or null when sign-up is
      * allowed.
      *
+     * Returned already translated rather than as a `TranslatableMessage`: the same values are
+     * json_encoded into `/api/bot/*` responses, where an object would serialise to `{}`, and are
+     * carried as `\RuntimeException` messages, which only take strings.
+     *
      * @param Shift[] $ignoreOverlapWith shifts that must not count as an overlap
      */
     public function signUpError(User $user, Shift $shift, VolunteerType $type, array $ignoreOverlapWith = []): ?string
     {
         if ($shift->isPast()) {
-            return 'This shift has already ended.';
+            return $this->translator->trans('shift.refusal.past');
         }
 
         if ($this->ownEntry($shift, $user) !== null) {
-            return 'You are already signed up for this shift.';
+            return $this->translator->trans('shift.refusal.already_signed_up');
         }
 
         if ($this->overlaps($user, $shift, $ignoreOverlapWith)) {
-            return 'You are already booked for an overlapping shift.';
+            return $this->translator->trans('shift.refusal.overlap');
         }
 
         if (($checkInError = $this->checkIn->checkInError($shift, $user)) !== null) {
@@ -322,22 +328,21 @@ final class ShiftEligibility implements ResetInterface
         }
 
         if (!$this->isConfirmedMember($user, $type)) {
-            return 'You are not a confirmed member of this volunteer type.';
+            return $this->translator->trans('shift.refusal.not_confirmed_member');
         }
 
         if (($missing = $this->missingCertifications($user, $type)) !== []) {
-            return \sprintf(
-                'This role requires %s, which you do not currently hold.',
-                implode(', ', array_map(static fn (Certification $c): string => $c->getTitle(), $missing)),
-            );
+            return $this->translator->trans('shift.refusal.missing_certifications', [
+                '%certifications%' => implode(', ', array_map(static fn (Certification $c): string => $c->getTitle(), $missing)),
+            ]);
         }
 
         $need = $this->effectiveNeeds($shift)[$type->getId()] ?? null;
         if ($need === null) {
-            return 'This role is not requested for this shift.';
+            return $this->translator->trans('shift.refusal.role_not_requested');
         }
         if ($this->assignedCount($shift, $type) >= $need->getCount()) {
-            return 'This role is already fully staffed.';
+            return $this->translator->trans('shift.refusal.role_full');
         }
 
         return null;

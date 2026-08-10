@@ -87,7 +87,11 @@ ENV APP_ENV=dev \
 
 # Developer tooling: git for composer VCS, plus the dev PHP profile (opcache
 # revalidation, higher limits). phpunit & linters arrive via composer dev deps.
-RUN apk add --no-cache git make \
+#
+# postgresql16-client matches the server compose.dev.yaml runs. app:db:import-prod
+# needs it: the distribution's default client is newer, and pg_restore cannot load
+# into a server older than itself. It installs alongside, at /usr/libexec/postgresql16/.
+RUN apk add --no-cache git make postgresql16-client \
  && rm -f /usr/local/etc/php/conf.d/zz-app.ini
 COPY docker/php/php-dev.ini /usr/local/etc/php/conf.d/zz-app.ini
 

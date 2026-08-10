@@ -16,7 +16,7 @@
           <a href="{{ path('app_manage_shift_needs', {id: shift.uuid}) }}" class="fw-semibold text-decoration-none">{{ shift.title }}</a>
           <div class="text-muted small">
             {{ shift.startsAt|app_datetime }} - {{ shift.endsAt|app_time }}
-            {% if shift.location %} · {{ shift.location.name }}{% endif %}
+            {% if shift.location %} · {{ shift.location.fullName }}{% endif %}
             · {{ shift.audience.label }}
             {% if shift.draft %} · {{ 'common.state.draft'|trans }}{% endif %}
           </div>

@@ -61,6 +61,25 @@ final class S3BackupStore
         return $this->fs->fileExists($key);
     }
 
+    /** Streams a stored dump to a local file rather than buffering it in memory. */
+    public function readTo(string $key, string $toFile): void
+    {
+        $source = $this->fs->readStream($key);
+        $target = fopen($toFile, 'wb');
+        if ($target === false) {
+            throw new \RuntimeException(sprintf('Could not open "%s" for writing.', $toFile));
+        }
+
+        try {
+            stream_copy_to_stream($source, $target);
+        } finally {
+            fclose($target);
+            if (is_resource($source)) {
+                fclose($source);
+            }
+        }
+    }
+
     public function delete(string $key): void
     {
         $this->fs->delete($key);

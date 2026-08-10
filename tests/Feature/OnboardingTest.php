@@ -78,6 +78,9 @@ final class OnboardingTest extends DatabaseWebTestCase
         self::assertResponseRedirects('/onboarding/notifications');
 
         $this->client->request('POST', '/onboarding/notifications', ['email_shifts' => '1', 'show_name' => '1', 'show_email' => '1']);
+        self::assertResponseRedirects('/onboarding/theme');
+
+        $this->client->request('POST', '/onboarding/theme', ['theme' => 'dark']);
         self::assertResponseRedirects('/onboarding/finish');
 
         $this->client->request('POST', '/onboarding/finish', ['password' => 'newpassword1', 'password_confirm' => 'newpassword1']);
@@ -164,6 +167,7 @@ final class OnboardingTest extends DatabaseWebTestCase
         self::assertTrue($this->em->getRepository(User::class)->find($user->getId())->isTelegramLinked());
     }
 
+    /** Staff finish on their availability, which the planners build the roster from. */
     public function testStaffGetTheStaffTypeButNotTheVolunteerGroup(): void
     {
         $staffType = new VolunteerType('Staff');
@@ -179,8 +183,9 @@ final class OnboardingTest extends DatabaseWebTestCase
         $this->client->request('POST', '/onboarding/profile');
         $this->client->request('POST', '/onboarding/telegram');
         $this->client->request('POST', '/onboarding/notifications', ['show_email' => '1']);
+        $this->client->request('POST', '/onboarding/theme', ['theme' => 'dark']);
         $this->client->request('POST', '/onboarding/finish', ['password' => 'newpassword1', 'password_confirm' => 'newpassword1']);
-        self::assertResponseRedirects('/news');
+        self::assertResponseRedirects('/availability');
 
         $this->em->clear();
         $reloaded = $this->em->getRepository(User::class)->find($user->getId());

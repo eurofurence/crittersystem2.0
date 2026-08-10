@@ -151,6 +151,31 @@ describe('shift group confirmation', () => {
         expect(submitted).toBe(false);
     });
 
+    it('offers the footer links the server supplied, and only those', async () => {
+        await start();
+        controller.detailUrlValue = '/shifts/abc';
+        controller.detailLabelValue = 'Open shift page';
+
+        await controller.onSubmit(submitEvent());
+
+        const links = document.querySelectorAll('.modal [data-role="links"] a');
+        expect(links).toHaveLength(1);
+        expect(links[0].getAttribute('href')).toBe('/shifts/abc');
+        expect(links[0].textContent).toBe('Open shift page');
+    });
+
+    it('opens a confirmable dialog from a link, since the card has no submit button', async () => {
+        await start();
+
+        await controller.trigger(submitEvent());
+
+        expect(submitted).toBe(false);
+        expect(document.querySelector('.modal [data-role="confirm"]')).not.toBeNull();
+
+        document.querySelector('[data-role="confirm"]').click();
+        expect(submitted).toBe(true);
+    });
+
     it('leaves no modal or backdrop behind on disconnect', async () => {
         await start();
 
