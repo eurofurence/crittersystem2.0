@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1" serialNumber="urn:uuid:4615e400-e195-431c-9c5c-5817c01a82ef">
+<bom xmlns="http://cyclonedx.org/schema/bom/1.5" version="1" serialNumber="urn:uuid:54ef0ef0-a41c-413a-8d62-a52b8e97686a">
   <metadata>
-    <timestamp><![CDATA[2026-08-09T08:00:15Z]]></timestamp>
+    <timestamp><![CDATA[2026-08-10T20:11:47Z]]></timestamp>
     <tools>
       <tool>
         <name><![CDATA[composer]]></name>
@@ -76,8 +76,8 @@
       </licenses>
       <purl><![CDATA[pkg:composer/__root__@dev-main]]></purl>
       <properties>
-        <property name="cdx:composer:package:distReference"><![CDATA[dfcde60327996af118d43f89788da70acd51000c]]></property>
-        <property name="cdx:composer:package:sourceReference"><![CDATA[dfcde60327996af118d43f89788da70acd51000c]]></property>
+        <property name="cdx:composer:package:distReference"><![CDATA[0749a153b12d6172f62f31d7fca9f104abe2a149]]></property>
+        <property name="cdx:composer:package:sourceReference"><![CDATA[0749a153b12d6172f62f31d7fca9f104abe2a149]]></property>
         <property name="cdx:composer:package:type"><![CDATA[project]]></property>
       </properties>
     </component>
@@ -183,6 +183,47 @@
         <property name="cdx:composer:package:distReference"><![CDATA[4da2233e72eeecd9be3b62e0dc2cc9ed8e2e31c2]]></property>
         <property name="cdx:composer:package:sourceReference"><![CDATA[4da2233e72eeecd9be3b62e0dc2cc9ed8e2e31c2]]></property>
         <property name="cdx:composer:package:type"><![CDATA[library]]></property>
+      </properties>
+    </component>
+    <component type="library" bom-ref="brianium/paratest-7.23.1.0">
+      <author><![CDATA[Brian Scaturro, Filippo Tessarotto]]></author>
+      <group><![CDATA[brianium]]></group>
+      <name><![CDATA[paratest]]></name>
+      <version><![CDATA[v7.23.1]]></version>
+      <description><![CDATA[Parallel testing for PHP]]></description>
+      <licenses>
+        <license>
+          <id><![CDATA[MIT]]></id>
+        </license>
+      </licenses>
+      <purl><![CDATA[pkg:composer/brianium/paratest@v7.23.1]]></purl>
+      <externalReferences>
+        <reference type="distribution">
+          <url><![CDATA[https://api.github.com/repos/paratestphp/paratest/zipball/6b2aaf7d0e8d5220710d78921f28e5464a816596]]></url>
+          <comment><![CDATA[dist reference: 6b2aaf7d0e8d5220710d78921f28e5464a816596]]></comment>
+        </reference>
+        <reference type="vcs">
+          <url><![CDATA[https://github.com/paratestphp/paratest.git]]></url>
+          <comment><![CDATA[source reference: 6b2aaf7d0e8d5220710d78921f28e5464a816596]]></comment>
+        </reference>
+        <reference type="website">
+          <url><![CDATA[https://github.com/paratestphp/paratest]]></url>
+          <comment><![CDATA[as detected from Composer manifest 'homepage']]></comment>
+        </reference>
+        <reference type="issue-tracker">
+          <url><![CDATA[https://github.com/paratestphp/paratest/issues]]></url>
+          <comment><![CDATA[as detected from Composer manifest 'support.issues']]></comment>
+        </reference>
+        <reference type="vcs">
+          <url><![CDATA[https://github.com/paratestphp/paratest/tree/v7.23.1]]></url>
+          <comment><![CDATA[as detected from Composer manifest 'support.source']]></comment>
+        </reference>
+      </externalReferences>
+      <properties>
+        <property name="cdx:composer:package:distReference"><![CDATA[6b2aaf7d0e8d5220710d78921f28e5464a816596]]></property>
+        <property name="cdx:composer:package:sourceReference"><![CDATA[6b2aaf7d0e8d5220710d78921f28e5464a816596]]></property>
+        <property name="cdx:composer:package:type"><![CDATA[library]]></property>
+        <property name="cdx:composer:package:isDevRequirement"><![CDATA[true]]></property>
       </properties>
     </component>
     <component type="library" bom-ref="composer/semver-3.4.4.0">
@@ -1107,75 +1148,112 @@
         <property name="cdx:composer:package:type"><![CDATA[library]]></property>
       </properties>
     </component>
-    <component type="library" bom-ref="guzzlehttp/guzzle-7.15.1.0">
+    <component type="library" bom-ref="fidry/cpu-core-counter-1.3.0.0">
+      <author><![CDATA[Théo FIDRY]]></author>
+      <group><![CDATA[fidry]]></group>
+      <name><![CDATA[cpu-core-counter]]></name>
+      <version><![CDATA[1.3.0]]></version>
+      <description><![CDATA[Tiny utility to get the number of CPU cores.]]></description>
+      <licenses>
+        <license>
+          <id><![CDATA[MIT]]></id>
+        </license>
+      </licenses>
+      <purl><![CDATA[pkg:composer/fidry/cpu-core-counter@1.3.0]]></purl>
+      <externalReferences>
+        <reference type="distribution">
+          <url><![CDATA[https://api.github.com/repos/theofidry/cpu-core-counter/zipball/db9508f7b1474469d9d3c53b86f817e344732678]]></url>
+          <comment><![CDATA[dist reference: db9508f7b1474469d9d3c53b86f817e344732678]]></comment>
+        </reference>
+        <reference type="vcs">
+          <url><![CDATA[https://github.com/theofidry/cpu-core-counter.git]]></url>
+          <comment><![CDATA[source reference: db9508f7b1474469d9d3c53b86f817e344732678]]></comment>
+        </reference>
+        <reference type="issue-tracker">
+          <url><![CDATA[https://github.com/theofidry/cpu-core-counter/issues]]></url>
+          <comment><![CDATA[as detected from Composer manifest 'support.issues']]></comment>
+        </reference>
+        <reference type="vcs">
+          <url><![CDATA[https://github.com/theofidry/cpu-core-counter/tree/1.3.0]]></url>
+          <comment><![CDATA[as detected from Composer manifest 'support.source']]></comment>
+        </reference>
+      </externalReferences>
+      <properties>
+        <property name="cdx:composer:package:distReference"><![CDATA[db9508f7b1474469d9d3c53b86f817e344732678]]></property>
+        <property name="cdx:composer:package:sourceReference"><![CDATA[db9508f7b1474469d9d3c53b86f817e344732678]]></property>
+        <property name="cdx:composer:package:type"><![CDATA[library]]></property>
+        <property name="cdx:composer:package:isDevRequirement"><![CDATA[true]]></property>
+      </properties>
+    </component>
+    <component type="library" bom-ref="guzzlehttp/guzzle-7.15.3.0">
       <author><![CDATA[Graham Campbell, Michael Dowling, Jeremy Lindblom, George Mponos, Tobias Nyholm, Márk Sági-Kazár, Tobias Schultze]]></author>
       <group><![CDATA[guzzlehttp]]></group>
       <name><![CDATA[guzzle]]></name>
-      <version><![CDATA[7.15.1]]></version>
+      <version><![CDATA[7.15.3]]></version>
       <description><![CDATA[Guzzle is a PHP HTTP client library]]></description>
       <licenses>
         <license>
           <id><![CDATA[MIT]]></id>
         </license>
       </licenses>
-      <purl><![CDATA[pkg:composer/guzzlehttp/guzzle@7.15.1]]></purl>
+      <purl><![CDATA[pkg:composer/guzzlehttp/guzzle@7.15.3]]></purl>
       <externalReferences>
         <reference type="distribution">
-          <url><![CDATA[https://api.github.com/repos/guzzle/guzzle/zipball/61443dfb33c62f308ee8add20f45b4d6e4bf8d2f]]></url>
-          <comment><![CDATA[dist reference: 61443dfb33c62f308ee8add20f45b4d6e4bf8d2f]]></comment>
+          <url><![CDATA[https://api.github.com/repos/guzzle/guzzle/zipball/ae311b8f045ea93ce7b1c9cdb7cec06c53f944bc]]></url>
+          <comment><![CDATA[dist reference: ae311b8f045ea93ce7b1c9cdb7cec06c53f944bc]]></comment>
         </reference>
         <reference type="vcs">
           <url><![CDATA[https://github.com/guzzle/guzzle.git]]></url>
-          <comment><![CDATA[source reference: 61443dfb33c62f308ee8add20f45b4d6e4bf8d2f]]></comment>
+          <comment><![CDATA[source reference: ae311b8f045ea93ce7b1c9cdb7cec06c53f944bc]]></comment>
         </reference>
         <reference type="issue-tracker">
           <url><![CDATA[https://github.com/guzzle/guzzle/issues]]></url>
           <comment><![CDATA[as detected from Composer manifest 'support.issues']]></comment>
         </reference>
         <reference type="vcs">
-          <url><![CDATA[https://github.com/guzzle/guzzle/tree/7.15.1]]></url>
+          <url><![CDATA[https://github.com/guzzle/guzzle/tree/7.15.3]]></url>
           <comment><![CDATA[as detected from Composer manifest 'support.source']]></comment>
         </reference>
       </externalReferences>
       <properties>
-        <property name="cdx:composer:package:distReference"><![CDATA[61443dfb33c62f308ee8add20f45b4d6e4bf8d2f]]></property>
-        <property name="cdx:composer:package:sourceReference"><![CDATA[61443dfb33c62f308ee8add20f45b4d6e4bf8d2f]]></property>
+        <property name="cdx:composer:package:distReference"><![CDATA[ae311b8f045ea93ce7b1c9cdb7cec06c53f944bc]]></property>
+        <property name="cdx:composer:package:sourceReference"><![CDATA[ae311b8f045ea93ce7b1c9cdb7cec06c53f944bc]]></property>
         <property name="cdx:composer:package:type"><![CDATA[library]]></property>
       </properties>
     </component>
-    <component type="library" bom-ref="guzzlehttp/promises-2.5.1.0">
+    <component type="library" bom-ref="guzzlehttp/promises-2.5.2.0">
       <author><![CDATA[Graham Campbell, Michael Dowling, Tobias Nyholm, Tobias Schultze]]></author>
       <group><![CDATA[guzzlehttp]]></group>
       <name><![CDATA[promises]]></name>
-      <version><![CDATA[2.5.1]]></version>
+      <version><![CDATA[2.5.2]]></version>
       <description><![CDATA[Guzzle promises library]]></description>
       <licenses>
         <license>
           <id><![CDATA[MIT]]></id>
         </license>
       </licenses>
-      <purl><![CDATA[pkg:composer/guzzlehttp/promises@2.5.1]]></purl>
+      <purl><![CDATA[pkg:composer/guzzlehttp/promises@2.5.2]]></purl>
       <externalReferences>
         <reference type="distribution">
-          <url><![CDATA[https://api.github.com/repos/guzzle/promises/zipball/9ad1e4fc607446a055b95870c7f668e93b5cff29]]></url>
-          <comment><![CDATA[dist reference: 9ad1e4fc607446a055b95870c7f668e93b5cff29]]></comment>
+          <url><![CDATA[https://api.github.com/repos/guzzle/promises/zipball/2823687acff28b2dbe67b2508a6b300e2c3fa4ce]]></url>
+          <comment><![CDATA[dist reference: 2823687acff28b2dbe67b2508a6b300e2c3fa4ce]]></comment>
         </reference>
         <reference type="vcs">
           <url><![CDATA[https://github.com/guzzle/promises.git]]></url>
-          <comment><![CDATA[source reference: 9ad1e4fc607446a055b95870c7f668e93b5cff29]]></comment>
+          <comment><![CDATA[source reference: 2823687acff28b2dbe67b2508a6b300e2c3fa4ce]]></comment>
         </reference>
         <reference type="issue-tracker">
           <url><![CDATA[https://github.com/guzzle/promises/issues]]></url>
           <comment><![CDATA[as detected from Composer manifest 'support.issues']]></comment>
         </reference>
         <reference type="vcs">
-          <url><![CDATA[https://github.com/guzzle/promises/tree/2.5.1]]></url>
+          <url><![CDATA[https://github.com/guzzle/promises/tree/2.5.2]]></url>
           <comment><![CDATA[as detected from Composer manifest 'support.source']]></comment>
         </reference>
       </externalReferences>
       <properties>
-        <property name="cdx:composer:package:distReference"><![CDATA[9ad1e4fc607446a055b95870c7f668e93b5cff29]]></property>
-        <property name="cdx:composer:package:sourceReference"><![CDATA[9ad1e4fc607446a055b95870c7f668e93b5cff29]]></property>
+        <property name="cdx:composer:package:distReference"><![CDATA[2823687acff28b2dbe67b2508a6b300e2c3fa4ce]]></property>
+        <property name="cdx:composer:package:sourceReference"><![CDATA[2823687acff28b2dbe67b2508a6b300e2c3fa4ce]]></property>
         <property name="cdx:composer:package:type"><![CDATA[library]]></property>
       </properties>
     </component>
@@ -6738,6 +6816,17 @@
     <dependency ref="bacon/bacon-qr-code-3.1.1.0">
       <dependency ref="dasprid/enum-1.0.7.0"/>
     </dependency>
+    <dependency ref="brianium/paratest-7.23.1.0">
+      <dependency ref="fidry/cpu-core-counter-1.3.0.0"/>
+      <dependency ref="jean85/pretty-package-versions-2.1.1.0"/>
+      <dependency ref="phpunit/php-code-coverage-14.2.3.0"/>
+      <dependency ref="phpunit/php-file-iterator-7.0.0.0"/>
+      <dependency ref="phpunit/php-timer-9.0.0.0"/>
+      <dependency ref="phpunit/phpunit-13.2.5.0"/>
+      <dependency ref="sebastian/environment-9.3.2.0"/>
+      <dependency ref="symfony/console-8.1.1.0"/>
+      <dependency ref="symfony/process-8.1.0.0"/>
+    </dependency>
     <dependency ref="composer/semver-3.4.4.0"/>
     <dependency ref="composer/spdx-licenses-1.6.0.0"/>
     <dependency ref="cyclonedx/cyclonedx-library-4.1.0.0">
@@ -6833,13 +6922,14 @@
     <dependency ref="endroid/qr-code-6.1.3.0">
       <dependency ref="bacon/bacon-qr-code-3.1.1.0"/>
     </dependency>
-    <dependency ref="guzzlehttp/guzzle-7.15.1.0">
-      <dependency ref="guzzlehttp/promises-2.5.1.0"/>
+    <dependency ref="fidry/cpu-core-counter-1.3.0.0"/>
+    <dependency ref="guzzlehttp/guzzle-7.15.3.0">
+      <dependency ref="guzzlehttp/promises-2.5.2.0"/>
       <dependency ref="guzzlehttp/psr7-2.13.0.0"/>
       <dependency ref="psr/http-client-1.0.3.0"/>
       <dependency ref="symfony/deprecation-contracts-3.7.1.0"/>
     </dependency>
-    <dependency ref="guzzlehttp/promises-2.5.1.0">
+    <dependency ref="guzzlehttp/promises-2.5.2.0">
       <dependency ref="symfony/deprecation-contracts-3.7.1.0"/>
     </dependency>
     <dependency ref="guzzlehttp/psr7-2.13.0.0">
@@ -6884,7 +6974,7 @@
     </dependency>
     <dependency ref="league/mime-type-detection-1.17.0.0"/>
     <dependency ref="league/oauth2-client-2.9.0.0">
-      <dependency ref="guzzlehttp/guzzle-7.15.1.0"/>
+      <dependency ref="guzzlehttp/guzzle-7.15.3.0"/>
     </dependency>
     <dependency ref="league/uri-7.8.1.0">
       <dependency ref="league/uri-interfaces-7.8.1.0"/>
@@ -7432,6 +7522,7 @@
       <dependency ref="symfony/yaml-8.1.1.0"/>
       <dependency ref="twig/extra-bundle-3.24.0.0"/>
       <dependency ref="twig/twig-3.28.0.0"/>
+      <dependency ref="brianium/paratest-7.23.1.0"/>
       <dependency ref="cyclonedx/cyclonedx-php-composer-6.2.0.0"/>
       <dependency ref="phpunit/phpunit-13.2.5.0"/>
       <dependency ref="symfony/browser-kit-8.1.1.0"/>

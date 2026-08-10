@@ -3516,7 +3516,7 @@ msgid "manage.shift.field.require_checkin.help"
 msgstr "Volunteers must be checked in before applying - even during setup and teardown."
 
 msgid "manage.shift.field.require_checkin.label"
-msgstr "Require check-in"
+msgstr "Require check-in (Setup/Teardown)"
 
 msgid "manage.shift.field.shift_task.label"
 msgstr "Shift Task"
@@ -4743,7 +4743,7 @@ msgid "planner.field.qty_placeholder"
 msgstr "Qty"
 
 msgid "planner.field.require_checkin"
-msgstr "Require check-in"
+msgstr "Require check-in (Setup/Teardown)"
 
 msgid "planner.field.shift_task"
 msgstr "Shift Task"
