@@ -63,8 +63,8 @@
       </select>
     </div>
     <label class="form-check mb-3">
-      <input type="checkbox" class="form-check-input" name="require_checkin" value="1" {{ shift.requireCheckin ? 'checked' : '' }}>
-      <span class="form-check-label">{{ 'planner.field.require_checkin'|trans }}</span>
+      <input type="checkbox" class="form-check-input" disabled name="require_checkin" value="1" {{ shift.requireCheckin ? 'checked' : '' }}>
+      <span class="form-check-label" disabled>{{ 'planner.field.require_checkin'|trans }}</span>
     </label>
 
     <fieldset class="mb-3">

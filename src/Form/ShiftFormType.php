@@ -112,6 +112,7 @@ final class ShiftFormType extends AbstractType
                 'label' => 'manage.shift.field.require_checkin.label',
                 'required' => false,
                 'help' => 'manage.shift.field.require_checkin.help',
+                'disabled' => true,
             ]);
     }
 
