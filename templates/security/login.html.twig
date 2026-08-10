@@ -80,7 +80,22 @@
                                            class="form-control" autocomplete="current-password" required>
                                 </div>
 
-                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                                {#
+                                    `authenticate` is a stateless CSRF id (config/packages/csrf.yaml), so this value is
+                                    the sentinel `csrf-token` and the browser is expected to replace it with a random
+                                    token it also writes to a cookie. That swap lives in csrf_protection_controller.js,
+                                    which is a LAZY Stimulus controller: without this attribute the module is never
+                                    loaded on a page built by hand, the form posts the bare sentinel, and the request is
+                                    accepted on same origin alone.
+
+                                    That is not merely weaker. SameOriginCsrfTokenManager refuses to let a session
+                                    downgrade from double-submit to origin, so once a session has submitted any
+                                    form-theme form it can no longer sign in here, and the login page simply
+                                    re-renders with nothing to say. Every other form gets this attribute from the form
+                                    theme; this one is written out by hand and has to ask for it.
+                                #}
+                                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}"
+                                       data-controller="csrf-protection">
 
                                 <button class="btn {{ sso ? 'btn-outline-secondary' : 'btn-primary' }} w-100" type="submit">
                                     {{ 'login.sign_in'|trans }}

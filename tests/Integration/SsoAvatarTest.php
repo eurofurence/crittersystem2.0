@@ -144,6 +144,7 @@ final class SsoAvatarTest extends DatabaseTestCase
             $fetcher,
             $this->storage,
             $container->get(GroupRepository::class),
+            $container->get(LoggerInterface::class),
         );
     }
 

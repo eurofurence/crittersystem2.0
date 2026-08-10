@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\User;
 use App\Entity\VolunteerType;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -25,6 +26,22 @@ class VolunteerTypeRepository extends ServiceEntityRepository
     public function findOneByName(string $name): ?VolunteerType
     {
         return $this->findOneBy(['name' => $name]);
+    }
+
+    /**
+     * The base type the system assigns by itself.
+     *
+     * Match on the role rather than the name: an event renames these to suit itself - Critter for
+     * Volunteer here - and a lookup keyed on the label stops finding them the moment it does.
+     */
+    public function findOneByRole(string $role): ?VolunteerType
+    {
+        return $this->findOneBy(['role' => $role]);
+    }
+
+    public function findDefaultFor(User $user): ?VolunteerType
+    {
+        return $this->findOneByRole($user->isStaff() ? VolunteerType::ROLE_STAFF : VolunteerType::ROLE_VOLUNTEER);
     }
 
     /** @return VolunteerType[] */

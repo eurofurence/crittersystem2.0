@@ -21,6 +21,18 @@ class VolunteerType
 
     public const SORT_ORDER_DEFAULT = 100;
 
+    /**
+     * The two types the system hands out by itself, on top of whatever an event names them.
+     *
+     * Onboarding gives every finishing user one of these, and the installer re-seeds them. Both used
+     * to find them by the English name they ship with, which an administrator is free to change -
+     * rename Volunteer to Critter and onboarding silently stopped assigning anything, while still
+     * telling the user it had finished. The role is what those lookups match on now; the name is a
+     * label and nothing depends on it.
+     */
+    public const ROLE_VOLUNTEER = 'volunteer';
+    public const ROLE_STAFF = 'staff';
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -30,6 +42,10 @@ class VolunteerType
     #[Assert\NotBlank]
     #[Assert\Length(max: 128)]
     private string $name;
+
+    /** Null for every type an administrator creates; only the seeded base types carry one. */
+    #[ORM\Column(length: 32, unique: true, nullable: true)]
+    private ?string $role = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
@@ -124,6 +140,18 @@ class VolunteerType
     public function setName(string $name): static
     {
         $this->name = $name;
+
+        return $this;
+    }
+
+    public function getRole(): ?string
+    {
+        return $this->role;
+    }
+
+    public function setRole(?string $role): static
+    {
+        $this->role = $role;
 
         return $this;
     }

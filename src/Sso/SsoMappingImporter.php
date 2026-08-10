@@ -52,6 +52,9 @@ final class SsoMappingImporter
     }
 
     /**
+     * Departments created during this batch are kept keyed by slug, so several rows pointing at the
+     * same new department reuse the one unflushed instance.
+     *
      * @param array<int, array<string, mixed>> $rows
      *
      * @return array{imported: int, warnings: string[]}
@@ -62,8 +65,6 @@ final class SsoMappingImporter
         $warnings = [];
         $vtIndex = $this->volunteerTypeIndex();
 
-        // Departments created during this batch, keyed by slug, so several rows
-        // pointing at the same new department reuse the one unflushed instance.
         $createdDepartments = [];
 
         foreach ($rows as $i => $row) {
@@ -155,10 +156,22 @@ final class SsoMappingImporter
         ];
     }
 
-    /** @return array<string, VolunteerType> indexed by name and slugified name */
+    /**
+     * The role is indexed alongside the name so a mapping naming a base type keeps resolving after
+     * an event renames it - "Volunteer" finds the type whose role is `volunteer` even once it is
+     * called something else. Names win, so a type actually called Volunteer is never shadowed.
+     *
+     * @return array<string, VolunteerType> indexed by role, name and slugified name
+     */
     private function volunteerTypeIndex(): array
     {
         $index = [];
+        foreach ($this->volunteerTypes->findAll() as $vt) {
+            /** @var VolunteerType $vt */
+            if ($vt->getRole() !== null) {
+                $index[$vt->getRole()] = $vt;
+            }
+        }
         foreach ($this->volunteerTypes->findAll() as $vt) {
             /** @var VolunteerType $vt */
             $index[strtolower($vt->getName())] = $vt;

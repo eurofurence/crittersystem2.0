@@ -201,6 +201,7 @@ final class PrivilegeCatalog
             'name' => 'Shift manager',
             'role' => 'ROLE_STAFF',
             'permissions' => [
+                'news:view',
                 'manageshifts:view', 'shift:manage', 'shift:publish', 'shift:assign', 'shift:import', 'shift:view', 'shift:self', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
                 'location:view', 'volunteertype:view', 'user:view', 'user:arrive',
                 'profile:view', 'profile:history:view', 'worklog:self',
@@ -210,6 +211,7 @@ final class PrivilegeCatalog
             'name' => 'Shift manager (delegated)',
             'role' => 'ROLE_STAFF',
             'permissions' => [
+                'news:view',
                 'manageshifts:view', 'shift:manage', 'shift:publish', 'shift:assign', 'shift:import', 'shift:view', 'shift:self', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
                 'location:view', 'volunteertype:view', 'user:view', 'user:arrive',
                 'profile:view', 'profile:history:view', 'worklog:self',
@@ -219,6 +221,7 @@ final class PrivilegeCatalog
             'name' => 'Department manager',
             'role' => 'ROLE_STAFF',
             'permissions' => [
+                'news:view',
                 'manageshifts:view', 'department:view', 'department:manage', 'shift:manage', 'shift:publish', 'shift:assign', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
                 'volunteertype:view', 'volunteertype:assign', 'user:view', 'user:arrive',
                 'profile:view', 'profile:history:view', 'worklog:self',
@@ -234,6 +237,7 @@ final class PrivilegeCatalog
             'name' => 'Department staff',
             'role' => 'ROLE_STAFF',
             'permissions' => [
+                'news:view',
                 'manageshifts:view', 'department:view', 'shift:view', 'shift:apply', 'shift:self',
                 'location:view', 'volunteertype:view', 'worklog:self',
             ],
@@ -255,17 +259,20 @@ final class PrivilegeCatalog
         'certification-manager' => [
             'name' => 'Certification Manager',
             'role' => 'ROLE_STAFF',
-            'permissions' => ['manageshifts:view', 'certification:manage', 'certification:approve', 'certification:view', 'certification:apply'],
+            'permissions' => [
+                'news:view','manageshifts:view', 'certification:manage', 'certification:approve', 'certification:view', 'certification:apply'],
         ],
         'goodies-manager' => [
             'name' => 'Goodies Manager',
             'role' => 'ROLE_STAFF',
-            'permissions' => ['manageshifts:view', 'goodie:manage', 'goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
+            'permissions' => [
+                'news:view','manageshifts:view', 'goodie:manage', 'goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
         ],
         'goodies-staff' => [
             'name' => 'Goodies Staff',
             'role' => 'ROLE_STAFF',
-            'permissions' => ['manageshifts:view', 'goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
+            'permissions' => [
+                'news:view','manageshifts:view', 'goodie:distribute', 'goodie:view', 'backstage:view', 'user:locate'],
         ],
     ];
 

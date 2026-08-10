@@ -10,6 +10,7 @@ use App\Entity\Settings;
 use App\Entity\User;
 use App\Entity\UserConsent;
 use App\Entity\UserVolunteerType;
+use App\Entity\VolunteerType;
 use App\Repository\ConsentTextRepository;
 use App\Repository\GroupRepository;
 use App\Repository\PrivacyNoticeRepository;
@@ -23,6 +24,7 @@ use App\Service\TextVariables;
 use App\Theme\ThemeCatalog;
 use App\Telegram\TelegramLinkService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,14 +38,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * First-run onboarding wizard: consent & privacy, profile confirmation, Telegram
  * link (skippable), notification opt-ins, and finally setting a password. On
  * completion the user is flagged onboarded and assigned - already confirmed -
- * the Volunteer (or Staff) volunteer type, plus the Volunteer permission group
- * for non-staff.
+ * the base volunteer type for who they are, plus the baseline permission group.
  */
 #[Route('/onboarding')]
 #[IsGranted('ROLE_USER')]
 final class OnboardingController extends AbstractController
 {
-    /** Baseline permission group every non-staff user needs to use the app. */
+    /** Baseline permission group every user needs to use the app, staff included. */
     private const VOLUNTEER_GROUP_SLUG = 'volunteer';
 
     public function __construct(
@@ -62,6 +63,7 @@ final class OnboardingController extends AbstractController
         private readonly StaffCheckInService $staffCheckIn,
         private readonly ThemeCatalog $themes,
         private readonly EventConfigStore $config,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -131,13 +133,20 @@ final class OnboardingController extends AbstractController
         return $this->render('onboarding/profile.html.twig', ['personal' => $personal, 'contact' => $contact, 'user' => $user]);
     }
 
+    /**
+     * The step is always skippable, so onboarding is never blocked on it, and it is skipped outright
+     * when the feature is off rather than showing a screen whose only action is "continue".
+     *
+     * A code is prepared on load so the "Open in Telegram" button is ready, reusing a still-valid
+     * pending request instead of churning a new one on every reload - the polling script reloads
+     * once linking completes.
+     */
     #[Route('/telegram', name: 'app_onboarding_telegram', methods: ['GET', 'POST'])]
     public function telegram(Request $request): Response
     {
         if ($redirect = $this->redirectIfDone()) {
             return $redirect;
         }
-        // The step is always skippable, so onboarding is never blocked on it.
         if ($request->isMethod('POST')) {
             return $this->redirectToRoute('app_onboarding_notifications');
         }
@@ -146,15 +155,10 @@ final class OnboardingController extends AbstractController
         $enabled = $config?->isEnabled() ?? false;
         $user = $this->currentUser();
 
-        // With the feature off there is nothing to link: skip the dead step
-        // rather than show a screen whose only action is "continue".
         if (!$enabled) {
             return $this->redirectToRoute('app_onboarding_notifications');
         }
 
-        // Prepare a fresh code so the "Open in Telegram" button is ready on load.
-        // Reuse a still-valid pending request instead of churning a new one on
-        // every reload (the polling script reloads once linking completes).
         $pending = null;
         if (!$user->isTelegramLinked()) {
             $pending = $this->telegramLinks->pendingFor($user);
@@ -176,6 +180,10 @@ final class OnboardingController extends AbstractController
         return new JsonResponse(['linked' => $this->currentUser()->isTelegramLinked()]);
     }
 
+    /**
+     * Reachability is necessary to run shifts: the volunteer chooses which channel to share, but at
+     * least one real, existing channel must be, or the step re-renders instead of advancing.
+     */
     #[Route('/notifications', name: 'app_onboarding_notifications', methods: ['GET', 'POST'])]
     public function notifications(Request $request): Response
     {
@@ -197,8 +205,6 @@ final class OnboardingController extends AbstractController
             $showPhone = $request->request->getBoolean('show_phone');
             $showTelegram = $request->request->getBoolean('show_telegram');
 
-            // Reachability is necessary to run shifts: the volunteer chooses which
-            // channel to share, but at least one real, existing channel must be.
             $reachable = ($showEmail && $hasEmail) || ($showPhone && $hasPhone) || ($showTelegram && $hasTelegram);
             if (!$reachable) {
                 $this->addFlash('danger', new TranslatableMessage('onboarding.flash.contact_required'));
@@ -314,34 +320,74 @@ final class OnboardingController extends AbstractController
     }
 
     /**
-     * Give the finishing user everything they need to actually use the app: the
-     * default volunteer type (Staff for staff, Volunteer otherwise), confirmed
-     * right away because it is granted by the system rather than requested, and
-     * - for plain volunteers - the baseline Volunteer permission group, without
-     * which they would land on the dashboard with no privileges at all.
+     * Give the finishing user everything they need to actually use the app: the base volunteer
+     * type, and the permission group without which they would arrive at a dashboard they have no
+     * privilege to read.
      */
     private function assignDefaults(User $user): void
     {
-        $name = $user->isStaff() ? 'Staff' : 'Volunteer';
-        $type = $this->volunteerTypes->findOneByName($name);
-        if ($type !== null) {
-            // An SSO group mapping may already have created the membership.
-            $membership = $this->memberships->findOneByUserAndType($user, $type);
-            if ($membership === null) {
-                $membership = new UserVolunteerType($user, $type);
-                $this->em->persist($membership);
-            }
-            if (!$membership->isConfirmed()) {
-                $membership->setConfirmedBy($user);
-            }
+        $this->assignDefaultVolunteerType($user);
+        $this->grantBaselineGroup($user);
+    }
+
+    /**
+     * The base type for who this user is, confirmed straight away because the system grants it
+     * rather than the user asking for it - left unconfirmed it would sit in somebody's queue as a
+     * request to approve.
+     *
+     * An SSO group mapping may have created the membership already, hence the lookup before the
+     * insert: the unique index on (user, type) would otherwise abort the whole step.
+     *
+     * A missing default is logged as an error because nothing else reports it and the result is
+     * invisible: the user is told onboarding finished, and is left with no type and no way to be
+     * rostered. It means the seeded type was deleted or stripped of its role.
+     */
+    private function assignDefaultVolunteerType(User $user): void
+    {
+        $type = $this->volunteerTypes->findDefaultFor($user);
+        if ($type === null) {
+            $this->logger->error('Onboarding could not assign a default volunteer type.', [
+                'user' => (string) $user->getUuid(),
+                'role' => $user->isStaff() ? VolunteerType::ROLE_STAFF : VolunteerType::ROLE_VOLUNTEER,
+            ]);
+
+            return;
         }
 
-        if (!$user->isStaff()) {
-            $group = $this->groups->findOneBySlug(self::VOLUNTEER_GROUP_SLUG);
-            if ($group !== null) {
-                $user->addGroup($group);
-            }
+        $membership = $this->memberships->findOneByUserAndType($user, $type);
+        if ($membership === null) {
+            $membership = new UserVolunteerType($user, $type);
+            $this->em->persist($membership);
         }
+        if (!$membership->isConfirmed()) {
+            $membership->setConfirmedBy($user);
+        }
+    }
+
+    /**
+     * Everyone gets the baseline group, staff included.
+     *
+     * The positional groups staff hold - department-staff, shift-manager, department-manager - are
+     * not supersets of it, so gating this on isStaff() left a locally-onboarded staff member with
+     * fewer privileges than the same person arriving through SSO, which grants it unconditionally
+     * ({@see \App\Sso\SsoUserProvisioner}). The group carries no role, so granting it widens nobody.
+     *
+     * Its absence is logged: without it a user reaches the app with no privileges at all, and the
+     * only way that happens is the seeded group having been deleted or renamed at creation.
+     */
+    private function grantBaselineGroup(User $user): void
+    {
+        $group = $this->groups->findOneBySlug(self::VOLUNTEER_GROUP_SLUG);
+        if ($group === null) {
+            $this->logger->error('Onboarding could not grant the baseline permission group.', [
+                'user' => (string) $user->getUuid(),
+                'slug' => self::VOLUNTEER_GROUP_SLUG,
+            ]);
+
+            return;
+        }
+
+        $user->addGroup($group);
     }
 
     /**

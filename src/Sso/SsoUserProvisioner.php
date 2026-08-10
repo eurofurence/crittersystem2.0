@@ -17,6 +17,7 @@ use App\Repository\UserRepository;
 use App\Service\UsernameGenerator;
 use App\Storage\FileStorage;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Creates or updates a local user from SSO claims and applies the group
@@ -40,6 +41,7 @@ final class SsoUserProvisioner
         private readonly SsoAvatarFetcher $avatars,
         private readonly FileStorage $storage,
         private readonly GroupRepository $groups,
+        private readonly LoggerInterface $logger,
         private readonly string $providerLabel = 'oidc',
     ) {
     }
@@ -54,7 +56,6 @@ final class SsoUserProvisioner
         if ($user === null) {
             $user = $this->create($claims);
         } else {
-            // The provider is authoritative for these fields.
             $user->setEmail($claims->email);
             $this->applyName($user, $claims->name);
             $this->applyAvatar($user, $claims->avatar);
@@ -73,12 +74,14 @@ final class SsoUserProvisioner
      * the pre-seed importer so both produce an identical membership state for the same set of group
      * ids. Does not flush.
      *
+     * Group ids are deduplicated first: a provider that reports the same group twice must not
+     * apply its mapping twice.
+     *
      * @param string[] $groupIds the user's full set of identity-provider group ids
      */
     public function applyGroups(User $user, array $groupIds): void
     {
         $this->grantBaseline($user);
-        // A provider that reports the same group twice must not apply its mapping twice.
         $departments = $this->applyMappings($user, array_values(array_unique($groupIds)));
         $this->positions->apply($user, $groupIds, $departments);
         $this->globalRoles->apply($user, $groupIds);
@@ -91,14 +94,20 @@ final class SsoUserProvisioner
      * It is granted to every SSO user, staff included: the positional groups a department mapping
      * confers (department-staff, shift-manager, department-manager) are *not* supersets of the
      * baseline. The group carries no role, so granting it never widens anyone's role.
-     * Stay in school kids
      */
     private function grantBaseline(User $user): void
     {
         $group = $this->groups->findOneBySlug(self::BASELINE_GROUP_SLUG);
-        if ($group !== null) {
-            $user->addGroup($group);
+        if ($group === null) {
+            $this->logger->error('SSO could not grant the baseline permission group.', [
+                'user' => (string) $user->getUuid(),
+                'slug' => self::BASELINE_GROUP_SLUG,
+            ]);
+
+            return;
         }
+
+        $user->addGroup($group);
     }
 
     public function findBySub(string $sub): ?User
@@ -203,6 +212,10 @@ final class SsoUserProvisioner
     }
 
     /**
+     * Volunteer types are collected across all mappings before any is granted: mappings commonly
+     * share one (every department granting Staff), and each may be granted only once per pass -
+     * {@see ensureVolunteerType()}.
+     *
      * @param string[] $groupIds
      *
      * @return \App\Entity\Department[] the departments the mappings placed the user in, whose
@@ -240,9 +253,6 @@ final class SsoUserProvisioner
             }
         }
 
-        // Collected across all mappings first: mappings commonly share a volunteer type (every
-        // department granting Staff), and each type may be granted only once per pass - see
-        // ensureVolunteerType().
         foreach ($volunteerTypes as $type) {
             $this->ensureVolunteerType($user, $type);
         }

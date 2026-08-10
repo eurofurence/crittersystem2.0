@@ -7,6 +7,7 @@ namespace App\Sso;
 use App\Entity\User;
 use App\Repository\GroupRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Grants the app-wide global-admin / sub-admin groups from two identity-provider role IDs.
@@ -33,6 +34,7 @@ final class SsoGlobalRoles
         private readonly EntityManagerInterface $em,
         private readonly GroupRepository $groups,
         private readonly SsoRoleSettings $settings,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -62,9 +64,16 @@ final class SsoGlobalRoles
         return null;
     }
 
+    /**
+     * `$managed` maps a group slug to whether this user should hold it, limited to the groups whose
+     * role ID the identity provider is configured to send.
+     *
+     * A slug that resolves to nothing is logged rather than skipped: the provider is claiming a role
+     * this installation has no group for, so the user signs in with fewer privileges than the
+     * mapping promises and nothing else would ever say so.
+     */
     private function reconcile(User $user, ?string $wantedSlug): void
     {
-        // slug => whether the user should hold it, limited to the groups whose role ID is configured.
         $managed = [];
         if ($this->settings->globalAdminRole() !== null) {
             $managed[self::SLUG_GLOBAL_ADMIN] = $wantedSlug === self::SLUG_GLOBAL_ADMIN;
@@ -98,9 +107,16 @@ final class SsoGlobalRoles
                 continue;
             }
             $group = $this->groups->findOneBySlug($slug);
-            if ($group !== null) {
-                $user->addGroup($group);
+            if ($group === null) {
+                $this->logger->warning('SSO global role names a permission group that does not exist.', [
+                    'user' => (string) $user->getUuid(),
+                    'slug' => $slug,
+                ]);
+
+                continue;
             }
+
+            $user->addGroup($group);
         }
     }
 }

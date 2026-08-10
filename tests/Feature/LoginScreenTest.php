@@ -25,6 +25,7 @@ final class LoginScreenTest extends DatabaseWebTestCase
         parent::tearDown();
     }
 
+    /** The collapse assertions are scoped to the credential form: the page shell has its own navbar toggle. */
     public function testWithoutSsoThePasswordFormIsTheWholePageAndIsNotCollapsed(): void
     {
         $crawler = $this->client->request('GET', '/login');
@@ -32,10 +33,10 @@ final class LoginScreenTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('input[name="_username"]');
         self::assertSame(0, $crawler->filter(self::PASSWORD_FORM.'.collapse')->count());
-        // Scoped to the credential form: the page shell has its own navbar collapse toggle.
         self::assertSame(0, $crawler->filter('a[data-bs-toggle="collapse"][href="'.self::PASSWORD_FORM.'"]')->count());
     }
 
+    /** With a provider connected the credential form's submit must not compete with it for attention. */
     public function testWithSsoTheProviderButtonComesFirstAndIsTheProminentOne(): void
     {
         $crawler = $this->bootWithSso()->request('GET', '/login');
@@ -47,7 +48,6 @@ final class LoginScreenTest extends DatabaseWebTestCase
         self::assertStringContainsString('btn-lg', (string) $ssoButton->attr('class'));
         self::assertStringContainsString('btn-primary', (string) $ssoButton->attr('class'));
 
-        // The submit button of the credential form must not compete with it for attention.
         self::assertStringNotContainsString('btn-primary', (string) $crawler->filter(self::PASSWORD_FORM.' button[type="submit"]')->attr('class'));
 
         $html = (string) $this->client->getResponse()->getContent();
@@ -100,5 +100,30 @@ final class LoginScreenTest extends DatabaseWebTestCase
         self::assertSame(1, $crawler->filter('a[href="/login/sso"]')->count());
         self::assertSelectorNotExists('input[name="_password"]');
         self::assertSame(0, $crawler->filter('a[data-bs-toggle="collapse"][href="'.self::PASSWORD_FORM.'"]')->count());
+    }
+
+    /**
+     * The credential form is hand-built, so it does not get the CSRF wiring the form theme adds.
+     *
+     * `authenticate` is a stateless CSRF id: the rendered value is the sentinel the browser is meant
+     * to swap for a random token that it mirrors into a cookie, and the code doing the swapping is a
+     * lazy Stimulus controller that only loads for this attribute. Without it the form posts the
+     * sentinel and is accepted on origin alone - and any session that has already submitted a
+     * form-theme form is then refused here for good, because SameOriginCsrfTokenManager will not
+     * allow a session to fall back from double-submit to origin.
+     */
+    public function testTheCredentialFormAsksForTheCsrfControllerTheFormThemeWouldHaveAdded(): void
+    {
+        $crawler = $this->client->request('GET', '/login');
+
+        self::assertResponseIsSuccessful();
+
+        $token = $crawler->filter('input[name="_csrf_token"]');
+        self::assertSame(1, $token->count());
+        self::assertSame(
+            'csrf-protection',
+            $token->attr('data-controller'),
+            'without this the double-submit token is never generated and the sentinel is posted as-is',
+        );
     }
 }

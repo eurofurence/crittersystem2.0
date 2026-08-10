@@ -67,15 +67,17 @@ final class Installer
      * flag interdependencies: name => [staffOnly, showOnDashboard, hideOnShiftView, selfSignup, sortOrder].
      * The two base types sort ahead of everything an admin adds later.
      */
-    /** name => [staffOnly, showOnDashboard, hideOnShiftView, shiftSelfSignup, sortOrder, global] */
+    /** role => [name, staffOnly, showOnDashboard, hideOnShiftView, shiftSelfSignup, sortOrder, global] */
     private const SEED_VOLUNTEER_TYPES = [
-        'Volunteer' => [false, true, false, true, 20, true],
-        'Staff' => [true, false, true, true, 10, true],
+        VolunteerType::ROLE_VOLUNTEER => ['Volunteer', false, true, false, true, 20, true],
+        VolunteerType::ROLE_STAFF => ['Staff', true, false, true, true, 10, true],
     ];
 
     /**
-     * Create or update every core privilege and group from the catalog. Safe to
-     * re-run; only the diff is persisted.
+     * Create or update every core privilege and group from the catalog. Safe to re-run; only the
+     * diff is persisted, and each group's permissions converge on the catalog definition.
+     *
+     * The audit-signing certificate is created here because it must exist before any legal export.
      */
     public function seedPrivilegesAndGroups(): void
     {
@@ -101,7 +103,6 @@ final class Installer
                 $group->setName($definition['name'])->setRole($definition['role']);
             }
 
-            // Converge the group's permissions on the catalog definition.
             $desired = PrivilegeCatalog::expandPermissions($definition['permissions']);
             $desiredSet = array_fill_keys($desired, true);
             foreach ($group->getPrivileges()->toArray() as $existing) {
@@ -129,34 +130,41 @@ final class Installer
 
         $this->seedDomainDefaults();
 
-        // The audit-signing certificate must exist before any legal export.
         $this->certificateAuthority->ensureCertificate();
     }
 
     /**
-     * Seed the global Shift Tasks and the Volunteer/Staff Volunteer Types every
-     * deployment needs. Idempotent: only missing rows are created.
+     * Seed the global Shift Tasks and the base Volunteer Types every deployment needs. Idempotent:
+     * only missing rows are created.
+     *
+     * Shift tasks are matched as GLOBAL specifically - names are unique per department, so a
+     * department may already own one of the same name and that must not suppress the global one.
+     *
+     * Volunteer types are matched on the role, then on the shipped name for an installation seeded
+     * before roles existed. Matching on the name alone would seed a second base type beside one an
+     * event has renamed, leaving onboarding two to choose from.
+     *
+     * The General department is seeded as the home for shifts that have no other.
      */
     public function seedDomainDefaults(): void
     {
-        // A default department that owns shifts which have no other home.
         $departments = $this->entityManager->getRepository(Department::class);
         if ($departments->findOneBy(['slug' => 'general']) === null) {
             $this->entityManager->persist(new Department('General', 'general'));
         }
 
         foreach (self::GLOBAL_SHIFT_TASKS as $name) {
-            // Look for a GLOBAL task specifically: names are unique per department, so a department
-            // may already own a task of the same name, and that must not suppress the global one.
             if ($this->shiftTasks->findOneBy(['name' => $name, 'department' => null]) === null) {
                 $this->entityManager->persist(new ShiftTask($name));
             }
         }
 
-        foreach (self::SEED_VOLUNTEER_TYPES as $name => [$staffOnly, $showOnDashboard, $hideOnShiftView, $selfSignup, $sortOrder, $global]) {
-            if ($this->volunteerTypes->findOneByName($name) === null) {
+        foreach (self::SEED_VOLUNTEER_TYPES as $role => [$name, $staffOnly, $showOnDashboard, $hideOnShiftView, $selfSignup, $sortOrder, $global]) {
+            $type = $this->volunteerTypes->findOneByRole($role) ?? $this->volunteerTypes->findOneByName($name);
+            if ($type === null) {
                 $this->entityManager->persist(
                     (new VolunteerType($name))
+                        ->setRole($role)
                         ->setStaffOnly($staffOnly)
                         ->setShowOnDashboard($showOnDashboard)
                         ->setHideOnShiftView($hideOnShiftView)
@@ -164,6 +172,8 @@ final class Installer
                         ->setSortOrder($sortOrder)
                         ->setGlobal($global)
                 );
+            } elseif ($type->getRole() === null) {
+                $type->setRole($role);
             }
         }
 
@@ -263,7 +273,8 @@ final class Installer
 
     /**
      * Seed the catalog and, only on a brand-new database, create a default
-     * admin with the given (or a generated) password.
+     * admin with the given (or a generated) password. On a database that already has users the
+     * groups and privileges are still brought current, but no existing user is touched.
      *
      * @return array{username: string, password: string}|null the created
      *   credentials, or null when users already existed
@@ -271,7 +282,6 @@ final class Installer
     public function installWithDefaultAdmin(string $username, string $email, ?string $password): ?array
     {
         if ($this->userCount() > 0) {
-            // Keep groups/privileges current, but never touch existing users.
             $this->seedPrivilegesAndGroups();
 
             return null;

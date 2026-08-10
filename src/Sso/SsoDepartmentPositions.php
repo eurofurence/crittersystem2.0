@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Enum\DepartmentPosition;
 use App\Repository\GroupRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 
 /**
  * Derives a user's position inside the departments SSO placed them in.
@@ -29,6 +30,7 @@ final class SsoDepartmentPositions
         private readonly EntityManagerInterface $em,
         private readonly GroupRepository $groups,
         private readonly SsoRoleSettings $settings,
+        private readonly LoggerInterface $logger,
     ) {
     }
 
@@ -64,6 +66,11 @@ final class SsoDepartmentPositions
         return DepartmentPosition::STAFF;
     }
 
+    /**
+     * A position slug that resolves to nothing is logged rather than skipped: the mapping grants a
+     * department position this installation has no group for, so the user lands in the department
+     * without the privileges the position is supposed to carry, and nothing else reports it.
+     */
     private function reconcile(User $user, Department $department, DepartmentPosition $position): void
     {
         $wanted = $position->groupSlug();
@@ -87,8 +94,15 @@ final class SsoDepartmentPositions
         }
 
         $group = $this->groups->findOneBySlug($wanted);
-        if ($group !== null) {
-            $user->assignGroup($group, $department);
+        if ($group === null) {
+            $this->logger->warning('SSO department position names a permission group that does not exist.', [
+                'user' => (string) $user->getUuid(),
+                'slug' => $wanted,
+            ]);
+
+            return;
         }
+
+        $user->assignGroup($group, $department);
     }
 }
