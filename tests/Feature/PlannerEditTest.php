@@ -168,4 +168,54 @@ final class PlannerEditTest extends DatabaseWebTestCase
         self::assertSame('Renamed shift', $updated->getTitle());
         self::assertSame(ShiftAudience::ALL_STAFF, $updated->getAudience());
     }
+
+    /**
+     * The check-in override forces the event check-in requirement on a shift outside the main event,
+     * and the panel offers it read-only. A read-only checkbox submits nothing, exactly like an
+     * unticked one, so an edit that never touched it must not be read as switching it off: the
+     * manager renames a shift and the override they can see ticked is gone.
+     */
+    public function testSavingThePanelLeavesAnUnsubmittedCheckInOverrideAlone(): void
+    {
+        $dept = $this->login();
+        $shift = $this->draft($dept, '2026-06-01 10:00', '2026-06-01 12:00');
+        $shift->setRequireCheckin(true);
+        $this->em->flush();
+
+        $this->client->request('POST', '/manage-shifts/planner/shift/'.$shift->getUuid().'/edit', [
+            '_token' => $this->editToken(),
+            'title' => 'Renamed shift',
+        ]);
+        self::assertResponseIsSuccessful();
+
+        $this->em->clear();
+        $updated = $this->em->getRepository(Shift::class)->find($shift->getId());
+        self::assertSame('Renamed shift', $updated->getTitle());
+        self::assertTrue($updated->isRequireCheckin());
+    }
+
+    /** Leaving an absent field alone must not make a submitted one unwritable. */
+    public function testAnExplicitCheckInOverrideStillApplies(): void
+    {
+        $dept = $this->login();
+        $shift = $this->draft($dept, '2026-06-01 10:00', '2026-06-01 12:00');
+
+        $this->client->request('POST', '/manage-shifts/planner/shift/'.$shift->getUuid().'/edit', [
+            '_token' => $this->editToken(),
+            'require_checkin' => '1',
+        ]);
+        self::assertResponseIsSuccessful();
+
+        $this->em->clear();
+        self::assertTrue($this->em->getRepository(Shift::class)->find($shift->getId())->isRequireCheckin());
+
+        $this->client->request('POST', '/manage-shifts/planner/shift/'.$shift->getUuid().'/edit', [
+            '_token' => $this->editToken(),
+            'require_checkin' => '0',
+        ]);
+        self::assertResponseIsSuccessful();
+
+        $this->em->clear();
+        self::assertFalse($this->em->getRepository(Shift::class)->find($shift->getId())->isRequireCheckin());
+    }
 }

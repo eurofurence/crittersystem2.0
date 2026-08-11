@@ -40,7 +40,7 @@
     <div class="planner mb-3" data-availability-target="grid">
       <div class="planner-grid">
         <div class="planner-axis">
-          <div class="planner-axis-head"></div>
+          <div class="planner-axis-head mb-2"></div>
           {% for hour in 0..23 %}
             <div class="planner-axis-hour">{{ '%02d:00'|format(hour) }}</div>
           {% endfor %}

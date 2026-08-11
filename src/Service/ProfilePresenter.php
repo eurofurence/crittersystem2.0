@@ -156,21 +156,15 @@ class ProfilePresenter
     }
 
     /**
-     * Goodies grouped by tier for the tracker.
+     * Credited hours and one row per goodie for the progress tracker, cheapest first and already
+     * marked. The tracker styles each entry from its own marker, so the presenter hands back one
+     * flat list rather than pre-grouped buckets.
      *
-//     * @return array{hours: float, eligible: array<int, array<string, mixed>>, pending: array<int, array<string, mixed>>, claimed: array<int, array<string, mixed>>}
-     * @return array{array<string, mixed>>}
+     * @return array{hours: float, rows: list<array<string, mixed>>}
      */
     public function goodies(User $user): array
     {
-//        $evaluation = $this->goodies->evaluate($user);
-//        $grouped = ['hours' => $evaluation['hours'], 'eligible' => [], 'pending' => [], 'claimed' => []];
-//        foreach ($evaluation['rows'] as $row) {
-//            $grouped[$row['tier']][] = $row;
-//        }
-//
-//        return $grouped;
-        return $this->goodies->evaluate($user);
+        return $this->goodies->timeline($user);
     }
 
     private function shiftStatus(ShiftEntry $entry, \DateTimeImmutable $now): string

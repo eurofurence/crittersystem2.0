@@ -203,6 +203,7 @@ body {
 .reward {
     --rw-collected: var(--tblr-green, #2fb344);
     --rw-available: var(--tblr-orange, #f76707);
+    --rw-blocked:   var(--tblr-yellow, #f59f00);
     --rw-next:      var(--tblr-primary, #206bc4);
     --rw-locked:    var(--tblr-border-color, #dbe0e5);
     --rw-muted:     var(--tblr-secondary, #667382);
@@ -248,9 +249,14 @@ body {
     display: grid; place-items: center; font-size: 1rem;
     color: #fff; background: var(--rw-muted);
 }
-.reward-timeline .rw-name { font-weight: 500; }
+.reward-timeline .rw-name { font-weight: 500; flex: 1 1 auto; min-width: 0; }
+/* The name absorbs the squeeze; a shrinking badge spills its nowrap text past its own background. */
+.reward-timeline .rw-hours,
+.reward-timeline .rw-status { flex: 0 0 auto; }
+.reward-timeline .rw-note { display: block; font-size: .75rem; font-weight: 400; color: var(--rw-muted); }
 .reward-timeline li.is-collected .rw-dot { background: var(--rw-collected); }
 .reward-timeline li.is-available .rw-dot { background: var(--rw-available); }
+.reward-timeline li.is-blocked  .rw-dot { background: var(--rw-blocked); }
 .reward-timeline li.is-next     .rw-dot { background: var(--rw-surface); border: 2px solid var(--rw-next); color: var(--rw-next); }
 .reward-timeline li.is-locked   .rw-dot { background: var(--rw-locked); color: var(--rw-muted); }
 .reward-timeline li.is-locked   .rw-name { color: var(--rw-muted); }
@@ -262,3 +268,27 @@ body {
 .reward-timeline.is-horizontal > li:first-child::before { left: 50%; width: 50%; }
 .reward-timeline.is-horizontal > li:last-child::before  { left: 0;  width: 50%; }
 .reward-timeline.is-horizontal .rw-name { font-size: .8rem; line-height: 1.15; }
+
+/* ===== Equal-height column deck whose panels scroll internally =====
+   Bootstrap's .row-deck stretches the cards to match each other; it does nothing to stop an
+   unbounded list from growing the whole row. The cap belongs on the scrolling panel rather than on
+   the card, so a column that happens to be short is still stretched to its neighbours.
+
+   Both rules are off below the lg breakpoint, where the columns stack: on a phone the page scrolls
+   as one document and a nested scroll container only swallows the gesture. */
+@media (min-width: 992px) {
+    .row-deck-forced { display: flex; flex-wrap: wrap; align-items: stretch; }
+    .row-deck-forced > [class*="col-"] { display: flex; flex-direction: column; }
+    .row-deck-forced > [class*="col-"] > .card { flex: 1 1 auto; }
+    /* Both axes: a table too wide for its column scrolls rather than spilling out of the card. */
+    .deck-scroll { max-height: 62vh; overflow: auto; }
+}
+
+/* Sticky on the cells, not on <thead>: Tabler's tables collapse their borders, and a sticky thead
+   leaves the header's borders behind when the body scrolls under it. */
+.table-thead-sticky thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--tblr-bg-surface);
+}

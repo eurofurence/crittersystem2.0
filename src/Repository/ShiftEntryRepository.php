@@ -86,7 +86,9 @@ class ShiftEntryRepository extends ServiceEntityRepository
     public function findByUserOrdered(User $user): array
     {
         // The group and its other members come along: "my shifts" renders a grouped commitment as
-        // one block, which would otherwise cost two queries per row.
+        // one block, which would otherwise cost two queries per row. The location and its two
+        // ancestors come along for the same reason: every caller names it with Location::fullName(),
+        // which walks the parent chain and would otherwise cost a query per ancestor per row.
         return $this->createQueryBuilder('e')
             ->join('e.shift', 's')
             ->addSelect('s')
@@ -94,6 +96,14 @@ class ShiftEntryRepository extends ServiceEntityRepository
             ->addSelect('grp')
             ->leftJoin('grp.shifts', 'grpShifts')
             ->addSelect('grpShifts')
+            ->leftJoin('s.shiftTask', 'task')
+            ->addSelect('task')
+            ->leftJoin('s.location', 'loc')
+            ->addSelect('loc')
+            ->leftJoin('loc.parent', 'locParent')
+            ->addSelect('locParent')
+            ->leftJoin('locParent.parent', 'locGrandparent')
+            ->addSelect('locGrandparent')
             ->andWhere('e.user = :user')
             ->setParameter('user', $user)
             ->orderBy('s.startsAt', 'ASC')

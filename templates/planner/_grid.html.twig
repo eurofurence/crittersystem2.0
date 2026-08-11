@@ -3,7 +3,7 @@
    paint/move/resize/delete. #}
 <div class="planner-grid" data-planner-target="grid" data-scroll-nav-target="scroller">
   <div class="planner-axis">
-    <div class="planner-axis-head"></div>
+    <div class="planner-axis-head mb-2"></div>
     {% for hour in 0..23 %}
       <div class="planner-axis-hour">{{ '%02d:00'|format(hour) }}</div>
     {% endfor %}

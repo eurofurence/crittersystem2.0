@@ -18,7 +18,8 @@ templates/components/
 ├── forms/_macros.twig         form-field wrappers over Symfony's form_* functions
 ├── navigation/_macros.twig    nav items, sidebar list-group
 ├── notification/_macros.twig  alerts, flashes, toasts
-└── icon/_macros.twig          inline Tabler SVG icons
+├── icon/_macros.twig          inline Tabler SVG icons
+└── goodies/_macros.twig       the goodie reward ladder
 ```
 
 Import them with these aliases. They are the aliases used throughout the ~100 templates that
@@ -30,6 +31,7 @@ already consume the layer, and every example in this document assumes them:
 {% import 'components/navigation/_macros.twig'   as nav %}
 {% import 'components/notification/_macros.twig' as n   %}
 {% import 'components/icon/_macros.twig'         as i   %}
+{% import 'components/goodies/_macros.twig'      as g   %}
 ```
 
 Twig macros are **isolated**: a macro sees neither the calling template's variables nor its imports.
@@ -1053,12 +1055,12 @@ An inline 24×24 Tabler SVG that inherits `currentColor` (so it follows the acti
 | `name` | string (slug) | **yes** | - | A key of the internal map. **An unknown slug silently renders a neutral dot (`point`)** - a typo never breaks layout, and never errors either. |
 | `options.class` | string | no | `''` | Extra classes; `icon` is always present. `icon-1`, `icon-2` size it. |
 
-Available slugs (36):
+Available slugs (37):
 
 `activity`, `award`, `bell`, `building`, `calendar`, `check`, `checklist`, `chevron-down`,
 `chevron-left`, `chevron-right`, `clock`, `code`, `compass`, `dashboard`, `gift`, `help`, `home`,
 `id`, `lock`, `login`, `logout`, `mail`, `map-pin`, `message`, `news`, `palette`, `plus`, `point`,
-`puzzle`, `send`, `settings`, `shield`, `tools`, `user`, `user-search`, `users`.
+`puzzle`, `refresh`, `send`, `settings`, `shield`, `tools`, `user`, `user-search`, `users`.
 
 Add an icon by pasting its inner `<path>` markup from <https://tabler.io/icons> into the map inside
 the macro (the map lives inside the macro because Twig macros are isolated).
@@ -1103,6 +1105,40 @@ disappears.
 {{ f.checkbox_dropdown('departments', options|map(o => {
   value: o.department.uuid, label: o.department.name, hint: o.count, checked: o.selected,
 }), {label: 'Departments'|trans, allLabel: 'All departments'|trans, submitLabel: 'Show'|trans}) }}
+```
+
+---
+
+### goodies - `templates/components/goodies/_macros.twig`
+
+#### `reward_timeline(rows, options = {})`
+
+The goodie ladder: one entry per item, cheapest first, each drawn from the `marker` its row carries.
+Used by the volunteer profile and the info-desk volunteer page, which must not disagree about how far
+along somebody is.
+
+| Param | Type | Required | Default | Description |
+|---|---|---|---|---|
+| `rows` | list | **yes** | - | The `rows` of `App\Service\GoodieEligibilityService::timeline()`. Each needs `item` and `marker`. |
+| `options.class` | string | no | `''` | Extra classes on the `<ul>`; `is-horizontal` lays the ladder out left to right. |
+| `options.showStatus` | bool | no | `false` | Adds the right-hand status badge. It needs the width of a wide column and is hidden below `xl` anyway. |
+| `options.labels` | map | no | `{}` | Translated status labels keyed by marker. Required when `showStatus` is on; a missing key drops that badge. |
+| `options.blockedNote` | string | no | - | Translated line under a `blocked` item's name. |
+
+The five markers are `collected`, `available`, `blocked`, `next` and `locked`; the service decides
+them, this macro only draws them. Colours come from `--rw-*` in `assets/styles/app.css`, which are
+declared on `.reward` - **an ancestor must carry that class** or every dot falls back to grey.
+
+```twig
+{% import 'components/goodies/_macros.twig' as g %}
+
+{{ d.card_start('Goodies progress'|trans, {bodyClass: 'card-body reward'}) }}
+  {{ g.reward_timeline(timeline, {
+    showStatus: true,
+    blockedNote: 'goodie.timeline.certification_required'|trans,
+    labels: {collected: 'Collected'|trans, available: 'Ready to collect'|trans}
+  }) }}
+{{ d.card_end() }}
 ```
 
 ---

@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/goodies/_macros.twig' as g %}
 
 {% block title %}{{ header.user.name }}{% endblock %}
 
@@ -61,22 +62,7 @@
                   <i class="ti"></i> {{ 'profile.card.no_goodies'|trans }}
               </div>
           {% else %}
-              <ul class="reward-timeline">
-              {% set flag_next = true %}
-              {% for goodie in goodies.rows %}
-                {% set claim_status =
-                    goodie.tier == 'claimed'  ? { li_class : 'is-collected', i_class: 'ti ti-check'} :
-                    goodie.tier == 'eligible' ? { li_class : 'is-available', i_class: 'ti ti-gift'} :
-                    goodie.tier == 'pending'  ? ( flag_next == true ? { li_class : 'is-next', i_class: 'ti ti-chevron-right'} :
-                                                { li_class : 'is-locked', i_class: 'ti ti-lock'})
-                %}
-                {% if flag_next and goodie.tier == 'pending' %}
-                  {% set flag_next = false %}
-                {% endif %}
-
-              <li class="{{ claim_status.li_class }}"><span class="rw-dot"><i class="{{ claim_status.i_class }}"></i></span><span class="rw-hours badge bg-secondary-lt">{{ goodie.gap }} h</span><span class="rw-name flex-fill">{{ goodie.item.name }}</span></li>
-              {% endfor %}
-           </ul>
+              {{ g.reward_timeline(goodies.rows, {blockedNote: 'goodie.timeline.certification_required'|trans}) }}
           {% endif %}
           </div>
       </div>

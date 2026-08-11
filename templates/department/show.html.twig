@@ -71,13 +71,14 @@
     {{ d.card_end() }}
   {% endif %}
 
+    <div class="d-flex gap-2 flex-wrap">
   {% for section in [
     sections.managers|merge({title: 'department.show.section.managers'|trans}),
     sections.staff|merge({title: 'department.show.section.staff'|trans}),
     sections.nonstaff|merge({title: 'department.show.section.non_staff'|trans})
   ] %}
     {% set frameId = 'dept-members-' ~ section.key %}
-    <div class="card mb-3">
+    <div class="card mb-3 flex-fill">
       <div class="card-header">
         <h3 class="card-title">{{ section.title }} <span class="text-secondary">({{ section.totalAll }})</span></h3>
         {% if section.totalAll > 0 %}
@@ -112,7 +113,7 @@
         {{ d.empty_inline(section.query ? 'department.show.no_matches'|trans : 'department.show.none'|trans, {tag: 'div', class: 'card-body text-secondary'}) }}
       {% else %}
         {{ d.table_start() }}
-          <thead><tr><th>{{ 'common.label.user'|trans }}</th><th>{{ 'department.show.position'|trans }}</th><th class="text-end">{{ 'department.show.col.planned_hours'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
+          <thead><tr><th>{{ 'common.label.user'|trans }}</th><th>{{ 'department.show.position'|trans }}</th><th class="text-end text-break">{{ 'department.show.col.planned_hours'|trans }}</th><th class="text-end">{{ 'common.label.actions'|trans }}</th></tr></thead>
           <tbody>
             {% for u in section.items %}
               <tr>
@@ -191,4 +192,5 @@
       </turbo-frame>
     </div>
   {% endfor %}
+    </div>
 {% endblock %}

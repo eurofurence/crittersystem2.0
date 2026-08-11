@@ -102,6 +102,43 @@ final class GoodieEligibilityService
     }
 
     /**
+     * The same items as {@see evaluate()}, re-sorted into a single ladder by required hours and each
+     * tagged with the marker its progress timeline draws.
+     *
+     * The sort is the point: {@see \App\Repository\GoodieItemRepository::findActiveForDistribution()}
+     * orders by category first, which is what the hand-out tables want and would make a ladder run
+     * backwards wherever a category boundary falls.
+     *
+     * Exactly one row is marked `next` - the cheapest item the volunteer has not reached yet - and it
+     * is the marker the whole display hangs on. `blocked` outranks it, so an item no amount of work
+     * can unlock is never held out as the goal.
+     *
+     * @return array{hours: float, rows: list<array{item: GoodieItem, tier: string, marker: string, claimed: int, gap: float, remaining: ?int, missingCertifications: list<Certification>}>}
+     */
+    public function timeline(User $user): array
+    {
+        $evaluation = $this->evaluate($user);
+        $rows = $evaluation['rows'];
+
+        usort($rows, static fn (array $a, array $b): int => [$a['item']->getRequiredHours(), $a['item']->getName()]
+            <=> [$b['item']->getRequiredHours(), $b['item']->getName()]);
+
+        $nextTaken = false;
+        foreach ($rows as $index => $row) {
+            $marker = match ($row['tier']) {
+                'claimed' => 'collected',
+                'eligible' => 'available',
+                'blocked' => 'blocked',
+                default => $nextTaken ? 'locked' : 'next',
+            };
+            $nextTaken = $nextTaken || $marker === 'next';
+            $rows[$index]['marker'] = $marker;
+        }
+
+        return ['hours' => $evaluation['hours'], 'rows' => $rows];
+    }
+
+    /**
      * Reason the item cannot be given to the user in the requested quantity, or null when the
      * distribution is allowed.
      */

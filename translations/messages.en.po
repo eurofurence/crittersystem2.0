@@ -1001,6 +1001,54 @@ msgstr "Distribution history"
 msgid "backstage.locate.section.will_be_eligible"
 msgstr "Will be eligible"
 
+msgid "backstage.locate.progress.title"
+msgstr "Goodies progress"
+
+msgid "backstage.locate.distribution.title"
+msgstr "Goodies distribution"
+
+msgid "backstage.locate.shifts.title"
+msgstr "Shifts"
+
+msgid "backstage.locate.tab.open"
+msgstr "Open"
+
+msgid "backstage.locate.tab.blocked"
+msgstr "Blocked"
+
+msgid "backstage.locate.tab.pending"
+msgstr "Pending"
+
+msgid "backstage.locate.tab.claimed"
+msgstr "Claimed"
+
+msgid "backstage.locate.tab.history"
+msgstr "History"
+
+msgid "backstage.locate.table.left"
+msgstr "Left"
+
+msgid "backstage.locate.empty.no_goodies"
+msgstr "No goodies are set up."
+
+msgid "backstage.locate.empty.nothing_claimed"
+msgstr "Nothing claimed yet."
+
+msgid "goodie.timeline.certification_required"
+msgstr "Certification required"
+
+msgid "goodie.timeline.status.collected"
+msgstr "Collected"
+
+msgid "goodie.timeline.status.available"
+msgstr "Ready to collect"
+
+msgid "goodie.timeline.status.next"
+msgstr "Next up"
+
+msgid "goodie.timeline.status.locked"
+msgstr "Locked"
+
 msgid "backstage.locate.user.heading"
 msgstr "Locate - %name%"
 
@@ -5799,7 +5847,7 @@ msgid "shift_manager.flash.over_hours"
 msgstr "This shift would take you past the recommended %count% planned hours. Tick \"I understand\" to apply anyway."
 
 msgid "shift_manager.page.subtitle"
-msgstr "Apply to, manage and create staff shifts."
+msgstr "One central place for shifts."
 
 msgid "shift_manager.page.title"
 msgstr "Shift Manager"

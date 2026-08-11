@@ -312,7 +312,14 @@ final class PlannerController extends AbstractController
                 return $this->fail('Invalid start or end time.');
             }
         }
-        $fields['requireCheckin'] = $request->request->getBoolean('require_checkin');
+        // A form that offers the check-in override read-only submits nothing for it, exactly like an
+        // unticked box, so reading the absent field as "off" clears an override the panel is at that
+        // moment showing as ticked. Whatever offers this field for editing has to post the value
+        // explicitly - a hidden `0` ahead of the checkbox - because a checkbox alone cannot say
+        // "off" and the absent case is already taken.
+        if ($request->request->has('require_checkin')) {
+            $fields['requireCheckin'] = $request->request->getBoolean('require_checkin');
+        }
 
         try {
             $this->drafts->updateDetails($shift, $fields, $this->user());

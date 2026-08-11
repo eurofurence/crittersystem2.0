@@ -17,6 +17,8 @@ use App\Service\ContactMethodResolver;
 use App\Service\DigitalIdService;
 use App\Service\GoodieEligibilityService;
 use App\Service\HoursCacheService;
+use App\Service\ProfileAccessService;
+use App\Service\ProfilePresenter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -48,6 +50,8 @@ final class DistributionController extends AbstractController
         private readonly ContactMethodResolver $contacts,
         private readonly ConversationService $conversations,
         private readonly ShiftEntryRepository $shiftEntries,
+        private readonly ProfilePresenter $profile,
+        private readonly ProfileAccessService $profileAccess,
     ) {
     }
 
@@ -91,10 +95,17 @@ final class DistributionController extends AbstractController
     {
         $cache = $this->hoursCache->get($user, $request->query->getBoolean('refresh'));
 
+        // The identity card repeats what /users/{uuid} shows, so it answers to the same rule that page
+        // enforces - and so does the link to it, which would otherwise offer this operator a 403.
+        $canViewProfile = $this->profileAccess->canView($this->currentUser(), $user);
+
         return $this->render('backstage/distribute/user.html.twig', [
             'user' => $user,
             'cache' => $cache,
+            'canViewProfile' => $canViewProfile,
+            'header' => $canViewProfile ? $this->profile->header($user) : null,
             'eligibility' => $this->eligibility->evaluate($user),
+            'timeline' => $this->eligibility->timeline($user)['rows'],
             'history' => $this->distributions->findByUser($user),
             'shifts' => $this->shiftEntries->findByUserOrdered($user),
             'contactMethods' => $this->contacts->methodsFor($user),

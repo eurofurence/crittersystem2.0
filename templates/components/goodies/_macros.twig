@@ -1,0 +1,47 @@
+{# Goodie-specific display components. The same rules as components/data/_macros.twig apply: no
+   business logic, no authorization decisions, no CSRF tokens. The marker on each row is decided by
+   App\Service\GoodieEligibilityService::timeline(); this file only draws it.
+
+   See docs/ui-components.md for the full reference.
+#}
+
+{# The reward ladder: one entry per goodie, cheapest first, drawn from the `marker` the timeline
+   projection put on each row. The enclosing element must carry the `reward` class, which is where
+   the colour variables live.
+
+   Options:
+   - class: string      -- extra classes on the <ul> (e.g. 'is-horizontal')
+   - showStatus: bool   -- default false; adds the right-hand status badge, which needs the width
+                           of a wide column and is dropped below xl
+   - labels: map        -- translated status labels keyed by marker; required when showStatus is on
+   - blockedNote: string -- translated line under a blocked item's name
+#}
+{% macro reward_timeline(rows, options = {}) %}
+  {% set showStatus = options.showStatus is defined ? options.showStatus : false %}
+  {% set labels = options.labels is defined ? options.labels : {} %}
+  {% set dots = {
+    collected: {class: 'is-collected', icon: 'ti-check', badge: 'bg-green-lt'},
+    available: {class: 'is-available', icon: 'ti-gift', badge: 'bg-orange-lt'},
+    blocked:   {class: 'is-blocked',   icon: 'ti-alert-triangle', badge: 'bg-yellow-lt'},
+    next:      {class: 'is-next',      icon: 'ti-chevron-right', badge: 'bg-blue-lt'},
+    locked:    {class: 'is-locked',    icon: 'ti-lock', badge: 'bg-secondary-lt'}
+  } %}
+  <ul class="reward-timeline{% if options.class is defined %} {{ options.class }}{% endif %}">
+    {% for row in rows %}
+      {% set dot = dots[row.marker] %}
+      <li class="{{ dot.class }}">
+        <span class="rw-dot"><i class="ti {{ dot.icon }}"></i></span>
+        <span class="rw-hours badge bg-secondary-lt">{{ row.item.requiredHours|round(2) }} h</span>
+        <span class="rw-name flex-fill">
+          {{ row.item.name }}
+          {% if row.marker == 'blocked' and options.blockedNote is defined %}
+            <span class="rw-note">{{ options.blockedNote }}</span>
+          {% endif %}
+        </span>
+        {% if showStatus and labels[row.marker] is defined %}
+          <span class="rw-status d-none d-xl-block badge {{ dot.badge }} text-nowrap">{{ labels[row.marker] }}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}

@@ -2,6 +2,7 @@
 
 namespace App\Tests\Integration;
 
+use App\Entity\Certification;
 use App\Entity\GoodieCategory;
 use App\Entity\GoodieDistribution;
 use App\Entity\GoodieItem;
@@ -69,6 +70,75 @@ final class GoodieEligibilityServiceTest extends DatabaseTestCase
         self::assertStringContainsString('more hours', (string) $this->service()->distributionError($user, $jacket, 1));
         self::assertStringContainsString('per-person limit', (string) $this->service()->distributionError($user, $pin, 1));
         self::assertStringContainsString('Exceeds', (string) $this->service()->distributionError($user, $shirt, 2));
+    }
+
+    /**
+     * The item finder orders by category first, which is what the hand-out tables want. A ladder
+     * ordered that way runs backwards at every category boundary, so the timeline re-sorts.
+     */
+    public function testTheTimelineClimbsByRequiredHoursAcrossCategories(): void
+    {
+        $expensive = (new GoodieCategory('Rewards'))->setDisplayOrder(1);
+        $cheap = (new GoodieCategory('Swag'))->setDisplayOrder(2);
+        $this->em->persist($expensive);
+        $this->em->persist($cheap);
+
+        $user = $this->userWithHours('lena', 0.0);
+        $this->item($expensive, 'Loop Scarf', 30.0);
+        $this->item($cheap, 'Ribbon', 1.0);
+        $this->em->flush();
+
+        $evaluation = $this->service()->evaluate($user);
+        self::assertSame(['Loop Scarf', 'Ribbon'], array_map(
+            static fn (array $row): string => $row['item']->getName(),
+            $evaluation['rows'],
+        ), 'guard: the evaluation is category-ordered, so the re-sort below is doing real work');
+
+        $rows = $this->service()->timeline($user)['rows'];
+        self::assertSame(['Ribbon', 'Loop Scarf'], array_map(
+            static fn (array $row): string => $row['item']->getName(),
+            $rows,
+        ));
+        self::assertSame(['next', 'locked'], array_column($rows, 'marker'), 'only the cheapest unreached item is the target');
+    }
+
+    /**
+     * An item held back by a certification is not a target: no number of hours unlocks it, so the
+     * "next up" marker has to skip past it to something the volunteer can actually work towards.
+     */
+    public function testACertificationBlockedItemNeverTakesTheNextMarker(): void
+    {
+        $cat = new GoodieCategory('Gear');
+        $this->em->persist($cat);
+        $certification = (new Certification('First Aid'))->setIsActive(true);
+        $this->em->persist($certification);
+
+        $user = $this->userWithHours('milo', 0.0);
+        $this->item($cat, 'First Aid Pin', 0.0)->addCertification($certification);
+        $this->item($cat, 'Festival Cup', 5.0);
+        $this->em->flush();
+
+        $rows = $this->service()->timeline($user)['rows'];
+
+        self::assertSame(['First Aid Pin', 'Festival Cup'], array_map(
+            static fn (array $row): string => $row['item']->getName(),
+            $rows,
+        ));
+        self::assertSame(['blocked', 'next'], array_column($rows, 'marker'));
+    }
+
+    public function testTheTimelineHasNoTargetWhenNothingIsLeftToEarn(): void
+    {
+        $cat = new GoodieCategory('Swag');
+        $this->em->persist($cat);
+        $user = $this->userWithHours('nora', 40.0);
+        $this->item($cat, 'Ribbon', 1.0);
+        $this->item($cat, 'Sticker', 2.0);
+        $this->em->flush();
+
+        $markers = array_column($this->service()->timeline($user)['rows'], 'marker');
+
+        self::assertSame(['available', 'available'], $markers);
     }
 
     public function testInactiveItemCannotBeDistributed(): void

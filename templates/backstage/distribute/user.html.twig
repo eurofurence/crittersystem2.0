@@ -1,49 +1,93 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
 {% import 'components/icon/_macros.twig' as i %}
+{% import 'components/goodies/_macros.twig' as g %}
 
 {% block title %}{{ 'backstage.locate.user.title'|trans({'%name%': user.name}) }}{% endblock %}
 
+{# The desk works three panels side by side - progress, hand-out, shifts - which needs more room
+   than the app's usual reading width. #}
+{% block container_class %}container-fluid{% endblock %}
+
 {% block body %}
   {# Email is a mining vector: only a fresh-stepped-up PII viewer sees the raw address. #}
+  {% set headerActions = [{label: 'backstage.locate.action.back_to_search'|trans, href: path('app_backstage_distribute'), class: 'btn btn-outline-secondary'}] %}
+  {% if canViewProfile %}
+    {% set headerActions = headerActions|merge([{label: 'backstage.locate.action.view_profile'|trans, href: path('app_profile_show', {id: user.uuid}), class: 'btn btn-outline-primary'}]) %}
+  {% endif %}
+
   {{ d.page_header('backstage.locate.user.heading'|trans({'%name%': user.name}), {
     subtitle: can_see_pii() ? user.email : 'backstage.locate.volunteer'|trans,
-    actions: [
-      {label: 'backstage.locate.action.back_to_search'|trans, href: path('app_backstage_distribute'), class: 'btn btn-outline-secondary'},
-      {label: 'backstage.locate.action.view_profile'|trans, href: path('app_profile_show', {id: user.uuid}), class: 'btn btn-outline-primary'}
-    ]
+    actions: headerActions
   }) }}
 
-  {{ d.card_start() }}
-      <div class="row g-3 align-items-center">
-        <div class="col-12 col-lg-4">
-          <div class="text-muted small">{{ 'backstage.locate.registration_number'|trans }}</div>
-          <div class="fs-4">{{ user.personalData and user.personalData.badgeNumber ? user.personalData.badgeNumber : '-' }}</div>
+  {% set arrived = user.state and user.state.arrived %}
+  {% set canViewGoodies = is_granted('goodie:view') %}
+  {% set canGiveGoodies = is_granted('goodie:distribute') %}
+  {% set canViewShifts = is_granted('shift:view') %}
+
+  <div class="row row-deck row-cards mb-3">
+    {% if canViewProfile %}
+      {# The same facts /users/{uuid} opens with, so the desk does not have to leave this page for them.
+         Check-in is deliberately absent: it belongs beside the button that changes it, in the next card. #}
+      <div class="col-12 col-md-6 col-lg-4 col-xl-3">
+        {{ d.card_start(null, {class: 'position-relative', bodyClass: ''}) }}
+          {% if header.priorityBadge %}
+            <span class="badge fs-3 bg-purple-lt position-absolute top-0 end-0 m-3">{{ header.priorityBadge.name }}</span>
+          {% endif %}
+
+          <div class="card-header">
+            <h2 class="mb-0 me-6">{{ user|display_name }}</h2>
+          </div>
+
+          <div class="card-body">
+            <div class="d-flex flex-column flex-md-row align-items-md-center gap-3">
+              <div>{{ d.avatar(user, {size: 'xl'}) }}</div>
+              <div class="flex-grow-1">
+                {{ d.definition_list([
+                  {label: 'common.label.status'|trans, value: header.status},
+                  {label: 'profile.field.planned_arrival'|trans, value: header.plannedArrival ? header.plannedArrival|app_date : '-'},
+                  {label: 'profile.field.next_shift'|trans, value: header.nextShiftAt ? header.nextShiftAt|app_datetime : '-'},
+                  {label: 'profile.field.total_shifts'|trans, value: header.totalShifts}
+                ]) }}
+              </div>
+            </div>
+          </div>
+        {{ d.card_end({bodyClass: ''}) }}
+      </div>
+    {% endif %}
+
+    <div class="col-12 col-sm-5 col-lg-4 col-xl-3">
+      {# The border answers the desk's first question from across the counter. #}
+      {{ d.card_start(null, {class: 'border-2 ' ~ (arrived ? 'border-success' : 'border-danger'), bodyClass: ''}) }}
+        <div class="card-body pb-2">
+          <div class="d-flex justify-content-between align-items-baseline">
+            <div class="text-muted">{{ 'backstage.locate.registration_number'|trans }}</div>
+            <div class="fs-3">{{ user.personalData and user.personalData.badgeNumber ? user.personalData.badgeNumber : '-' }}</div>
+          </div>
         </div>
 
-        <div class="col-12 col-lg-4">
+        <div class="card-body py-2">
           <div class="text-muted small">{{ 'backstage.locate.checked_in'|trans }}</div>
-          {% set arrived = user.state and user.state.arrived %}
-          <div class="d-flex align-items-center gap-2">
+          <div class="mb-2">
             {% if arrived %}
               {{ d.badge('common.state.yes'|trans ~ (user.state.arrivalDate ? ' · ' ~ user.state.arrivalDate|app_datetime : ''), 'bg-green-lt') }}
             {% else %}
               {{ d.badge('backstage.locate.not_yet'|trans, 'bg-secondary-lt') }}
             {% endif %}
-            {% if is_granted('user:arrive') %}
-              <form method="post" action="{{ path('app_backstage_distribute_checkin', {id: user.uuid}) }}"
-                    {% if arrived %}data-controller="confirm" data-confirm-message-value="{{ 'backstage.locate.confirm.remove_checkin'|trans({'%name%': user.name}) }}"{% endif %}>
-                <input type="hidden" name="_token" value="{{ csrf_token('checkin' ~ user.id) }}">
-                <input type="hidden" name="arrived" value="{{ arrived ? '0' : '1' }}">
-                <button class="btn btn-sm {{ arrived ? 'btn-outline-danger' : 'btn-success' }}">{{ arrived ? 'backstage.locate.action.remove_checkin'|trans : 'backstage.locate.action.check_in'|trans }}</button>
-              </form>
-            {% endif %}
           </div>
+          {% if is_granted('user:arrive') %}
+            <form method="post" action="{{ path('app_backstage_distribute_checkin', {id: user.uuid}) }}"
+                  {% if arrived %}data-controller="confirm" data-confirm-message-value="{{ 'backstage.locate.confirm.remove_checkin'|trans({'%name%': user.name}) }}"{% endif %}>
+              <input type="hidden" name="_token" value="{{ csrf_token('checkin' ~ user.id) }}">
+              <input type="hidden" name="arrived" value="{{ arrived ? '0' : '1' }}">
+              <button class="btn btn-sm w-100 {{ arrived ? 'btn-outline-danger' : 'btn-success' }}">{{ arrived ? 'backstage.locate.action.remove_checkin'|trans : 'backstage.locate.action.check_in'|trans }}</button>
+            </form>
+          {% endif %}
         </div>
 
-        <div class="col-12 col-lg-4">
-          <div class="text-muted small">{{ 'backstage.locate.contact'|trans }}</div>
-          <div class="d-flex align-items-center gap-2 flex-wrap">
+        <div class="card-body pt-2">
+          <div class="d-flex flex-wrap gap-2">
             {% if canDirectMessage %}
               <a class="btn btn-sm btn-primary" href="{{ path('app_messages_with', {id: user.uuid}) }}">
                 {{ i.icon('message', {class: 'icon-1 me-1'}) }}{{ 'backstage.locate.action.message'|trans }}
@@ -65,182 +109,279 @@
             </div>
           </div>
         </div>
-      </div>
-  {{ d.card_end() }}
+      {{ d.card_end({bodyClass: ''}) }}
+    </div>
 
-  {{ d.card_start() }}
-      <div class="d-flex justify-content-between align-items-center mb-2">
-        <div><span class="fw-semibold">{{ 'backstage.locate.credited_hours'|trans }}</span> <span class="fs-4">{{ cache.totalHours|round(2) }}</span></div>
-        {% if is_granted('goodie:distribute') %}
-          <form method="post" action="{{ path('app_backstage_distribute_refresh', {id: user.uuid}) }}">
-            <input type="hidden" name="_token" value="{{ csrf_token('refresh' ~ user.id) }}">
-            <button class="btn btn-sm btn-outline-secondary">{{ 'backstage.locate.action.recalculate'|trans }}</button>
-          </form>
-        {% endif %}
-      </div>
-      <div class="row text-center small text-muted">
-        <div class="col"><div class="fw-bold text-dark">{{ cache.dayShiftsHours|round(2) }}</div>{{ 'backstage.hours.day'|trans }}</div>
-        <div class="col"><div class="fw-bold text-dark">{{ cache.nightShiftsHours|round(2) }}</div>{{ 'backstage.hours.night'|trans }}</div>
-        <div class="col"><div class="fw-bold text-dark">{{ cache.noshowPenaltyHours|round(2) }}</div>{{ 'common.state.no_show'|trans }}</div>
-        <div class="col"><div class="fw-bold text-dark">{{ cache.worklogHours|round(2) }}</div>{{ 'backstage.hours.worklog'|trans }}</div>
-        <div class="col"><div class="fw-bold text-dark">{{ cache.completedShiftsCount }}</div>{{ 'ui.nav.shifts'|trans }}</div>
-      </div>
-      <div class="text-muted small mt-2">{{ 'backstage.locate.last_calculated'|trans }} {{ cache.lastCalculatedAt|app_datetime }}</div>
-  {{ d.card_end() }}
+    <div class="col">
+      {{ d.card_start() }}
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <span class="fw-semibold">{{ 'backstage.locate.credited_hours'|trans }}</span>
+            <span class="fs-2 ms-2">{{ cache.totalHours|round(2) }}</span>
+          </div>
+          {% if canGiveGoodies %}
+            <form method="post" action="{{ path('app_backstage_distribute_refresh', {id: user.uuid}) }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('refresh' ~ user.id) }}">
+              <button class="btn btn-sm btn-outline-secondary">{{ i.icon('refresh', {class: 'icon-1 me-1'}) }}{{ 'backstage.locate.action.recalculate'|trans }}</button>
+            </form>
+          {% endif %}
+        </div>
+        <div class="row text-center small text-muted">
+          <div class="col border-end"><div class="fs-3 fw-bold text-body">{{ cache.dayShiftsHours|round(2) }}</div>{{ 'backstage.hours.day'|trans }}</div>
+          <div class="col border-end"><div class="fs-3 fw-bold text-body">{{ cache.nightShiftsHours|round(2) }}</div>{{ 'backstage.hours.night'|trans }}</div>
+          <div class="col border-end"><div class="fs-3 fw-bold text-body">{{ cache.noshowPenaltyHours|round(2) }}</div>{{ 'common.state.no_show'|trans }}</div>
+          <div class="col border-end"><div class="fs-3 fw-bold text-body">{{ cache.worklogHours|round(2) }}</div>{{ 'backstage.hours.worklog'|trans }}</div>
+          <div class="col"><div class="fs-3 fw-bold text-body">{{ cache.completedShiftsCount }}</div>{{ 'ui.nav.shifts'|trans }}</div>
+        </div>
+        <div class="text-muted small mt-3">{{ 'backstage.locate.last_calculated'|trans }} {{ cache.lastCalculatedAt|app_datetime }}</div>
+      {{ d.card_end() }}
+    </div>
+  </div>
 
   {% set eligible = eligibility.rows|filter(r => r.tier == 'eligible') %}
   {% set pending = eligibility.rows|filter(r => r.tier == 'pending') %}
   {% set claimed = eligibility.rows|filter(r => r.tier == 'claimed') %}
   {% set blocked = eligibility.rows|filter(r => r.tier == 'blocked') %}
 
-  {% if is_granted('goodie:view') %}
-    <h2 class="h5">{{ 'backstage.locate.section.can_claim'|trans }}</h2>
-    {% if eligible is empty %}
-      {{ d.empty_inline('backstage.locate.empty.no_claimable'|trans, {class: 'text-muted'}) }}
-    {% else %}
-      <div class="row g-2 mb-3">
-        {% for r in eligible %}
-          <div class="col-12 col-md-6">
-            {{ d.card_start(null, {class: 'h-100'}) }}
-              <div class="d-flex justify-content-between">
-                <div class="fw-semibold">{{ r.item.name }}</div>
-                <span class="text-muted small">{{ r.item.requiredHours|round(2) }}h{% if r.remaining is not null %} · {{ 'backstage.locate.remaining'|trans({'%count%': r.remaining}) }}{% endif %}</span>
-              </div>
-              {% if r.item.description %}<div class="text-muted small mb-2">{{ r.item.description }}</div>{% endif %}
-              {% if is_granted('goodie:distribute') %}
-                <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.uuid}) }}" class="row g-2 align-items-end">
-                  <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
-                  <input type="hidden" name="item" value="{{ r.item.uuid }}">
-                  <div class="col-4">
-                    <label class="form-label small mb-0">{{ 'backstage.label.qty'|trans }}</label>
-                    <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm">
-                  </div>
-                  <div class="col-8">
-                    <button class="btn btn-sm btn-primary w-100">{{ 'backstage.locate.action.give'|trans }}</button>
-                  </div>
-                </form>
-              {% endif %}
-            {{ d.card_end() }}
+  {# Each panel takes the room the ones the viewer may not see would have used. #}
+  <div class="row row-deck-forced row-cards">
+    {% if canViewGoodies %}
+      <div class="{{ canViewShifts ? 'col-12 col-lg-6 col-xl-3' : 'col-12 col-lg-5' }}">
+        {{ d.card_start('backstage.locate.progress.title'|trans, {class: 'h-100', bodyClass: 'card-body reward'}) }}
+          {% if timeline is empty %}
+            {{ d.empty_inline('backstage.locate.empty.no_goodies'|trans) }}
+          {% else %}
+            <div class="deck-scroll">
+              {{ g.reward_timeline(timeline, {
+                showStatus: true,
+                blockedNote: 'goodie.timeline.certification_required'|trans,
+                labels: {
+                  collected: 'goodie.timeline.status.collected'|trans,
+                  available: 'goodie.timeline.status.available'|trans,
+                  next: 'goodie.timeline.status.next'|trans,
+                  locked: 'goodie.timeline.status.locked'|trans
+                }
+              }) }}
+            </div>
+          {% endif %}
+        {{ d.card_end() }}
+      </div>
+
+      <div class="{{ canViewShifts ? 'col-12 col-lg-6 col-xl-4' : 'col-12 col-lg-7' }}">
+        <div class="card h-100">
+          <div class="card-header">
+            <h3 class="card-title mb-0">{{ 'backstage.locate.distribution.title'|trans }}</h3>
           </div>
-        {% endfor %}
+          <ul class="nav nav-tabs px-2 pt-2" role="tablist">
+            <li class="nav-item" role="presentation">
+              <a href="#goodie-pane-open" class="nav-link active" data-bs-toggle="tab" role="tab" aria-selected="true">
+                {{ 'backstage.locate.tab.open'|trans }} <span class="badge bg-secondary-lt ms-1">{{ eligible|length }}</span>
+              </a>
+            </li>
+            {% if canGiveGoodies %}
+              <li class="nav-item" role="presentation">
+                <a href="#goodie-pane-blocked" class="nav-link" data-bs-toggle="tab" role="tab" aria-selected="false" tabindex="-1">
+                  {{ 'backstage.locate.tab.blocked'|trans }} <span class="badge bg-yellow-lt ms-1">{{ blocked|length }}</span>
+                </a>
+              </li>
+            {% endif %}
+            <li class="nav-item" role="presentation">
+              <a href="#goodie-pane-pending" class="nav-link" data-bs-toggle="tab" role="tab" aria-selected="false" tabindex="-1">
+                {{ 'backstage.locate.tab.pending'|trans }} <span class="badge bg-secondary-lt ms-1">{{ pending|length }}</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a href="#goodie-pane-claimed" class="nav-link" data-bs-toggle="tab" role="tab" aria-selected="false" tabindex="-1">
+                {{ 'backstage.locate.tab.claimed'|trans }} <span class="badge bg-secondary-lt ms-1">{{ claimed|length }}</span>
+              </a>
+            </li>
+            <li class="nav-item" role="presentation">
+              <a href="#goodie-pane-history" class="nav-link" data-bs-toggle="tab" role="tab" aria-selected="false" tabindex="-1">
+                {{ 'backstage.locate.tab.history'|trans }} <span class="badge bg-secondary-lt ms-1">{{ history|length }}</span>
+              </a>
+            </li>
+          </ul>
+
+          <div class="tab-content">
+            <div id="goodie-pane-open" class="tab-pane active show" role="tabpanel">
+              <div class="deck-scroll">
+                {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table table-thead-sticky'}) }}
+                  <thead>
+                    <tr>
+                      <th>{{ 'backstage.table.item'|trans }}</th>
+                      <th class="w-1">{{ 'backstage.table.required'|trans }}</th>
+                      <th class="w-1">{{ 'backstage.locate.table.left'|trans }}</th>
+                      {% if canGiveGoodies %}<th class="w-1"></th>{% endif %}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for r in eligible %}
+                      <tr>
+                        <td>
+                          {{ r.item.name }}
+                          {% if r.item.description %}<div class="text-secondary small">{{ r.item.description }}</div>{% endif %}
+                        </td>
+                        <td>{{ d.badge(r.item.requiredHours|round(2) ~ ' h', 'bg-secondary-lt') }}</td>
+                        <td class="text-secondary">{{ r.remaining is null ? '∞' : r.remaining }}</td>
+                        {% if canGiveGoodies %}
+                          <td>
+                            <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.uuid}) }}" class="d-flex gap-1 flex-nowrap">
+                              <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
+                              <input type="hidden" name="item" value="{{ r.item.uuid }}">
+                              <input type="number" name="quantity" value="1" min="1" style="width: 4.5rem"
+                                     class="form-control form-control-sm" aria-label="{{ 'backstage.label.qty'|trans }}">
+                              <button class="btn btn-sm btn-primary">{{ 'backstage.locate.action.give'|trans }}</button>
+                            </form>
+                          </td>
+                        {% endif %}
+                      </tr>
+                    {% else %}
+                      {{ d.empty_row(canGiveGoodies ? 4 : 3, 'backstage.locate.empty.no_claimable'|trans) }}
+                    {% endfor %}
+                  </tbody>
+                {{ d.table_end({responsive: false}) }}
+              </div>
+            </div>
+
+            {% if canGiveGoodies %}
+              {# Handing over an item whose certification the volunteer does not hold is a deliberate,
+                 audit-logged act, so it keeps its own pane and its own reason field rather than
+                 sitting one click away in the routine hand-out table. #}
+              <div id="goodie-pane-blocked" class="tab-pane" role="tabpanel">
+                <div class="deck-scroll">
+                  {% if blocked is empty %}
+                    <div class="card-body">{{ d.empty_inline('backstage.locate.empty.nothing_blocked'|trans) }}</div>
+                  {% else %}
+                    <div class="list-group list-group-flush">
+                      {% for r in blocked %}
+                        <div class="list-group-item">
+                          <div class="d-flex justify-content-between align-items-baseline">
+                            <div class="fw-semibold">{{ r.item.name }}</div>
+                            {{ d.badge(r.item.requiredHours|round(2) ~ ' h', 'bg-secondary-lt') }}
+                          </div>
+                          <div class="small my-1">
+                            {{ 'backstage.locate.missing_certifications'|trans }}
+                            {% for certification in r.missingCertifications %}
+                              {{ d.badge(certification.title, 'text-bg-warning', {class: 'me-1'}) }}
+                            {% endfor %}
+                          </div>
+                          <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.uuid}) }}" class="row g-2 align-items-end"
+                                data-controller="confirm"
+                                data-confirm-message-value="{{ 'backstage.locate.confirm.override'|trans({'%name%': r.item.name}) }}"
+                                data-confirm-variant-value="warning">
+                            <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
+                            <input type="hidden" name="item" value="{{ r.item.uuid }}">
+                            <div class="col-4">
+                              <label class="form-label small mb-0" for="blocked-qty-{{ r.item.uuid }}">{{ 'backstage.label.qty'|trans }}</label>
+                              <input type="number" id="blocked-qty-{{ r.item.uuid }}" name="quantity" value="1" min="1" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-8">
+                              <label class="form-label small mb-0" for="override-{{ r.item.uuid }}">{{ 'backstage.locate.label.override_reason'|trans }}</label>
+                              <input type="text" id="override-{{ r.item.uuid }}" name="override_reason" maxlength="255" required
+                                     class="form-control form-control-sm" placeholder="{{ 'backstage.locate.placeholder.override_reason'|trans }}">
+                            </div>
+                            <div class="col-12">
+                              <button class="btn btn-sm btn-outline-warning w-100">{{ 'backstage.locate.action.give_anyway'|trans }}</button>
+                            </div>
+                          </form>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endif %}
+
+            <div id="goodie-pane-pending" class="tab-pane" role="tabpanel">
+              <div class="deck-scroll">
+                {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table table-thead-sticky'}) }}
+                  <thead><tr><th>{{ 'backstage.table.item'|trans }}</th><th class="w-1">{{ 'backstage.table.required'|trans }}</th><th class="w-1">{{ 'backstage.table.hours_short'|trans }}</th></tr></thead>
+                  <tbody>
+                    {% for r in pending %}
+                      <tr>
+                        <td>{{ r.item.name }}</td>
+                        <td>{{ r.item.requiredHours|round(2) }} h</td>
+                        <td>{{ d.badge(r.gap|round(2) ~ ' h', 'text-bg-warning') }}</td>
+                      </tr>
+                    {% else %}
+                      {{ d.empty_row(3, 'backstage.locate.empty.nothing_pending'|trans) }}
+                    {% endfor %}
+                  </tbody>
+                {{ d.table_end({responsive: false}) }}
+              </div>
+            </div>
+
+            <div id="goodie-pane-claimed" class="tab-pane" role="tabpanel">
+              <div class="deck-scroll">
+                {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table table-thead-sticky'}) }}
+                  <thead><tr><th>{{ 'backstage.table.item'|trans }}</th><th class="w-1">{{ 'backstage.table.claimed'|trans }}</th></tr></thead>
+                  <tbody>
+                    {% for r in claimed %}
+                      <tr><td>{{ r.item.name }}</td><td>{{ r.claimed }}</td></tr>
+                    {% else %}
+                      {{ d.empty_row(2, 'backstage.locate.empty.nothing_claimed'|trans) }}
+                    {% endfor %}
+                  </tbody>
+                {{ d.table_end({responsive: false}) }}
+              </div>
+            </div>
+
+            <div id="goodie-pane-history" class="tab-pane" role="tabpanel">
+              <div class="deck-scroll">
+                {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table table-thead-sticky'}) }}
+                  <thead><tr><th>{{ 'common.label.when'|trans }}</th><th>{{ 'backstage.table.item'|trans }}</th><th class="w-1">{{ 'backstage.label.qty'|trans }}</th><th>{{ 'backstage.table.by'|trans }}</th></tr></thead>
+                  <tbody>
+                    {% for dist in history %}
+                      <tr>
+                        <td class="small">{{ dist.distributedAt|app_datetime }}</td>
+                        <td>
+                          {{ dist.itemName }}
+                          <div class="text-secondary small">{{ 'backstage.table.hours_then'|trans }}: {{ dist.hoursAtDistribution|round(2) }}</div>
+                        </td>
+                        <td>{{ dist.quantity }}</td>
+                        <td class="small text-muted">{{ dist.distributedBy ? dist.distributedBy.name : '-' }}</td>
+                      </tr>
+                    {% else %}
+                      {{ d.empty_row(4, 'backstage.locate.empty.no_history'|trans) }}
+                    {% endfor %}
+                  </tbody>
+                {{ d.table_end({responsive: false}) }}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     {% endif %}
 
-    <h2 class="h5">{{ 'backstage.locate.section.blocked'|trans }}</h2>
-    {% if blocked is empty %}
-      {{ d.empty_inline('backstage.locate.empty.nothing_blocked'|trans, {class: 'text-muted'}) }}
-    {% else %}
-      <div class="row g-2 mb-3">
-        {% for r in blocked %}
-          <div class="col-12 col-md-6">
-            {{ d.card_start(null, {class: 'h-100 border-warning'}) }}
-              <div class="d-flex justify-content-between">
-                <div class="fw-semibold">{{ r.item.name }}</div>
-                <span class="text-muted small">{{ r.item.requiredHours|round(2) }}h</span>
-              </div>
-              <div class="small mt-1">
-                {{ 'backstage.locate.missing_certifications'|trans }}
-                {% for certification in r.missingCertifications %}
-                  {{ d.badge(certification.title, 'text-bg-warning', {class: 'me-1'}) }}
+    {% if canViewShifts %}
+      <div class="{{ canViewGoodies ? 'col-12 col-xl-5' : 'col-12' }}">
+        {{ d.card_start('backstage.locate.shifts.title'|trans, {class: 'h-100', bodyClass: ''}) }}
+          <div class="deck-scroll">
+            {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table table-thead-sticky'}) }}
+              <thead><tr><th>{{ 'common.label.when'|trans }}</th><th>{{ 'backstage.table.shift'|trans }}</th><th>{{ 'common.label.location'|trans }}</th><th class="w-1">{{ 'common.label.status'|trans }}</th></tr></thead>
+              <tbody>
+                {% for entry in shifts %}
+                  {% set shift = entry.shift %}
+                  <tr>
+                    <td class="small text-nowrap">{{ shift.startsAt|app_date }} · {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}</td>
+                    <td>
+                      {{ shift.title }}
+                      {% if shift.distinctTaskName %}<div class="text-secondary small">{{ shift.distinctTaskName }}</div>{% endif %}
+                    </td>
+                    <td class="small text-muted">{{ shift.location ? shift.location.fullName : '-' }}</td>
+                    <td>
+                      {% if entry.noshow %}{{ d.badge('common.state.no_show'|trans, 'bg-red-lt') }}
+                      {% else %}{{ d.badge(entry.assignment ? 'backstage.state.assigned'|trans : 'backstage.state.applied'|trans, entry.assignment ? 'bg-green-lt' : 'bg-secondary-lt') }}{% endif %}
+                    </td>
+                  </tr>
+                {% else %}
+                  {{ d.empty_row(4, 'backstage.locate.empty.no_shifts'|trans) }}
                 {% endfor %}
-              </div>
-              {% if is_granted('goodie:distribute') %}
-                <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.uuid}) }}" class="row g-2 align-items-end mt-1"
-                      data-controller="confirm"
-                      data-confirm-message-value="{{ 'backstage.locate.confirm.override'|trans({'%name%': r.item.name}) }}"
-                      data-confirm-variant-value="warning">
-                  <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
-                  <input type="hidden" name="item" value="{{ r.item.uuid }}">
-                  <div class="col-4">
-                    <label class="form-label small mb-0">{{ 'backstage.label.qty'|trans }}</label>
-                    <input type="number" name="quantity" value="1" min="1" class="form-control form-control-sm">
-                  </div>
-                  <div class="col-8">
-                    <label class="form-label small mb-0" for="override-{{ r.item.uuid }}">{{ 'backstage.locate.label.override_reason'|trans }}</label>
-                    <input type="text" id="override-{{ r.item.uuid }}" name="override_reason" maxlength="255" required
-                           class="form-control form-control-sm" placeholder="{{ 'backstage.locate.placeholder.override_reason'|trans }}">
-                  </div>
-                  <div class="col-12">
-                    <button class="btn btn-sm btn-outline-warning w-100">{{ 'backstage.locate.action.give_anyway'|trans }}</button>
-                  </div>
-                </form>
-              {% endif %}
-            {{ d.card_end() }}
+              </tbody>
+            {{ d.table_end({responsive: false}) }}
           </div>
-        {% endfor %}
+        {{ d.card_end({bodyClass: ''}) }}
       </div>
     {% endif %}
-
-    <h2 class="h5">{{ 'backstage.locate.section.will_be_eligible'|trans }}</h2>
-    {% if pending is empty %}
-      {{ d.empty_inline('backstage.locate.empty.nothing_pending'|trans, {class: 'text-muted'}) }}
-    {% else %}
-      {{ d.table_start({hover: false}) }}
-        <thead><tr><th>{{ 'backstage.table.item'|trans }}</th><th>{{ 'backstage.table.required'|trans }}</th><th>{{ 'backstage.table.hours_short'|trans }}</th></tr></thead>
-        <tbody>
-          {% for r in pending %}
-            <tr><td>{{ r.item.name }}</td><td>{{ r.item.requiredHours|round(2) }}h</td><td>{{ d.badge(r.gap|round(2) ~ 'h', 'text-bg-warning') }}</td></tr>
-          {% endfor %}
-        </tbody>
-      {{ d.table_end() }}
-    {% endif %}
-
-    {% if claimed is not empty %}
-      <h2 class="h5">{{ 'backstage.locate.section.already_claimed'|trans }}</h2>
-      {{ d.table_start({hover: false}) }}
-        <thead><tr><th>{{ 'backstage.table.item'|trans }}</th><th>{{ 'backstage.table.claimed'|trans }}</th></tr></thead>
-        <tbody>
-          {% for r in claimed %}<tr><td>{{ r.item.name }}</td><td>{{ r.claimed }}</td></tr>{% endfor %}
-        </tbody>
-      {{ d.table_end() }}
-    {% endif %}
-  {% endif %}
-
-  {% if is_granted('shift:view') %}
-    <h2 class="h5 mt-3">{{ 'ui.nav.shifts'|trans }}</h2>
-    {% if shifts is empty %}
-      {{ d.empty_inline('backstage.locate.empty.no_shifts'|trans, {class: 'text-muted'}) }}
-    {% else %}
-      {{ d.table_start({hover: false}) }}
-        <thead><tr><th>{{ 'common.label.when'|trans }}</th><th>{{ 'backstage.table.shift'|trans }}</th><th>{{ 'common.label.location'|trans }}</th><th>{{ 'common.label.status'|trans }}</th></tr></thead>
-        <tbody>
-          {% for entry in shifts %}
-            {% set shift = entry.shift %}
-            <tr>
-              <td class="small">{{ shift.startsAt|app_date }} · {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}</td>
-              <td>
-                {{ shift.title }}
-                {% if shift.distinctTaskName %}<div class="text-secondary small">{{ shift.distinctTaskName }}</div>{% endif %}
-              </td>
-              <td class="small text-muted">{{ shift.location ? shift.location.fullName : '-' }}</td>
-              <td>
-                {% if entry.noshow %}{{ d.badge('common.state.no_show'|trans, 'bg-red-lt') }}
-                {% else %}{{ d.badge(entry.assignment ? 'backstage.state.assigned'|trans : 'backstage.state.applied'|trans, entry.assignment ? 'bg-green-lt' : 'bg-secondary-lt') }}{% endif %}
-              </td>
-            </tr>
-          {% endfor %}
-        </tbody>
-      {{ d.table_end() }}
-    {% endif %}
-  {% endif %}
-
-  <h2 class="h5 mt-3">{{ 'backstage.locate.section.history'|trans }}</h2>
-  {% if history is empty %}
-    {{ d.empty_inline('backstage.locate.empty.no_history'|trans, {class: 'text-muted'}) }}
-  {% else %}
-    {{ d.table_start({hover: false}) }}
-      <thead><tr><th>{{ 'common.label.when'|trans }}</th><th>{{ 'backstage.table.item'|trans }}</th><th>{{ 'backstage.label.qty'|trans }}</th><th>{{ 'backstage.table.hours_then'|trans }}</th><th>{{ 'backstage.table.by'|trans }}</th></tr></thead>
-      <tbody>
-        {% for dist in history %}
-          <tr>
-            <td class="small">{{ dist.distributedAt|app_datetime }}</td>
-            <td>{{ dist.itemName }}</td>
-            <td>{{ dist.quantity }}</td>
-            <td>{{ dist.hoursAtDistribution|round(2) }}</td>
-            <td class="small text-muted">{{ dist.distributedBy ? dist.distributedBy.name : '-' }}</td>
-          </tr>
-        {% endfor %}
-      </tbody>
-    {{ d.table_end() }}
-  {% endif %}
+  </div>
 {% endblock %}

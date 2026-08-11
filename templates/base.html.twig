@@ -184,7 +184,7 @@
 
             <div class="page-wrapper layout-fluid">
                 <div class="page-body">
-                    <div class="container-xl">
+                    <div class="{% block container_class %}container-xl{% endblock %}">
                         {{ n.flash_messages(app) }}
 
                         {% block body %}{% endblock %}
