@@ -208,7 +208,10 @@
             {% set shift = entry.shift %}
             <tr>
               <td class="small">{{ shift.startsAt|app_date }} · {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}</td>
-              <td>{{ shift.title }}</td>
+              <td>
+                {{ shift.title }}
+                {% if shift.distinctTaskName %}<div class="text-secondary small">{{ shift.distinctTaskName }}</div>{% endif %}
+              </td>
               <td class="small text-muted">{{ shift.location ? shift.location.fullName : '-' }}</td>
               <td>
                 {% if entry.noshow %}{{ d.badge('common.state.no_show'|trans, 'bg-red-lt') }}

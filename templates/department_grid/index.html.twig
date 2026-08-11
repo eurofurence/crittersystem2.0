@@ -47,6 +47,9 @@
                         {{ shift.title }}
                       </a>
                       {% if shift.draft %}{{ d.badge('department_grid.badge.draft'|trans, 'bg-yellow-lt') }}{% endif %}
+                      {% if shift.distinctTaskName %}
+                        <div class="text-secondary small">{{ shift.distinctTaskName }}</div>
+                      {% endif %}
                     </td>
                     <td class="text-nowrap">{{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}</td>
                     <td>{{ shift.location ? shift.location.fullName : '-' }}</td>

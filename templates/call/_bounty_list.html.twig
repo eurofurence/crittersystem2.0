@@ -9,6 +9,7 @@
         {{ d.card_start(null, {class: ''}) }}
             <h3 class="card-title mb-1">{{ shift.title }}</h3>
             <div class="text-secondary small mb-2">
+              {% if shift.distinctTaskName %}{{ shift.distinctTaskName }}<br>{% endif %}
               {{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}
               {% if shift.location %}· {{ shift.location.fullName }}{% endif %}
             </div>

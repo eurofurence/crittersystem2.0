@@ -3,7 +3,10 @@
    DOM stays light. Colours use Tabler CSS variables to stay theme-aware. */
 
 .planner {
-    --planner-hour-height: 40px;
+    /* Tall enough that the shortest shift the planner can create - half an hour - still has room for
+       its time and its title on two lines. Much below 60px an hour the block clips the title away,
+       leaving nothing that says which shift it is. */
+    --planner-hour-height: 64px;
     --planner-day-height: calc(var(--planner-hour-height) * 24);
     /* Tall enough for a phase tag stacked above the date on setup/teardown days. */
     --planner-head-height: 48px;
@@ -135,12 +138,13 @@
 }
 
 /*
- * A column laid out so the time survives the worst case. The block clips its overflow and a
- * half-hour shift is only 20px tall, so a wrapped time range lost its second line entirely - the
- * manager saw "10:00-" and nothing else. The time is therefore a nowrap row that never shrinks, and
- * the title takes whatever height is left.
+ * A column laid out so the time survives the worst case. The block clips its overflow and the
+ * shortest shift is only two lines tall, so a time range allowed to wrap loses its second line
+ * entirely and reads "10:00-" and nothing more. The time is therefore a nowrap row that never
+ * shrinks, and the title takes whatever height is left.
  *
- * The block is also a query container so the range can adapt to how narrow its lane is.
+ * The block is also a query container so the range and the task line can adapt to how narrow and how
+ * short its lane is.
  */
 .planner-block {
     position: absolute;
@@ -153,7 +157,7 @@
     min-width: 14px;
     min-height: 16px;
     border-radius: 4px;
-    padding: 2px 5px;
+    padding: 1px 5px;
     font-size: 11px;
     line-height: 1.25;
     overflow: hidden;
@@ -226,6 +230,33 @@
     overflow: hidden;
 }
 
+/*
+ * The task is the third line and the first thing a short block cannot afford: half an hour has room
+ * for the time and the title only, and the task stays in the tooltip. A narrow block needs a fourth
+ * line's worth of height, because narrow is also where the end time stacks under the start.
+ */
+.planner-block-task {
+    display: none;
+    flex: 0 1 auto;
+    min-height: 0;
+    color: var(--tblr-secondary);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+}
+
+@container (min-width: 80.01px) and (min-height: 46px) {
+    .planner-block-task {
+        display: block;
+    }
+}
+
+@container (min-height: 60px) {
+    .planner-block-task {
+        display: block;
+    }
+}
+
 .planner-block-badge {
     flex: 0 0 auto;
     font-size: 9px;
@@ -240,12 +271,12 @@
  * than clip it mid-digit:
  *
  *   - a block with the height to spare stacks the end time under the start, keeping both;
- *   - a short one (under two lines' worth) falls back to the start time, which is what orients the
- *     manager, and then drops the draft badge;
+ *   - a short one (under three lines' worth, which is where the title would be pushed out) falls
+ *     back to the start time, which is what orients the manager, and then drops the draft badge;
  *
  * and the full range stays in the title tooltip and the accessible name throughout.
  */
-@container (max-width: 80px) and (min-height: 32px) {
+@container (max-width: 80px) and (min-height: 46px) {
     /*
      * A block box starts its own line while the inherited nowrap keeps each time whole. Letting the
      * range wrap normally instead broke after the dash and cost a third line.
@@ -255,7 +286,7 @@
     }
 }
 
-@container (max-width: 80px) and (max-height: 31.99px) {
+@container (max-width: 80px) and (max-height: 45.99px) {
     .planner-block-to {
         display: none;
     }
@@ -605,6 +636,15 @@ label.avail-swatch-unavailable.active,
 .schedule-title {
     display: block;
     font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.schedule-task {
+    display: block;
+    font-size: 10px;
+    color: var(--tblr-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

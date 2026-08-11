@@ -92,6 +92,13 @@ cookie instead of a cross-site one. If you deploy some other way, reproduce that
 including `proxy_buffering off` and a long `proxy_read_timeout`, since an SSE response never ends and
 a buffered or timed-out one delivers nothing.
 
+The subscriber token rides on a cookie, so **every proxy in front of the app needs room for a
+response header block of several kilobytes**. nginx buffers it in a single buffer and answers 502
+when it does not fit, and its default is one 4 KB page - small enough that a signed-in page can
+exceed it, which presents as "the user cannot get past the login". `docker/nginx/default.conf` and
+`deploy/k8s/configmap.yaml` raise `fastcgi_buffer_size`; `deploy/k8s/ingress.yaml` raises the ingress
+controller's `proxy-buffer-size`. Reproduce both if you front the app with anything else.
+
 Four environment variables configure it:
 
 | Variable                        | Purpose                                                          |
@@ -231,6 +238,20 @@ equivalent `critter-purge-exports` CronJob. On a bare-metal install, add them to
 ```cron
 17 * * * *  cd /srv/critter && php bin/console app:gdpr:purge-exports && php bin/console app:audit:purge-exports
 ```
+
+## One-off: check in staff who onboarded before automatic check-in existed
+
+Staff are marked as arrived when they finish onboarding, because `CheckInPolicy` refuses shift
+applications from anyone who is not checked in. Accounts that completed onboarding before that rule
+existed need one catch-up run:
+
+```bash
+php bin/console app:onboarding:checkin-staff --dry-run   # lists who would change
+php bin/console app:onboarding:checkin-staff
+```
+
+It only ever turns a missing check-in on, stamping each user with their own onboarding completion
+time, and never touches a check-in the Info Desk already recorded. Running it again is a no-op.
 
 ---
 
@@ -411,6 +432,10 @@ Restore a dump with:
 pg_restore --clean --if-exists -d "$DATABASE_URL" critter-YYYYMMDD-HHMMSS.dump
 ```
 
+To load one of these dumps into a **development** instance instead, use
+`./bin/import-prod-db` - it keeps the local admin password and neutralises
+everything that would otherwise reach real people. See `docs/dev-db-import.md`.
+
 Create the first admin once the rollout is healthy:
 
 ```bash
@@ -434,7 +459,7 @@ docker compose -f compose.dev.yaml exec app composer install   # first run / fre
 Run the verification tools inside the container:
 
 ```bash
-docker compose -f compose.dev.yaml exec app php bin/phpunit
+docker compose -f compose.dev.yaml exec app bin/ptest
 docker compose -f compose.dev.yaml exec app php bin/console lint:twig templates
 docker compose -f compose.dev.yaml exec app php bin/console lint:container
 ```

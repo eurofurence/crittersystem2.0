@@ -18,6 +18,7 @@
     .busy { background: #dbe7fb; }
     .hours { display: block; font-weight: bold; }
     .title { display: block; }
+    .task { display: block; color: #33507f; }
     .location { display: block; color: #33507f; }
     .missing { background: #fdd8d8; color: #8a1c1c; font-weight: bold; }
     .continued { page-break-before: always; }
@@ -58,7 +59,7 @@
                     '%title%': row.missing.title,
                     '%from%': row.missing.from,
                     '%to%': row.missing.to,
-                  }) }}{% if row.missing.location %} · {{ row.missing.location }}{% endif %}
+                  }) }}{% if row.missing.task %} · {{ row.missing.task }}{% endif %}{% if row.missing.location %} · {{ row.missing.location }}{% endif %}
                 </td>
               {% else %}
                 {% for user in chunk %}
@@ -67,6 +68,7 @@
                     {% if cell and cell.start %}
                       <span class="hours">{{ cell.from }}–{{ cell.to }}</span>
                       <span class="title">{{ cell.title }}</span>
+                      {% if cell.task %}<span class="task">{{ cell.task }}</span>{% endif %}
                       {% if cell.location %}<span class="location">{{ cell.location }}</span>{% endif %}
                     {% endif %}
                   </td>

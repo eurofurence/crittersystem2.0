@@ -6,6 +6,27 @@
  * that apply across every theme, independent of the active brand colours.
  */
 
+/* Above 992px Tabler reserves the scrollbar gutter with `:root { margin-left: calc(100vw - 100%) }`,
+   which keeps a *centered* container optically still while a scrollbar comes and goes. Every layout
+   here is `layout-fluid`, so `.container-xl` fills the viewport and nothing is centered: that margin
+   compensates for nothing and only pushes the whole document right, leaving an empty strip one
+   scrollbar wide down the left edge of the navbar and the page. Reserving the gutter on the scroll
+   container instead holds both page edges still whether or not the page scrolls.
+
+   The flat `body` padding belongs to the same guarantee. Bootstrap adds `padding-right` equal to the
+   scrollbar width whenever a modal or offcanvas puts `overflow: hidden` on the body, to replace the
+   space the vanishing scrollbar gave back. With the gutter reserved that space is never given back,
+   so the compensation double-counts and pulls the page in by the scrollbar width for as long as the
+   dialog is open. Bootstrap writes it inline, which is why this has to be `!important`. */
+:root {
+    margin-left: 0;
+    scrollbar-gutter: stable;
+}
+
+body {
+    padding-right: 0 !important;
+}
+
 /* Emoji still used inside page bodies/buttons keep their own colour
    (Tabler icons inherit `currentColor`; emoji must not be tinted). */
 .icon-emoji {

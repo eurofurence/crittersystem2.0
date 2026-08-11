@@ -48,16 +48,21 @@
                       style="top: {{ block.top }}%; height: {{ block.height }}%; left: {{ block.left }}%; width: calc({{ block.width }}% - 4px);"
                       data-action="apply-grid#open"
                       data-apply-grid-shift-param="{{ shift.uuid }}"
-                      title="{{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }} {{ shift.title }}">
+                      title="{{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }} {{ shift.title }}{{ shift.distinctTaskName ? ' · ' ~ shift.distinctTaskName : '' }}">
                 <span class="apply-block-head">
                   {% if block.mine %}{{ i.icon('checklist', {class: 'apply-block-icon'}) }}{% endif %}
                   {% if block.groupSize > 1 %}{{ i.icon('puzzle', {class: 'apply-block-icon'}) }}{% endif %}
                   <span class="apply-block-time">{{ shift.startsAt|app_time }}<span class="apply-block-to">–{{ shift.endsAt|app_time }}</span></span>
+                  <span class="apply-block-fill{{ block.needed > 0 and block.assigned >= block.needed ? ' is-full' : '' }}">
+                    {{ block.assigned }}/{{ block.needed }}
+                  </span>
                 </span>
-                <span class="apply-block-title">{{ shift.shiftTask ? shift.shiftTask.name : shift.title }}</span>
-                <span class="apply-block-fill{{ block.needed > 0 and block.assigned >= block.needed ? ' is-full' : '' }}">
-                  {{ block.assigned }}/{{ block.needed }}
-                </span>
+                {# The title first, as on the browse list: the task alone leaves a column of shifts
+                   that all read the same and cannot be told apart. #}
+                <span class="apply-block-title">{{ shift.title }}</span>
+                {% if shift.distinctTaskName %}
+                  <span class="apply-block-task">{{ shift.distinctTaskName }}</span>
+                {% endif %}
               </button>
             {% endfor %}
           </div>

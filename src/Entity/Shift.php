@@ -161,6 +161,21 @@ class Shift
         return $this;
     }
 
+    /**
+     * The task name to show underneath the title, or null when it would only repeat it: a shift
+     * painted in the planner takes its task's name as its title, so most shifts carry both the same
+     * string and printing it twice costs a line everywhere shifts are listed.
+     */
+    public function distinctTaskName(): ?string
+    {
+        $task = $this->shiftTask?->getName();
+        if ($task === null || $task === '') {
+            return null;
+        }
+
+        return mb_strtolower(trim($task)) === mb_strtolower(trim($this->title)) ? null : $task;
+    }
+
     public function getDescription(): ?string
     {
         return $this->description;

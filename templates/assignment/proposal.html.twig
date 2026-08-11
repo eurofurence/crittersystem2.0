@@ -17,7 +17,10 @@
         <tbody>
           {% for a in proposal.assignments %}
             <tr>
-              <td>{{ a.shift.title }}</td>
+              <td>
+                {{ a.shift.title }}
+                {% if a.shift.distinctTaskName %}<div class="text-secondary small">{{ a.shift.distinctTaskName }}</div>{% endif %}
+              </td>
               <td>{{ a.shift.startsAt|app_datetime }}</td>
               <td>{{ a.user.name }}</td>
               <td>{{ a.volunteerType.name }}</td>

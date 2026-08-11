@@ -55,7 +55,7 @@
                     '%title%': row.missing.title,
                     '%from%': row.missing.from,
                     '%to%': row.missing.to,
-                  }) }}{% if row.missing.location %} · {{ row.missing.location }}{% endif %}
+                  }) }}{% if row.missing.task %} · {{ row.missing.task }}{% endif %}{% if row.missing.location %} · {{ row.missing.location }}{% endif %}
                 </td>
               </tr>
             {% else %}
@@ -72,6 +72,7 @@
                          from the 10:00 slot and would otherwise read half an hour out. #}
                       <span class="schedule-hours">{{ cell.from }}–{{ cell.to }}</span>
                       <span class="schedule-title">{{ cell.title }}</span>
+                      {% if cell.task %}<span class="schedule-task">{{ cell.task }}</span>{% endif %}
                       {% if cell.location %}<span class="schedule-location">{{ cell.location }}</span>{% endif %}
                     {% endif %}
                   </td>

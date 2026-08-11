@@ -65,10 +65,10 @@
           </div>
         </div>
 
-        {% if shift.shiftTask %}
+        {% if shift.distinctTaskName %}
           <div class="row m-0 h-auto">
             <div class="col-9 col-xl-10 p-0">
-              <span class="text-secondary"><strong>{{ 'shift.browse.task_label'|trans }}</strong> {{ shift.shiftTask.name }}</span>
+              <span class="text-secondary"><strong>{{ 'shift.browse.task_label'|trans }}</strong> {{ shift.distinctTaskName }}</span>
             </div>
           </div>
         {% endif %}

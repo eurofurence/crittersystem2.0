@@ -304,6 +304,46 @@ final class PlannerBrowserTest extends BrowserTestCase
     }
 
     /**
+     * The shortest shift the planner can make is half an hour, and it has to be readable. The block
+     * is a flex column whose time row never shrinks, so a row height too small for two lines leaves
+     * the title a two-pixel sliver of clipped text - the one thing that says which shift this is.
+     * Measured from the rendered boxes, because the markup is right either way.
+     */
+    public function testAHalfHourBlockIsTallEnoughToShowItsTitle(): void
+    {
+        $dept = $this->seed();
+        $shift = (new Shift())->setTitle('Quick sweep')
+            ->setStartsAt(new \DateTimeImmutable('2026-06-01 18:00', new \DateTimeZone('UTC')))
+            ->setEndsAt(new \DateTimeImmutable('2026-06-01 18:30', new \DateTimeZone('UTC')))
+            ->setDepartment($dept)->setState(ShiftState::DRAFT);
+        $this->em->persist($shift);
+        $this->em->flush();
+
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'planner-mgr@example.com']);
+        $this->browse();
+        $this->signIn($user, self::PASSWORD);
+        $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
+        $this->client->waitFor('.planner-block', 10);
+
+        $blocks = $this->client->executeScript(
+            'return Array.from(document.querySelectorAll(".planner-block")).map((b) => {'
+            .'const t = b.querySelector(".planner-block-title");'
+            .'return {title: t.textContent.trim(),'
+            .' titleHeight: Math.round(t.getBoundingClientRect().height)};'
+            .'});'
+        );
+
+        $half = array_values(array_filter($blocks, static fn (array $b): bool => $b['title'] === 'Quick sweep'));
+        self::assertCount(1, $half, 'the half-hour shift names itself, rather than showing its task or nothing');
+        self::assertGreaterThanOrEqual(
+            13,
+            $half[0]['titleHeight'],
+            'the block must leave the title a whole line; the flex row shrinks it to a sliver otherwise',
+        );
+        $this->assertNoConsoleErrors('the planner grid');
+    }
+
+    /**
      * Selecting a shift has to work on the first attempt. A real mouse moves a pixel or two between
      * pressing and releasing, which used to be read as a drag: the planner saved a move, replaced
      * the grid, and the selection landed on a block that no longer existed. Managers described it as

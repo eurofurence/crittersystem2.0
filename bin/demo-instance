@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+#
+# Build and serve a throwaway instance filled with fictional data, for demos, training and the
+# screenshots in docs/slides.
+#
+# It never touches the development database: it owns a database of its own (critter_demo by
+# default) and serves it on its own port, so the instance on :8000 keeps running untouched.
+#
+#   bin/demo-instance --reset     drop, recreate, migrate and seed, then serve
+#   bin/demo-instance             serve whatever is already seeded
+#   bin/demo-instance --no-serve  build only
+#
+# Every account shares one password, so this refuses to run against a production database.
+
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+DEMO_DB="${DEMO_DB:-critter_demo}"
+DEMO_PORT="${DEMO_PORT:-8010}"
+DEMO_PASSWORD="${DEMO_PASSWORD:-demo1234}"
+
+reset=0
+serve=1
+for arg in "$@"; do
+    case "$arg" in
+        --reset) reset=1 ;;
+        --no-serve) serve=0 ;;
+        *) echo "unknown option: $arg" >&2; exit 1 ;;
+    esac
+done
+
+# Read the development credentials and host from DATABASE_URL, swapping only the database name.
+# Symfony reads '%' as the start of a container parameter, so a password containing one has to be
+# doubled up before it reaches the console.
+base_url="$(grep -m1 '^DATABASE_URL=' .env | cut -d= -f2- | tr -d '"')"
+if [[ -z "$base_url" ]]; then
+    echo "No DATABASE_URL in .env" >&2
+    exit 1
+fi
+export DATABASE_URL="$(printf '%s' "$base_url" | sed -E "s#/[^/?]+(\?|\$)#/${DEMO_DB}\1#")"
+export DATABASE_URL="${DATABASE_URL//%/%%}"
+export APP_ENV=dev
+
+# The login page in production offers an identity provider with a password form behind it. Keep
+# that shape so the screenshots match, even though this instance has no provider to talk to.
+export SSO_ENABLED=1
+export SSO_CLIENT_ID=critter-demo
+export SSO_PROVIDER_LABEL="${SSO_PROVIDER_LABEL:-Eurofurence Identity}"
+
+if [[ $reset -eq 1 ]]; then
+    echo "==> Recreating database ${DEMO_DB}"
+    php bin/console doctrine:database:drop --force --if-exists
+    php bin/console doctrine:database:create
+    echo "==> Migrating"
+    php bin/console doctrine:migrations:migrate --no-interaction --quiet
+    echo "==> Seeding"
+    php bin/console app:demo:seed --password="$DEMO_PASSWORD"
+fi
+
+if [[ $serve -eq 1 ]]; then
+    echo "==> Serving http://127.0.0.1:${DEMO_PORT}  (admin / morgan / sparky / rowan, password ${DEMO_PASSWORD})"
+    # variables_order must include E. PHP's built-in server does not copy the environment into
+    # $_SERVER, and Symfony's Dotenv only keeps an existing variable it can see there - so without
+    # this the exported DATABASE_URL is silently replaced by the one in .env and the demo instance
+    # comes up on the development database, serving whatever real data it holds.
+    exec php -d variables_order=EGPCS -S "127.0.0.1:${DEMO_PORT}" -t public public/index.php
+fi

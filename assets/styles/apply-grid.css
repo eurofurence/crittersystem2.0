@@ -6,7 +6,9 @@
 }
 
 .apply-grid {
-    --apply-hour-height: 56px;
+    /* Tall enough that a half-hour shift still shows its time and its title on two lines. Much below
+       64px an hour the block clips the title away, leaving nothing that says which shift it is. */
+    --apply-hour-height: 72px;
     --apply-head-height: 40px;
     --apply-lane-width: 150px;
     --apply-hours: 12;
@@ -113,13 +115,16 @@
     border-bottom: 1px solid var(--tblr-border-color);
 }
 
+/* A query container so the end time and the task line can give way on a block too narrow or too
+   short to hold them; both stay in the block's tooltip. */
 .apply-block {
     position: absolute;
+    box-sizing: border-box;
+    container-type: size;
     display: flex;
     flex-direction: column;
-    gap: 1px;
     margin-left: 2px;
-    padding: 2px 4px;
+    padding: 1px 4px;
     overflow: hidden;
     text-align: left;
     font-size: 11px;
@@ -138,10 +143,13 @@
     z-index: 5;
 }
 
+/* The fill count rides the time row rather than taking a line of its own: on a half-hour block that
+   line is what the title needs. */
 .apply-block-head {
     display: flex;
     align-items: center;
     gap: 2px;
+    flex: 0 0 auto;
 }
 
 .apply-block-icon {
@@ -157,18 +165,62 @@
 }
 
 .apply-block-title {
+    flex: 1 1 auto;
+    min-height: 0;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
+/* The task names the kind of work; the title names this shift. A short block keeps the title and
+   drops this, and a narrow one needs a line more because the end time stacks there. */
+.apply-block-task {
+    display: none;
+    flex: 0 1 auto;
+    min-height: 0;
+    color: var(--tblr-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@container (min-width: 92.01px) and (min-height: 50px) {
+    .apply-block-task {
+        display: block;
+    }
+}
+
+@container (min-height: 64px) {
+    .apply-block-task {
+        display: block;
+    }
+}
+
 .apply-block-fill {
+    margin-left: auto;
+    flex: 0 0 auto;
+    white-space: nowrap;
     font-variant-numeric: tabular-nums;
     color: var(--tblr-green);
 }
 
 .apply-block-fill.is-full {
     color: var(--tblr-red);
+}
+
+/* The range needs about 76px on one line. Narrower than that it stacks under the start time when
+   there is a line to spare, and otherwise gives way to the start time alone; the block's tooltip
+   carries it either way. */
+@container (max-width: 92px) and (min-height: 50px) {
+    .apply-block-to {
+        display: block;
+    }
+}
+
+@container (max-width: 92px) and (max-height: 49.99px) {
+    .apply-block-to {
+        display: none;
+    }
 }
 
 /* A block reads first as what the volunteer can do with it. */

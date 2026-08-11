@@ -11,7 +11,7 @@
 
         <title>{% block title %}{{ 'ui.app.brand'|trans }}{% endblock %}</title>
 
-        <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%2296%22>⚫️</text><text y=%221.3em%22 x=%220.2em%22 font-size=%2276%22 fill=%22%23fff%22>sf</text></svg>">
+        <link rel="icon" href="{{ asset('images/favicon.svg') }}">
 
         {# Live updates. The hub URL is all the page needs; which topics it may actually receive is
            decided server-side and signed into the mercureAuthorization cookie, which this document
@@ -56,6 +56,7 @@
 
                     <a href="{{ path('app_home') }}"
                        class="navbar-brand navbar-brand-autodark d-none-navbar-horizontal pe-0 pe-md-3 fw-bold fs-3">
+                        <img src="{{ asset('images/logo.svg') }}" width="110" height="32" alt="CVS" class="navbar-brand-image" />
                         {{ 'ui.app.brand'|trans }}
                     </a>
 

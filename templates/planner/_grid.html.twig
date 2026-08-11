@@ -42,7 +42,7 @@
             role="button"
             {# A block sharing its column with three others is too narrow for the whole range, so the
                full times stay reachable on hover as well as in the accessible name. #}
-            title="{{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }} {{ shift.shiftTask ? shift.shiftTask.name : shift.title }}"
+            title="{{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }} {{ shift.title }}{{ shift.distinctTaskName ? ' · ' ~ shift.distinctTaskName : '' }}"
             aria-label="{{ shift.title }} {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}{{ shift.draft ? ('planner.grid.draft_suffix'|trans) : '' }}"
           >
             {# Time and badge share a row rather than the badge floating over the time: absolutely
@@ -52,7 +52,12 @@
                 >{{ shift.startsAt|app_time }}<span class="planner-block-to">–{{ shift.endsAt|app_time }}</span></span>
               {% if shift.draft %}<span class="planner-block-badge">{{ 'planner.badge.draft'|trans }}</span>{% endif %}
             </span>
-            <span class="planner-block-title">{{ shift.shiftTask ? shift.shiftTask.name : shift.title }}</span>
+            {# The title first: a column of task names alone reads as one repeated word, and the
+               title is what tells two shifts of the same task apart. #}
+            <span class="planner-block-title">{{ shift.title }}</span>
+            {% if shift.distinctTaskName %}
+              <span class="planner-block-task">{{ shift.distinctTaskName }}</span>
+            {% endif %}
             {% if block.overnight %}<span class="planner-block-overnight" title="{{ 'planner.grid.overnight_title'|trans }}">▾</span>{% endif %}
             <span class="planner-block-resize" data-planner-target="resizeHandle" aria-hidden="true"></span>
           </div>

@@ -60,7 +60,10 @@
       <tbody>
         {% for e in shiftEntries %}
           <tr>
-            <td>{{ e.shift.title }}</td>
+            <td>
+              {{ e.shift.title }}
+              {% if e.shift.distinctTaskName %}<div class="text-secondary small">{{ e.shift.distinctTaskName }}</div>{% endif %}
+            </td>
             <td class="small">{{ e.shift.startsAt|app_datetime }}</td>
             <td>{{ e.volunteerType.name }}</td>
             <td>{% if e.noshow %}{{ d.badge('common.state.no_show'|trans, 'text-bg-danger') }}{% else %}-{% endif %}</td>

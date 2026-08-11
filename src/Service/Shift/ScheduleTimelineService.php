@@ -37,8 +37,8 @@ final class ScheduleTimelineService
      *         dayLabel: ?string,
      *         time: ?string,
      *         isDayStart: bool,
-     *         cells: array<int, array{title: string, location: ?string, from: string, to: string, start: bool}>,
-     *         missing: ?array{title: string, location: ?string, from: string, to: string}
+     *         cells: array<int, array{title: string, task: ?string, location: ?string, from: string, to: string, start: bool}>,
+     *         missing: ?array{title: string, task: ?string, location: ?string, from: string, to: string}
      *     }>
      * }
      */
@@ -183,7 +183,7 @@ final class ScheduleTimelineService
      *
      * @param Shift[] $shifts
      *
-     * @return array<int, array{title: string, location: ?string, from: string, to: string, start: bool}>
+     * @return array<int, array{title: string, task: ?string, location: ?string, from: string, to: string, start: bool}>
      */
     private function cellsFor(array $shifts, \DateTimeImmutable $slotStart, \DateTimeImmutable $slotEnd): array
     {
@@ -197,8 +197,9 @@ final class ScheduleTimelineService
                     continue;
                 }
                 $cells[$entry->getUser()->getId()] = [
-                    'title' => $shift->getShiftTask()?->getName() ?? $shift->getTitle(),
-                    'location' => $shift->getLocation()?->getName(),
+                    'title' => $shift->getTitle(),
+                    'task' => $shift->distinctTaskName(),
+                    'location' => $shift->getLocation()?->fullName(),
                     'from' => $shift->getStartsAt()->setTimezone($slotStart->getTimezone())->format('H:i'),
                     'to' => $shift->getEndsAt()->setTimezone($slotStart->getTimezone())->format('H:i'),
                     'start' => $this->startsWithin($shift, $slotStart, $slotEnd),
@@ -219,8 +220,9 @@ final class ScheduleTimelineService
             'isDayStart' => $isDayStart,
             'cells' => [],
             'missing' => [
-                'title' => $shift->getShiftTask()?->getName() ?? $shift->getTitle(),
-                'location' => $shift->getLocation()?->getName(),
+                'title' => $shift->getTitle(),
+                'task' => $shift->distinctTaskName(),
+                'location' => $shift->getLocation()?->fullName(),
                 'from' => $shift->getStartsAt()->setTimezone($tz)->format('H:i'),
                 'to' => $shift->getEndsAt()->setTimezone($tz)->format('H:i'),
             ],

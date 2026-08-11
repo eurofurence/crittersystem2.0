@@ -101,6 +101,48 @@ final class StaffApplyBrowserTest extends BrowserTestCase
         $this->assertNoConsoleErrors('the staff apply grid');
     }
 
+    /**
+     * A half-hour shift is the shortest the grid ever draws. The block is a flex column whose time
+     * row never shrinks, so a row height too small for two lines leaves the title a sliver of
+     * clipped text - the one thing that says which shift this is. Measured from the rendered boxes,
+     * because the markup is right either way.
+     */
+    public function testAHalfHourBlockIsTallEnoughToShowItsTitle(): void
+    {
+        $seeded = $this->seed();
+        $short = (new Shift())->setTitle('Quick sweep')
+            ->setStartsAt(new \DateTimeImmutable('+1 day 14:00'))
+            ->setEndsAt(new \DateTimeImmutable('+1 day 14:30'))
+            ->setDepartment($seeded->getDepartment())
+            ->setAudience(ShiftAudience::ALL_STAFF)
+            ->setState(ShiftState::PUBLISHED);
+        $this->em->persist($short);
+        $this->em->flush();
+
+        $user = $this->em->getRepository(User::class)->findOneBy(['email' => 'applicant@example.com']);
+        $this->browse();
+        $this->signIn($user, self::PASSWORD);
+        $this->client->request('GET', '/manage-shifts/apply?scope=all');
+        $this->client->waitFor('.apply-block', 10);
+
+        $blocks = $this->client->executeScript(
+            'return Array.from(document.querySelectorAll(".apply-block")).map((b) => {'
+            .'const t = b.querySelector(".apply-block-title");'
+            .'return {title: t.textContent.trim(),'
+            .' titleHeight: Math.round(t.getBoundingClientRect().height)};'
+            .'});'
+        );
+
+        $half = array_values(array_filter($blocks, static fn (array $b): bool => $b['title'] === 'Quick sweep'));
+        self::assertCount(1, $half, 'the half-hour shift names itself rather than showing its task or nothing');
+        self::assertGreaterThanOrEqual(
+            13,
+            $half[0]['titleHeight'],
+            'the block must leave the title a whole line; the flex row shrinks it to a sliver otherwise',
+        );
+        $this->assertNoConsoleErrors('the staff apply grid');
+    }
+
     /** The axis and the department headers have to stay put while the grid scrolls under them. */
     public function testTheTimeAxisAndDepartmentHeaderStayPutWhileTheGridScrolls(): void
     {

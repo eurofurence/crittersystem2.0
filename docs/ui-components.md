@@ -1053,12 +1053,12 @@ An inline 24×24 Tabler SVG that inherits `currentColor` (so it follows the acti
 | `name` | string (slug) | **yes** | - | A key of the internal map. **An unknown slug silently renders a neutral dot (`point`)** - a typo never breaks layout, and never errors either. |
 | `options.class` | string | no | `''` | Extra classes; `icon` is always present. `icon-1`, `icon-2` size it. |
 
-Available slugs (33):
+Available slugs (36):
 
-`activity`, `award`, `bell`, `building`, `calendar`, `checklist`, `chevron-down`, `clock`, `code`,
-`compass`, `dashboard`, `gift`, `help`, `home`, `id`, `lock`, `login`, `logout`, `mail`, `map-pin`,
-`message`, `news`, `palette`, `plus`, `point`, `puzzle`, `send`, `settings`, `shield`, `tools`,
-`user`, `user-search`, `users`.
+`activity`, `award`, `bell`, `building`, `calendar`, `check`, `checklist`, `chevron-down`,
+`chevron-left`, `chevron-right`, `clock`, `code`, `compass`, `dashboard`, `gift`, `help`, `home`,
+`id`, `lock`, `login`, `logout`, `mail`, `map-pin`, `message`, `news`, `palette`, `plus`, `point`,
+`puzzle`, `send`, `settings`, `shield`, `tools`, `user`, `user-search`, `users`.
 
 Add an icon by pasting its inner `<path>` markup from <https://tabler.io/icons> into the map inside
 the macro (the map lives inside the macro because Twig macros are isolated).
@@ -1072,6 +1072,38 @@ control whose only content is an icon must carry its own `aria-label`.
 ```
 
 Note: Symfony UX Icons (`ux:icon`) is **not** installed; this map is the icon system.
+
+---
+
+#### `checkbox_dropdown(name, items, options = {})`
+
+Multi-select combobox: a dropdown of checkboxes that submits `<name>[]` per ticked item, with a
+button summarising the selection. Used by the staff apply screen (departments) and the permission
+matrix (groups).
+
+| Argument | Type | Required | Default | Notes |
+|---|---|---|---|---|
+| `name` | string | **yes** | - | Field name; each ticked box posts `name[]`. |
+| `items` | list | **yes** | - | `{value, label, hint, badge, checked}`; `hint` and `badge` optional. |
+| `options.label` | string\|false | no | `false` | Field label above the button. |
+| `options.allLabel` | string | no | `All` | Button text when everything is ticked. |
+| `options.someLabel` | string | no | `%count% selected` | Button text otherwise; `%count%` is replaced. |
+| `options.submitLabel` | string | no | `Show` | The button inside the menu that applies the selection. |
+| `options.emptyLabel` | string | no | `Nothing to pick` | Shown in place of the list when `items` is empty. |
+
+The menu stays open while ticking (`data-bs-auto-close="outside"`) and is applied by its own submit
+button, so several choices cost one reload rather than one each. Place it inside an ordinary `<form
+method="get">`; it needs no JavaScript of its own.
+
+The item lays out as a flex row rather than Bootstrap's `.form-check` default: that default hangs the
+input off the left edge on a negative margin, which the scrolling menu clips, and the checkbox
+disappears.
+
+```twig
+{{ f.checkbox_dropdown('departments', options|map(o => {
+  value: o.department.uuid, label: o.department.name, hint: o.count, checked: o.selected,
+}), {label: 'Departments'|trans, allLabel: 'All departments'|trans, submitLabel: 'Show'|trans}) }}
+```
 
 ---
 
@@ -1170,7 +1202,7 @@ this app, and it goes through `App\Service\RichTextSanitizer` first.)
 7. **No `window.confirm()` / `window.alert()`.** Use `data-controller="confirm"` on the form (which is
    what `delete_form` does), or `confirmModal()` / `alertModal()` from `assets/js/modal.js` in JS. Both
    are project rules in `CLAUDE.md`, not preferences.
-8. **Run `php bin/console lint:twig templates` and `php bin/phpunit`** after touching a macro - a
+8. **Run `php bin/console lint:twig templates` and `bin/ptest`** after touching a macro - a
    signature change ripples across ~65 templates.
 
 ---
@@ -1229,7 +1261,7 @@ Before adding a macro to `templates/components/`:
 - [ ] A demo has been added to the relevant kit page (hub: `/dev/ui/navigation-kit`).
 - [ ] Documentation updated (this file).
 - [ ] `php bin/console lint:twig templates` passes.
-- [ ] Existing behaviour is unchanged - `php bin/phpunit` is green and the rendered markup of existing
+- [ ] Existing behaviour is unchanged - `bin/ptest` is green and the rendered markup of existing
       callers is identical.
 
 ---
