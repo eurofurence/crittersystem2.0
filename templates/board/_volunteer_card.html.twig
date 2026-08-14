@@ -1,0 +1,45 @@
+{#
+  One volunteer on the active-staff grid.
+
+  The band decides the meter colour and the status dot; the hours are printed next to both, so
+  neither the dot nor the fill carries the reading on its own.
+#}
+{% set index = volunteer.band(bands) %}
+{% set tones = [
+  {dot: 'bg-emerald-500', bar: '[&>div]:bg-emerald-500'},
+  {dot: 'bg-amber-500',   bar: '[&>div]:bg-amber-500'},
+  {dot: 'bg-orange-500',  bar: '[&>div]:bg-orange-500'},
+  {dot: 'bg-red-500',     bar: '[&>div]:bg-red-500'}
+] %}
+{% set tone = tones[min(index, tones|length - 1)] %}
+
+<div class="flex min-h-0 min-w-0 flex-col gap-2 rounded-lg border border-border bg-secondary/40 p-3">
+  <div class="flex items-center gap-2">
+    <twig:Avatar size="sm" class="shrink-0">
+      <twig:Avatar:Fallback>{{ volunteer.user.name|slice(0, 2)|upper }}</twig:Avatar:Fallback>
+    </twig:Avatar>
+    <div class="min-w-0 flex-1">
+      <div class="truncate font-semibold">{{ volunteer.user.name }}</div>
+      <div class="truncate text-xs text-muted-foreground">{{ volunteer.role ?? '' }}</div>
+    </div>
+    <span class="size-2 shrink-0 rounded-full {{ tone.dot }}"
+          title="{{ 'board.card.band_title'|trans({'%hours%': volunteer.totalHours|number_format(1)}) }}"></span>
+  </div>
+
+  <div class="flex items-baseline gap-1.5">
+    <span class="text-lg leading-none font-bold">{{ volunteer.todayHours|number_format(1) }} h</span>
+    {% if volunteer.presentSince %}
+      <span class="truncate text-xs text-muted-foreground">
+        <time datetime="{{ volunteer.presentSince|date('c') }}"
+              data-controller="relative-time" data-relative-time-mode-value="since">{{ volunteer.presentSince|app_time }}</time>
+      </span>
+    {% endif %}
+  </div>
+
+  <div class="mt-auto flex flex-col gap-1.5">
+    <div class="text-xs text-muted-foreground">
+      {{ 'board.card.total'|trans({'%total%': volunteer.totalHours|number_format(1), '%cap%': cap}) }}
+    </div>
+    <twig:Progress value="{{ (volunteer.capFraction * 100)|round }}" class="h-1.5 {{ tone.bar }}" />
+  </div>
+</div>

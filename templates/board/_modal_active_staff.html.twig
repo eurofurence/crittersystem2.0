@@ -1,0 +1,59 @@
+{# Frame id must match the host in board/index.html.twig, or Turbo drops the response. #}
+<turbo-frame id="board-modal">
+  {#
+    `open` so the dialog shows the moment Turbo swaps it in - the frame is only ever loaded by
+    somebody clicking "show all", so there is nothing left to trigger it afterwards.
+
+    The kit's own `data-action` defaults are repeated because `attributes.defaults()` yields to what
+    the caller passes: dropping them here would take Escape and click-outside away with them.
+  #}
+  <twig:Dialog id="board-active-staff" open="true">
+    <twig:Dialog:Content
+      class="max-w-4xl sm:max-w-4xl"
+      data-action="keydown.esc->dialog#close:prevent click->dialog#closeOnClickOutside close->board-modal#clear">
+      <twig:Dialog:Header>
+        <twig:Dialog:Title>{{ 'board.active.modal_title'|trans({'%count%': board.activeStaff|length}) }}</twig:Dialog:Title>
+      </twig:Dialog:Header>
+
+      <div class="max-h-[70vh] overflow-y-auto">
+        {% if board.activeStaff is empty %}
+          {{ include('board/_empty.html.twig', {message: 'board.active.empty'|trans}) }}
+        {% else %}
+          <twig:Table>
+            <twig:Table:Header>
+              <twig:Table:Row>
+                <twig:Table:Head>{{ 'common.label.name'|trans }}</twig:Table:Head>
+                <twig:Table:Head>{{ 'common.label.role'|trans }}</twig:Table:Head>
+                <twig:Table:Head>{{ 'board.column.since'|trans }}</twig:Table:Head>
+                <twig:Table:Head>{{ 'board.column.today'|trans }}</twig:Table:Head>
+                <twig:Table:Head>{{ 'board.column.total'|trans }}</twig:Table:Head>
+              </twig:Table:Row>
+            </twig:Table:Header>
+            <twig:Table:Body>
+              {% for volunteer in board.activeStaff %}
+                <twig:Table:Row>
+                  <twig:Table:Cell class="font-medium">{{ volunteer.user.name }}</twig:Table:Cell>
+                  <twig:Table:Cell class="text-muted-foreground">{{ volunteer.role ?? '' }}</twig:Table:Cell>
+                  <twig:Table:Cell>
+                    {% if volunteer.presentSince %}
+                      <time datetime="{{ volunteer.presentSince|date('c') }}"
+                            data-controller="relative-time" data-relative-time-mode-value="since">{{ volunteer.presentSince|app_time }}</time>
+                    {% endif %}
+                  </twig:Table:Cell>
+                  <twig:Table:Cell class="tabular-nums">{{ volunteer.todayHours|number_format(1) }} h</twig:Table:Cell>
+                  <twig:Table:Cell class="tabular-nums">
+                    {{ 'board.card.total'|trans({'%total%': volunteer.totalHours|number_format(1), '%cap%': settings.hoursCap}) }}
+                  </twig:Table:Cell>
+                </twig:Table:Row>
+              {% endfor %}
+            </twig:Table:Body>
+          </twig:Table>
+        {% endif %}
+      </div>
+
+      <twig:Dialog:Footer class="justify-between text-xs text-muted-foreground">
+        <span>{{ include('board/_band_key.html.twig', {bands: settings.cardBands}) }}</span>
+      </twig:Dialog:Footer>
+    </twig:Dialog:Content>
+  </twig:Dialog>
+</turbo-frame>

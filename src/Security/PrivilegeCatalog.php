@@ -39,6 +39,7 @@ final class PrivilegeCatalog
         'shift:assign',
         'assignment:manage',
         'volunteertype:assign',
+        'board:view',
     ];
 
     /**
@@ -110,6 +111,7 @@ final class PrivilegeCatalog
         'invite:manage' => ['Create availability requests and shift invitation links', 'Shifts', self::LEVEL_SUBADMIN, false],
         'assignment:manage' => ['Assign and remove users on shifts and positions', 'Shifts', self::LEVEL_SUBADMIN, false],
         'assignment:override' => ['Override availability or hour warnings when assigning', 'Shifts', self::LEVEL_SUBADMIN, false],
+        'board:view' => ['Open the live operations board for a department', 'Shifts', self::LEVEL_SUBADMIN, false],
 
         // Organisation
         'department:view' => ['View departments', 'Organisation', self::LEVEL_SUBADMIN, false],
@@ -202,7 +204,7 @@ final class PrivilegeCatalog
             'role' => 'ROLE_STAFF',
             'permissions' => [
                 'news:view',
-                'manageshifts:view', 'shift:manage', 'shift:publish', 'shift:assign', 'shift:import', 'shift:view', 'shift:self', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
+                'manageshifts:view', 'board:view', 'shift:manage', 'shift:publish', 'shift:assign', 'shift:import', 'shift:view', 'shift:self', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
                 'location:view', 'volunteertype:view', 'user:view', 'user:arrive',
                 'profile:view', 'profile:history:view', 'worklog:self',
             ],
@@ -212,7 +214,7 @@ final class PrivilegeCatalog
             'role' => 'ROLE_STAFF',
             'permissions' => [
                 'news:view',
-                'manageshifts:view', 'shift:manage', 'shift:publish', 'shift:assign', 'shift:import', 'shift:view', 'shift:self', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
+                'manageshifts:view', 'board:view', 'shift:manage', 'shift:publish', 'shift:assign', 'shift:import', 'shift:view', 'shift:self', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
                 'location:view', 'volunteertype:view', 'user:view', 'user:arrive',
                 'profile:view', 'profile:history:view', 'worklog:self',
             ],
@@ -222,7 +224,7 @@ final class PrivilegeCatalog
             'role' => 'ROLE_STAFF',
             'permissions' => [
                 'news:view',
-                'manageshifts:view', 'department:view', 'department:manage', 'shift:manage', 'shift:publish', 'shift:assign', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
+                'manageshifts:view', 'board:view', 'department:view', 'department:manage', 'shift:manage', 'shift:publish', 'shift:assign', 'invite:manage', 'assignment:manage', 'assignment:override', 'call:trigger', 'call:cancel',
                 'volunteertype:view', 'volunteertype:assign', 'user:view', 'user:arrive',
                 'profile:view', 'profile:history:view', 'worklog:self',
                 'department:member:manage', 'delegated:approve',
@@ -246,7 +248,7 @@ final class PrivilegeCatalog
             'name' => 'Info Desk',
             'role' => 'ROLE_STAFF',
             'permissions' => [
-                'manageshifts:view', 'user:view', 'user:arrive', 'user:locate', 'user:contact:view', 'message:use', 'chat:claim', 'chat:restricted', 'call:trigger', 'call:cancel', 'shift:view', 'shift:assign',
+                'manageshifts:view', 'board:view', 'user:view', 'user:arrive', 'user:locate', 'user:contact:view', 'message:use', 'chat:claim', 'chat:restricted', 'call:trigger', 'call:cancel', 'shift:view', 'shift:assign',
                 'goodie:view', 'goodie:distribute', 'certification:view', 'news:view', 'faq:view',
                 'profile:view', 'profile:history:view', 'worklog:self',
             ],

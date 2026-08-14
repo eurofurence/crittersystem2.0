@@ -94,6 +94,75 @@ final class ShiftVisibilityResolver
         };
     }
 
+    /**
+     * The same rules again, as a query predicate, so a list can be narrowed to what the viewer may
+     * see *before* it is capped or paged.
+     *
+     * Filtering after a LIMIT silently drops shifts the viewer is entitled to: the rows the cap
+     * admitted are spent on shifts that are then thrown away, and with no cursor there is no second
+     * request that reaches the rest. {@see \App\Tests\Integration\ShiftVisibilityParityTest} pins
+     * this against {@see isVisibleTo()}, which is the other expression of the same rule.
+     *
+     * @param int[] $memberDepartmentIds ids of departments the user is an active member of
+     */
+    public function applyVisibilityFor(QueryBuilder $qb, ?User $user, array $memberDepartmentIds = [], string $alias = 's'): void
+    {
+        $qb->andWhere(\sprintf('%s.state = :visState', $alias))
+            ->setParameter('visState', ShiftState::PUBLISHED->value);
+
+        if ($user === null) {
+            $qb->andWhere(\sprintf('%s.audience = :visPublic', $alias))
+                ->setParameter('visPublic', ShiftAudience::PUBLIC_VOLUNTEER->value);
+
+            return;
+        }
+
+        $clauses = [\sprintf('%s.audience = :visPublic', $alias)];
+        $qb->setParameter('visPublic', ShiftAudience::PUBLIC_VOLUNTEER->value);
+
+        if ($user->isStaff()) {
+            $clauses[] = \sprintf('%s.audience = :visAllStaff', $alias);
+            $qb->setParameter('visAllStaff', ShiftAudience::ALL_STAFF->value);
+
+            if ($memberDepartmentIds !== []) {
+                $clauses[] = \sprintf('(%s.audience = :visDeptStaff AND IDENTITY(%s.department) IN (:visDepartments))', $alias, $alias);
+                $qb->setParameter('visDeptStaff', ShiftAudience::DEPARTMENT_STAFF->value)
+                    ->setParameter('visDepartments', $memberDepartmentIds);
+            }
+        }
+
+        $clauses[] = \sprintf(
+            '(%s.audience = :visInvite AND EXISTS (SELECT 1 FROM %s visEntry WHERE visEntry.shift = %s AND visEntry.user = :visUser))',
+            $alias,
+            \App\Entity\ShiftEntry::class,
+            $alias,
+        );
+        $qb->setParameter('visInvite', ShiftAudience::INVITE_ONLY->value)
+            ->setParameter('visUser', $user);
+
+        $qb->andWhere('('.implode(' OR ', $clauses).')');
+    }
+
+    /**
+     * Ids of the departments the user is an active member of, for
+     * {@see applyVisibilityFor()}. Separate so a caller filtering several queries pays for it once.
+     *
+     * @return int[]
+     */
+    public function memberDepartmentIds(?User $user): array
+    {
+        if ($user === null) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($this->memberships->findActiveDepartmentsForUser($user) as $department) {
+            $ids[] = $department->getId();
+        }
+
+        return $ids;
+    }
+
     /** Staff-only audiences are hidden from volunteers regardless of state. */
     public function isStaffOnly(Shift $shift): bool
     {

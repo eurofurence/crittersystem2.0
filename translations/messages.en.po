@@ -6998,3 +6998,421 @@ msgstr "View volunteer type"
 
 msgid "shift.requirement.action.why"
 msgstr "Why can I not apply?"
+
+# ==========================================================================
+# board.* - the live operations board, and its thresholds on /manage/operations
+# ==========================================================================
+
+msgid "manage.operations_config.section.board"
+msgstr "Live operations board"
+
+msgid "manage.operations_config.field.board_pre_start_warn.label"
+msgstr "Imminent-start warning (minutes)"
+
+msgid "manage.operations_config.field.board_pre_start_warn.help"
+msgstr "How long before a shift starts an unfilled slot counts as urgent."
+
+msgid "manage.operations_config.field.board_max_continuous.label"
+msgstr "Continuous presence limit (minutes)"
+
+msgid "manage.operations_config.field.board_max_continuous.help"
+msgstr "Flag a volunteer who has been present this long without a gap."
+
+msgid "manage.operations_config.field.board_max_sequential.label"
+msgstr "Back-to-back shift limit (minutes)"
+
+msgid "manage.operations_config.field.board_max_sequential.help"
+msgstr "Flag a volunteer whose consecutive assigned shifts add up to more than this."
+
+msgid "manage.operations_config.field.board_unattended.label"
+msgstr "Unattended tolerance (minutes)"
+
+msgid "manage.operations_config.field.board_unattended.help"
+msgstr "How long a running shift may have nobody present before it is flagged."
+
+msgid "manage.operations_config.field.board_overwork_fraction.label"
+msgstr "Approaching-cap fraction"
+
+msgid "manage.operations_config.field.board_overwork_fraction.help"
+msgstr "Fraction of the recommended maximum hours at which a volunteer is flagged as approaching it."
+
+msgid "manage.operations_config.field.board_card_bands.label"
+msgstr "Card load bands (hours)"
+
+msgid "manage.operations_config.field.board_card_bands.help"
+msgstr "Ascending hour boundaries for the load meter, comma separated."
+
+msgid "manage.operations_config.field.board_workload_bands.label"
+msgstr "Workload bands (hours)"
+
+msgid "manage.operations_config.field.board_workload_bands.help"
+msgstr "Ascending hour boundaries for the distribution chart, comma separated."
+
+msgid "manage.operations_config.field.board_bands.invalid"
+msgstr "Enter hour boundaries as comma-separated numbers, for example 15,20,25."
+
+msgid "manage.operations_config.field.board_coming_window.label"
+msgstr "Arriving window (minutes)"
+
+msgid "manage.operations_config.field.board_off_duty_window.label"
+msgstr "Recently-finished window (minutes)"
+
+msgid "manage.operations_config.field.board_forecast_horizon.label"
+msgstr "Forecast horizon (hours)"
+
+msgid "manage.operations_config.field.board_forecast_step.label"
+msgstr "Forecast step (hours)"
+
+msgid "manage.operations_config.field.board_active_top_n.label"
+msgstr "Active staff shown"
+
+msgid "manage.operations_config.field.board_page_size_staff.label"
+msgstr "Staff cards per page"
+
+msgid "manage.operations_config.field.board_page_size_shifts.label"
+msgstr "Shift rows per page"
+
+msgid "shift_manager.action.board.title"
+msgstr "Live Ops Board"
+
+msgid "shift_manager.action.board.text"
+msgstr "A full-screen board for one department and one day: who is present, what is understaffed and what starts next."
+
+msgid "board.page.title"
+msgstr "Live Board"
+
+msgid "board.rail.departments"
+msgstr "Your departments"
+
+msgid "board.rail.leave"
+msgstr "Back to Shift Manager"
+
+msgid "board.nav.overview"
+msgstr "Overview"
+
+msgid "board.nav.staff"
+msgstr "Staff"
+
+msgid "board.nav.shifts"
+msgstr "Shifts"
+
+msgid "board.date.previous"
+msgstr "Previous day"
+
+msgid "board.date.next"
+msgstr "Next day"
+
+msgid "board.live.connected"
+msgstr "Live"
+
+msgid "board.live.reconnecting"
+msgstr "Reconnecting…"
+
+msgid "board.staff.title"
+msgstr "Staff planned today"
+
+msgid "board.shifts.title"
+msgstr "Shifts"
+
+msgid "board.empty.no_data"
+msgstr "Nothing to show yet."
+
+msgid "board.no_access.title"
+msgstr "No department to show"
+
+msgid "board.no_access.message"
+msgstr "You do not have board access to any department that runs shifts."
+
+msgid "board.attention.understaffed_imminent.title"
+msgstr "%shift% starts soon and is short"
+
+msgid "board.attention.understaffed_imminent.detail"
+msgstr "%assigned% of %needed% assigned"
+
+msgid "board.attention.understaffed_active.title"
+msgstr "%shift% is running short"
+
+msgid "board.attention.understaffed_active.detail"
+msgstr "%assigned% of %needed% assigned"
+
+msgid "board.attention.continuous_presence.title"
+msgstr "%name% has been here %hours% without a break"
+
+msgid "board.attention.continuous_presence.detail"
+msgstr "Recommended limit %limit%"
+
+msgid "board.attention.hours_near.title"
+msgstr "%name% is close to the recommended hours"
+
+msgid "board.attention.hours_over.title"
+msgstr "%name% is past the recommended hours"
+
+msgid "board.attention.hours.detail"
+msgstr "%hours% h of a recommended %cap% h for the event"
+
+msgid "board.attention.sequential.title"
+msgstr "%name% has %hours% of back-to-back shifts"
+
+msgid "board.attention.sequential.detail"
+msgstr "Recommended limit %limit% in one stretch"
+
+msgid "board.attention.unattended.title"
+msgstr "Nobody is present on %shift%"
+
+msgid "board.attention.unattended.detail"
+msgstr "%assigned% assigned, none checked in or on duty"
+
+msgid "board.kpi.active_staff"
+msgstr "Active Staff"
+
+msgid "board.kpi.active_staff.hint"
+msgstr "present right now"
+
+msgid "board.kpi.open_positions"
+msgstr "Open Positions"
+
+msgid "board.kpi.open_positions.hint"
+msgstr "need staffing now"
+
+msgid "board.kpi.active_shifts"
+msgstr "Active Shifts"
+
+msgid "board.kpi.active_shifts.hint"
+msgstr "running now"
+
+msgid "board.kpi.next_shift"
+msgstr "Next Shift"
+
+msgid "board.kpi.next_shift.none"
+msgstr "nothing else today"
+
+msgid "board.kpi.attention"
+msgstr "Attention Needed"
+
+msgid "board.kpi.attention.hint"
+msgstr "items to act on"
+
+msgid "board.active.title"
+msgstr "Who is here right now"
+
+msgid "board.active.meta"
+msgstr "%count% present · top %shown%"
+
+msgid "board.active.empty"
+msgstr "Nobody is checked in or on duty."
+
+msgid "board.active.show_all"
+msgstr "Show all %count% →"
+
+msgid "board.active.modal_title"
+msgstr "Everyone present (%count%)"
+
+msgid "board.attention.title"
+msgstr "Attention needed"
+
+msgid "board.attention.meta"
+msgstr "%count% open"
+
+msgid "board.attention.empty"
+msgstr "Nothing needs attention."
+
+msgid "board.attention.foot"
+msgstr "thresholds from the operations settings"
+
+msgid "board.attention.review_all"
+msgstr "Review all →"
+
+msgid "board.attention.modal_title"
+msgstr "Attention needed (%count%)"
+
+msgid "board.open_shifts.title"
+msgstr "Open shifts"
+
+msgid "board.open_shifts.meta"
+msgstr "%count% open"
+
+msgid "board.open_shifts.empty"
+msgstr "Every shift is staffed."
+
+msgid "board.open_shifts.running_now"
+msgstr "running now"
+
+msgid "board.open_shifts.missing"
+msgstr "%count% missing"
+
+msgid "board.open_shifts.foot"
+msgstr "%count% short"
+
+msgid "board.open_shifts.all"
+msgstr "All shifts →"
+
+msgid "board.coming.title"
+msgstr "Coming next"
+
+msgid "board.coming.meta"
+msgstr "next %minutes% min"
+
+msgid "board.coming.empty"
+msgstr "Nobody due in this window."
+
+msgid "board.coming.foot"
+msgstr "%count% arriving"
+
+msgid "board.off_duty.title"
+msgstr "Just finished"
+
+msgid "board.off_duty.meta"
+msgstr "last %minutes% min"
+
+msgid "board.off_duty.empty"
+msgstr "Nobody has finished recently."
+
+msgid "board.off_duty.foot"
+msgstr "%count% finished"
+
+msgid "board.workload.title"
+msgstr "Workload distribution"
+
+msgid "board.workload.meta"
+msgstr "credited hours · recommended %cap% h"
+
+msgid "board.workload.empty"
+msgstr "Nobody is planned for this day."
+
+msgid "board.workload.people"
+msgstr "people"
+
+msgid "board.forecast.title"
+msgstr "Staffing forecast"
+
+msgid "board.forecast.meta"
+msgstr "needed = sum of shift requirements · planned = assigned volunteers"
+
+msgid "board.forecast.time"
+msgstr "Time"
+
+msgid "board.forecast.now"
+msgstr "Now"
+
+msgid "board.forecast.needed"
+msgstr "Needed"
+
+msgid "board.forecast.planned"
+msgstr "Planned"
+
+msgid "board.forecast.difference"
+msgstr "Difference"
+
+msgid "board.band.under"
+msgstr "under %hours% h"
+
+msgid "board.band.over"
+msgstr "over %hours% h"
+
+msgid "board.band.between"
+msgstr "%from%-%to% h"
+
+msgid "board.card.total"
+msgstr "%total% / %cap% h"
+
+msgid "board.card.band_title"
+msgstr "%hours% h credited for the event"
+
+msgid "board.column.since"
+msgstr "Here since"
+
+msgid "board.column.today"
+msgstr "Today"
+
+msgid "board.column.total"
+msgstr "Event total"
+
+msgid "board.staff.meta"
+msgstr "%total% planned · showing %shown%"
+
+msgid "board.staff.empty"
+msgstr "Nobody is planned for this day."
+
+msgid "board.staff.today"
+msgstr "today"
+
+msgid "board.staff.shifts"
+msgstr "Shifts"
+
+msgid "board.staff.present_today"
+msgstr "Here today"
+
+msgid "board.staff.next"
+msgstr "Next shift"
+
+msgid "board.status.on_duty"
+msgstr "Here"
+
+msgid "board.status.arriving"
+msgstr "Arriving"
+
+msgid "board.status.off"
+msgstr "Not here"
+
+msgid "board.shifts.meta"
+msgstr "%total% shifts · %active% running"
+
+msgid "board.shifts.empty"
+msgstr "No shifts scheduled for this day."
+
+msgid "board.shifts.foot"
+msgstr "\"Call for help\" raises the application's existing call and notifies whoever it already reaches"
+
+msgid "board.shift_status.unassigned"
+msgstr "Unassigned"
+
+msgid "board.shift_status.understaffed"
+msgstr "Understaffed"
+
+msgid "board.shift_status.active"
+msgstr "Running"
+
+msgid "board.shift_status.upcoming"
+msgstr "Upcoming"
+
+msgid "board.shift_status.done"
+msgstr "Done"
+
+msgid "board.column.time"
+msgstr "Time"
+
+msgid "board.column.shift"
+msgstr "Shift"
+
+msgid "board.column.filled"
+msgstr "Filled"
+
+msgid "board.call.trigger"
+msgstr "Call for help"
+
+msgid "board.call.cancel"
+msgstr "Cancel call"
+
+msgid "board.call.flagged"
+msgstr "Called %time%"
+
+msgid "board.call.confirm"
+msgstr "Raise a call for help on %shift%? Everyone the call reaches is notified."
+
+msgid "board.call.confirm_cancel"
+msgstr "Cancel this call for help?"
+
+msgid "board.pager.position"
+msgstr "Page %page% / %pages%"
+
+msgid "board.pager.previous"
+msgstr "Previous page"
+
+msgid "board.pager.next"
+msgstr "Next page"
+
+msgid "board.rail.search"
+msgstr "Filter departments…"
+
+msgid "board.rail.no_match"
+msgstr "No department matches."

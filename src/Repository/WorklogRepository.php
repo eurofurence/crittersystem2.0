@@ -29,6 +29,36 @@ class WorklogRepository extends ServiceEntityRepository
         return $this->findBy([], ['workedAt' => 'DESC']);
     }
 
+    /**
+     * Manual hours for several users at once, keyed by user id. Users with no worklog are absent.
+     *
+     * @param User[] $users
+     *
+     * @return array<int, float>
+     */
+    public function sumHoursForUsers(array $users): array
+    {
+        $users = array_values(array_filter($users, static fn (User $u): bool => $u->getId() !== null));
+        if ($users === []) {
+            return [];
+        }
+
+        $rows = $this->createQueryBuilder('w')
+            ->select('IDENTITY(w.user) AS userId', 'COALESCE(SUM(w.hours), 0) AS total')
+            ->andWhere('w.user IN (:users)')
+            ->setParameter('users', $users)
+            ->groupBy('w.user')
+            ->getQuery()
+            ->getResult();
+
+        $totals = [];
+        foreach ($rows as $row) {
+            $totals[(int) $row['userId']] = (float) $row['total'];
+        }
+
+        return $totals;
+    }
+
     public function sumHoursForUser(User $user): float
     {
         return (float) $this->createQueryBuilder('w')

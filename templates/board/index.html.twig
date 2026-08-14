@@ -1,0 +1,137 @@
+{% extends 'board/_layout.html.twig' %}
+{% import 'components/icon/_macros.twig' as i %}
+
+{% block title %}{{ department.name }} - {{ 'board.page.title'|trans }}{% endblock %}
+
+{% block board %}
+  {#
+    The board is height-constrained end to end: `h-screen` here, `min-h-0` on every flex and grid
+    child that contains a list, and `overflow-hidden` on the panels themselves. Drop a `min-h-0` and
+    the panel below it grows to fit its content instead of clipping, which is how a wall display
+    silently gains a scrollbar nobody is there to use.
+  #}
+  {#
+    `data-board-*` attributes are test hooks, not styling. Tests that anchored on class names broke
+    the moment the board was restyled, which told us nothing about the board being wrong.
+  #}
+  <div data-board-shell class="grid h-screen grid-cols-[13rem_1fr] overflow-hidden">
+    <aside class="flex min-h-0 flex-col gap-5 border-r border-border bg-card p-4">
+      <div class="flex items-center gap-3">
+        <div class="grid size-9 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground">
+            <img src="{{ asset('images/logo.svg') }}" alt="CVS" class="navbar-brand-image" />
+        </div>
+        <div class="min-w-0">
+          <div class="truncate text-xs font-semibold">{{ 'ui.app.brand'|trans }}</div>
+          <div class="truncate text-xs text-muted-foreground">{{ 'board.page.title'|trans }}</div>
+        </div>
+      </div>
+
+      {#
+        A combobox rather than a list of links: a manager with a handful of departments could read a
+        list, but the rail is a fixed-width column on a screen that must not scroll, and this list
+        grows with the event. The combobox is one row whatever the count, and it filters.
+
+        Selecting is a navigation, not a form submission - the whole board reloads for the new scope,
+        live region included - so board_department_controller turns the change event into a visit.
+      #}
+      <div class="shrink-0">
+        <div class="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          {{ 'board.rail.departments'|trans }}
+        </div>
+        <div data-board-rail="departments"
+             data-controller="board-department"
+             data-action="combobox:change->board-department#go"
+             data-board-department-current-value="{{ department.uuid }}"
+             data-board-department-url-value="{{ path('app_board_show', {department: department.uuid, date: dayParam, view: view}) }}">
+          {# Uuids cast to string: the component compares a choice's value against the selected one,
+             and an object against a string is not a comparison worth relying on. #}
+          <twig:Combobox
+            id="board-department"
+            value="{{ department.uuid }}"
+            :choices="departments|map(option => {value: option.uuid ~ '', label: option.name})"
+            searchPlaceholder="{{ 'board.rail.search'|trans }}"
+            emptyMessage="{{ 'board.rail.no_match'|trans }}"
+            placeholder="{{ 'board.rail.departments'|trans }}" />
+        </div>
+      </div>
+
+      <nav data-board-nav class="flex flex-col gap-1">
+        {% for entry in [
+          {key: 'overview', icon: 'dashboard', label: 'board.nav.overview'},
+          {key: 'staff',    icon: 'users',     label: 'board.nav.staff'},
+          {key: 'shifts',   icon: 'clock',     label: 'board.nav.shifts'}
+        ] %}
+          <a href="{{ path('app_board_show', {department: department.uuid, date: dayParam, view: entry.key}) }}"
+             class="flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors {{ view == entry.key
+               ? 'bg-secondary font-medium text-secondary-foreground shadow-[inset_2px_0_0] shadow-primary'
+               : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground' }}"
+             {% if view == entry.key %}aria-current="page"{% endif %}>
+            {{ i.icon(entry.icon) }} {{ entry.label|trans }}
+          </a>
+        {% endfor %}
+      </nav>
+
+      <div class="mt-auto border-t border-border pt-4 text-xs text-muted-foreground">
+        {#
+          The state is a word as well as a dot. A wall display is read from across a room, where a
+          small colour change is not a signal anybody will notice.
+        #}
+        <div class="flex items-center gap-2" data-state="connected"
+             data-controller="board-status"
+             data-board-status-connected-value="{{ 'board.live.connected'|trans }}"
+             data-board-status-reconnecting-value="{{ 'board.live.reconnecting'|trans }}">
+          <span class="size-2 shrink-0 rounded-full bg-emerald-500 in-data-[state=degraded]:bg-amber-500"></span>
+          <span data-board-status-target="label">{{ 'board.live.connected'|trans }}</span>
+        </div>
+        <a class="mt-2 inline-block hover:text-foreground" href="{{ path('app_manage_shifts') }}">
+          {{ 'board.rail.leave'|trans }}
+        </a>
+      </div>
+    </aside>
+
+    <main class="flex h-screen min-w-0 flex-col gap-4 p-5">
+      <div class="flex shrink-0 items-center justify-between gap-4">
+        <div class="min-w-0">
+          <h1 class="truncate text-2xl font-bold">{{ department.name }} - {{ ('board.nav.' ~ view)|trans }}</h1>
+          <div class="text-xs text-muted-foreground">{{ day|app_date }}</div>
+        </div>
+        <div data-board-datepager class="flex shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+          {#
+            The icon macro is re-imported inside each component block: a component renders in its own
+            context, so an alias imported at the top of this template is not visible in there.
+          #}
+          <twig:Button as="a" variant="ghost" size="icon-sm"
+                       href="{{ path('app_board_show', {department: department.uuid, date: previousDayParam, view: view}) }}"
+                       aria-label="{{ 'board.date.previous'|trans }}">
+            {% import 'components/icon/_macros.twig' as icons %}{{ icons.icon('chevron-left') }}
+          </twig:Button>
+          <b class="text-sm">{{ day|app_date }}</b>
+          <twig:Button as="a" variant="ghost" size="icon-sm"
+                       href="{{ path('app_board_show', {department: department.uuid, date: nextDayParam, view: view}) }}"
+                       aria-label="{{ 'board.date.next'|trans }}">
+            {% import 'components/icon/_macros.twig' as icons %}{{ icons.icon('chevron-right') }}
+          </twig:Button>
+        </div>
+      </div>
+
+      {#
+        The whole view is one live region. The board holds no edit state, so replacing it wholesale
+        on a change is both safe and cheaper than a fetch per panel: every panel comes from one
+        snapshot, and eight endpoints would each recompute the same aggregates.
+
+        The url carries the current view and page, so a refresh returns what the viewer is actually
+        looking at rather than resetting them to the overview.
+      #}
+      <section data-board-view
+               class="flex min-h-0 flex-1 flex-col gap-4"
+               data-controller="live-stream"
+               {% if mercure_enabled() %}data-live-stream-topic-value="{{ mercure_topic_department(department) }}"{% endif %}
+               data-live-stream-url-value="{{ path('app_board_view', {department: department.uuid, date: dayParam, view: view, page: page.page}) }}">
+        {{ include('board/_view.html.twig') }}
+      </section>
+    </main>
+  </div>
+
+  {# Modals live outside the view so a live refresh cannot tear one out from under whoever opened it. #}
+  <turbo-frame id="board-modal" data-controller="board-modal"></turbo-frame>
+{% endblock %}

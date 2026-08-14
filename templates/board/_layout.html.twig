@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+{#
+  Standalone shell for the live operations board. It does not extend base.html.twig: the board is a
+  full-viewport wall display with no navigation chrome, and it pins the dark palette rather than
+  following the viewer's theme, because several people share one screen.
+
+  Everything the live stack needs is reproduced here deliberately, and
+  tests/Integration/BoardLayoutLiveRegionTest.php asserts each piece is present:
+   - the mercure-hub meta, which assets/js/live.js reads on every reconnect;
+   - the heartbeat-url meta, which re-mints the 5-minute subscriber cookie so a board left open all
+     day keeps receiving updates;
+   - importmap('app'), which carries Turbo, Stimulus and the session-expiry watcher.
+  Dropping any of them leaves a board that renders correctly and silently stops updating.
+#}
+<html lang="{{ app.request.locale|default('en') }}" data-bs-theme="dark">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+        <title>{% block title %}{{ 'board.page.title'|trans }}{% endblock %}</title>
+
+        <link rel="icon" href="{{ asset('images/favicon.svg') }}">
+
+        {% if live_regions_enabled() %}
+            {% if mercure_enabled() %}<meta name="mercure-hub" content="{{ mercure() }}">{% endif %}
+            <meta name="heartbeat-url" content="{{ path('app_session_heartbeat') }}">
+        {% endif %}
+
+        {#
+          The board's own entry point, not the application's: it must not receive Tabler or
+          Bootstrap, whose resets would fight Tailwind's. See assets/board.js.
+        #}
+        {{ importmap('board') }}
+
+        {# Tailwind's input file. The Tailwind bundle serves the compiled result at this same path. #}
+        <link rel="stylesheet" href="{{ asset('styles/board.css') }}">
+    </head>
+
+    {# Height-constrained and clipped at the root: the board paginates, it never scrolls. #}
+    <body class="h-full overflow-hidden bg-background text-foreground antialiased">
+        {% block board %}{% endblock %}
+    </body>
+</html>

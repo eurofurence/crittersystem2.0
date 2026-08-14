@@ -8,6 +8,7 @@ use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -86,7 +87,51 @@ final class OperationsConfigType extends AbstractType
             ->add('nightStartHour', IntegerType::class, ['label' => 'manage.operations_config.field.night_start.label', 'attr' => ['min' => 0, 'max' => 23]])
             ->add('nightEndHour', IntegerType::class, ['label' => 'manage.operations_config.field.night_end.label', 'attr' => ['min' => 0, 'max' => 24]])
             ->add('nightMultiplier', NumberType::class, ['label' => 'manage.operations_config.field.night_multiplier.label', 'scale' => 2])
-            ->add('noShowMultiplier', NumberType::class, ['label' => 'manage.operations_config.field.noshow_multiplier.label', 'scale' => 2]);
+            ->add('noShowMultiplier', NumberType::class, ['label' => 'manage.operations_config.field.noshow_multiplier.label', 'scale' => 2])
+            ->add('boardPreStartWarnMin', IntegerType::class, [
+                'label' => 'manage.operations_config.field.board_pre_start_warn.label',
+                'help' => 'manage.operations_config.field.board_pre_start_warn.help',
+                'attr' => ['min' => 0],
+            ])
+            ->add('boardMaxContinuousMin', IntegerType::class, [
+                'label' => 'manage.operations_config.field.board_max_continuous.label',
+                'help' => 'manage.operations_config.field.board_max_continuous.help',
+                'attr' => ['min' => 1],
+            ])
+            ->add('boardMaxSequentialMin', IntegerType::class, [
+                'label' => 'manage.operations_config.field.board_max_sequential.label',
+                'help' => 'manage.operations_config.field.board_max_sequential.help',
+                'attr' => ['min' => 1],
+            ])
+            ->add('boardUnattendedMin', IntegerType::class, [
+                'label' => 'manage.operations_config.field.board_unattended.label',
+                'help' => 'manage.operations_config.field.board_unattended.help',
+                'attr' => ['min' => 0],
+            ])
+            ->add('boardOverworkWarnFraction', NumberType::class, [
+                'label' => 'manage.operations_config.field.board_overwork_fraction.label',
+                'help' => 'manage.operations_config.field.board_overwork_fraction.help',
+                'scale' => 2,
+            ])
+            ->add('boardCardBands', TextType::class, [
+                'label' => 'manage.operations_config.field.board_card_bands.label',
+                'help' => 'manage.operations_config.field.board_card_bands.help',
+                'required' => true,
+                'empty_data' => '',
+            ])
+            ->add('boardWorkloadBands', TextType::class, [
+                'label' => 'manage.operations_config.field.board_workload_bands.label',
+                'help' => 'manage.operations_config.field.board_workload_bands.help',
+                'required' => true,
+                'empty_data' => '',
+            ])
+            ->add('boardComingWindowMin', IntegerType::class, ['label' => 'manage.operations_config.field.board_coming_window.label'] + $seconds)
+            ->add('boardOffDutyWindowMin', IntegerType::class, ['label' => 'manage.operations_config.field.board_off_duty_window.label'] + $seconds)
+            ->add('boardForecastHorizonHours', IntegerType::class, ['label' => 'manage.operations_config.field.board_forecast_horizon.label'] + $seconds)
+            ->add('boardForecastStepHours', IntegerType::class, ['label' => 'manage.operations_config.field.board_forecast_step.label'] + $seconds)
+            ->add('boardActiveStaffTopN', IntegerType::class, ['label' => 'manage.operations_config.field.board_active_top_n.label'] + $seconds)
+            ->add('boardPageSizeStaff', IntegerType::class, ['label' => 'manage.operations_config.field.board_page_size_staff.label'] + $seconds)
+            ->add('boardPageSizeShifts', IntegerType::class, ['label' => 'manage.operations_config.field.board_page_size_shifts.label'] + $seconds);
     }
 
     public function configureOptions(OptionsResolver $resolver): void

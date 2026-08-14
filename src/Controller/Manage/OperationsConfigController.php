@@ -48,6 +48,20 @@ final class OperationsConfigController extends AbstractController
             $this->store->set(EventConfigStore::KEY_HOURS_NIGHT_END, $data->nightEndHour);
             $this->store->set(EventConfigStore::KEY_HOURS_NIGHT_MULTIPLIER, $data->nightMultiplier);
             $this->store->set(EventConfigStore::KEY_HOURS_NOSHOW_MULTIPLIER, $data->noShowMultiplier);
+            $this->store->set(EventConfigStore::KEY_BOARD_PRE_START_WARN_MIN, $data->boardPreStartWarnMin);
+            $this->store->set(EventConfigStore::KEY_BOARD_MAX_CONTINUOUS_MIN, $data->boardMaxContinuousMin);
+            $this->store->set(EventConfigStore::KEY_BOARD_MAX_SEQUENTIAL_MIN, $data->boardMaxSequentialMin);
+            $this->store->set(EventConfigStore::KEY_BOARD_UNATTENDED_MIN, $data->boardUnattendedMin);
+            $this->store->set(EventConfigStore::KEY_BOARD_OVERWORK_WARN_FRACTION, $data->boardOverworkWarnFraction);
+            $this->store->set(EventConfigStore::KEY_BOARD_CARD_BANDS, $data->boardCardBands);
+            $this->store->set(EventConfigStore::KEY_BOARD_WORKLOAD_BANDS, $data->boardWorkloadBands);
+            $this->store->set(EventConfigStore::KEY_BOARD_COMING_WINDOW_MIN, $data->boardComingWindowMin);
+            $this->store->set(EventConfigStore::KEY_BOARD_OFF_DUTY_WINDOW_MIN, $data->boardOffDutyWindowMin);
+            $this->store->set(EventConfigStore::KEY_BOARD_FORECAST_HORIZON_HOURS, $data->boardForecastHorizonHours);
+            $this->store->set(EventConfigStore::KEY_BOARD_FORECAST_STEP_HOURS, $data->boardForecastStepHours);
+            $this->store->set(EventConfigStore::KEY_BOARD_ACTIVE_STAFF_TOP_N, $data->boardActiveStaffTopN);
+            $this->store->set(EventConfigStore::KEY_BOARD_PAGE_SIZE_STAFF, $data->boardPageSizeStaff);
+            $this->store->set(EventConfigStore::KEY_BOARD_PAGE_SIZE_SHIFTS, $data->boardPageSizeShifts);
             $this->store->flush();
 
             $this->addFlash('success', new TranslatableMessage('manage.operations_config.flash.saved'));
@@ -83,6 +97,20 @@ final class OperationsConfigController extends AbstractController
         $data->nightEndHour = $store->getInt(EventConfigStore::KEY_HOURS_NIGHT_END, EventConfigStore::DEFAULT_HOURS_NIGHT_END);
         $data->nightMultiplier = $store->getFloat(EventConfigStore::KEY_HOURS_NIGHT_MULTIPLIER, EventConfigStore::DEFAULT_HOURS_NIGHT_MULTIPLIER);
         $data->noShowMultiplier = $store->getFloat(EventConfigStore::KEY_HOURS_NOSHOW_MULTIPLIER, EventConfigStore::DEFAULT_HOURS_NOSHOW_MULTIPLIER);
+        $data->boardPreStartWarnMin = $store->getInt(EventConfigStore::KEY_BOARD_PRE_START_WARN_MIN, EventConfigStore::DEFAULT_BOARD_PRE_START_WARN_MIN);
+        $data->boardMaxContinuousMin = $store->getInt(EventConfigStore::KEY_BOARD_MAX_CONTINUOUS_MIN, EventConfigStore::DEFAULT_BOARD_MAX_CONTINUOUS_MIN);
+        $data->boardMaxSequentialMin = $store->getInt(EventConfigStore::KEY_BOARD_MAX_SEQUENTIAL_MIN, EventConfigStore::DEFAULT_BOARD_MAX_SEQUENTIAL_MIN);
+        $data->boardUnattendedMin = $store->getInt(EventConfigStore::KEY_BOARD_UNATTENDED_MIN, EventConfigStore::DEFAULT_BOARD_UNATTENDED_MIN);
+        $data->boardOverworkWarnFraction = $store->getFloat(EventConfigStore::KEY_BOARD_OVERWORK_WARN_FRACTION, EventConfigStore::DEFAULT_BOARD_OVERWORK_WARN_FRACTION);
+        $data->boardCardBands = $store->getString(EventConfigStore::KEY_BOARD_CARD_BANDS, EventConfigStore::DEFAULT_BOARD_CARD_BANDS);
+        $data->boardWorkloadBands = $store->getString(EventConfigStore::KEY_BOARD_WORKLOAD_BANDS, EventConfigStore::DEFAULT_BOARD_WORKLOAD_BANDS);
+        $data->boardComingWindowMin = $store->getInt(EventConfigStore::KEY_BOARD_COMING_WINDOW_MIN, EventConfigStore::DEFAULT_BOARD_COMING_WINDOW_MIN);
+        $data->boardOffDutyWindowMin = $store->getInt(EventConfigStore::KEY_BOARD_OFF_DUTY_WINDOW_MIN, EventConfigStore::DEFAULT_BOARD_OFF_DUTY_WINDOW_MIN);
+        $data->boardForecastHorizonHours = $store->getInt(EventConfigStore::KEY_BOARD_FORECAST_HORIZON_HOURS, EventConfigStore::DEFAULT_BOARD_FORECAST_HORIZON_HOURS);
+        $data->boardForecastStepHours = $store->getInt(EventConfigStore::KEY_BOARD_FORECAST_STEP_HOURS, EventConfigStore::DEFAULT_BOARD_FORECAST_STEP_HOURS);
+        $data->boardActiveStaffTopN = $store->getInt(EventConfigStore::KEY_BOARD_ACTIVE_STAFF_TOP_N, EventConfigStore::DEFAULT_BOARD_ACTIVE_STAFF_TOP_N);
+        $data->boardPageSizeStaff = $store->getInt(EventConfigStore::KEY_BOARD_PAGE_SIZE_STAFF, EventConfigStore::DEFAULT_BOARD_PAGE_SIZE_STAFF);
+        $data->boardPageSizeShifts = $store->getInt(EventConfigStore::KEY_BOARD_PAGE_SIZE_SHIFTS, EventConfigStore::DEFAULT_BOARD_PAGE_SIZE_SHIFTS);
 
         return $data;
     }

@@ -1,0 +1,112 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * Compares two screenshot sets captured by tests/Browser/VisualBaselineTest.php and reports which
+ * pages moved.
+ *
+ * Exists because the operations board compiles its own Tailwind stylesheet: if that reset ever
+ * escaped its entry point it would shift type and spacing on every other page at once, and every
+ * functional test in the suite would still pass. This turns "the application is unaffected" into
+ * something checked rather than asserted.
+ *
+ *     BOARD_VISUAL=before php bin/phpunit --testsuite Browser --filter VisualBaselineTest
+ *     …make the change…
+ *     BOARD_VISUAL=after  php bin/phpunit --testsuite Browser --filter VisualBaselineTest
+ *     php bin/visual-compare
+ *
+ * Any difference on a main-application page is a blocker, not a note. Exits non-zero if it finds one.
+ */
+
+$root = \dirname(__DIR__);
+$before = $argv[1] ?? $root.'/var/visual/before';
+$after = $argv[2] ?? $root.'/var/visual/after';
+
+foreach ([$before, $after] as $directory) {
+    if (!is_dir($directory)) {
+        fwrite(STDERR, "Missing screenshot set: $directory\n");
+        fwrite(STDERR, "Capture one with: BOARD_VISUAL=before php bin/phpunit --testsuite Browser --filter VisualBaselineTest\n");
+        exit(2);
+    }
+}
+
+/** Fraction of pixels that differ, or null when the images cannot be compared at all. */
+function difference(string $a, string $b): ?float
+{
+    $left = @imagecreatefrompng($a);
+    $right = @imagecreatefrompng($b);
+    if ($left === false || $right === false) {
+        return null;
+    }
+
+    $width = imagesx($left);
+    $height = imagesy($left);
+    if ($width !== imagesx($right) || $height !== imagesy($right)) {
+        return 1.0; // a size change is already a layout change
+    }
+
+    // Sampled on a grid rather than per pixel: a full 1600x1200 comparison in PHP takes long enough
+    // that nobody runs it, and a reset leaking through moves far more than one pixel in 16.
+    $differing = 0;
+    $sampled = 0;
+    for ($y = 0; $y < $height; $y += 4) {
+        for ($x = 0; $x < $width; $x += 4) {
+            ++$sampled;
+            if (imagecolorat($left, $x, $y) !== imagecolorat($right, $x, $y)) {
+                ++$differing;
+            }
+        }
+    }
+
+    imagedestroy($left);
+    imagedestroy($right);
+
+    return $sampled > 0 ? $differing / $sampled : 0.0;
+}
+
+$changed = [];
+$compared = 0;
+
+foreach (glob($before.'/*.png') ?: [] as $path) {
+    $name = basename($path);
+    $counterpart = $after.'/'.$name;
+
+    if (!is_file($counterpart)) {
+        printf("  MISSING  %-20s not captured in the second run\n", $name);
+        $changed[] = $name;
+        continue;
+    }
+
+    ++$compared;
+    $delta = difference($path, $counterpart);
+
+    if ($delta === null) {
+        printf("  UNREADABLE %-18s could not be decoded\n", $name);
+        $changed[] = $name;
+        continue;
+    }
+
+    if ($delta > 0.0) {
+        printf("  CHANGED  %-20s %.2f%% of sampled pixels differ\n", $name, $delta * 100);
+        $changed[] = $name;
+        continue;
+    }
+
+    printf("  same     %-20s\n", $name);
+}
+
+echo "\n";
+
+if ($compared === 0) {
+    fwrite(STDERR, "Nothing compared - are both screenshot sets populated?\n");
+    exit(2);
+}
+
+if ($changed !== []) {
+    fwrite(STDERR, sprintf("%d of %d pages changed: %s\n", \count($changed), $compared, implode(', ', $changed)));
+    fwrite(STDERR, "The board's frontend must not affect these pages. Investigate before continuing.\n");
+    exit(1);
+}
+
+printf("All %d pages are pixel-identical.\n", $compared);
+exit(0);

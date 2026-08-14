@@ -1,0 +1,8 @@
+{#- One band's range, in words. Open-ended on either side when the band has no bound there. -#}
+{%- if band.from is null -%}
+  {{- 'board.band.under'|trans({'%hours%': band.to|round}) -}}
+{%- elseif band.to is null -%}
+  {{- 'board.band.over'|trans({'%hours%': band.from|round}) -}}
+{%- else -%}
+  {{- 'board.band.between'|trans({'%from%': band.from|round, '%to%': band.to|round}) -}}
+{%- endif -%}

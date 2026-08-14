@@ -1,0 +1,263 @@
+{#
+  Overview. Every panel clips its own overflow and pages or truncates in place - the board is a wall
+  display and must never grow a scrollbar. Each status colour is paired with an icon or a word, so
+  nothing here depends on being able to tell the accents apart.
+#}
+{% set cap = settings.hoursCap %}
+{% set cardBands = settings.cardBands %}
+
+{#
+  Each tile carries its own numbers rather than being resolved by position in the loop: `loop` is not
+  propagated into a component's block, so a tile that reads `loop.index0` renders an error instead of
+  a number.
+#}
+{% set tiles = [
+  {key: 'active', label: 'board.kpi.active_staff', hint: 'board.kpi.active_staff.hint', accent: 'bg-emerald-500',
+   value: board.activeCount, of: board.plannedCount},
+  {key: 'open', label: 'board.kpi.open_positions', hint: 'board.kpi.open_positions.hint', accent: 'bg-amber-500',
+   value: board.openPositions, of: null},
+  {key: 'shifts', label: 'board.kpi.active_shifts', hint: 'board.kpi.active_shifts.hint', accent: 'bg-sky-500',
+   value: board.activeShiftCount, of: board.totalShiftCount},
+  {key: 'next', label: 'board.kpi.next_shift', accent: 'bg-violet-500',
+   hint: board.nextShift ? board.nextShift.shift.startsAt|app_time ~ ' · ' ~ board.nextShift.shift.title : 'board.kpi.next_shift.none'|trans},
+  {key: 'attention', label: 'board.kpi.attention', hint: 'board.kpi.attention.hint', accent: 'bg-red-500',
+   value: board.attentionCount, of: null}
+] %}
+
+<div data-board-kpis class="grid shrink-0 grid-cols-5 gap-4 content-center">
+  {% for tile in tiles %}
+    <twig:Card size="sm" class="relative overflow-hidden">
+      <span class="absolute inset-y-0 left-0 w-[3px]"></span>
+        <twig:Card:Header>
+            <twig:Card:Title>{{ tile.label|trans }}</twig:Card:Title>
+        </twig:Card:Header>
+      <twig:Card:Content class="flex flex-col gap-1">
+          <div class="flex items-center gap-3 ">
+            <span class="text-3xl leading-none font-bold">
+                {%- if tile.key == 'next' -%}
+                    {%- if board.nextShift -%}
+                        <time datetime="{{ board.nextShift.shift.startsAt|date('c') }}"
+                              data-controller="relative-time" data-relative-time-mode-value="countdown">{{ board.nextShift.shift.startsAt|app_time }}</time>
+                    {%- else -%}-{%- endif -%}
+                {%- else -%}
+                    {{- tile.value -}}
+                    {%- if tile.of is not null %}<em class="text-lg font-medium not-italic"> / {{ tile.of }}</em>{% endif -%}
+                {%- endif -%}
+            </span>
+
+{#            <span class="space-y-1 text-2xl text-center">{{ tile.label|trans }}</span>#}
+        </div>
+
+          <twig:Card:Description>{{ tile.hint|trans }}</twig:Card:Description>
+      </twig:Card:Content>
+    </twig:Card>
+  {% endfor %}
+</div>
+
+<div class="grid min-h-0 grid-cols-[1.55fr_1fr] gap-4" style="flex: 1.35">
+  <twig:Card size="sm" class="min-h-0">
+    <twig:Card:Header class="border-b">
+      <twig:Card:Title>{{ 'board.active.title'|trans }}</twig:Card:Title>
+      <twig:Card:Action class="text-xs text-muted-foreground">
+        {{ 'board.active.meta'|trans({'%count%': board.activeCount, '%shown%': settings.activeStaffTopN}) }}
+      </twig:Card:Action>
+    </twig:Card:Header>
+    <twig:Card:Content class="min-h-0 flex-1 overflow-hidden">
+      {% if board.activeStaff is empty %}
+        {{ include('board/_empty.html.twig', {message: 'board.active.empty'|trans}) }}
+      {% else %}
+        <div data-board-active-grid class="grid h-full auto-rows-fr grid-cols-4 gap-3">
+          {% for volunteer in board.activeStaff|slice(0, settings.activeStaffTopN) %}
+            {{ include('board/_volunteer_card.html.twig', {volunteer: volunteer, bands: cardBands, cap: cap}) }}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </twig:Card:Content>
+    <twig:Card:Footer class="justify-between gap-3 border-t pt-3 text-xs text-muted-foreground">
+      <span class="truncate">{{ include('board/_band_key.html.twig', {bands: cardBands}) }}</span>
+      {% if board.activeStaff|length > settings.activeStaffTopN %}
+        <a class="shrink-0 text-primary hover:underline"
+           href="{{ path('app_board_active_staff', {department: department.uuid, date: dayParam}) }}"
+           data-turbo-frame="board-modal">{{ 'board.active.show_all'|trans({'%count%': board.activeStaff|length}) }}</a>
+      {% endif %}
+    </twig:Card:Footer>
+  </twig:Card>
+
+  <twig:Card size="sm" class="min-h-0">
+    <twig:Card:Header class="border-b">
+      <twig:Card:Title>{{ 'board.attention.title'|trans }}</twig:Card:Title>
+      <twig:Card:Action class="text-xs text-muted-foreground">
+        {{ 'board.attention.meta'|trans({'%count%': board.attentionCount}) }}
+      </twig:Card:Action>
+    </twig:Card:Header>
+    <twig:Card:Content class="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden">
+      {% if board.attention is empty %}
+        {{ include('board/_empty.html.twig', {message: 'board.attention.empty'|trans}) }}
+      {% else %}
+        {% for item in board.attention|slice(0, 3) %}
+          {{ include('board/_attention_item.html.twig', {item: item}) }}
+        {% endfor %}
+      {% endif %}
+    </twig:Card:Content>
+    <twig:Card:Footer class="justify-between gap-3 border-t pt-3 text-xs text-muted-foreground">
+      <span class="truncate">{{ 'board.attention.foot'|trans }}</span>
+      {% if board.attentionCount > 3 %}
+        <a class="shrink-0 text-primary hover:underline"
+           href="{{ path('app_board_attention', {department: department.uuid, date: dayParam}) }}"
+           data-turbo-frame="board-modal">{{ 'board.attention.review_all'|trans }}</a>
+      {% endif %}
+    </twig:Card:Footer>
+  </twig:Card>
+</div>
+
+<div class="grid min-h-0 flex-1 grid-cols-[1fr_1fr_1fr_1.05fr] gap-4">
+  <twig:Card size="sm" class="min-h-0">
+    <twig:Card:Header class="border-b">
+      <twig:Card:Title>{{ 'board.open_shifts.title'|trans }}</twig:Card:Title>
+      <twig:Card:Action class="text-xs text-muted-foreground">{{ 'board.open_shifts.meta'|trans({'%count%': board.openShifts|length}) }}</twig:Card:Action>
+    </twig:Card:Header>
+    <twig:Card:Content class="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+      {% if board.openShifts is empty %}
+        {{ include('board/_empty.html.twig', {message: 'board.open_shifts.empty'|trans}) }}
+      {% else %}
+        {% for row in board.openShifts|slice(0, 4) %}
+          <div class="flex items-center gap-3 rounded-md border bg-secondary/40 px-3 py-2 {{ row.isRunning ? 'border-destructive/50 shadow-[inset_3px_0_0] shadow-destructive' : 'border-border' }}">
+            <div class="min-w-0 flex-1">
+              <div class="truncate font-medium">{{ row.shift.title }}</div>
+              <div class="truncate text-xs text-muted-foreground">
+                {% if row.isRunning %}
+                  {{ 'board.open_shifts.running_now'|trans }}
+                {% else %}
+                  {{ row.shift.startsAt|app_time }} ·
+                  <time datetime="{{ row.shift.startsAt|date('c') }}"
+                        data-controller="relative-time" data-relative-time-mode-value="countdown">{{ row.startsInMinutes(board.now) }}</time>
+                {% endif %}
+              </div>
+            </div>
+            <twig:Badge variant="{{ row.isRunning ? 'destructive' : 'outline' }}">
+              {{ 'board.open_shifts.missing'|trans({'%count%': row.shortfall}) }}
+            </twig:Badge>
+          </div>
+        {% endfor %}
+      {% endif %}
+    </twig:Card:Content>
+    <twig:Card:Footer class="justify-between gap-3 border-t pt-3 text-xs text-muted-foreground">
+      <span class="truncate">{{ 'board.open_shifts.foot'|trans({'%count%': board.openShifts|length}) }}</span>
+      <a class="shrink-0 text-primary hover:underline"
+         href="{{ path('app_board_show', {department: department.uuid, date: dayParam, view: 'shifts'}) }}">{{ 'board.open_shifts.all'|trans }}</a>
+    </twig:Card:Footer>
+  </twig:Card>
+
+  {% for panel in [
+    {title: 'board.coming.title', meta: 'board.coming.meta', empty: 'board.coming.empty', foot: 'board.coming.foot', rows: board.comingNext, mode: 'countdown', window: settings.comingWindowMinutes},
+    {title: 'board.off_duty.title', meta: 'board.off_duty.meta', empty: 'board.off_duty.empty', foot: 'board.off_duty.foot', rows: board.recentlyOff, mode: 'ago', window: settings.offDutyWindowMinutes}
+  ] %}
+    <twig:Card size="sm" class="min-h-0">
+      <twig:Card:Header class="border-b">
+        <twig:Card:Title>{{ panel.title|trans }}</twig:Card:Title>
+        <twig:Card:Action class="text-xs text-muted-foreground">{{ panel.meta|trans({'%minutes%': panel.window}) }}</twig:Card:Action>
+      </twig:Card:Header>
+      <twig:Card:Content class="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
+        {% if panel.rows is empty %}
+          {{ include('board/_empty.html.twig', {message: panel.empty|trans}) }}
+        {% else %}
+          {% for entry in panel.rows|slice(0, 5) %}
+            <div class="flex items-center gap-3">
+              <div class="min-w-0 flex-1">
+                <div class="truncate font-medium">{{ entry.user.name }}</div>
+                <div class="truncate text-xs text-muted-foreground">{{ entry.role ?? (entry.shift ? entry.shift.title : '') }}</div>
+              </div>
+              <time class="shrink-0 text-xs" datetime="{{ entry.at|date('c') }}"
+                    data-controller="relative-time" data-relative-time-mode-value="{{ panel.mode }}">{{ entry.at|app_time }}</time>
+            </div>
+          {% endfor %}
+        {% endif %}
+      </twig:Card:Content>
+      <twig:Card:Footer class="border-t pt-3 text-xs text-muted-foreground">
+        {{ panel.foot|trans({'%count%': panel.rows|length}) }}
+      </twig:Card:Footer>
+    </twig:Card>
+  {% endfor %}
+
+  <twig:Card size="sm" class="min-h-0">
+    <twig:Card:Header class="border-b">
+      <twig:Card:Title>{{ 'board.workload.title'|trans }}</twig:Card:Title>
+      <twig:Card:Action class="text-xs text-muted-foreground">{{ 'board.workload.meta'|trans({'%cap%': cap}) }}</twig:Card:Action>
+    </twig:Card:Header>
+    <twig:Card:Content class="flex min-h-0 flex-1 flex-col justify-center gap-3 overflow-hidden">
+      {% if board.workload.total == 0 %}
+        {{ include('board/_empty.html.twig', {message: 'board.workload.empty'|trans}) }}
+      {% else %}
+        {#
+          Part-to-whole as one stacked bar: the bands are ordinal, so they read as a single length cut
+          into pieces rather than as separate quantities to compare. The legend below carries each
+          band's count and share, so the colours never have to be told apart to read the panel.
+        #}
+        <div class="flex items-baseline gap-2">
+          <span class="text-2xl leading-none font-bold">{{ board.workload.total }}</span>
+          <span class="text-xs text-muted-foreground">{{ 'board.workload.people'|trans }}</span>
+        </div>
+        <div data-board-workload class="flex h-3 w-full overflow-hidden rounded-full bg-secondary">
+          {% for band in board.workload.bands|filter(band => band.count > 0) %}
+            <div class="h-full" style="width: {{ (band.share * 100)|round(2) }}%; background: {{ band.colour }}"></div>
+          {% endfor %}
+        </div>
+        <div class="flex flex-col gap-1.5 text-xs">
+          {% for band in board.workload.bands %}
+            <div class="flex items-center gap-2">
+              <span class="size-2.5 shrink-0 rounded-sm" style="background: {{ band.colour }}"></span>
+              <span class="truncate">{{ include('board/_band_label.html.twig', {band: band}) }}</span>
+              <span class="ml-auto tabular-nums">{{ band.count }}</span>
+              <span class="w-9 text-right tabular-nums text-muted-foreground">{{ band.percent }}%</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </twig:Card:Content>
+  </twig:Card>
+</div>
+
+<twig:Card size="sm" data-board-forecast class="shrink-0">
+  <twig:Card:Header class="border-b">
+    <twig:Card:Title>{{ 'board.forecast.title'|trans }}</twig:Card:Title>
+    <twig:Card:Action class="text-xs text-muted-foreground">{{ 'board.forecast.meta'|trans }}</twig:Card:Action>
+  </twig:Card:Header>
+  <twig:Card:Content class="overflow-x-auto">
+    {% set heat = {
+      0: 'bg-emerald-500/20 text-emerald-300',
+      1: 'bg-amber-500/20 text-amber-200',
+      2: 'bg-orange-500/20 text-orange-200',
+      3: 'bg-red-500/25 text-red-200'
+    } %}
+    <table class="w-full border-collapse text-center tabular-nums">
+      <thead>
+        <tr>
+          <th class="w-32 py-1.5 pr-3 text-left font-semibold text-muted-foreground">{{ 'board.forecast.time'|trans }}</th>
+          {% for bucket in board.forecast.buckets %}
+            <th class="border-b border-border px-2 py-1.5 font-semibold {{ bucket.isNow ? 'text-foreground' : 'text-muted-foreground' }}">
+              {{ bucket.isNow ? 'board.forecast.now'|trans : '+' ~ loop.index0 }} {{ bucket.startsAt|app_time }}
+            </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in [{label: 'board.forecast.needed', key: 'needed'}, {label: 'board.forecast.planned', key: 'planned'}] %}
+          <tr>
+            <th class="py-1.5 pr-3 text-left font-semibold">{{ row.label|trans }}</th>
+            {% for bucket in board.forecast.buckets %}
+              <td class="px-2 py-1.5 {{ bucket.isNow ? 'text-foreground' : '' }}">{{ attribute(bucket, row.key) }}</td>
+            {% endfor %}
+          </tr>
+        {% endfor %}
+        <tr>
+          <th class="py-1.5 pr-3 text-left font-semibold">{{ 'board.forecast.difference'|trans }}</th>
+          {% for bucket in board.forecast.buckets %}
+            <td class="rounded-sm px-2 py-1.5 font-bold {{ heat[bucket.heat] }}">
+              {{ bucket.difference > 0 ? '+' : '' }}{{ bucket.difference }}
+            </td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </twig:Card:Content>
+</twig:Card>

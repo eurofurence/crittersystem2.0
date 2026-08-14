@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Department;
 use App\Entity\DutyRecord;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -29,6 +30,35 @@ class DutyRecordRepository extends ServiceEntityRepository
             ->leftJoin('d.department', 'dep')->addSelect('dep')
             ->join('d.user', 'u')->addSelect('u')
             ->andWhere('d.endedAt IS NULL')
+            ->orderBy('d.startedAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Duty sessions in one department that were open at any point in [$from, $to), with the user
+     * joined. An open session counts whenever it started before $to, since it has not ended yet.
+     *
+     * @return DutyRecord[] oldest first
+     */
+    public function findForDepartmentOverlapping(Department $department, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('d')
+            ->leftJoin('d.department', 'dep')->addSelect('dep')
+            ->join('d.user', 'u')->addSelect('u')
+            // Doctrine fetches every mappedBy one-to-one on User eagerly, so a hydrated user costs
+            // five further queries without these.
+            ->leftJoin('u.personalData', 'pd')->addSelect('pd')
+            ->leftJoin('u.contact', 'c')->addSelect('c')
+            ->leftJoin('u.settings', 'st')->addSelect('st')
+            ->leftJoin('u.state', 'us')->addSelect('us')
+            ->leftJoin('u.consent', 'cons')->addSelect('cons')
+            ->andWhere('d.department = :department')
+            ->andWhere('d.startedAt < :to')
+            ->andWhere('d.endedAt IS NULL OR d.endedAt > :from')
+            ->setParameter('department', $department)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
             ->orderBy('d.startedAt', 'ASC')
             ->getQuery()
             ->getResult();

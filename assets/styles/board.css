@@ -1,0 +1,166 @@
+/*
+ * Live operations board - the Tailwind entry point, and the only one in this application.
+ *
+ * `config/packages/symfonycasts_tailwind.yaml` names this file as Tailwind's input, and
+ * `templates/board/_layout.html.twig` is the only place in the repository that links it. Nothing
+ * else is compiled and nothing else loads the result, so the rest of the application never receives
+ * Tailwind's reset or its utilities.
+ *
+ * `source(none)` is the other half of that: automatic scanning is off and the directories below are
+ * the only ones Tailwind reads, so a class used anywhere else cannot even generate a rule.
+ * tests/Integration/BoardIsolationTest.php fails if either half is removed.
+ *
+ * The board never scrolls. Panels clip their own overflow and paginate; anything that could grow
+ * must be given a bounded height by its container, not left to push the page taller. That is why
+ * the type and spacing scales below are retuned rather than taken from shadcn's defaults, which are
+ * built for a document rather than for a wall display read from across a room.
+ *
+ * Colour is never the only signal: every state that carries an accent also carries an icon or a
+ * text label.
+ */
+
+@import 'tailwindcss' source(none);
+@import '../vendor/tw-animate-css/dist/tw-animate.css';
+@import '../vendor/shadcn/dist/tailwind.css';
+
+@source '../../templates/board';
+@source '../../templates/components/board';
+
+/*
+ * shadcn's dark palette, applied unconditionally. The board is a shared screen with no viewer to
+ * hold a preference, so there is no light variant and no `.dark` toggle to get wrong.
+ */
+:root {
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.269 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.371 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --radius: 0.625rem;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+
+}
+
+/*
+ * Density. shadcn is drawn for a document; this is a board that must fit 1920x1080 without a
+ * scrollbar and stay legible at 1366x768. Retuning the scales keeps every kit component
+ * proportionate instead of overriding padding component by component at each call site.
+ *
+ * Deliberately NOT in the `@theme inline` block above: `inline` bakes the value into each utility,
+ * and these have to stay live variables so the media query at the bottom of this file can step the
+ * whole board down at the smaller resolution by re-declaring them.
+ */
+@theme {
+    --spacing: 0.2rem;
+    --text-xs: 0.65rem;
+    --text-sm: 0.72rem;
+    --text-base: 0.8rem;
+    --text-lg: 0.95rem;
+    --text-xl: 1.1rem;
+    --text-2xl: 1.4rem;
+    --text-3xl: 1.75rem;
+}
+
+@layer base {
+    /*
+     * The shared icon macro emits `class="icon"` on every SVG and Tabler used to size it. Tabler is
+     * no longer on this page, so without this every board icon collapses or renders at its
+     * intrinsic size.
+     */
+    .icon {
+        width: 1.25em;
+        height: 1.25em;
+        vertical-align: middle;
+    }
+
+    /* Referenced by the kit's Card:Title and heading components. */
+    .cn-font-heading {
+        font-family: inherit;
+        letter-spacing: -0.01em;
+    }
+}
+
+/* ---------- Panels ---------- */
+
+/* ---------- KPI row ---------- */
+
+/* ---------- Overview grid ---------- */
+
+/* ---------- Active staff cards ---------- */
+
+/* ---------- Attention ---------- */
+
+/* ---------- Lists ---------- */
+
+/* ---------- Workload distribution ---------- */
+
+/* ---------- Forecast ---------- */
+
+/* ---------- Staff view ---------- */
+
+/* ---------- Shifts view ---------- */
+
+/* ---------- Modals ----------
+   Rendered outside the live region on purpose: a signal replaces the view's markup, and a modal
+   inside it would be torn out from under whoever opened it. */
+
+/* ---------- No access ---------- */
+
+/*
+ * 1366x768 floor. The board targets 1920x1080; at the floor everything steps down so the same panel
+ * set still fits rather than reflowing into a scrollbar.
+ *
+ * Done by re-declaring the scale variables rather than by overriding component padding: every kit
+ * component and every utility is expressed in these units, so one block moves the whole board and
+ * nothing can be missed. Adding a panel needs no extra rule here.
+ */
+@media (max-height: 900px), (max-width: 1600px) {
+    :root {
+        --spacing: 0.17rem;
+        --text-xs: 0.6rem;
+        --text-sm: 0.66rem;
+        --text-base: 0.72rem;
+        --text-lg: 0.85rem;
+        --text-xl: 1rem;
+        --text-2xl: 1.2rem;
+        --text-3xl: 1.5rem;
+    }
+}

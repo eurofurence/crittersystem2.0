@@ -14,6 +14,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Translation\TranslatableMessage;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Global Call for Help and the Bounty Board. Managers/Info
@@ -47,26 +48,47 @@ final class CallController extends AbstractController
             return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
         }
 
-        // Cast, not getInt(): the slots box carries a value but is not required, so clearing it posts
-        // an empty string. getInt() rejects that as malformed instead of falling back to the 1 this
-        // line already intends. See docs/tasks/input-bag-empty-value-audit.md.
         $slots = max(1, (int) $request->request->get('slots', 1));
         $this->calls->trigger($shift, $me, $slots);
         $this->addFlash('success', new TranslatableMessage('call.flash.sent'));
 
-        return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
+        return $this->returnTo($request, $shift);
     }
 
     #[Route('/calls/{id}/cancel', name: 'app_call_cancel', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('call:cancel')]
     public function cancel(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] HelpCall $call): Response
     {
-        if ($this->isCsrfTokenValid('call_cancel'.$call->getId(), (string) $request->request->get('_token'))) {
+        if ($this->isCsrfTokenValid('call_cancel'.$call->getUuid(), (string) $request->request->get('_token'))) {
             $this->calls->cancel($call);
             $this->addFlash('success', new TranslatableMessage('call.flash.cancelled'));
         }
 
-        return $this->redirectToRoute('app_shift_staffing', ['id' => $call->getShift()->getUuid()]);
+        return $this->returnTo($request, $call->getShift());
+    }
+
+    /**
+     * Back where the caller came from. The operations board triggers calls too, and sending a wall
+     * display to the staffing screen would strand it on a page nobody is watching.
+     *
+     * The target is not a URL and not a route name: only the board is reachable, and only by naming
+     * a department and a date that the board's own action re-checks before rendering anything. That
+     * keeps this from becoming an open redirect, and keeps the authorization where it already lives.
+     */
+    private function returnTo(Request $request, Shift $shift): Response
+    {
+        $department = (string) $request->request->get('board_department', '');
+        $date = (string) $request->request->get('board_date', '');
+
+        if (Uuid::isValid($department) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1) {
+            return $this->redirectToRoute('app_board_show', [
+                'department' => $department,
+                'date' => $date,
+                'view' => 'shifts',
+            ]);
+        }
+
+        return $this->redirectToRoute('app_shift_staffing', ['id' => $shift->getUuid()]);
     }
 
     #[Route('/bounty', name: 'app_bounty_board', methods: ['GET'])]

@@ -1,0 +1,30 @@
+{#
+  One attention item. The severity carries an icon and an accent bar together, so the ranking is
+  legible without being able to tell the accents apart.
+
+  The icon macro is imported inside the component's block rather than at the top of this file: a
+  component renders in its own context, so an alias imported out here is not visible in there.
+#}
+{% set tone = {
+  'critical': 'border-l-red-500 text-red-400',
+  'serious':  'border-l-orange-500 text-orange-400',
+  'warning':  'border-l-amber-500 text-amber-400',
+  'good':     'border-l-emerald-500 text-emerald-400'
+} %}
+
+<twig:Alert class="border-l-3 bg-secondary/40 {{ tone[item.severity.value] }}">
+  {% import 'components/icon/_macros.twig' as icons %}
+  <span class="mt-0.5 shrink-0">{{ icons.icon(item.severity.icon) }}</span>
+  <twig:Alert:Title class="text-foreground">
+    {% if item.link %}
+      <a href="{{ path(item.link.route, item.link.params) }}" target="_top" class="hover:underline">{{ item.title|trans }}</a>
+    {% else %}
+      {{ item.title|trans }}
+    {% endif %}
+  </twig:Alert:Title>
+  <twig:Alert:Description class="text-muted-foreground">
+    {{ item.detail|trans }} ·
+    <time datetime="{{ item.since|date('c') }}"
+          data-controller="relative-time" data-relative-time-mode-value="since">{{ item.since|app_time }}</time>
+  </twig:Alert:Description>
+</twig:Alert>

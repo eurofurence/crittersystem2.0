@@ -41,6 +41,13 @@ upload_sbom.sh
 /node_modules/
 ###< js test tooling ###
 
+###> introduction slide deck ###
+# Built locally from a demo instance by bin/demo-screenshots.php and bin/build-slides.php. The
+# screenshots and the self-contained bundle come to ~11 MB, and the bundle is rewritten whole on
+# every run, so a repository that tracked them would grow by that much per rebuild.
+/docs/slides/
+###< introduction slide deck ###
+
 ###> browser test drivers ###
 # Chrome for Testing + chromedriver, fetched per machine (see docs/testing.md). ~200 MB, platform
 # specific, never committed.
@@ -48,3 +55,5 @@ upload_sbom.sh
 ###< browser test drivers ###
 
 .idea/
+.idea/*
+/.idea/

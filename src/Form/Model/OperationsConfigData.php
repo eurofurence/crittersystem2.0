@@ -60,4 +60,50 @@ final class OperationsConfigData
 
     #[Assert\Positive]
     public int $sessionIdleMinutes = 60;
+
+    #[Assert\PositiveOrZero]
+    public int $boardPreStartWarnMin = 15;
+
+    #[Assert\Positive]
+    public int $boardMaxContinuousMin = 360;
+
+    #[Assert\Positive]
+    public int $boardMaxSequentialMin = 360;
+
+    #[Assert\PositiveOrZero]
+    public int $boardUnattendedMin = 10;
+
+    #[Assert\Range(min: 0, max: 1)]
+    public float $boardOverworkWarnFraction = 0.90;
+
+    /** Ascending hour boundaries, comma separated. */
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^\s*\d+(?:\.\d+)?\s*(?:,\s*\d+(?:\.\d+)?\s*)*$/', message: 'manage.operations_config.field.board_bands.invalid')]
+    public string $boardCardBands = '15,20,25';
+
+    /** Ascending hour boundaries, comma separated. */
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^\s*\d+(?:\.\d+)?\s*(?:,\s*\d+(?:\.\d+)?\s*)*$/', message: 'manage.operations_config.field.board_bands.invalid')]
+    public string $boardWorkloadBands = '10,20,30';
+
+    #[Assert\Positive]
+    public int $boardComingWindowMin = 60;
+
+    #[Assert\Positive]
+    public int $boardOffDutyWindowMin = 60;
+
+    #[Assert\Positive]
+    public int $boardForecastHorizonHours = 5;
+
+    #[Assert\Positive]
+    public int $boardForecastStepHours = 1;
+
+    #[Assert\Positive]
+    public int $boardActiveStaffTopN = 8;
+
+    #[Assert\Positive]
+    public int $boardPageSizeStaff = 15;
+
+    #[Assert\Positive]
+    public int $boardPageSizeShifts = 12;
 }

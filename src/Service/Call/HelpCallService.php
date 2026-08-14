@@ -37,7 +37,6 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final class HelpCallService
 {
-    private const DEFAULT_MANAGER_LEAD = 5;
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -67,9 +66,9 @@ final class HelpCallService
         if ($isInfoDesk) {
             return true; // Info Desk may trigger at any time
         }
-        $lead = $this->config->getInt(EventConfigStore::KEY_CALL_MANAGER_LEAD, self::DEFAULT_MANAGER_LEAD);
+        $lead = $this->config->getInt(EventConfigStore::KEY_CALL_MANAGER_LEAD, EventConfigStore::DEFAULT_CALL_MANAGER_LEAD);
 
-        return $now >= $shift->getStartsAt()->modify(\sprintf('-%d minutes', $lead));
+        return $now >= $shift->getStartsAt()->modify(\sprintf('-%d seconds', $lead));
     }
 
     public function trigger(Shift $shift, ?User $caller, int $slots): HelpCall
@@ -81,12 +80,12 @@ final class HelpCallService
         $call = new HelpCall($shift, $caller, $slots);
         $this->em->persist($call);
         $this->em->flush();
-        // A call nobody has seen yet has no previous eligible set; signalling the current one is
-        // what puts it on their board.
         $this->live->signal(array_map(
             static fn (User $user) => Topics::userCalls($user),
             $this->eligibleUsersFor($call),
         ));
+
+        $this->shiftSignal->staffingChanged($shift);
 
         $this->audit->log(AuditEvents::CALL, AuditEvents::CREATE, [
             'resourceType' => 'help_call', 'resourceId' => (string) $call->getId(),
@@ -112,7 +111,6 @@ final class HelpCallService
         if ($this->status->effectiveStatus($user) !== OperationalStatusService::FREE_TO_HELP) {
             return false;
         }
-        // Not already occupied by an overlapping confirmed assignment.
         if ($this->availability->planningState($user, $shift->getStartsAt(), $shift->getEndsAt(), $shift)['occupied']) {
             return false;
         }
@@ -134,7 +132,6 @@ final class HelpCallService
         $this->em->persist(new HelpCallResponse($call, $user, HelpResponseType::REFUSE));
         $this->em->flush();
 
-        // Only this user's board changes: refusing takes the call off theirs and nobody else's.
         $this->live->signal(Topics::userCalls($user));
 
         $this->audit->log(AuditEvents::CALL, AuditEvents::REFUSE, [
@@ -151,9 +148,6 @@ final class HelpCallService
      */
     public function accept(HelpCall $call, User $user): ShiftEntry
     {
-        // Taken before the lock: accepting removes this user from the eligible set and may fill the
-        // call for everyone else, so a set computed only afterwards would miss exactly the people
-        // whose board changed. Racing here costs at most a superfluous signal, never a wrong one.
         $before = $this->eligibleUsersFor($call);
 
         $entry = $this->concurrency->transactional(function () use ($call, $user): ShiftEntry {
@@ -187,8 +181,6 @@ final class HelpCallService
         }
         $this->live->signal(array_values($topics));
 
-        // Answering a call creates an assignment, so the staffing screens and the accepter's own
-        // status widget have to follow, exactly as for any other assignment.
         $this->shiftSignal->staffingChanged($call->getShift(), $user);
 
         return $entry;
@@ -200,6 +192,7 @@ final class HelpCallService
             $call->setStatus(HelpCallStatus::CANCELLED);
             $this->em->flush();
         });
+        $this->shiftSignal->staffingChanged($call->getShift());
         $this->audit->log(AuditEvents::CALL, AuditEvents::CANCEL, [
             'resourceType' => 'help_call', 'resourceId' => (string) $call->getId(),
         ]);

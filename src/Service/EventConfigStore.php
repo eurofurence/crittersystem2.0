@@ -92,6 +92,28 @@ class EventConfigStore implements ResetInterface
     public const KEY_HOURS_NOSHOW_MULTIPLIER = 'hours.noshow_multiplier';
 
     /*
+     * Thresholds and window sizes for the live operations board. Read them through
+     * {@see \App\Service\Board\BoardSettings}, never directly, so the defaults live in one place.
+     * They are event-wide rather than per department: the board reports on a single event, and a
+     * threshold that means different things in two departments makes the attention list unreadable
+     * for anyone who watches both.
+     */
+    public const KEY_BOARD_PRE_START_WARN_MIN = 'board.pre_start_warn_min';
+    public const KEY_BOARD_MAX_CONTINUOUS_MIN = 'board.max_continuous_min';
+    public const KEY_BOARD_MAX_SEQUENTIAL_MIN = 'board.max_sequential_min';
+    public const KEY_BOARD_UNATTENDED_MIN = 'board.unattended_min';
+    public const KEY_BOARD_OVERWORK_WARN_FRACTION = 'board.overwork_warn_fraction';
+    public const KEY_BOARD_CARD_BANDS = 'board.card_bands';
+    public const KEY_BOARD_WORKLOAD_BANDS = 'board.workload_bands';
+    public const KEY_BOARD_COMING_WINDOW_MIN = 'board.coming_window_min';
+    public const KEY_BOARD_OFF_DUTY_WINDOW_MIN = 'board.off_duty_window_min';
+    public const KEY_BOARD_FORECAST_HORIZON_HOURS = 'board.forecast_horizon_hours';
+    public const KEY_BOARD_FORECAST_STEP_HOURS = 'board.forecast_step_hours';
+    public const KEY_BOARD_ACTIVE_STAFF_TOP_N = 'board.active_staff_top_n';
+    public const KEY_BOARD_PAGE_SIZE_STAFF = 'board.page_size_staff';
+    public const KEY_BOARD_PAGE_SIZE_SHIFTS = 'board.page_size_shifts';
+
+    /*
      * Where a volunteer has to go to be checked in, in each language the UI is offered in. It names
      * a physical desk at a particular venue, so it cannot live in the translation catalogs - it
      * changes per event, and only the organisers know it.
@@ -123,6 +145,21 @@ class EventConfigStore implements ResetInterface
     public const DEFAULT_SESSION_IDLE_MINUTES = 60;      // Minutes without a request
     public const DEFAULT_CHECKIN_MESSAGE_EN = 'Please go the info-desk for the Critter Check-in';
     public const DEFAULT_CHECKIN_MESSAGE_DE = 'Bitte gehe zum Info-Desk für den Critter Check-in';
+
+    public const DEFAULT_BOARD_PRE_START_WARN_MIN = 15;        // minutes before start a gap is urgent
+    public const DEFAULT_BOARD_MAX_CONTINUOUS_MIN = 360;       // minutes present without a gap
+    public const DEFAULT_BOARD_MAX_SEQUENTIAL_MIN = 360;       // minutes of back-to-back assigned shifts
+    public const DEFAULT_BOARD_UNATTENDED_MIN = 10;            // minutes after start with nobody present
+    public const DEFAULT_BOARD_OVERWORK_WARN_FRACTION = 0.90;  // fraction of hours.recommended_max
+    public const DEFAULT_BOARD_CARD_BANDS = '15,20,25';        // hour boundaries, ascending
+    public const DEFAULT_BOARD_WORKLOAD_BANDS = '10,20,30';    // hour boundaries, ascending
+    public const DEFAULT_BOARD_COMING_WINDOW_MIN = 60;         // minutes
+    public const DEFAULT_BOARD_OFF_DUTY_WINDOW_MIN = 60;       // minutes
+    public const DEFAULT_BOARD_FORECAST_HORIZON_HOURS = 5;
+    public const DEFAULT_BOARD_FORECAST_STEP_HOURS = 1;
+    public const DEFAULT_BOARD_ACTIVE_STAFF_TOP_N = 8;
+    public const DEFAULT_BOARD_PAGE_SIZE_STAFF = 15;
+    public const DEFAULT_BOARD_PAGE_SIZE_SHIFTS = 12;
 
     /**
      * Values already read, so a screen that asks the same question on every row asks the database

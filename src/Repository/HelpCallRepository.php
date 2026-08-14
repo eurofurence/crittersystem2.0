@@ -33,4 +33,36 @@ class HelpCallRepository extends ServiceEntityRepository
     {
         return $this->findOneBy(['shift' => $shift, 'status' => HelpCallStatus::OPEN->value]);
     }
+
+    /**
+     * Open calls for a whole list of shifts at once, keyed by shift id. At most one call is open per
+     * shift, which {@see \App\Service\Call\HelpCallService::trigger()} guarantees.
+     *
+     * @param Shift[] $shifts
+     *
+     * @return array<int, HelpCall>
+     */
+    public function findActiveForShifts(array $shifts): array
+    {
+        $shifts = array_values(array_filter($shifts, static fn (Shift $s): bool => $s->getId() !== null));
+        if ($shifts === []) {
+            return [];
+        }
+
+        /** @var HelpCall[] $calls */
+        $calls = $this->createQueryBuilder('c')
+            ->andWhere('c.shift IN (:shifts)')
+            ->andWhere('c.status = :open')
+            ->setParameter('shifts', $shifts)
+            ->setParameter('open', HelpCallStatus::OPEN->value)
+            ->getQuery()
+            ->getResult();
+
+        $byShift = [];
+        foreach ($calls as $call) {
+            $byShift[$call->getShift()->getId()] = $call;
+        }
+
+        return $byShift;
+    }
 }

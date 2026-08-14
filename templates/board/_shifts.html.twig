@@ -1,0 +1,113 @@
+{#
+  The day's shifts. Status is always a word as well as a colour, and the fill indicator prints the
+  numbers beside it, so the row reads without distinguishing the accents.
+#}
+{% set statusTone = {
+  'unassigned':   'bg-red-500/20 text-red-200',
+  'understaffed': 'bg-amber-500/20 text-amber-200',
+  'active':       'bg-emerald-500/20 text-emerald-200',
+  'upcoming':     'bg-sky-500/20 text-sky-200',
+  'done':         'bg-secondary text-muted-foreground'
+} %}
+
+<twig:Card size="sm" class="min-h-0 flex-1">
+  <twig:Card:Header class="border-b">
+    <twig:Card:Title>{{ 'board.shifts.title'|trans }}</twig:Card:Title>
+    <twig:Card:Action class="text-xs text-muted-foreground">
+      {{ 'board.shifts.meta'|trans({'%total%': page.total, '%active%': board.activeShiftCount}) }}
+    </twig:Card:Action>
+  </twig:Card:Header>
+
+  <twig:Card:Content class="min-h-0 flex-1 overflow-hidden px-0">
+    {% if page.items is empty %}
+      {{ include('board/_empty.html.twig', {message: 'board.shifts.empty'|trans}) }}
+    {% else %}
+      <div data-board-shifts-table>
+        <twig:Table>
+          <twig:Table:Header>
+            <twig:Table:Row>
+              <twig:Table:Head class="w-32">{{ 'board.column.time'|trans }}</twig:Table:Head>
+              <twig:Table:Head>{{ 'board.column.shift'|trans }}</twig:Table:Head>
+              <twig:Table:Head class="w-44">{{ 'board.column.filled'|trans }}</twig:Table:Head>
+              <twig:Table:Head class="w-32">{{ 'common.label.status'|trans }}</twig:Table:Head>
+              <twig:Table:Head>{{ 'common.label.description'|trans }}</twig:Table:Head>
+              <twig:Table:Head class="w-44 text-right">{{ 'common.label.actions'|trans }}</twig:Table:Head>
+            </twig:Table:Row>
+          </twig:Table:Header>
+          <twig:Table:Body>
+            {% for row in page.items %}
+              {% set uuid = row.shift.uuid ~ '' %}
+              <twig:Table:Row>
+                <twig:Table:Cell class="font-semibold tabular-nums">
+                  {{ row.shift.startsAt|app_time }}-{{ row.shift.endsAt|app_time }}
+                </twig:Table:Cell>
+
+                <twig:Table:Cell>
+                  {{ row.shift.title }}
+                  {% if row.shift.location %}
+                    <div class="truncate text-xs text-muted-foreground">{{ row.shift.location.fullName }}</div>
+                  {% endif %}
+                </twig:Table:Cell>
+
+                <twig:Table:Cell class="tabular-nums">
+                  {{ row.assigned }} / {{ row.needed }}
+                  {# Capped: a shift asking for fifty would otherwise push the column off the board. #}
+                  {% if row.needed > 0 and row.needed <= 12 %}
+                    <span class="ml-2 inline-flex gap-1 align-middle" aria-hidden="true">
+                      {% for slot in 1..row.needed %}
+                        <i class="size-2 rounded-xs {{ slot <= row.assigned ? 'bg-emerald-500' : 'bg-red-500' }}"></i>
+                      {% endfor %}
+                    </span>
+                  {% endif %}
+                </twig:Table:Cell>
+
+                <twig:Table:Cell>
+                  <span class="rounded-full px-2.5 py-1 text-xs whitespace-nowrap {{ statusTone[row.status.value] }}">
+                    {{ ('board.shift_status.' ~ row.status.value)|trans }}
+                  </span>
+                </twig:Table:Cell>
+
+                <twig:Table:Cell class="max-w-72">
+                  <div class="truncate text-xs text-muted-foreground">{{ row.shift.description|striptags|slice(0, 90) }}</div>
+                </twig:Table:Cell>
+
+                <twig:Table:Cell class="text-right">
+                  {% if row.helpCall %}
+                    <span data-board-call-state class="text-xs whitespace-nowrap text-amber-400">
+                      {{ 'board.call.flagged'|trans({'%time%': row.helpCall.createdAt|app_time}) }}
+                    </span>
+                    {% if is_granted('call:cancel') %}
+                      {{ include('board/_call_form.html.twig', {
+                        action: path('app_call_cancel', {id: row.helpCall.uuid}),
+                        token: csrf_token('call_cancel' ~ row.helpCall.uuid),
+                        label: 'board.call.cancel'|trans,
+                        confirm: 'board.call.confirm_cancel'|trans,
+                        variant: 'outline',
+                        slots: null
+                      }) }}
+                    {% endif %}
+                  {% elseif callable[uuid] ?? false %}
+                    {{ include('board/_call_form.html.twig', {
+                      action: path('app_call_trigger'),
+                      token: csrf_token('call_trigger'),
+                      label: 'board.call.trigger'|trans,
+                      confirm: 'board.call.confirm'|trans({'%shift%': row.shift.title}),
+                      variant: 'destructive',
+                      shift: uuid,
+                      slots: row.shortfall
+                    }) }}
+                  {% endif %}
+                </twig:Table:Cell>
+              </twig:Table:Row>
+            {% endfor %}
+          </twig:Table:Body>
+        </twig:Table>
+      </div>
+    {% endif %}
+  </twig:Card:Content>
+
+  <twig:Card:Footer class="justify-between gap-3 border-t pt-3 text-xs text-muted-foreground">
+    <span class="truncate">{{ 'board.shifts.foot'|trans }}</span>
+    {{ include('board/_pager.html.twig') }}
+  </twig:Card:Footer>
+</twig:Card>

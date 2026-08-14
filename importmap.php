@@ -24,6 +24,7 @@
  */
 return [
     'app' => ['path' => './assets/app.js', 'entrypoint' => true],
+    'board' => ['path' => './assets/board.js', 'entrypoint' => true],
     '@hotwired/stimulus' => ['version' => '3.2.2'],
     '@symfony/stimulus-bundle' => ['path' => './vendor/symfony/stimulus-bundle/assets/dist/loader.js'],
     'bootstrap' => ['version' => '5.3.8'],
@@ -39,4 +40,6 @@ return [
     '@sentry/replay-canvas' => ['version' => '10.67.0'],
     '@sentry/core' => ['version' => '10.67.0'],
     '@hotwired/turbo' => ['version' => '8.0.23'],
+    'shadcn/dist/tailwind.css' => ['version' => '4.18.0', 'type' => 'css'],
+    'tw-animate-css/dist/tw-animate.css' => ['version' => '1.4.0', 'type' => 'css'],
 ];

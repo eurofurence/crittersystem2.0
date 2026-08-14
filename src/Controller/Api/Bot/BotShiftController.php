@@ -5,7 +5,6 @@ namespace App\Controller\Api\Bot;
 use App\Api\Bot\BotShiftNormalizer;
 use App\Entity\Shift;
 use App\Entity\VolunteerType;
-use App\Enum\ShiftState;
 use App\Exception\CapacityConflictException;
 use App\Repository\ShiftEntryRepository;
 use App\Repository\ShiftRepository;
@@ -60,25 +59,19 @@ final class BotShiftController extends AbstractController
         $this->access->denyUnlessGranted($actor, 'shift:view');
 
         $qb = $this->shifts->createQueryBuilder('s')
-            ->andWhere('s.state = :published')
-            ->setParameter('published', ShiftState::PUBLISHED)
             ->orderBy('s.startsAt', 'ASC');
 
+        $this->visibility->applyVisibilityFor($qb, $actor, $this->visibility->memberDepartmentIds($actor));
+
         if ($request->query->get('date') !== null) {
-            $day = new \DateTimeImmutable((string) $request->query->get('date'));
+            $day = $this->parseDate((string) $request->query->get('date'));
             $qb->andWhere('s.startsAt >= :from')->andWhere('s.startsAt < :to')
                 ->setParameter('from', $day->setTime(0, 0))
                 ->setParameter('to', $day->setTime(0, 0)->modify('+1 day'));
         } else {
-            // Default to what a volunteer can still sign up for. Without this the
-            // bot would page through every shift the event ever ran, and each row
-            // costs its own availability queries.
             $qb->andWhere('s.endsAt >= :now')->setParameter('now', new \DateTimeImmutable());
         }
 
-        // Filter in SQL, not in the caller: these must narrow the whole result set
-        // before the cap below, or a filtered query could never reach a shift the
-        // cap excluded.
         foreach (['department_id' => 'department', 'location_id' => 'location', 'shift_task_id' => 'shiftTask'] as $param => $association) {
             $uuid = $request->query->get($param);
             if ($uuid === null || $uuid === '') {
@@ -93,8 +86,6 @@ final class BotShiftController extends AbstractController
                 ->setParameter($association, (string) $uuid);
         }
 
-        // Hard cap: the response is built per shift, so an unbounded list is both a
-        // query storm and a Telegram message the bot cannot render anyway.
         $limit = min(max($request->query->getInt('limit', self::DEFAULT_LIMIT), 1), self::MAX_LIMIT);
         $qb->setMaxResults($limit);
 
@@ -103,15 +94,8 @@ final class BotShiftController extends AbstractController
         $openOnly = $request->query->getBoolean('open_only');
         $suitable = $request->query->getBoolean('suitable_for_me');
 
-        // Audience, not just publication state: staff-only and invite-only shifts must never reach
-        // a volunteer through the bot.
-        $visible = array_values(array_filter(
-            $shifts,
-            fn (Shift $shift): bool => $this->visibility->isVisibleTo($shift, $actor),
-        ));
+        $visible = $this->visibility->filterVisible($shifts, $actor);
 
-        // Each row asks the same questions about staffing, membership and the volunteer's own
-        // bookings, which is a handful of queries per shift without this.
         $this->eligibility->warmUp($actor, $visible);
         try {
             $out = [];
@@ -173,9 +157,6 @@ final class BotShiftController extends AbstractController
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
-            // No options at all means sign-up is refused, not that a type is
-            // missing - report the actual reason rather than asking the volunteer
-            // to choose from an empty list.
             return $this->json([
                 'error' => 'signup_refused',
                 'message' => $this->refusalReason($actor, $shift),
@@ -187,9 +168,6 @@ final class BotShiftController extends AbstractController
             return $this->json(['error' => 'signup_refused', 'message' => $error], Response::HTTP_CONFLICT);
         }
 
-        // Applying to a grouped shift commits the volunteer to every member of it. The bot has to
-        // have shown them that first, which is what confirm_group asserts - otherwise somebody taps
-        // "apply" on a one-hour rehearsal and is booked for a six-hour show as well.
         $plan = $this->signup->plan($actor, $shift, $type);
         if ($plan->isGrouped() && !($payload['confirm_group'] ?? false)) {
             return $this->json([
@@ -214,9 +192,6 @@ final class BotShiftController extends AbstractController
             return $this->json(['error' => 'signup_refused', 'message' => $e->getMessage()], Response::HTTP_CONFLICT);
         }
 
-        // The entry for the shift that was asked about stays at the top level, exactly as before, so
-        // no existing bot flow changes shape. group_entries is additive and lists everything created,
-        // which is what the caller needs to tell the volunteer what they are now on.
         $requested = null;
         foreach ($entries as $created) {
             if ($created->getShift() === $shift) {
@@ -248,9 +223,6 @@ final class BotShiftController extends AbstractController
             return $this->json(['error' => 'cancel_refused', 'message' => $error], Response::HTTP_CONFLICT);
         }
 
-        // A grouped commitment is dropped whole. Cancelling a single shift keeps answering 204 with no
-        // body, as it always has; only the grouped case, which no existing caller can reach, carries
-        // the list of shifts that went so the bot can tell the volunteer.
         $removed = $this->groupSignup->cancelGroup($entry);
 
         if (\count($removed) <= 1) {
@@ -260,6 +232,19 @@ final class BotShiftController extends AbstractController
         return $this->json([
             'cancelled' => array_map(static fn ($held): string => (string) $held->getShift()->getUuid(), $removed),
         ]);
+    }
+
+    /**
+     * A malformed value is a caller bug worth surfacing on this surface, the same as a malformed
+     * filter uuid: without this the date parser throws and the bot sees a 500 it cannot act on.
+     */
+    private function parseDate(string $value): \DateTimeImmutable
+    {
+        try {
+            return new \DateTimeImmutable($value);
+        } catch (\DateMalformedStringException) {
+            throw new BadRequestHttpException('Malformed date.');
+        }
     }
 
     /**

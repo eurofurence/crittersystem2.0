@@ -65,8 +65,14 @@ RUN printf '%s' "${APP_VERSION}" > VERSION
 # Finalize the autoloader and compile front-end assets (AssetMapper). A throwaway
 # APP_SECRET keeps the prod kernel bootable at build time; the real secret is
 # injected at runtime. Asset compilation does not touch the database.
+#
+# tailwind:build compiles the operations board's stylesheet and MUST run before asset-map:compile,
+# which is what versions the result into public/assets - reverse the order and the board ships the
+# uncompiled Tailwind source, which no browser can render. It downloads a pinned standalone binary
+# (no Node), so this step needs network access to the release host at build time.
 RUN composer dump-autoload --classmap-authoritative --no-dev \
  && APP_SECRET=build-time-placeholder php bin/console importmap:install \
+ && APP_SECRET=build-time-placeholder php bin/console tailwind:build --minify \
  && APP_SECRET=build-time-placeholder php bin/console asset-map:compile \
  && mkdir -p var \
  && chown -R www-data:www-data var public/assets \

@@ -1,0 +1,19 @@
+{% extends 'board/_layout.html.twig' %}
+
+{% block title %}{{ 'board.page.title'|trans }}{% endblock %}
+
+{% block board %}
+  <div data-board-message class="grid h-screen place-items-center p-8 text-center">
+    <twig:Empty>
+      <twig:Empty:Header>
+        <twig:Empty:Title>{{ 'board.no_access.title'|trans }}</twig:Empty:Title>
+        <twig:Empty:Description>{{ 'board.no_access.message'|trans }}</twig:Empty:Description>
+      </twig:Empty:Header>
+      <twig:Empty:Content>
+        <twig:Button as="a" variant="outline" href="{{ path('app_manage_shifts') }}">
+          {{ 'board.rail.leave'|trans }}
+        </twig:Button>
+      </twig:Empty:Content>
+    </twig:Empty>
+  </div>
+{% endblock %}

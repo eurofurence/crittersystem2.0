@@ -1,0 +1,35 @@
+{#
+  The board's pager. Ordinary links rather than a Turbo Frame on purpose: the live region re-fetches
+  the URL it was rendered with, and paging inside a frame would leave that URL pointing at the page
+  the viewer has already left - so the next update would silently put them back on page one.
+#}
+{% if page.pages > 1 %}
+  {% set base = {department: department.uuid, date: dayParam, view: view} %}
+  <div class="flex shrink-0 items-center gap-3">
+    <span class="tabular-nums">{{ 'board.pager.position'|trans({'%page%': page.page, '%pages%': page.pages}) }}</span>
+    <twig:Pagination>
+      <twig:Pagination:Content>
+        <twig:Pagination:Item>
+          {% if page.page > 1 %}
+            <twig:Pagination:Previous href="{{ path('app_board_show', base|merge({page: page.page - 1})) }}"
+                                      aria-label="{{ 'board.pager.previous'|trans }}" />
+          {% else %}
+            <span class="pointer-events-none opacity-40">
+              <twig:Pagination:Previous href="#" aria-hidden="true" tabindex="-1" />
+            </span>
+          {% endif %}
+        </twig:Pagination:Item>
+        <twig:Pagination:Item>
+          {% if page.page < page.pages %}
+            <twig:Pagination:Next href="{{ path('app_board_show', base|merge({page: page.page + 1})) }}"
+                                  aria-label="{{ 'board.pager.next'|trans }}" />
+          {% else %}
+            <span class="pointer-events-none opacity-40">
+              <twig:Pagination:Next href="#" aria-hidden="true" tabindex="-1" />
+            </span>
+          {% endif %}
+        </twig:Pagination:Item>
+      </twig:Pagination:Content>
+    </twig:Pagination>
+  </div>
+{% endif %}

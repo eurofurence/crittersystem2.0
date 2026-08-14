@@ -209,6 +209,84 @@ class ShiftEntryRepository extends ServiceEntityRepository
     }
 
     /**
+     * Every entry on the given shifts, with the user and volunteer type joined.
+     *
+     * The board reads the assignee, the role and the check-in state of each row, so hydrating them
+     * lazily would cost two queries per assignment on a day with a hundred of them.
+     *
+     * @param Shift[] $shifts
+     *
+     * @return array<int, list<ShiftEntry>> shift id => entries
+     */
+    public function findForShifts(array $shifts): array
+    {
+        $shifts = array_values(array_filter($shifts, static fn (Shift $s): bool => $s->getId() !== null));
+        if ($shifts === []) {
+            return [];
+        }
+
+        /** @var ShiftEntry[] $entries */
+        $entries = $this->createQueryBuilder('e')
+            ->join('e.user', 'u')->addSelect('u')
+            ->join('e.volunteerType', 't')->addSelect('t')
+            // Every mappedBy one-to-one on User is fetched eagerly by Doctrine, so hydrating a user
+            // without these costs five further queries each - 600 of them on a day with 120
+            // assignments.
+            ->leftJoin('u.personalData', 'pd')->addSelect('pd')
+            ->leftJoin('u.contact', 'c')->addSelect('c')
+            ->leftJoin('u.settings', 'st')->addSelect('st')
+            ->leftJoin('u.state', 'us')->addSelect('us')
+            ->leftJoin('u.consent', 'cons')->addSelect('cons')
+            ->andWhere('e.shift IN (:shifts)')
+            ->setParameter('shifts', $shifts)
+            ->orderBy('e.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $byShift = [];
+        foreach ($entries as $entry) {
+            $byShift[$entry->getShift()->getId()][] = $entry;
+        }
+
+        return $byShift;
+    }
+
+    /**
+     * Every entry belonging to any of the given users, with the shift joined, keyed by user id.
+     *
+     * Feeds the credited-hours totals for a whole page of volunteers at once: computing them one
+     * user at a time means a query each, which on a full staff list is the difference between one
+     * query and fifty.
+     *
+     * @param User[] $users
+     *
+     * @return array<int, list<ShiftEntry>> user id => entries
+     */
+    public function findByUsers(array $users): array
+    {
+        $users = array_values(array_filter($users, static fn (User $u): bool => $u->getId() !== null));
+        if ($users === []) {
+            return [];
+        }
+
+        /** @var ShiftEntry[] $entries */
+        $entries = $this->createQueryBuilder('e')
+            ->join('e.shift', 's')->addSelect('s')
+            ->andWhere('e.user IN (:users)')
+            ->setParameter('users', $users)
+            ->orderBy('s.startsAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $byUser = [];
+        foreach ($entries as $entry) {
+            $byUser[$entry->getUser()->getId()][] = $entry;
+        }
+
+        return $byUser;
+    }
+
+    /**
      * The user's own entries on the given shifts, keyed by shift id.
      *
      * @param Shift[] $shifts

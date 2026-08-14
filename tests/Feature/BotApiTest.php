@@ -316,6 +316,107 @@ final class BotApiTest extends DatabaseWebTestCase
         self::assertSame(404, $this->client->getResponse()->getStatusCode());
     }
 
+    /**
+     * The cap must apply to shifts this volunteer may actually see. Filtering after it spends the
+     * cap on staff-only shifts that are then discarded, and with no cursor on this endpoint the
+     * volunteer's own shifts behind them cannot be reached by any second request.
+     */
+    public function testTheCapDoesNotSpendItselfOnShiftsTheVolunteerMayNotSee(): void
+    {
+        $early = $this->scenario->shift('Staff A', 'tomorrow 08:00');
+        $early->setAudience(\App\Enum\ShiftAudience::ALL_STAFF);
+        $alsoEarly = $this->scenario->shift('Staff B', 'tomorrow 09:00');
+        $alsoEarly->setAudience(\App\Enum\ShiftAudience::ALL_STAFF);
+        $this->scenario->shift('Public Gate', 'tomorrow 10:00');
+        $this->em->flush();
+
+        $this->request('GET', '/api/bot/shifts?limit=2', $this->scenario->user());
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(['Public Gate'], array_column($this->json()['shifts'], 'title'));
+    }
+
+    public function testAnInviteOnlyShiftIsListedForTheVolunteerHoldingTheEntry(): void
+    {
+        $shift = $this->scenario->shift('Briefing');
+        $shift->setAudience(\App\Enum\ShiftAudience::INVITE_ONLY);
+        $invited = $this->scenario->user(['shift:view', 'shift:self'], $this->scenario->type);
+        $this->scenario->signUp($invited, $shift);
+        $this->em->flush();
+
+        $this->request('GET', '/api/bot/shifts', $invited);
+        self::assertSame(['Briefing'], array_column($this->json()['shifts'], 'title'));
+
+        $this->request('GET', '/api/bot/shifts', $this->scenario->user());
+        self::assertSame([], $this->json()['shifts'], 'an invitation is not an audience anyone else joins');
+    }
+
+    public function testAMalformedDateIsRejectedRatherThanCrashing(): void
+    {
+        $this->request('GET', '/api/bot/shifts?date=garbage', $this->scenario->user());
+
+        self::assertSame(400, $this->client->getResponse()->getStatusCode());
+    }
+
+    /**
+     * Reading another volunteer's overview is gated field by field, as the web profile is: the ban
+     * figures are what decides whether an account gets locked, and the web restricts them to holders
+     * of user:delete rather than to everyone who can open a profile.
+     */
+    public function testAnotherUsersBanFiguresAndGoodiesNeedMoreThanProfileView(): void
+    {
+        $target = $this->scenario->user();
+        $viewer = $this->scopedManager(['profile:view'], $this->scenario->department);
+
+        $this->request('GET', '/api/bot/users/'.$target->getUuid().'/overview', $viewer);
+
+        self::assertResponseIsSuccessful();
+        $body = $this->json();
+        self::assertArrayNotHasKey('no_show_count', $body);
+        self::assertArrayNotHasKey('no_show_threshold', $body);
+        self::assertArrayNotHasKey('goodies', $body);
+        self::assertArrayHasKey('total_worked_hours', $body, 'profile:view still opens the overview itself');
+    }
+
+    public function testTheBanFiguresAndGoodiesAreReturnedToWhoeverMaySeeThem(): void
+    {
+        $target = $this->scenario->user();
+        $viewer = $this->scopedManager(['profile:view', 'user:delete', 'goodie:view'], $this->scenario->department);
+
+        $this->request('GET', '/api/bot/users/'.$target->getUuid().'/overview', $viewer);
+
+        self::assertResponseIsSuccessful();
+        $body = $this->json();
+        self::assertArrayHasKey('no_show_count', $body);
+        self::assertArrayHasKey('goodies', $body);
+    }
+
+    public function testAVolunteerAlwaysSeesTheirOwnBanFiguresAndGoodies(): void
+    {
+        $user = $this->scenario->user();
+
+        $this->request('GET', '/api/bot/users/'.$user->getUuid().'/overview', $user);
+
+        self::assertResponseIsSuccessful();
+        $body = $this->json();
+        self::assertArrayHasKey('no_show_count', $body);
+        self::assertArrayHasKey('goodies', $body);
+    }
+
+    /**
+     * profile:history:view says the holder may read shift histories; it does not say they may see
+     * this particular profile. The web requires both, so this surface must too.
+     */
+    public function testShiftHistoryOfAnotherUserAlsoNeedsProfileVisibility(): void
+    {
+        $target = $this->scenario->user();
+        $viewer = $this->scopedManager(['profile:history:view'], $this->scenario->department);
+
+        $this->request('GET', '/api/bot/users/'.$target->getUuid().'/shifts', $viewer);
+
+        self::assertSame(404, $this->client->getResponse()->getStatusCode());
+    }
+
     public function testApplyAndCancelRoundTrip(): void
     {
         $shift = $this->scenario->shift('Morning Gate');

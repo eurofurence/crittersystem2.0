@@ -1,0 +1,77 @@
+{#
+  Everyone the day involves, most loaded first. Paged rather than scrolled: the board is height
+  constrained, so a page that does not fit is a page that has to be turned.
+#}
+{% set cap = settings.hoursCap %}
+{% set bands = settings.cardBands %}
+{% set tones = [
+  {dot: 'bg-emerald-500', bar: '[&>div]:bg-emerald-500'},
+  {dot: 'bg-amber-500',   bar: '[&>div]:bg-amber-500'},
+  {dot: 'bg-orange-500',  bar: '[&>div]:bg-orange-500'},
+  {dot: 'bg-red-500',     bar: '[&>div]:bg-red-500'}
+] %}
+{% set pills = {
+  'on_duty':  'bg-emerald-500/15 text-emerald-300',
+  'arriving': 'bg-sky-500/15 text-sky-300',
+  'off':      'bg-secondary text-muted-foreground'
+} %}
+
+<twig:Card size="sm" class="min-h-0 flex-1">
+  <twig:Card:Header class="border-b">
+    <twig:Card:Title>{{ 'board.staff.title'|trans }}</twig:Card:Title>
+    <twig:Card:Action class="text-xs text-muted-foreground">
+      {{ 'board.staff.meta'|trans({'%total%': page.total, '%shown%': page.items|length}) }}
+    </twig:Card:Action>
+  </twig:Card:Header>
+
+  <twig:Card:Content class="min-h-0 flex-1 overflow-hidden">
+    {% if page.items is empty %}
+      {{ include('board/_empty.html.twig', {message: 'board.staff.empty'|trans}) }}
+    {% else %}
+      <div data-board-staff-cards class="grid h-full auto-rows-fr grid-cols-5 gap-4">
+        {% for volunteer in page.items %}
+          {% set tone = tones[min(volunteer.band(bands), tones|length - 1)] %}
+          <div class="flex min-h-0 flex-col gap-3 rounded-lg border border-border bg-secondary/40 p-4">
+            <div class="flex items-center gap-3">
+              <twig:Avatar class="shrink-0">
+                <twig:Avatar:Fallback>{{ volunteer.user.name|slice(0, 2)|upper }}</twig:Avatar:Fallback>
+              </twig:Avatar>
+              <div class="min-w-0 flex-1">
+                <div class="truncate font-bold">{{ volunteer.user.name }}</div>
+                <div class="truncate text-xs text-muted-foreground">{{ volunteer.role ?? '' }}</div>
+              </div>
+              <span class="size-2 shrink-0 rounded-full {{ tone.dot }}"></span>
+            </div>
+
+            <div>
+              <div class="text-xl leading-none font-bold">
+                {{ volunteer.todayHours|number_format(1) }}<em class="text-xs font-medium text-muted-foreground not-italic"> h {{ 'board.staff.today'|trans }}</em>
+              </div>
+            </div>
+
+            <twig:Progress value="{{ (volunteer.capFraction * 100)|round }}" class="h-1.5 {{ tone.bar }}" />
+
+            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground">
+              <div>{{ 'board.column.total'|trans }}<br>
+                <b class="text-foreground">{{ 'board.card.total'|trans({'%total%': volunteer.totalHours|number_format(1), '%cap%': cap}) }}</b></div>
+              <div>{{ 'board.staff.shifts'|trans }}<br><b class="text-foreground">{{ volunteer.shiftCount }}</b></div>
+              <div>{{ 'board.staff.present_today'|trans }}<br>
+                <b class="text-foreground">{{ (volunteer.presentMinutesToday // 60) }}h {{ '%02d'|format(volunteer.presentMinutesToday % 60) }}m</b></div>
+              <div>{{ 'board.staff.next'|trans }}<br>
+                <b class="text-foreground">{{ volunteer.nextShiftAt ? volunteer.nextShiftAt|app_time : '-' }}</b></div>
+            </div>
+
+            <span class="mt-auto self-start rounded-full px-2.5 py-1 text-xs {{ pills[volunteer.status] }}">
+              {{ ('board.status.' ~ volunteer.status)|trans }}
+            </span>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </twig:Card:Content>
+
+  <twig:Card:Footer class="justify-between gap-3 border-t pt-3 text-xs text-muted-foreground">
+    <span class="truncate">{{ include('board/_band_key.html.twig', {bands: bands}) }}</span>
+    {{ include('board/_pager.html.twig') }}
+  </twig:Card:Footer>
+</twig:Card>

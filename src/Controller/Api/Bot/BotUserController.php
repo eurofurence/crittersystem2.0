@@ -11,6 +11,7 @@ use App\Security\Bot\ActingUserResolver;
 use App\Service\GoodieEligibilityService;
 use App\Service\HoursCacheService;
 use App\Service\NoShowBanService;
+use App\Service\ProfileAccessService;
 use App\Service\Notification\NotificationService;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -33,6 +34,7 @@ final class BotUserController extends AbstractController
         private readonly GoodieEligibilityService $goodies,
         private readonly NotificationService $notifications,
         private readonly BotShiftNormalizer $normalizer,
+        private readonly ProfileAccessService $profileAccess,
     ) {
     }
 
@@ -74,11 +76,21 @@ final class BotUserController extends AbstractController
         ]);
     }
 
+    /**
+     * Reading somebody else's overview is gated field by field, the same way the web profile is:
+     * `profile:view` opens the page, but the ban figures need `user:delete` and the goodie ladder
+     * needs `goodie:view`. Gating the whole response on `profile:view` alone would hand every shift
+     * manager a volunteer's no-show tally and how close they are to an automatic ban, which the web
+     * restricts to accounts that can ban in the first place.
+     *
+     * A volunteer's own overview is never narrowed.
+     */
     #[Route('/{id}/overview', name: 'app_api_bot_user_overview', methods: ['GET'])]
     public function overview(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): JsonResponse
     {
         $actor = $this->actingUser->resolve($request);
-        if ($actor->getId() !== $user->getId()) {
+        $isSelf = $actor->getId() === $user->getId();
+        if (!$isSelf) {
             $this->access->denyUnlessGranted($actor, 'profile:view');
         }
 
@@ -92,18 +104,24 @@ final class BotUserController extends AbstractController
             }
         }
 
-        return $this->json([
+        $body = [
             'user_id' => (string) $user->getUuid(),
             'total_worked_hours' => $cache->getTotalHours(),
             'completed_shifts' => $cache->getCompletedShiftsCount(),
             'upcoming_shifts' => $upcoming,
-            // The ban-relevant count (since the user's no-show baseline), not the
-            // all-time tally: this is the number that actually affects the account.
-            'no_show_count' => $this->noShowBans->noShowCount($user),
-            'no_show_threshold' => $this->noShowBans->threshold(),
             'night_shift_hours' => $cache->getNightShiftsHours(),
-            'goodies' => $this->goodieProgress($user),
-        ]);
+        ];
+
+        if ($isSelf || $this->access->isGranted($actor, 'user:delete')) {
+            $body['no_show_count'] = $this->noShowBans->noShowCount($user);
+            $body['no_show_threshold'] = $this->noShowBans->threshold();
+        }
+
+        if ($isSelf || $this->access->isGranted($actor, 'goodie:view')) {
+            $body['goodies'] = $this->goodieProgress($user);
+        }
+
+        return $this->json($body);
     }
 
     #[Route('/{id}/shifts', name: 'app_api_bot_user_shifts', methods: ['GET'])]
@@ -113,6 +131,9 @@ final class BotUserController extends AbstractController
         if ($actor->getId() === $user->getId()) {
             $this->access->denyUnlessGranted($actor, 'shift:self');
         } else {
+            if (!$this->profileAccess->canView($actor, $user)) {
+                throw $this->createNotFoundException('Unknown user.');
+            }
             $this->access->denyUnlessGranted($actor, 'profile:history:view');
         }
 

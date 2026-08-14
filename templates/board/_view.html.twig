@@ -1,0 +1,14 @@
+{#
+  The live region's contents: one view, plus the moment it next changes on its own.
+
+  `data-next-transition` is read from inside this fragment, so every refresh carries the following
+  moment and the chain continues. That is why the board needs no heartbeat: instead of re-rendering
+  every minute in case something moved, it re-renders at the instant something does - a shift
+  starting, a warning window opening, somebody crossing the continuous-presence limit, the forecast
+  rolling into the next hour.
+#}
+{% if board.nextTransitionAt %}
+  <div data-next-transition="{{ board.nextTransitionAt|date('c') }}" hidden></div>
+{% endif %}
+
+{{ include('board/_' ~ view ~ '.html.twig') }}

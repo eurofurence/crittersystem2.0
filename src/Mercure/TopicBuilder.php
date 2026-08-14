@@ -41,7 +41,7 @@ final class TopicBuilder
      * in a department means that department's planner, grid, staffing and apply rows are visible, so
      * their change signals are too.
      */
-    private const DEPARTMENT_PRIVILEGES = ['shift:manage', 'shift:assign', 'assignment:manage', 'department:manage'];
+    private const DEPARTMENT_PRIVILEGES = ['shift:manage', 'shift:assign', 'assignment:manage', 'department:manage', 'board:view'];
 
     public function __construct(
         private readonly PrivilegeScopeResolver $scopes,

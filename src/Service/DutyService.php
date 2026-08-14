@@ -5,18 +5,24 @@ namespace App\Service;
 use App\Entity\Department;
 use App\Entity\DutyRecord;
 use App\Entity\User;
+use App\Mercure\ShiftSignal;
 use App\Repository\DutyRecordRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Start/end and summarise on-duty sessions. A user may
  * hold at most one open duty at a time.
+ *
+ * Going on or off duty changes who the department's operations board shows as present, so each
+ * transition announces itself. The signal is published here rather than by the controller, so a
+ * second caller cannot forget it.
  */
 final class DutyService
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly DutyRecordRepository $duties,
+        private readonly ShiftSignal $signal,
     ) {
     }
 
@@ -39,6 +45,7 @@ final class DutyService
         $record = new DutyRecord($user, $department);
         $this->em->persist($record);
         $this->em->flush();
+        $this->signal->departmentChanged($department);
 
         return $record;
     }
@@ -52,6 +59,7 @@ final class DutyService
 
         $active->setEndedAt(new \DateTimeImmutable());
         $this->em->flush();
+        $this->signal->departmentChanged($active->getDepartment());
 
         return $active;
     }

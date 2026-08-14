@@ -1,0 +1,19 @@
+# TwigComponent exists for the live operations board and nowhere else.
+#
+# The rest of the application composes its UI from the Twig macros under `templates/components/`
+# (see docs/ui-components.md); two component architectures in one codebase is exactly what the
+# project rule warns against. The board is the deliberate exception, so its components are confined
+# to their own directory rather than mixed into the macro library that ~165 templates import from.
+#
+# `anonymous_template_directory` is the whole containment: `<twig:Card>` resolves to
+# `templates/components/board/Card.html.twig` and cannot reach the macro library at all.
+# tests/Integration/BoardIsolationTest.php fails if `<twig:` appears outside the board.
+#
+# `defaults` is mandatory config, not an invitation: there are no classes in that namespace and none
+# should appear. Every component here is an anonymous template copied in by the UX Toolkit and then
+# owned by us, so the mapping exists only to point any future class at the board's directory rather
+# than at the macro library.
+twig_component:
+    anonymous_template_directory: 'components/board'
+    defaults:
+        App\Twig\Components\: 'components/board/'

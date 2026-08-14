@@ -215,19 +215,29 @@ describe('live stream region', () => {
         expect(fetch).toHaveBeenCalledTimes(1);
     });
 
+    /*
+     * Asserted as "no further requests" rather than as a total, because reconnecting deliberately
+     * costs one re-render (see the resync case below) and because `live:state` reaches every region
+     * on the page at once - so a total would be counting how many regions exist, not whether the
+     * timer stopped.
+     */
     it('stops polling once the stream reconnects', async () => {
-        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<span>x</span>', { status: 200 })));
+        const fetchMock = vi.fn().mockResolvedValue(new Response('<span>x</span>', { status: 200 }));
+        vi.stubGlobal('fetch', fetchMock);
         await mount(region('data-live-stream-fallback-interval-value="1000"'));
 
         sources[0].fail();
         sources[0].fail();
         sources[0].fail();
         vi.advanceTimersByTime(1000);
-        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
 
         sources[0].open();
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        const afterReconnect = fetchMock.mock.calls.length;
+
         vi.advanceTimersByTime(5000);
-        expect(fetch).toHaveBeenCalledTimes(1);
+        expect(fetchMock).toHaveBeenCalledTimes(afterReconnect);
     });
 
     /* A region that leaves its topic (and handler) behind keeps a dead node alive for the page. */
@@ -245,5 +255,44 @@ describe('live stream region', () => {
         vi.advanceTimersByTime(5000);
         expect(fetch).not.toHaveBeenCalled();
         expect(sources.at(-1).closed).toBe(true);
+    });
+
+    /*
+     * A dropped connection loses every signal sent while it was down and the hub does not replay
+     * them, so a region that merely resumes listening keeps showing whatever it had when the link
+     * failed - indefinitely, on a screen nobody is touching.
+     *
+     * Driven through the `live:state` event rather than through a fake EventSource, because that
+     * event is the controller's actual contract with the shared connection - and because the
+     * connection's own failure counters are module state that would tie these cases to each other.
+     */
+    it('re-renders once when the connection comes back', async () => {
+        // A fresh Response per call: a body can only be read once, and this region is fetched more
+        // than once across the case.
+        const fetchMock = vi.fn(() => Promise.resolve(new Response('<span>fresh</span>', { status: 200 })));
+        vi.stubGlobal('fetch', fetchMock);
+        await mount(region());
+        fetchMock.mockClear();
+
+        window.dispatchEvent(new CustomEvent('live:state', { detail: { state: 'degraded' } }));
+        window.dispatchEvent(new CustomEvent('live:state', { detail: { state: 'connected' } }));
+
+        await vi.waitFor(() => expect(document.getElementById('bell').innerHTML).toContain('fresh'));
+        expect(fetchMock).toHaveBeenCalledWith('/notifications/bell', expect.anything());
+    });
+
+    it('does not re-render while the connection is simply reported healthy', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(
+            new Response('<span>fresh</span>', { status: 200 }),
+        );
+        vi.stubGlobal('fetch', fetchMock);
+        await mount(region());
+        fetchMock.mockClear();
+
+        window.dispatchEvent(new CustomEvent('live:state', { detail: { state: 'connected' } }));
+        window.dispatchEvent(new CustomEvent('live:state', { detail: { state: 'connected' } }));
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        expect(fetchMock).not.toHaveBeenCalled();
     });
 });

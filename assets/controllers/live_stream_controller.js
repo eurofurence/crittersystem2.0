@@ -37,7 +37,8 @@ export default class extends Controller {
         window.addEventListener('live:state', this.onState);
         document.addEventListener('visibilitychange', this.onVisibility);
 
-        if (isDegraded()) {
+        this.wasDegraded = isDegraded();
+        if (this.wasDegraded) {
             this.startFallback();
         }
         this.scheduleTimedRefresh();
@@ -104,11 +105,27 @@ export default class extends Controller {
         }
     }
 
+    /**
+     * A dropped connection loses every signal sent while it was down, and the hub does not replay
+     * them, so a region that merely resumes listening keeps whatever it was showing when the link
+     * failed - indefinitely, on a screen nobody is touching. Coming back therefore costs one
+     * re-render, which resynchronises the region with the server before streaming continues.
+     *
+     * Only on the transition into "connected": applying it on every event would re-render each
+     * region whenever any other one reported its state.
+     */
     applyState(state) {
         if (state === 'degraded') {
+            this.wasDegraded = true;
             this.startFallback();
-        } else {
-            this.stopFallback();
+
+            return;
+        }
+
+        this.stopFallback();
+        if (this.wasDegraded) {
+            this.wasDegraded = false;
+            this.handle(null);
         }
     }
 

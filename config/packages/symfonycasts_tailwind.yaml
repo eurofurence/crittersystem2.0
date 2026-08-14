@@ -1,0 +1,18 @@
+# Tailwind exists for the live operations board and nowhere else.
+#
+# `input_css` is the first half of that containment. The bundle compiles this one file and then
+# transparently serves the built result at the same logical path, and `templates/board/_layout.html.twig`
+# is the ONLY place in the repository that links `asset('styles/board.css')`. `assets/styles/app.css`
+# is never handed to Tailwind, so the rest of the application cannot receive its reset or its
+# utilities even by accident.
+#
+# The second half lives in the stylesheet itself: it opens with `@import 'tailwindcss' source(none)`
+# and names its own `@source` directories, so Tailwind cannot generate a rule for a class used
+# outside the board. tests/Integration/BoardIsolationTest.php asserts both halves.
+#
+# The binary version is pinned rather than floating: `tailwind:build` runs inside the production
+# image build, and an unpinned "latest" would make two builds of the same commit produce different
+# CSS.
+symfonycasts_tailwind:
+    input_css: 'assets/styles/board.css'
+    binary_version: 'v4.1.18'

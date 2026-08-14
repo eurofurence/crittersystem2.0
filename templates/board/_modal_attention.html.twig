@@ -1,0 +1,27 @@
+{# Frame id must match the host in board/index.html.twig, or Turbo drops the response. #}
+<turbo-frame id="board-modal">
+  {# See _modal_active_staff.html.twig for why `open` is set and why the kit's actions are repeated. #}
+  <twig:Dialog id="board-attention" open="true">
+    <twig:Dialog:Content
+      class="max-w-2xl sm:max-w-2xl"
+      data-action="keydown.esc->dialog#close:prevent click->dialog#closeOnClickOutside close->board-modal#clear">
+      <twig:Dialog:Header>
+        <twig:Dialog:Title>{{ 'board.attention.modal_title'|trans({'%count%': board.attentionCount}) }}</twig:Dialog:Title>
+      </twig:Dialog:Header>
+
+      <div class="flex max-h-[70vh] flex-col gap-3 overflow-y-auto">
+        {% if board.attention is empty %}
+          {{ include('board/_empty.html.twig', {message: 'board.attention.empty'|trans}) }}
+        {% else %}
+          {% for item in board.attention %}
+            {{ include('board/_attention_item.html.twig', {item: item}) }}
+          {% endfor %}
+        {% endif %}
+      </div>
+
+      <twig:Dialog:Footer class="justify-between text-xs text-muted-foreground">
+        <span>{{ 'board.attention.foot'|trans }}</span>
+      </twig:Dialog:Footer>
+    </twig:Dialog:Content>
+  </twig:Dialog>
+</turbo-frame>

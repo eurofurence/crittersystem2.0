@@ -1,0 +1,12 @@
+{#- The load-meter key: the same bands the meter and the status dot use, spelled out, so neither is
+    ever the only thing saying which band somebody is in. `bands` is the list of upper boundaries, so
+    each entry runs from the previous one. -#}
+{%- for boundary in bands -%}
+  {%- if loop.first -%}
+    {{- 'board.band.under'|trans({'%hours%': boundary|round}) -}}
+  {%- else -%}
+    {{- 'board.band.between'|trans({'%from%': bands[loop.index0 - 1]|round, '%to%': boundary|round}) -}}
+  {%- endif -%}
+  {{- ' · ' -}}
+{%- endfor -%}
+{{- 'board.band.over'|trans({'%hours%': bands|last|round}) -}}

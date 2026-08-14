@@ -15,6 +15,7 @@ use App\Security\Bot\ActingUserAccess;
 use App\Security\Bot\ActingUserResolver;
 use App\Service\Notification\NotificationService;
 use App\Service\NoShowBanService;
+use App\Service\Shift\ShiftAttendanceService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -43,6 +44,7 @@ final class BotManagerController extends AbstractController
         private readonly NoShowBanService $noShowBans,
         private readonly NotificationService $notifications,
         private readonly BotShiftNormalizer $normalizer,
+        private readonly ShiftAttendanceService $attendance,
         private readonly EntityManagerInterface $em,
     ) {
     }
@@ -109,9 +111,7 @@ final class BotManagerController extends AbstractController
     #[Route('/shifts/{id}/checkin', name: 'app_api_bot_manager_checkin', methods: ['POST'])]
     public function checkIn(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): JsonResponse
     {
-        $entry = $this->authorizeEntry($request, $shift);
-        $entry->checkIn(new \DateTimeImmutable());
-        $this->em->flush();
+        $entry = $this->attendance->checkIn($this->authorizeEntry($request, $shift));
 
         return $this->json($this->normalizer->entry($entry));
     }
@@ -124,10 +124,7 @@ final class BotManagerController extends AbstractController
             return $this->json(['error' => 'not_checked_in'], Response::HTTP_CONFLICT);
         }
 
-        $entry->checkOut(new \DateTimeImmutable());
-        $this->em->flush();
-
-        return $this->json($this->normalizer->entry($entry));
+        return $this->json($this->normalizer->entry($this->attendance->checkOut($entry)));
     }
 
     #[Route('/shifts/{id}/noshow', name: 'app_api_bot_manager_noshow', methods: ['POST'])]
@@ -136,9 +133,7 @@ final class BotManagerController extends AbstractController
         $entry = $this->authorizeEntry($request, $shift);
         $payload = $this->payload($request);
 
-        $entry->setNoshow(true);
-        $entry->setNoshowComment(($payload['comment'] ?? null) ?: null);
-        $this->em->flush();
+        $this->attendance->markNoShow($entry, ($payload['comment'] ?? null) ?: null);
 
         // Mirrors Manage\ShiftStaffingController::toggleNoshow(): reaching the
         // configured threshold locks the account. Skipping this would let no-shows

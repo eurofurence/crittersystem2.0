@@ -131,6 +131,58 @@ class ShiftRepository extends ServiceEntityRepository
     }
 
     /**
+     * Every shift (draft and published) owned by the department that is running at any point in
+     * [$from, $to), eager-loading the location and two levels of its ancestry.
+     *
+     * Overlap rather than start time, because an operations board reporting on a day has to show the
+     * night shift that began yesterday and is still running: filtering on startsAt would drop the one
+     * shift that is actually in progress when the board is opened in the morning.
+     *
+     * @return Shift[] soonest first
+     */
+    public function findForDepartmentOverlapping(Department $department, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('s')
+            ->leftJoin('s.location', 'loc')->addSelect('loc')
+            ->leftJoin('loc.parent', 'locParent')->addSelect('locParent')
+            ->leftJoin('locParent.parent', 'locGrandparent')->addSelect('locGrandparent')
+            ->leftJoin('s.shiftTask', 'task')->addSelect('task')
+            ->andWhere('s.department = :department')
+            ->andWhere('s.startsAt < :to AND s.endsAt > :from')
+            ->setParameter('department', $department)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('s.startsAt', 'ASC')
+            ->addOrderBy('s.endsAt', 'DESC')
+            ->addOrderBy('s.id', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * The earliest local calendar day on or after $from on which the department has a shift running,
+     * or null when it has none.
+     *
+     * Lets a board opened a week before the department's first shift land on that shift's day
+     * instead of on an empty screen.
+     */
+    public function firstDayWithShifts(Department $department, \DateTimeImmutable $from, \DateTimeZone $tz): ?\DateTimeImmutable
+    {
+        /** @var Shift|null $shift */
+        $shift = $this->createQueryBuilder('s')
+            ->andWhere('s.department = :department')
+            ->andWhere('s.endsAt > :from')
+            ->setParameter('department', $department)
+            ->setParameter('from', $from)
+            ->orderBy('s.startsAt', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        return $shift?->getStartsAt()->setTimezone($tz)->setTime(0, 0);
+    }
+
+    /**
      * @return Shift[] every shift (draft and published) owned by the department
      *                 that starts within [$from, $to), for the planner grid
      */
