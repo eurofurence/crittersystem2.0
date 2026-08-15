@@ -21,8 +21,6 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 #[AsMessageHandler]
 final class GenerateDataExportHandler
 {
-    private const FROM = 'noreply@critter.example';
-
     public const KEY_PREFIX = 'gdpr/';
 
     public function __construct(
@@ -53,7 +51,7 @@ final class GenerateDataExportHandler
 
             $url = $this->urlGenerator->generate('app_profile_data_download', ['uuid' => $export->getUuid()], UrlGeneratorInterface::ABSOLUTE_URL);
             $this->mailer->send(
-                (new Email())->from(self::FROM)->to($export->getUser()->getEmail())
+                (new Email())->to($export->getUser()->getEmail())
                     ->subject('Your data export is ready')
                     ->text("Your data export is ready. Download it within 24 hours:\n".$url),
             );

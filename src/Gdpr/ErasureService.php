@@ -21,8 +21,6 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
  */
 final class ErasureService
 {
-    private const FROM = 'noreply@critter.example';
-
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly BanChecker $bans,
@@ -46,7 +44,7 @@ final class ErasureService
 
         $url = $this->urlGenerator->generate('app_erase_confirm', ['token' => $request->getToken()], UrlGeneratorInterface::ABSOLUTE_URL);
         $this->mailer->send(
-            (new Email())->from(self::FROM)->to($user->getEmail())
+            (new Email())->to($user->getEmail())
                 ->subject('Confirm account deletion')
                 ->text("You requested permanent deletion of your account. This is irreversible.\n\n"
                     ."Confirm within 6 hours:\n".$url."\n\nIf you did not request this, ignore this email."),

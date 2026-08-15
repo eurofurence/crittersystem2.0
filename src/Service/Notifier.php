@@ -17,8 +17,6 @@ use Symfony\Component\Mime\Email;
  */
 final class Notifier
 {
-    private const FROM = 'noreply@critter.example';
-
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly UserRepository $users,
@@ -72,7 +70,7 @@ final class Notifier
         }
 
         $this->mailer->send(
-            (new Email())->from(self::FROM)->to($to)->subject($subject)->text($body),
+            (new Email())->to($to)->subject($subject)->text($body),
         );
     }
 }

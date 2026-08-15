@@ -62,7 +62,7 @@ final class BanAppealController extends AbstractController
     {
         foreach ($this->users->findByGroupRole('ROLE_ADMIN') as $admin) {
             $this->mailer->send(
-                (new Email())->from('noreply@critter.example')->to($admin->getEmail())
+                (new Email())->to($admin->getEmail())
                     ->subject('Ban appeal submitted')
                     ->text('A user has submitted a ban appeal. Review pending appeals in the ban management page.'),
             );

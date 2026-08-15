@@ -85,7 +85,6 @@ final class CleanupOnboardingCommand extends Command
         foreach ($admins as $admin) {
             $this->mailer->send(
                 (new Email())
-                    ->from('noreply@critter.example')
                     ->to($admin->getEmail())
                     ->subject('Stale onboarding accounts removed')
                     ->text($body),
