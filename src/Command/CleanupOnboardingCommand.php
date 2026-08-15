@@ -7,6 +7,7 @@ namespace App\Command;
 use App\Audit\AuditEvents;
 use App\Audit\AuditLogger;
 use App\Entity\User;
+use App\Repository\InviteTokenRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -19,7 +20,8 @@ use Symfony\Component\Mime\Email;
 
 /**
  * Removes invited accounts that never completed onboarding within 24 hours and
- * were never used (no login). Each removal is audited and the site admins are
+ * were never used (no login). A renewed invitation extends that lifetime until
+ * its current token expires. Each removal is audited and the site admins are
  * notified. Established accounts (any elevated role, or that have logged in) are
  * never touched. Intended to run on a schedule.
  */
@@ -33,6 +35,7 @@ final class CleanupOnboardingCommand extends Command
 
     public function __construct(
         private readonly UserRepository $users,
+        private readonly InviteTokenRepository $invites,
         private readonly EntityManagerInterface $em,
         private readonly AuditLogger $audit,
         private readonly MailerInterface $mailer,
@@ -44,11 +47,18 @@ final class CleanupOnboardingCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $cutoff = new \DateTimeImmutable('-'.self::MAX_AGE_HOURS.' hours');
+        $now = new \DateTimeImmutable();
 
         $removed = [];
         foreach ($this->users->findStaleIncompleteOnboarding($cutoff) as $user) {
             // Never remove privileged accounts, even if not onboarded.
             if ($user->getRoles() !== ['ROLE_USER']) {
+                continue;
+            }
+            // A resend deliberately gives the user a fresh full TTL even when the
+            // account itself is older than the original 24-hour cleanup cutoff.
+            $invite = $this->invites->findOneByUser($user);
+            if ($invite !== null && !$invite->isExpired($now)) {
                 continue;
             }
 
