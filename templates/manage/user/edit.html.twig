@@ -1,10 +1,55 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/icon/_macros.twig' as i %}
 
 {% block title %}{{ 'manage.user.edit.heading'|trans({'%name%': user.name}) }}{% endblock %}
 
 {% block body %}
   {{ d.page_header('manage.user.edit.heading'|trans({'%name%': user.name}), {actions: [{label: 'manage.user.action.back_to_index'|trans, href: path('app_manage_user_index'), class: 'btn btn-outline-secondary'}]}) }}
+
+  {{ d.card_start('Email', {class: 'mb-3'}) }}
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <span>{{ user.email|pii_email }}</span>
+      {% if user.ssoManaged %}
+        {{ d.badge('Managed by SSO', 'text-bg-secondary') }}
+      {% else %}
+        {{ d.badge('Manual account', 'text-bg-light') }}
+      {% endif %}
+    </div>
+
+    {% if is_granted('global:admin') and not user.ssoManaged %}
+      <form method="post" action="{{ path('app_manage_user_change_email', {id: user.uuid}) }}" class="row g-2 align-items-end mt-2"
+            data-controller="confirm"
+            data-confirm-title-value="Change account email?"
+            data-confirm-message-value="This changes the address used for notifications and email-based login. If onboarding is incomplete, the existing invitation will be invalidated and a fresh invitation sent to the new address."
+            data-confirm-confirm-label-value="Change email"
+            data-confirm-variant-value="warning">
+        <input type="hidden" name="_token" value="{{ csrf_token('change-email' ~ user.id) }}">
+        <div class="col-md-8">
+          <label class="form-label" for="admin-email-{{ user.id }}">New email address</label>
+          <input id="admin-email-{{ user.id }}" class="form-control" type="email" name="email" required autocomplete="off" placeholder="new-address@example.org">
+          <div class="form-hint">Global administrators only. A fresh 2FA verification is required before the change is accepted.</div>
+        </div>
+        <div class="col-md-auto"><button class="btn btn-outline-warning">Change email</button></div>
+      </form>
+    {% elseif user.ssoManaged %}
+      <div class="form-hint mt-2">This address is authoritative at the identity provider and is refreshed from SSO at sign-in.</div>
+    {% endif %}
+
+    {% if is_granted('user:create') and not user.ssoManaged and not user.onboardingCompleted %}
+      <form method="post" action="{{ path('app_manage_user_resend_invite', {id: user.uuid}) }}" class="mt-3"
+            data-controller="confirm"
+            data-confirm-title-value="Resend invitation"
+            data-confirm-message-value="Send a fresh 24-hour invitation to this account? The previous invitation link will stop working."
+            data-confirm-confirm-label-value="Resend"
+            data-confirm-variant-value="primary">
+        <input type="hidden" name="_token" value="{{ csrf_token('resend-invite' ~ user.id) }}">
+        <input type="hidden" name="from" value="edit">
+        <button class="btn btn-outline-primary btn-sm">{{ i.icon('mail') }} Resend invitation</button>
+      </form>
+    {% endif %}
+  {{ d.card_end() }}
+
   <form method="post">
     {% if user.canEditFullName %}
       <div class="row g-3">
