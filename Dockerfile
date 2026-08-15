@@ -32,6 +32,8 @@ WORKDIR /app
 
 # Production-leaning PHP defaults (opcache on). The dev stage relaxes these.
 COPY docker/php/php-prod.ini /usr/local/etc/php/conf.d/zz-app.ini
+# Add FPM settings
+COPY docker/php/fpm-prod.conf /usr/local/etc/php-fpm.d/zz-fpm-app.conf
 
 # Entrypoint: optional self-healing auto-migrate, then exec the CMD.
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
