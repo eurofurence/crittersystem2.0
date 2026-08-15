@@ -10,6 +10,7 @@ use App\Gdpr\BanChecker;
 use App\Repository\UserRepository;
 use App\Service\AccountInvitationService;
 use App\TwoFactor\StepUpGuard;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,6 +24,7 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class UserIdentityController extends AbstractController
 {
     public function __construct(
+        private readonly EntityManagerInterface $em,
         private readonly UserRepository $users,
         private readonly AccountInvitationService $invitations,
         private readonly BanChecker $bans,
@@ -58,7 +60,9 @@ final class UserIdentityController extends AbstractController
             'resourceId' => $user->getId(),
             'details' => ['invitation' => 'reissued'],
         ]);
-        $this->addFlash('success', sprintf('Invitation resent to %s.', $user->getEmail()));
+        // Do not echo the raw destination address here: sub-admins may resend an
+        // invite while the list still deliberately masks that address as PII.
+        $this->addFlash('success', 'Invitation resent.');
 
         return $this->redirectBack($request, $user);
     }
@@ -106,7 +110,7 @@ final class UserIdentityController extends AbstractController
         }
 
         $user->setEmail($email);
-        $this->users->getEntityManager()->flush();
+        $this->em->flush();
 
         $reissued = !$user->isOnboardingCompleted();
         if ($reissued) {
