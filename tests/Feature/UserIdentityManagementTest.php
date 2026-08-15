@@ -84,6 +84,22 @@ final class UserIdentityManagementTest extends DatabaseWebTestCase
         self::assertSame('target@example.com', $target->getEmail());
     }
 
+    public function testGlobalAdminEmailCorrectionRequiresFreshStepUp(): void
+    {
+        $target = $this->makeUser('target', null, []);
+        $admin = $this->makeUser('admin', 'ROLE_ADMIN', ['global:admin']);
+        $this->client->loginUser($admin);
+        $this->client->request('GET', '/manage/users/'.$target->getUuid().'/edit');
+
+        $this->client->request('POST', '/manage/users/'.$target->getUuid().'/email', [
+            '_token' => $this->csrf('change-email'.$target->getId()),
+            'email' => 'changed-without-mfa@example.com',
+        ]);
+
+        self::assertResponseRedirects();
+        self::assertSame('target@example.com', $target->getEmail());
+    }
+
     public function testGlobalAdminCanCorrectManualAccountEmailAfterStepUp(): void
     {
         $target = $this->makeUser('target', null, []);
