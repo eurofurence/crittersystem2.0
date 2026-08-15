@@ -110,11 +110,13 @@ final class UserIdentityController extends AbstractController
         }
 
         $user->setEmail($email);
-        $this->em->flush();
-
         $reissued = !$user->isOnboardingCompleted();
         if ($reissued) {
+            // Account email and token rotation are flushed together by the service,
+            // so cleanup cannot observe a stale invitation between the two changes.
             $this->invitations->reissue($user);
+        } else {
+            $this->em->flush();
         }
 
         $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, [
