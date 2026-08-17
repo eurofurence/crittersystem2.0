@@ -70,11 +70,12 @@ final class ShiftModalTest extends DatabaseWebTestCase
         );
     }
 
+    /** A membership that was applied for but never confirmed is reported as pending, not as held. */
     public function testAnUnconfirmedMembershipIsReportedAsPending(): void
     {
         $shift = $this->scenario->shift('Gate Duty');
         $user = $this->scenario->user();
-        $this->em->persist(new UserVolunteerType($user, $this->scenario->type)); // never confirmed
+        $this->em->persist(new UserVolunteerType($user, $this->scenario->type));
         $this->em->flush();
         $this->client->loginUser($user);
 

@@ -149,6 +149,10 @@ final class PrivilegeCatalog
         'call:respond' => ['Respond to a global call for help', 'Content', self::LEVEL_SUBADMIN, false],
         'meeting:view' => ['View meetings', 'Content', self::LEVEL_SUBADMIN, false],
 
+        // Venue entry, handled by the security team at the door
+        'security:checkin' => ['Check people in and out of the event location', 'Security', self::LEVEL_SUBADMIN, false],
+        'security:checkin:override' => ['Admit somebody the entry rules refuse, with a reason', 'Security', self::LEVEL_SUBADMIN, false],
+
         // Backstage & exports
         'backstage:view' => ['View the backstage dashboard', 'Backstage', self::LEVEL_SUBADMIN, false],
         'backstage:admin' => ['Full backstage access', 'Backstage', self::LEVEL_SUBADMIN, false],
@@ -251,6 +255,23 @@ final class PrivilegeCatalog
                 'manageshifts:view', 'board:view', 'user:view', 'user:arrive', 'user:locate', 'user:contact:view', 'message:use', 'chat:claim', 'chat:restricted', 'call:trigger', 'call:cancel', 'shift:view', 'shift:assign',
                 'goodie:view', 'goodie:distribute', 'certification:view', 'news:view', 'faq:view',
                 'profile:view', 'profile:history:view', 'worklog:self',
+            ],
+        ],
+        /*
+         * The door team. Deliberately without user:pii:view: they identify people by username,
+         * badge number and shift, and an email is only readable by somebody who already holds that
+         * privilege and has stepped up. Granting it here is a one-line change if the event decides
+         * the door needs it.
+         *
+         * The override is not in this preset either. It bypasses the entry rules, so it belongs to
+         * whoever leads the shift rather than to every operator.
+         */
+        'security' => [
+            'name' => 'Security',
+            'role' => 'ROLE_STAFF',
+            'permissions' => [
+                'security:checkin', 'backstage:view', 'user:locate', 'user:view', 'shift:view',
+                'manageshifts:view', 'news:view', 'faq:view', 'profile:view', 'worklog:self',
             ],
         ],
         'communications-manager' => [

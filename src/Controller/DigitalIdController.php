@@ -40,7 +40,7 @@ final class DigitalIdController extends AbstractController
         return $this->render('digital_id/index.html.twig', $this->cardData());
     }
 
-    /** The QR card on its own - polled by the page to rotate the code in place. */
+    /** The QR card on its own, re-fetched by the page at the moment the code expires. */
     #[IsGranted('ROLE_USER')]
     #[Route('/card', name: 'app_digital_id_card', methods: ['GET'])]
     public function card(): Response
@@ -48,7 +48,17 @@ final class DigitalIdController extends AbstractController
         return $this->render('digital_id/_card.html.twig', $this->cardData());
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * `refreshAt` is the instant this card must re-render, not an interval.
+     *
+     * It is driven off the token actually on screen, because getOrCreateActive() may hand back one
+     * that is already part-way through its life and waiting a full TTL would leave a dead QR on
+     * display. It has to stay an instant: the card is fetched once at that moment and the fresh
+     * fragment carries its own, whereas a repeating interval keeps the first token's remaining life
+     * forever and re-renders every few seconds for a card that opened on a nearly-expired token.
+     *
+     * @return array<string, mixed>
+     */
     private function cardData(): array
     {
         /** @var User $user */
@@ -57,16 +67,6 @@ final class DigitalIdController extends AbstractController
 
         $verifyUrl = $this->urls->generate('app_digital_id_verify', ['token' => $token->getToken()], UrlGeneratorInterface::ABSOLUTE_URL);
 
-        /*
-         * The moment this card must re-render, as an instant rather than an interval.
-         *
-         * Driven off the token actually on screen, not off the full TTL: getOrCreateActive() may
-         * hand back one that is already part-way through its life, and waiting a full TTL would
-         * leave a dead QR on display. Expressed as an instant because the card is refreshed once at
-         * that moment and the fresh fragment then carries its own - a repeating interval kept the
-         * first token's remaining life forever, so a card that happened to open on a nearly-expired
-         * token re-rendered every few seconds for as long as it stayed open.
-         */
         $remaining = $token->getExpiresAt()->getTimestamp() - time();
         $refreshIn = max(DigitalIdService::MIN_REMAINING_SECONDS, $remaining) - self::REFRESH_MARGIN_SECONDS;
 

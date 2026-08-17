@@ -24,9 +24,9 @@ final class LandingTest extends DatabaseWebTestCase
         self::assertSelectorExists('input[name="_password"]');
     }
 
+    /** SSO_ENABLED defaults to 0 in the test environment, so the login page offers no SSO link. */
     public function testSsoButtonHiddenWhenSsoDisabled(): void
     {
-        // SSO_ENABLED defaults to 0 in the test environment, so no SSO link is shown.
         $crawler = $this->client->request('GET', '/login');
 
         self::assertResponseIsSuccessful();

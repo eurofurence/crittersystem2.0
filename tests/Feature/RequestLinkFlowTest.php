@@ -57,7 +57,6 @@ final class RequestLinkFlowTest extends DatabaseWebTestCase
         self::assertNotNull($link);
         self::assertSame(RequestLinkType::AVAILABILITY_REQUEST, $link->getType());
 
-        // A logged-in user following an availability link lands on the grid.
         $volunteer = $this->makeUser('vol', []);
         $this->em->flush();
         $this->client->loginUser($volunteer);

@@ -44,11 +44,12 @@ final class CheckInPolicyTest extends DatabaseTestCase
         return $shift;
     }
 
+    /** A shift before the event starts or after it ends falls in setup or teardown, which need no check-in. */
     public function testSetupAndTeardownAreExempt(): void
     {
         $this->configureEventDates();
-        $setup = $this->shift('2026-06-04 10:00');   // before event start
-        $teardown = $this->shift('2026-06-09 10:00'); // after event end
+        $setup = $this->shift('2026-06-04 10:00');
+        $teardown = $this->shift('2026-06-09 10:00');
 
         self::assertSame(CheckInPolicy::PHASE_SETUP, $this->policy()->phaseOf($setup));
         self::assertSame(CheckInPolicy::PHASE_TEARDOWN, $this->policy()->phaseOf($teardown));
@@ -74,9 +75,9 @@ final class CheckInPolicyTest extends DatabaseTestCase
         self::assertTrue($this->policy()->requiresCheckin($setupOverride));
     }
 
+    /** With no event dates configured the phase is unknown, so only the per-shift override can require check-in. */
     public function testUnknownPhaseIsExemptWithoutOverride(): void
     {
-        // No event dates configured -> phase null -> only the override gates.
         $shift = $this->shift('2026-06-06 10:00');
         self::assertNull($this->policy()->phaseOf($shift));
         self::assertFalse($this->policy()->requiresCheckin($shift));

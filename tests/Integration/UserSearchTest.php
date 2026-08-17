@@ -9,9 +9,9 @@ use App\Tests\DatabaseTestCase;
 
 /**
  * The management search (user admin, badge assignment, shift staffing) must resist
- * account mining exactly as locate() does: a partial email never enumerates
- * addresses, and an all-digit query is a badge number, never the internal id. A
- * substring email search used to return a page of addresses and defeat the PII gate.
+ * account mining exactly as locate() does: a partial email never enumerates addresses, and an
+ * all-digit query is a badge number, never the internal id. A substring email search would hand
+ * back a page of addresses and defeat the PII gate.
  */
 final class UserSearchTest extends DatabaseTestCase
 {
@@ -49,12 +49,14 @@ final class UserSearchTest extends DatabaseTestCase
         return array_map(static fn (User $u): string => $u->getName(), $result);
     }
 
+    /**
+     * The property the PII gate depends on: a substring of an address returns nothing, and a bare
+     * domain fragment falls into name search, which cannot reach the email column.
+     */
     public function testPartialEmailNeverEnumerates(): void
     {
-        // The property the gate depends on: a substring of an address returns nothing.
         self::assertSame([], $this->users->search('@example'));
         self::assertSame([], $this->users->search('alice@exam'));
-        // A bare domain fragment falls into name search and cannot reach the email column.
         self::assertSame([], $this->users->search('example.com'));
     }
 
@@ -63,11 +65,11 @@ final class UserSearchTest extends DatabaseTestCase
         self::assertSame(['alice'], $this->names($this->users->search('ALICE@Example.com')));
     }
 
+    /** A digit string is read as a badge number, so a real user's id matches nobody. */
     public function testAllDigitQueryMatchesBadgeNotDatabaseId(): void
     {
         self::assertSame(['alice'], $this->names($this->users->search('4242')));
         self::assertSame([], $this->users->search('42'));
-        // Querying a real user's id (as digits) must be read as a badge number, not the id.
         self::assertSame([], $this->users->search((string) $this->bobId));
     }
 

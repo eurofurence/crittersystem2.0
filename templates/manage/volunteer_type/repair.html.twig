@@ -1,0 +1,127 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/notification/_macros.twig' as n %}
+
+{% block title %}{{ 'manage.volunteer_type.repair.page.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('manage.volunteer_type.repair.page.title'|trans, {
+    subtitle: 'manage.volunteer_type.repair.page.subtitle'|trans,
+    actions: [
+      {label: 'manage.volunteer_type.repair.action.back'|trans, href: path('app_manage_volunteer_type_index'), class: 'btn btn-outline-secondary'}
+    ]
+  }) }}
+
+  {#
+    The cause comes before the affected users: while a role is unclaimed, onboarding assigns
+    nothing, so repairing the existing users leaves the next one broken in the same way.
+  #}
+  {% if missingRoles is not empty %}
+    {{ d.card_start('manage.volunteer_type.repair.cause.heading'|trans, {class: 'mb-3 border-danger'}) }}
+      <p>{{ 'manage.volunteer_type.repair.cause.explanation'|trans }}</p>
+
+      {% for role in missingRoles %}
+        <form method="post" action="{{ path('app_manage_volunteer_type_repair_role') }}" class="row g-2 align-items-end mb-2">
+          <input type="hidden" name="_token" value="{{ csrf_token('volunteer-type-repair-role') }}">
+          <input type="hidden" name="role" value="{{ role }}">
+          <div class="col-12 col-md-6">
+            <label class="form-label" for="type-{{ role }}">
+              {{ 'manage.volunteer_type.repair.cause.pick'|trans({'%role%': role}) }}
+            </label>
+            <select class="form-select" id="type-{{ role }}" name="type" required>
+              <option value="">{{ 'common.action.select'|trans }}</option>
+              {% for type in types %}
+                <option value="{{ type.uuid }}">{{ type.name }}{% if type.role %} ({{ type.role }}){% endif %}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-12 col-md-auto">
+            <button type="submit" class="btn btn-primary">{{ 'manage.volunteer_type.repair.action.claim'|trans }}</button>
+          </div>
+        </form>
+      {% endfor %}
+    {{ d.card_end() }}
+  {% else %}
+    {{ n.alert('success', 'manage.volunteer_type.repair.cause.healthy'|trans) }}
+  {% endif %}
+
+  {{ d.card_start('manage.volunteer_type.repair.affected.heading'|trans({'%count%': total}), {
+    subtitle: 'manage.volunteer_type.repair.affected.subtitle'|trans
+  }) }}
+
+    <form method="get" action="{{ path('app_manage_volunteer_type_repair') }}" class="row g-2 mb-3">
+      <div class="col-12 col-md-6">
+        <input type="search" class="form-control" name="q" value="{{ q }}"
+               placeholder="{{ 'manage.volunteer_type.repair.affected.search'|trans }}">
+      </div>
+      <div class="col-12 col-md-auto">
+        <button type="submit" class="btn btn-outline-secondary">{{ 'common.action.search'|trans }}</button>
+      </div>
+    </form>
+
+    {% if rows is empty %}
+      {{ d.empty_inline('manage.volunteer_type.repair.affected.none'|trans) }}
+    {% else %}
+      <form method="post" action="{{ path('app_manage_volunteer_type_repair_apply') }}"
+            data-controller="confirm"
+            data-confirm-message-value="{{ 'manage.volunteer_type.repair.confirm.selected'|trans }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('volunteer-type-repair-apply') }}">
+        <input type="hidden" name="scope" value="selected">
+        <input type="hidden" name="q" value="{{ q }}">
+
+        {{ d.table_start() }}
+          <thead>
+            <tr>
+              <th class="w-1"></th>
+              <th>{{ 'common.label.name'|trans }}</th>
+              <th>{{ 'manage.volunteer_type.repair.affected.kind'|trans }}</th>
+              <th>{{ 'manage.volunteer_type.repair.affected.receives'|trans }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in rows %}
+              <tr>
+                <td><input type="checkbox" class="form-check-input" name="users[]" value="{{ row.user.uuid }}"></td>
+                <td>{{ row.user.name }}</td>
+                <td>{{ (row.user.isStaff ? 'manage.volunteer_type.repair.kind.staff' : 'manage.volunteer_type.repair.kind.volunteer')|trans }}</td>
+                <td>
+                  {% if row.type %}
+                    {{ d.badge(row.type.name, 'bg-green-lt') }}
+                  {% else %}
+                    {{ d.badge('manage.volunteer_type.repair.affected.nothing'|trans, 'bg-red-lt') }}
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        {{ d.table_end() }}
+
+        <div class="d-flex gap-2 mt-3">
+          <button type="submit" class="btn btn-primary">
+            {{ 'manage.volunteer_type.repair.action.fix_selected'|trans }}
+          </button>
+        </div>
+      </form>
+
+      <form method="post" action="{{ path('app_manage_volunteer_type_repair_apply') }}" class="mt-2"
+            data-controller="confirm"
+            data-confirm-message-value="{{ 'manage.volunteer_type.repair.confirm.all'|trans({'%count%': total}) }}"
+            data-confirm-variant-value="danger">
+        <input type="hidden" name="_token" value="{{ csrf_token('volunteer-type-repair-apply') }}">
+        <input type="hidden" name="scope" value="all">
+        <button type="submit" class="btn btn-outline-danger">
+          {{ 'manage.volunteer_type.repair.action.fix_all'|trans({'%count%': total}) }}
+        </button>
+      </form>
+
+      {{ d.pagination({
+        route: 'app_manage_volunteer_type_repair',
+        page: page,
+        pages: pages,
+        total: total,
+        perPage: perPage,
+        keep: q ? {q: q} : {}
+      }) }}
+    {% endif %}
+  {{ d.card_end() }}
+{% endblock %}

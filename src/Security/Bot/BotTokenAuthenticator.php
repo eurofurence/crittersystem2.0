@@ -33,6 +33,10 @@ final class BotTokenAuthenticator extends AbstractAuthenticator
         return str_starts_with((string) $request->headers->get('Authorization', ''), 'Bearer ');
     }
 
+    /**
+     * The token comparison is constant-time, so a wrong token cannot be discovered by timing how
+     * long the comparison takes.
+     */
     public function authenticate(Request $request): Passport
     {
         $presented = trim(substr((string) $request->headers->get('Authorization', ''), 7));
@@ -41,8 +45,6 @@ final class BotTokenAuthenticator extends AbstractAuthenticator
             throw new CustomUserMessageAuthenticationException('Bot API token is not configured.');
         }
 
-        // hash_equals: constant-time, so a wrong token cannot be discovered by
-        // timing how long the comparison takes.
         if (!hash_equals($this->botApiToken, $presented)) {
             throw new CustomUserMessageAuthenticationException('Invalid bot service token.');
         }

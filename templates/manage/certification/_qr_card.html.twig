@@ -1,0 +1,18 @@
+{% import 'components/data/_macros.twig' as d %}
+
+{# `data-next-transition` is when this QR is replaced. It sits on the fragment rather than on the
+   region, because refreshing swaps the fragment: a moment declared on the region would be the first
+   one forever and the chain would stop after a single rotation. #}
+<div data-next-transition="{{ refreshAt|date('c') }}">
+  {{ d.card_start(null, {class: 'text-center'}) }}
+      <img src="{{ qrDataUri }}" alt="{{ 'manage.certification.qr.image_alt'|trans }}" class="img-fluid mb-2" style="max-width: 360px;">
+      <div class="text-muted small">{{ 'manage.certification.qr.valid_until'|trans({'%time%': token.expiresAt|app_time}) }}</div>
+      <form method="post" action="{{ path('app_manage_certification_qr_refresh', {id: certification.uuid}) }}" class="mt-3">
+        <input type="hidden" name="_token" value="{{ csrf_token('cert-qr-refresh' ~ certification.id) }}">
+        <button class="btn btn-sm btn-outline-primary">{{ 'manage.certification.qr.refresh'|trans }}</button>
+      </form>
+  {{ d.card_end() }}
+  <div class="text-muted small text-center mt-2">
+    {{ 'manage.certification.qr.scan_url'|trans }} <code>{{ verifyUrl }}</code>
+  </div>
+</div>

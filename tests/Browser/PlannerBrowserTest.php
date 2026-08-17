@@ -15,21 +15,24 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 /**
  * The planner, in a real browser.
  *
- * The regression this exists for: the planner controller read state in a *TargetConnected callback
- * that it only created in connect(). Stimulus runs those callbacks first, so on any grid that
- * already had shifts the controller threw, its connection aborted, and painting, dragging and the
- * grid refresh were all dead - with a 200 response and perfectly correct markup. Only the browser
- * console showed it.
+ * Stimulus runs a *TargetConnected callback before connect(), so a controller that reads state
+ * connect() creates throws on any grid that already holds shifts: its connection aborts and
+ * painting, dragging and the grid refresh are all dead behind a 200 and perfectly correct markup.
+ * Only the browser console shows it.
  */
 final class PlannerBrowserTest extends BrowserTestCase
 {
     private const PASSWORD = 'secret123';
 
+    /**
+     * The manager's group carries news:view because signing in lands on /news, where a 403 is a
+     * severe console error every assertNoConsoleErrors() in this file would report. The grid is
+     * seeded with shifts on purpose: an empty one has no block targets and cannot trip the crash
+     * these tests guard against.
+     */
     private function seed(): Department
     {
         $group = new Group('Managers', 'mgr-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
-        // news:view is part of it because signing in lands on /news, and a 403 there is a severe
-        // console error that every assertNoConsoleErrors() in this file would report.
         foreach (['manageshifts:view', 'shift:manage', 'shift:publish', 'news:view'] as $p) {
             $priv = new Privilege($p);
             $this->em->persist($priv);
@@ -54,8 +57,6 @@ final class PlannerBrowserTest extends BrowserTestCase
         $store->set(EventConfigStore::KEY_EVENT_END, '2026-06-02T00:00:00+00:00');
         $store->set(EventConfigStore::KEY_TEARDOWN_END, '2026-06-02T00:00:00+00:00');
 
-        // A populated grid is the point: an empty one has no block targets and would not have
-        // tripped the crash this test guards.
         $task = new ShiftTask('General');
         $this->em->persist($task);
         foreach ([['10:00', '12:00'], ['10:00', '12:00'], ['14:00', '16:00']] as [$from, $to]) {
@@ -71,6 +72,7 @@ final class PlannerBrowserTest extends BrowserTestCase
         return $dept;
     }
 
+    /** Rendered blocks are the proof the controller connected: Stimulus removes nothing when it fails. */
     public function testThePlannerLoadsWithoutBrowserErrors(): void
     {
         $dept = $this->seed();
@@ -82,13 +84,14 @@ final class PlannerBrowserTest extends BrowserTestCase
         $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
         $this->client->waitFor('.planner-grid', 10);
 
-        // The controller must have connected: Stimulus removes nothing on failure, so the proof is
-        // behavioural rather than structural.
         self::assertGreaterThan(0, $this->client->getCrawler()->filter('.planner-block')->count());
         $this->assertNoConsoleErrors('the planner page');
     }
 
-    /** Parallel shifts must actually be laid out side by side once the page is rendered and styled. */
+    /**
+     * Parallel shifts must actually be laid out side by side once the page is rendered and styled.
+     * The two 10:00-12:00 shifts share a column, measured from the rendered box, not from the markup.
+     */
     public function testParallelShiftsAreLaidOutSideBySide(): void
     {
         $dept = $this->seed();
@@ -99,7 +102,6 @@ final class PlannerBrowserTest extends BrowserTestCase
         $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
         $this->client->waitFor('.planner-block', 10);
 
-        // The two 10:00-12:00 shifts share a column; measured from the rendered box, not the markup.
         $lefts = $this->client->executeScript(
             'return Array.from(document.querySelectorAll(".planner-block"))'
             .'.map((b) => Math.round(b.getBoundingClientRect().left));'
@@ -140,10 +142,15 @@ final class PlannerBrowserTest extends BrowserTestCase
     /**
      * The shift times on a grid block must actually be readable.
      *
-     * They were not: the range had no nowrap, so on a narrow lane it broke across lines that the
-     * block's own `overflow: hidden` then cut off - a half-hour shift is 20px tall and showed
-     * "10:00-" and nothing more - while the draft badge sat on top of what was left. None of that is
+     * Without nowrap the range breaks across lines on a narrow lane and the block's own
+     * `overflow: hidden` cuts what is left off: a half-hour shift is 20px tall and shows "10:00-"
+     * and nothing more, with the draft badge sitting on top of the remainder. None of that is
      * visible to a test that only renders markup; it takes a laid-out browser to measure.
+     *
+     * The hard cases are shifts sharing a column two and three ways and half-hour blocks 20px tall,
+     * on top of the 2-lane pair and full-width shift seed() already contributes. Lane width is
+     * uniform per day, so the full-width case needs a day to itself, and a block with a column of
+     * its own has no excuse for hiding half the range.
      */
     public function testShiftTimesOnTheGridAreNeverCutOff(): void
     {
@@ -152,8 +159,6 @@ final class PlannerBrowserTest extends BrowserTestCase
         $store->set(EventConfigStore::KEY_EVENT_END, '2026-06-07T00:00:00+00:00');
         $store->set(EventConfigStore::KEY_TEARDOWN_END, '2026-06-08T00:00:00+00:00');
 
-        // The hard cases: shifts sharing a column two and three ways, and half-hour blocks that are
-        // only 20px tall. seed() already contributes a 2-lane pair and a full-width shift.
         $task = $this->em->getRepository(ShiftTask::class)->findOneBy(['name' => 'General']);
         foreach ([['10:00', '12:00'], ['18:00', '20:00'], ['18:00', '20:00'], ['21:00', '21:30'], ['21:00', '21:30']] as [$from, $to]) {
             $shift = (new Shift())->setTitle('Parallel '.$from)
@@ -163,7 +168,6 @@ final class PlannerBrowserTest extends BrowserTestCase
             $this->em->persist($shift);
         }
 
-        // Lane width is now uniform per day, so the full-width case needs a day of its own.
         $lone = (new Shift())->setTitle('Alone')
             ->setStartsAt(new \DateTimeImmutable('2026-06-02 09:00', new \DateTimeZone('UTC')))
             ->setEndsAt(new \DateTimeImmutable('2026-06-02 11:00', new \DateTimeZone('UTC')))
@@ -195,7 +199,6 @@ final class PlannerBrowserTest extends BrowserTestCase
             self::assertFalse($block['overflowsY'], \sprintf('a %d-lane block cuts its time off below', $block['lanes']));
         }
 
-        // A block with a column to itself has no excuse for hiding half the range.
         $wide = array_values(array_filter($blocks, static fn (array $b) => $b['lanes'] === 1));
         self::assertNotEmpty($wide);
         foreach ($wide as $block) {
@@ -206,9 +209,12 @@ final class PlannerBrowserTest extends BrowserTestCase
     }
 
     /**
-     * A shift now needs a task to be saved, so the Add Shift modal offers to create one inline. It
-     * has to graft the new task into the picker and select it: sending the manager to the management
+     * A shift needs a task to be saved, so the Add Shift modal offers to create one inline. It has
+     * to graft the new task into the picker and select it: sending the manager to the management
      * screen instead would throw away the half-filled form they are standing in.
+     *
+     * The picker sits inside a modal that is closed on load, so it is present but not visible.
+     * Panther's element waits require visibility, hence polling the DOM directly.
      */
     public function testANewShiftTaskIsCreatedFromTheAddShiftModalAndSelected(): void
     {
@@ -231,8 +237,6 @@ final class PlannerBrowserTest extends BrowserTestCase
             'document.querySelector(\'[data-action="shift-task-create#create"]\').click();'
         );
 
-        // The picker lives inside a modal that is closed on load, so it is present but not visible;
-        // Panther's element waits require visibility, hence polling the DOM directly.
         $options = [];
         for ($i = 0; $i < 40; ++$i) {
             $options = $this->client->executeScript(
@@ -257,8 +261,10 @@ final class PlannerBrowserTest extends BrowserTestCase
     }
 
     /**
-     * A department running eight things at once must show all eight. They used to be capped at four
-     * with the rest behind an "expand this day" link, which read as half the day being unplanned.
+     * A department running eight things at once must show all eight, in eight columns, with the day
+     * widening to fit them: a cap that hides the rest behind an expand link reads as half the day
+     * being unplanned. The scroll arrows are the only hint that the grid scrolls, and a manager who
+     * does not see them does not scroll.
      */
     public function testEveryParallelShiftIsVisibleAndTheColumnWidensToFitThem(): void
     {
@@ -297,8 +303,6 @@ final class PlannerBrowserTest extends BrowserTestCase
         self::assertGreaterThan(1000, $measured['dayWidth'], 'the day column widened rather than hiding shifts');
         self::assertTrue($measured['overflows'], 'the grid is now wider than its viewport');
 
-        // The arrows are the only hint that the grid scrolls; a manager who does not see them does
-        // not scroll.
         $this->client->waitFor('.planner-scroll-arrow-next:not([hidden])', 10);
         $this->assertNoConsoleErrors('the planner with a busy day');
     }
@@ -345,9 +349,9 @@ final class PlannerBrowserTest extends BrowserTestCase
 
     /**
      * Selecting a shift has to work on the first attempt. A real mouse moves a pixel or two between
-     * pressing and releasing, which used to be read as a drag: the planner saved a move, replaced
-     * the grid, and the selection landed on a block that no longer existed. Managers described it as
-     * having to click several times before anything selected.
+     * pressing and releasing, and reading that as a drag makes the planner save a move, replace the
+     * grid, and drop the selection on a block that no longer exists, which the manager experiences
+     * as having to click several times before anything selects.
      */
     public function testAClickThatWobblesSelectsTheShiftInsteadOfMovingIt(): void
     {

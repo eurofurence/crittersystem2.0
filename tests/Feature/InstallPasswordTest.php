@@ -13,9 +13,9 @@ final class InstallPasswordTest extends DatabaseWebTestCase
 {
     private const PASSWORD = 'regression-secret';
 
+    /** The env value arrives with a trailing newline, as it does from a secret file, $(cat ...) or echo. */
     protected function setUp(): void
     {
-        // Simulate the env value arriving with a trailing newline (secret file, $(cat ...), echo).
         $_ENV['INSTALL_PASSWORD'] = self::PASSWORD."\n";
         $_SERVER['INSTALL_PASSWORD'] = self::PASSWORD."\n";
         parent::setUp();
@@ -27,12 +27,12 @@ final class InstallPasswordTest extends DatabaseWebTestCase
         parent::tearDown();
     }
 
+    /** The operator types the password exactly, without the stray newline the env carries, and gets in. */
     public function testCorrectPasswordIsAcceptedDespiteATrailingNewlineInTheEnv(): void
     {
         $crawler = $this->client->request('GET', '/admin/install');
         self::assertResponseIsSuccessful('a fresh install must show the unlock page');
 
-        // The operator types the password exactly, without the stray newline the env carries.
         $this->client->submit($crawler->selectButton('Unlock')->form(['password' => self::PASSWORD]));
 
         self::assertResponseRedirects('/admin/install/overview');

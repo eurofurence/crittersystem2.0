@@ -42,6 +42,11 @@ final class GdprTest extends DatabaseTestCase
         }
     }
 
+    /**
+     * The export bus is routed to sync in the test environment, so dispatching runs the handler
+     * inline. ZipArchive can only read from a real path, so the stored bytes are spooled to a temp
+     * file before the archive can be inspected.
+     */
     public function testQueuedExportBuildsDownloadableArchive(): void
     {
         $user = $this->makeUser('archiver');
@@ -49,7 +54,6 @@ final class GdprTest extends DatabaseTestCase
         $this->em->persist($export);
         $this->em->flush();
 
-        // Routed to sync under test, so the handler runs inline.
         static::getContainer()->get(MessageBusInterface::class)->dispatch(new GenerateDataExport($export->getId()));
 
         $this->em->clear();
@@ -61,7 +65,6 @@ final class GdprTest extends DatabaseTestCase
         $key = (string) $reloaded->getStorageKey();
         self::assertTrue($storage->exists($key), 'the archive is in the export storage, reachable by the process that serves the download');
 
-        // ZipArchive can only read from a real path, so the archive bytes are spooled to a temp file.
         $path = tempnam(sys_get_temp_dir(), 'critter-test-');
         file_put_contents($path, $storage->read($key));
         $zip = new \ZipArchive();

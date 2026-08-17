@@ -65,6 +65,10 @@ final class ShiftGroupController extends AbstractController
         ]);
     }
 
+    /**
+     * The choice list only offers departments the manager holds, but the submitted id is user
+     * input and is checked again before the group is created.
+     */
     #[Route('/new', name: 'app_manage_shift_group_new', methods: ['GET', 'POST'])]
     public function new(Request $request): Response
     {
@@ -73,7 +77,6 @@ final class ShiftGroupController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
-            // The choice list only offers manageable departments, but a submitted id is user input.
             $this->denyAccessUnlessGranted('shift:manage', $data['department']);
 
             $group = new ShiftGroup($data['department'], $data['name']);
@@ -92,6 +95,10 @@ final class ShiftGroupController extends AbstractController
         ]);
     }
 
+    /**
+     * The submitted department is authorized as well as the current one: moving a group into a
+     * department the manager does not hold would hand it away and strand its members in the old one.
+     */
     #[Route('/{id}/edit', name: 'app_manage_shift_group_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
     public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftGroup $group): Response
     {
@@ -106,8 +113,6 @@ final class ShiftGroupController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
-            // Moving a group into a department the manager does not hold would hand it away, and
-            // would strand its members in the old one.
             $this->denyAccessUnlessGranted('shift:manage', $data['department']);
 
             if ($data['department'] !== $group->getDepartment() && $group->getShifts()->count() > 0) {
@@ -166,6 +171,10 @@ final class ShiftGroupController extends AbstractController
     /**
      * Candidates for the picker, narrowed by whatever the filter bar sent.
      *
+     * The `past` flag is cast rather than read with getBoolean(), which throws a BadRequestException
+     * on a value it cannot convert: an unset filter arrives from the picker as an empty string,
+     * which is not a malformed request.
+     *
      * @return list<Shift>
      */
     private function candidates(ShiftGroup $group, Request $request): array
@@ -183,9 +192,6 @@ final class ShiftGroupController extends AbstractController
             ShiftAudience::tryFrom((string) $request->query->get('audience')),
             $task,
             trim((string) $request->query->get('q')),
-            // Cast rather than getBoolean(): it throws a BadRequestException on a value it cannot
-            // convert, and an unset filter arrives from the picker as an empty string, which is not
-            // a malformed request.
             (bool) (int) $request->query->get('past'),
         );
     }
@@ -193,6 +199,9 @@ final class ShiftGroupController extends AbstractController
     /**
      * The filter bar's option lists, drawn from the department's own shifts so a manager cannot pick
      * a combination that could only ever return nothing.
+     *
+     * Audiences keep enum declaration order, so the list reads the same as everywhere else audiences
+     * appear.
      *
      * @return array{days: list<string>, audiences: list<ShiftAudience>, shiftTasks: list<\App\Entity\ShiftTask>}
      */
@@ -215,7 +224,6 @@ final class ShiftGroupController extends AbstractController
 
         return [
             'days' => array_keys($days),
-            // Declaration order, so the list reads the same as everywhere else audiences appear.
             'audiences' => array_values(array_filter(
                 ShiftAudience::cases(),
                 static fn (ShiftAudience $a): bool => isset($audiences[$a->value]),

@@ -13,13 +13,17 @@ final class EmbedSanitizerTest extends TestCase
         return new EmbedSanitizer('www.google.com, openstreetmap.org');
     }
 
+    /**
+     * An embed URL is accepted only over https and only for a listed host or a subdomain of one;
+     * every other host is refused.
+     */
     public function testUrlAllowRules(): void
     {
         $s = $this->sanitizer();
         self::assertTrue($s->isAllowedUrl('https://www.google.com/maps?q=1'));
-        self::assertTrue($s->isAllowedUrl('https://sub.openstreetmap.org/x')); // subdomain
-        self::assertFalse($s->isAllowedUrl('http://www.google.com/maps'));      // not https
-        self::assertFalse($s->isAllowedUrl('https://evil.example.com/maps'));   // not allowed
+        self::assertTrue($s->isAllowedUrl('https://sub.openstreetmap.org/x'));
+        self::assertFalse($s->isAllowedUrl('http://www.google.com/maps'));
+        self::assertFalse($s->isAllowedUrl('https://evil.example.com/maps'));
     }
 
     public function testEmbedSrcFromMapUrl(): void

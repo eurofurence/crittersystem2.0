@@ -63,10 +63,11 @@ final class ShiftManagerController extends AbstractController
      * shift, and every reason they may not, is decided here and cannot be widened by the page.
      * A shift this viewer may not see is a 404, so the dialog cannot be used to confirm that one
      * exists.
+     *
+     * No route requirement on the id: the page generates this URL once with an `__ID__` placeholder
+     * and substitutes the shift uuid per click, so the placeholder has to pass URL generation. The
+     * lookup still resolves by uuid, so anything else is a 404 as well.
      */
-    // No route requirement on the id: the page generates this URL once with an `__ID__` placeholder
-    // and substitutes the shift uuid per click, so the placeholder has to pass URL generation. The
-    // lookup below still resolves by uuid, so anything else is a 404.
     #[Route('/manage-shifts/apply/shift/{id}', name: 'app_manage_shifts_apply_detail', methods: ['GET'])]
     public function shiftDetail(#[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, Request $request): Response
     {
@@ -108,7 +109,9 @@ final class ShiftManagerController extends AbstractController
 
     /**
      * The filters as route parameters, so a redirect or a form action carries the volunteer back to
-     * the day and departments they were looking at. Only these keys travel.
+     * the day and departments they were looking at. Only these keys travel, and only where they
+     * differ from the default: my-departments-only is how the screen opens, so carrying it would put
+     * a parameter on every URL that says nothing.
      *
      * @return array<string, mixed>
      */
@@ -116,8 +119,6 @@ final class ShiftManagerController extends AbstractController
     {
         [$day, $mineOnly, $departments] = $this->filters($request);
 
-        // Only what differs from the default travels: my-departments-only is how the screen opens,
-        // so carrying it would put a parameter on every URL that says nothing.
         return array_filter([
             'day' => $day,
             'scope' => $mineOnly ? null : 'all',
@@ -126,6 +127,9 @@ final class ShiftManagerController extends AbstractController
     }
 
     /**
+     * An absent `scope` means first load, which starts on the volunteer's own departments; an
+     * explicit empty value is the box being unticked and must not read as absent.
+     *
      * @return array{0: ?string, 1: bool, 2: string[]} day, my-departments-only, department uuids
      */
     private function filters(Request $request): array
@@ -136,13 +140,18 @@ final class ShiftManagerController extends AbstractController
             static fn (mixed $uuid): bool => \is_string($uuid) && \Symfony\Component\Uid\Uuid::isValid($uuid),
         ));
 
-        // Absent means first load, which starts on the volunteer's own departments; an explicit
-        // empty value is the box being unticked, and must not read as absent.
         $mineOnly = !$request->query->has('scope') || $request->query->get('scope') === 'mine';
 
         return [$day === '' ? null : $day, $mineOnly, $departments];
     }
 
+    /**
+     * Applying past the recommended hours needs an explicit acknowledgement from the volunteer; it
+     * is never assumed on their behalf.
+     *
+     * A capacity conflict means the shift filled after the page was rendered. It is reported as a
+     * warning, and the live region re-reads the grid.
+     */
     #[Route('/manage-shifts/apply/{id}', name: 'app_manage_shifts_apply_do', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function doApply(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
@@ -157,8 +166,6 @@ final class ShiftManagerController extends AbstractController
             if ($type === null) {
                 $this->addFlash('danger', new TranslatableMessage('shift_manager.flash.choose_role'));
             } elseif ($this->hoursGuard->wouldExceedGroup($user, $shift) && !$request->request->getBoolean('acknowledge_hours')) {
-                // Self-application beyond the recommended hours needs explicit
-                // acknowledgement.
                 $this->addFlash('warning', new TranslatableMessage(
                     'shift_manager.flash.over_hours',
                     ['%count%' => $this->hoursGuard->recommendedMax()],
@@ -181,8 +188,6 @@ final class ShiftManagerController extends AbstractController
                         ? new TranslatableMessage('shift_manager.flash.applied_group', ['%name%' => $shift->getTitle(), '%count%' => $held])
                         : new TranslatableMessage('shift_manager.flash.applied', ['%name%' => $shift->getTitle()]));
                 } catch (CapacityConflictException $e) {
-                    // Stale UI: capacity changed underneath. Report and let the
-                    // polling frame refresh the live state.
                     $this->addFlash('warning', $e->getMessage());
                 } catch (\RuntimeException $e) {
                     $this->addFlash('danger', $e->getMessage());

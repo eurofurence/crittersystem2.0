@@ -38,7 +38,13 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         $this->em->flush();
     }
 
-    /** @param string[] $privileges */
+    /**
+     * Signs in a manager holding $privileges unscoped. The identity map is cleared before the login
+     * because the group assignment is its own entity: the already-hydrated User keeps an empty
+     * assignments collection, and so carries no privileges, until it is reloaded.
+     *
+     * @param string[] $privileges
+     */
     private function login(array $privileges = ['manageshifts:view', 'shift:manage', 'shift:publish']): User
     {
         $suffix = bin2hex(random_bytes(4));
@@ -59,8 +65,6 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         $this->em->persist(new UserGroupAssignment($user, $group, null));
         $this->em->flush();
 
-        // The group assignment is its own entity, so the already-hydrated User still has an empty
-        // assignments collection until the identity map is dropped - and would carry no privileges.
         $email = $user->getEmail();
         $this->em->clear();
         $this->reloadDepartments();
@@ -79,6 +83,11 @@ final class PlannerTask17Test extends DatabaseWebTestCase
     }
 
     /** A manager whose shift:manage only covers one department. */
+    /**
+     * Signs in a manager whose grant is scoped to $scope. The identity map is cleared before the
+     * login because the group assignment is its own entity: the already-hydrated User keeps an empty
+     * assignments collection, and so carries no privileges, until it is reloaded.
+     */
     private function loginScopedTo(Department $scope): User
     {
         $suffix = bin2hex(random_bytes(4));
@@ -99,8 +108,6 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         $this->em->persist(new UserGroupAssignment($user, $group, $scope));
         $this->em->flush();
 
-        // The group assignment is its own entity, so the already-hydrated User still has an empty
-        // assignments collection until the identity map is dropped - and would carry no privileges.
         $email = $user->getEmail();
         $this->em->clear();
         $this->reloadDepartments();
@@ -232,12 +239,16 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         self::assertNotContains('0', $values, 'there is no "None" option left to pick');
     }
 
-    // ---- volunteer types are shared, this department's come first ----------
+    // ---- volunteer types ----------------------------------------------------
 
     /**
-     * The whole vocabulary is offered everywhere. Hiding a type that another department had claimed
-     * left a planner with only the two unlinked base types once departments started claiming theirs,
-     * with no way to plan for a role the staffing screen would still happily assign.
+     * The whole vocabulary of Critter types is offered in every department, including types another
+     * department has claimed, and posting one attaches it. Hiding claimed types would leave a
+     * planner with only the unclaimed base types and no way to plan for a role the staffing screen
+     * will still happily assign.
+     *
+     * The identity map is cleared mid-test because Department owns the association, so the type's
+     * own side of it only reads correctly once reloaded.
      */
     public function testTypesClaimedByAnotherDepartmentAreStillOfferedAndHonoured(): void
     {
@@ -250,7 +261,6 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         $this->em->persist($foreign);
         $this->bravo->addVolunteerType($foreign);
         $this->em->flush();
-        // Department owns the association, so the type's own side is only correct once reloaded.
         $sharedUuid = (string) $shared->getUuid();
         $foreignUuid = (string) $foreign->getUuid();
         $this->em->clear();
@@ -261,7 +271,6 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         self::assertContains('needed['.$sharedUuid.']', $names, 'an unclaimed type is offered');
         self::assertContains('needed['.$foreignUuid.']', $names, "Bravo's own type is offered to Alpha too");
 
-        // ...and posting it attaches it.
         $this->client->request('POST', '/manage-shifts/planner/create', [
             '_token' => $this->editToken($this->alpha),
             'department' => $this->alpha->getUuid(),
@@ -332,7 +341,8 @@ final class PlannerTask17Test extends DatabaseWebTestCase
 
     /**
      * The grid identifies a block by the shift's public uuid, so that is what the batch endpoints
-     * have to resolve. Reading the id as an integer made every batch action a silent no-op.
+     * have to resolve: reading the id as an integer turns every batch action into a silent no-op.
+     * A shift that already carries a task is replaced, not skipped.
      */
     public function testBatchSetsTheShiftTaskOnEverySelectedShift(): void
     {
@@ -343,7 +353,6 @@ final class PlannerTask17Test extends DatabaseWebTestCase
         $a = $this->shift($this->alpha, '2026-06-01 10:00', '2026-06-01 12:00');
         $b = $this->shift($this->alpha, '2026-06-01 13:00', '2026-06-01 15:00');
         $untouched = $this->shift($this->alpha, '2026-06-01 16:00', '2026-06-01 18:00');
-        // A shift that already has a task is replaced, not skipped.
         $b->setShiftTask($cleanup);
         $this->em->flush();
 

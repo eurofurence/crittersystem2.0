@@ -44,13 +44,14 @@ final class AuditLogger
     }
 
     /**
+     * An explicit actor (during login, for instance, before the token is in context) takes
+     * precedence over the ambient security user.
+     *
      * @param array<string, mixed> $options
      */
     private function build(string $eventType, string $action, array $options, bool $system): AuditRecord
     {
         $request = $this->requestStack->getCurrentRequest();
-        // An explicit actor (e.g. during login, before the token is in context)
-        // takes precedence over the ambient security user.
         $user = $options['actorUser'] ?? ($system ? null : $this->security->getUser());
         $token = $this->security->getToken();
 

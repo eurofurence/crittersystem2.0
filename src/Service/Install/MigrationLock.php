@@ -73,6 +73,10 @@ final class MigrationLock
         $this->held = true;
     }
 
+    /**
+     * A failure to unlock is ignored: it means the connection is already gone, and PostgreSQL
+     * releases an advisory lock with the session that took it.
+     */
     public function release(): void
     {
         if (!$this->held) {
@@ -88,7 +92,6 @@ final class MigrationLock
         try {
             $this->connection->executeQuery('SELECT pg_advisory_unlock(?)', [self::LOCK_KEY]);
         } catch (\Throwable) {
-            // Connection already gone - PostgreSQL has released the lock for us.
         }
     }
 

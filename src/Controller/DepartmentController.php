@@ -42,10 +42,19 @@ final class DepartmentController extends AbstractController
         ]);
     }
 
+    /**
+     * Organizational departments are admin-only.
+     *
+     * Each member section owns a `<key>_q` and a `<key>_page` query parameter, and links and forms
+     * carry the other sections' parameters through, so paging or searching one table leaves the rest
+     * of the page exactly where the viewer left it. Only the known parameters are carried, so an
+     * arbitrary query string cannot be reflected back into the page's own links. Page numbers are
+     * read with a cast rather than getInt(), so a blank or malformed one in a hand-edited URL falls
+     * back to the first page instead of answering 400.
+     */
     #[Route('/departments/{id}', name: 'app_department_show', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function show(#[MapEntity(mapping: ['id' => 'uuid'])] Department $department, Request $request): Response
     {
-        // Organizational departments are admin-only.
         if ($department->isOrganizational() && !$this->isGranted('global:admin')) {
             throw $this->createAccessDeniedException();
         }
@@ -61,10 +70,6 @@ final class DepartmentController extends AbstractController
             'nonstaff' => $members['nonStaff'],
         ];
 
-        // Each section owns a `<key>_q` and a `<key>_page` parameter. Links and forms carry the
-        // other sections' parameters through, so paging or searching one table leaves the rest of
-        // the page exactly where the viewer left it. Only the known parameters are carried, so an
-        // arbitrary query string cannot be reflected back into the page's own links.
         $carried = [];
         foreach (array_keys($bySection) as $key) {
             foreach ([$key.'_q', $key.'_page'] as $name) {
@@ -81,8 +86,6 @@ final class DepartmentController extends AbstractController
             $sections[$key] = $this->departments->paginateMembers(
                 $users,
                 (string) $request->query->get($key.'_q', ''),
-                // Cast, not getInt(): a malformed or blank page number in a hand-edited URL falls
-                // back to the first page rather than answering 400.
                 max(1, (int) $request->query->get($key.'_page', 1)),
             );
 

@@ -77,6 +77,13 @@ final class ShiftWizardController extends AbstractController
         ]);
     }
 
+    /**
+     * Every generated shift carries the same task, so a missing or foreign one stops the run rather
+     * than producing a batch of drafts that publication would later reject.
+     *
+     * The slot length is read with a cast and not getInt(): a cleared number field posts an empty
+     * string, which must fall back to the default instead of answering 400.
+     */
     private function generate(Request $request, Department $department, VolunteerTypeRepository $types, LocationRepository $locations, \DateTimeZone $tz): Response
     {
         if (!$this->isCsrfTokenValid('shift_wizard', (string) $request->request->get('_token'))) {
@@ -93,8 +100,6 @@ final class ShiftWizardController extends AbstractController
         $audience = ShiftAudience::tryFrom((string) $request->request->get('audience', '')) ?? ShiftAudience::PUBLIC_VOLUNTEER;
         $location = $locations->findOneByUuid((string) $request->request->get('location'));
 
-        // Every generated shift carries the same task, so a missing or foreign one stops the run
-        // rather than producing a batch of drafts that publication would later reject.
         $task = $this->tasks->findOneByUuid((string) $request->request->get('task'));
         if (!$task instanceof ShiftTask || $this->taskAccess->forDepartment([$task], $department) === []) {
             $this->addFlash('danger', new TranslatableMessage('shift_manager.wizard.flash.task_required'));
@@ -116,8 +121,6 @@ final class ShiftWizardController extends AbstractController
                 $dates,
                 (string) $request->request->get('start_time', '10:00'),
                 (string) $request->request->get('end_time', '18:00'),
-                // Cast, not getInt(): a cleared number field posts an empty string, which must
-                // fall back to the default rather than answering 400.
                 max(1, (int) $request->request->get('slot_minutes', 120)),
                 $tz,
                 $audience,

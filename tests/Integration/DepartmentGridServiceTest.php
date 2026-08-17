@@ -83,6 +83,7 @@ final class DepartmentGridServiceTest extends DatabaseTestCase
         self::assertSame('full', $this->service()->row($shift)['fillState']);
     }
 
+    /** A pending application occupies a slot exactly as a confirmed assignment does. */
     public function testApplicationsAndAssignmentsCountedSeparately(): void
     {
         $shift = $this->shift(3);
@@ -93,7 +94,6 @@ final class DepartmentGridServiceTest extends DatabaseTestCase
         $row = $this->service()->row($shift);
         self::assertCount(1, $row['assignedUsers'], 'assigned-users list shows only confirmed assignments');
         self::assertSame(1, $row['applications']);
-        // Both a confirmed assignment and a pending application occupy a slot.
         self::assertSame(2, $row['assigned']);
         self::assertSame('open', $row['fillState']);
     }

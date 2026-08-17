@@ -46,11 +46,14 @@ final class CertificationServiceTest extends DatabaseTestCase
         self::assertNotNull($first);
         self::assertSame(UserCertification::STATUS_PENDING, $first->getStatus());
 
-        // A second application for the same user+cert is rejected.
         self::assertNull($this->service()->applyFor($user, $cert));
         self::assertCount(1, $this->em->getRepository(UserCertification::class)->findAll());
     }
 
+    /**
+     * A scan only approves an application that is already pending, and dates the expiry exactly
+     * `validityDays` on. A record that is already valid is never approved a second time.
+     */
     public function testApproveByQrRequiresPendingAndSetsExpiryFromValidityDays(): void
     {
         $service = $this->service();
@@ -58,11 +61,9 @@ final class CertificationServiceTest extends DatabaseTestCase
         $cert = $this->certification('Forklift', validityDays: 30);
         $this->em->flush();
 
-        // Without a pending application, the scan is rejected.
         $error = $service->approveByQr($user, $cert);
         self::assertArrayHasKey('error', $error);
 
-        // After applying, the scan succeeds and the expiry is exactly +30 days.
         $service->applyFor($user, $cert);
         $result = $service->approveByQr($user, $cert);
         $record = $result['record'];
@@ -71,7 +72,6 @@ final class CertificationServiceTest extends DatabaseTestCase
         $expected = $record->getDateCertified()->modify('+30 days');
         self::assertSame($expected->format('Y-m-d'), $record->getDateExpires()?->format('Y-m-d'));
 
-        // Already-valid records are not re-approved.
         $second = $service->approveByQr($user, $cert);
         self::assertArrayHasKey('error', $second);
     }

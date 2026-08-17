@@ -9,7 +9,7 @@
    - `attrs` maps render as literal HTML attributes: keys are written verbatim (so they must
      be developer-authored, not user input), values are escaped.
    - Twig's `|default` also fires on `''` and `false`. Options where an empty string or false
-     is meaningful (`class: ''`, `bodyClass: ''`, `exact: false`) MUST be read with
+     is meaningful (`class: ''`, `bodyClass: ''`, `responsive: false`) MUST be read with
      `options.x is defined ? options.x : <fallback>`, never with `|default`.
 
    See docs/ui-components.md for the full reference.
@@ -362,8 +362,8 @@
      macro must not mint one - a generic UI component makes no security decisions.
 
      options:
-     - label: string   -- button text, default 'Delete'
-     - message: string -- confirm text, default 'Are you sure?'
+     - label: string   -- button text, default the translated 'Delete'
+     - message: string -- confirm text, default the translated 'Are you sure?'
      - class: string   -- button classes, default 'btn btn-sm btn-outline-danger'
      - tokenName: string -- name of the hidden field, default '_token'
      - confirmTitle / confirmLabel / variant: string
@@ -453,6 +453,9 @@
      Page numbers travel in their own query parameter, so several independently paginated
      tables can share one page (managers/staff/non-staff each pass a different `param`).
 
+     A disabled control renders as a span, never a link: an <a> pointing past either end of the
+     range is a real URL that keyboard users and crawlers can still reach.
+
      options:
      - route: string (required)   -- route the links point at
      - routeParams: map           -- path parameters for that route (e.g. {id: department.uuid})
@@ -487,8 +490,6 @@
         }) }}
       </p>
       <ul class="pagination m-0 ms-auto">
-        {# A disabled control renders as a span, never a link: an <a> pointing at page 0 is a real
-           URL that keyboard users and crawlers can still reach. #}
         <li class="page-item{{ page <= 1 ? ' disabled' : '' }}">
           {% if page <= 1 %}
             <span class="page-link" aria-disabled="true">{{ 'common.pagination.previous'|trans }}</span>

@@ -42,6 +42,12 @@ final class SessionIdleSubscriber implements EventSubscriberInterface
         return [KernelEvents::REQUEST => ['onRequest', self::PRIORITY]];
     }
 
+    /**
+     * Only ever touches a session that already exists. The session is lazy and this runs before the
+     * firewall has read it, so `isStarted()` is still false here and the cookie is the only honest
+     * signal. Reading the session unconditionally would start one, and hand a cookie and a session
+     * file to every anonymous visitor and every crawler.
+     */
     public function onRequest(RequestEvent $event): void
     {
         if (!$event->isMainRequest()) {
@@ -55,12 +61,6 @@ final class SessionIdleSubscriber implements EventSubscriberInterface
 
         $session = $request->getSession();
 
-        /*
-         * Only ever touch a session that already exists. The session is lazy and this runs before the
-         * firewall has read it, so `isStarted()` is still false here - the cookie is the only honest
-         * signal. Reading the session unconditionally would start one, and hand a cookie and a session
-         * file to every anonymous visitor and every crawler.
-         */
         if (!$session->isStarted() && !$request->cookies->has($session->getName())) {
             return;
         }
@@ -75,6 +75,7 @@ final class SessionIdleSubscriber implements EventSubscriberInterface
         $session->set(self::KEY, time());
     }
 
+    /** Floored at one minute: a zero or negative limit would log everyone out on their next request. */
     private function idleSeconds(): int
     {
         $minutes = $this->config->getInt(
@@ -82,7 +83,6 @@ final class SessionIdleSubscriber implements EventSubscriberInterface
             EventConfigStore::DEFAULT_SESSION_IDLE_MINUTES,
         );
 
-        // A zero or negative limit would log everyone out on their next request.
         return max(1, $minutes) * 60;
     }
 }

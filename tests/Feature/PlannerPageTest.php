@@ -70,6 +70,28 @@ final class PlannerPageTest extends DatabaseWebTestCase
     }
 
     /**
+     * The toolbar is the only way into the matrix view, and the matrix re-checks `shift:manage`
+     * against the department. Following the link has to be accepted, so the assertion is the
+     * response to it rather than the presence of the markup.
+     */
+    public function testTheToolbarLinksToTheMatrixViewAndTheMatrixAcceptsIt(): void
+    {
+        $this->manager();
+        $dept = $this->department();
+        $this->em->flush();
+
+        $this->client->loginUser($this->em->getRepository(User::class)->findOneBy(['email' => 'mgr@example.com']));
+        $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$dept->getUuid());
+
+        self::assertResponseIsSuccessful();
+        $link = $crawler->filter(sprintf('a[href*="/manage-shifts/matrix?department=%s"]', $dept->getUuid()));
+        self::assertSame(1, $link->count(), 'the planner toolbar offers the matrix view');
+
+        $this->client->click($link->link());
+        self::assertResponseIsSuccessful();
+    }
+
+    /**
      * Setup/teardown days label their phase on the line above the date, so a manager scanning the
      * header can tell them apart from the main event days at a glance.
      */
@@ -125,13 +147,13 @@ final class PlannerPageTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/manage-shifts/planner');
 
         self::assertResponseIsSuccessful();
-        // The placeholder carries no value; only the real departments are being asserted here.
         $options = array_values(array_filter($crawler->filter('#planner-department option')->each(
             static fn ($node) => $node->attr('value') === '' ? null : trim($node->text()),
         )));
         self::assertSame(['Logistics'], $options);
     }
 
+    /** The paint CSRF token is read from the rendered planner, never invented by the test. */
     public function testPaintCreatesConsolidatedDraft(): void
     {
         $this->manager();
@@ -144,7 +166,6 @@ final class PlannerPageTest extends DatabaseWebTestCase
 
         $this->client->loginUser($this->em->getRepository(User::class)->findOneBy(['email' => 'mgr@example.com']));
 
-        // Fetch the planner to obtain a valid paint CSRF token.
         $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$deptId);
         $token = $crawler->filter('.planner')->attr('data-planner-paint-token-value');
 

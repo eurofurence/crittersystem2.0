@@ -74,6 +74,10 @@ final class OnboardingResetTest extends DatabaseWebTestCase
         $this->client->submit($form->form());
     }
 
+    /**
+     * The reset is queued only: the completion flag stays set until the volunteer signs in again,
+     * so nothing changes under a session that is already open.
+     */
     public function testAdminCanQueueAResetForOneUser(): void
     {
         $volunteer = $this->user();
@@ -84,13 +88,12 @@ final class OnboardingResetTest extends DatabaseWebTestCase
         self::assertResponseRedirects('/manage/users');
         $volunteer = $this->reload($volunteer);
         self::assertTrue($volunteer->isOnboardingResetPending());
-        // Queued only - the flag itself is untouched until they sign in again.
         self::assertTrue($volunteer->isOnboardingCompleted());
     }
 
     /**
-     * The requirement in one test: a queued reset leaves a signed-in user working
-     * normally. They are not redirected to the wizard and not signed out.
+     * A queued reset leaves a signed-in user working normally: they are neither redirected to the
+     * wizard nor signed out.
      */
     public function testQueuedResetDoesNotDisturbASignedInUser(): void
     {

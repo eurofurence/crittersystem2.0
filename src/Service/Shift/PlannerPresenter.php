@@ -20,6 +20,12 @@ final class PlannerPresenter
     }
 
     /**
+     * A shift whose local start falls outside the visible range is omitted.
+     *
+     * Block height and lane width are derived from the span clamped to the end of the day, the part
+     * actually drawn in that column: using the true end would let an overnight shift reserve width on
+     * a day where it is not visible.
+     *
      * @param Shift[] $shifts
      *
      * @return array{
@@ -50,15 +56,12 @@ final class PlannerPresenter
             $localEnd = $shift->getEndsAt()->setTimezone($tz);
             $iso = $localStart->format('Y-m-d');
             if (!isset($dayIndex[$iso])) {
-                continue; // starts outside the visible range
+                continue;
             }
 
             $startMinutes = (int) $localStart->format('H') * 60 + (int) $localStart->format('i');
             $endMinutes = $startMinutes + (int) round(($localEnd->getTimestamp() - $localStart->getTimestamp()) / 60);
             $overnight = $endMinutes > self::MINUTES_PER_DAY;
-            // Lanes are derived from the CLAMPED span, the part actually drawn in this column.
-            // Using the true end would let an overnight shift reserve width on a day where it is
-            // not visible.
             $clampedEnd = min($endMinutes, self::MINUTES_PER_DAY);
 
             $byDay[$dayIndex[$iso]][] = [
@@ -96,14 +99,15 @@ final class PlannerPresenter
      * Nothing is dropped, however many shifts run in parallel; the column is widened instead, which
      * is what the day's lane count is for.
      *
+     * Blocks are sorted by a total order, so lanes cannot shuffle between two renders of the same
+     * data. Longest first at equal starts is the usual calendar convention.
+     *
      * @param list<array<string, mixed>> $dayBlocks
      *
      * @return array{0: list<array<string, mixed>>, 1: int} the placed blocks, and the day's lane count
      */
     private function layOutDay(array $dayBlocks): array
     {
-        // A total order, so lanes cannot shuffle between two renders of the same data. Longest
-        // first at equal starts is the usual calendar convention.
         usort($dayBlocks, static fn (array $a, array $b): int => [$a['startMin'], -$a['endMin'], $a['shift']->getId() ?? 0]
             <=> [$b['startMin'], -$b['endMin'], $b['shift']->getId() ?? 0]);
 
@@ -137,6 +141,8 @@ final class PlannerPresenter
     }
 
     /**
+     * The day count is capped defensively, so a bad range cannot spin forever.
+     *
      * @return list<array{iso: string, label: string, phase: string}>
      */
     private function days(
@@ -152,7 +158,6 @@ final class PlannerPresenter
         $eventEndDay = $eventEnd?->setTimezone($tz)->setTime(0, 0);
 
         $days = [];
-        // Cap the loop defensively so a bad range can never spin forever.
         for ($i = 0; $i < 120 && $day <= $last; ++$i) {
             $days[] = [
                 'iso' => $day->format('Y-m-d'),

@@ -17,7 +17,6 @@ final class InstallStateStoreTest extends TestCase
 
     protected function tearDown(): void
     {
-        // Best-effort recursive cleanup of the temp project dir.
         $dir = $this->projectDir;
         if (is_dir($dir)) {
             $it = new \RecursiveIteratorIterator(
@@ -78,6 +77,7 @@ final class InstallStateStoreTest extends TestCase
         self::assertSame('boom', $status['error']);
     }
 
+    /** The ready flag is keyed by version, so a newer shipped version invalidates the cached one. */
     public function testReadyFlagIsVersionKeyed(): void
     {
         $store = $this->store();
@@ -86,7 +86,6 @@ final class InstallStateStoreTest extends TestCase
 
         $store->markReady('v1');
         self::assertTrue($store->isReadyFor('v1'));
-        // A newer shipped version invalidates the cached flag.
         self::assertFalse($store->isReadyFor('v2'));
 
         $store->clearReady();

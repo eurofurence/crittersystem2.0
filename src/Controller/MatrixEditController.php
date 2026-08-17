@@ -58,6 +58,11 @@ final class MatrixEditController extends AbstractController
         return new JsonResponse(['ok' => true, 'id' => $group->getUuid()]);
     }
 
+    /**
+     * The capacity box is optional, so clearing it posts an empty string. That is why it is read
+     * with a cast and not getInt(), which rejects an empty string as malformed instead of falling
+     * back to the default of 1.
+     */
     #[Route('/position', name: 'app_matrix_position_create', methods: ['POST'])]
     public function createPosition(Request $request, \App\Repository\PositionGroupRepository $groups): Response
     {
@@ -70,9 +75,6 @@ final class MatrixEditController extends AbstractController
         if ($name === '') {
             return $this->fail('A position needs a name.');
         }
-        // Cast, not getInt(): the capacity box carries a value but is not required, so clearing it
-        // posts an empty string, which getInt() rejects as malformed rather than reading as the 1
-        // this line intends. See docs/tasks/input-bag-empty-value-audit.md.
         $capacity = max(1, (int) $request->request->get('capacity', 1));
         $position = $this->positions->createPosition($group, $name, $capacity);
 
@@ -160,6 +162,12 @@ final class MatrixEditController extends AbstractController
         return new JsonResponse($formatter->results($users->searchByName($q)));
     }
 
+    /**
+     * Placement goes through the assignment service rather than PositionService directly: that is
+     * what audits it, fires the live signal, and puts the volunteer on every member of a grouped
+     * shift. `override: true` keeps the grid's "the manager decides" behaviour, so warnings are
+     * recorded on the entry instead of refusing the placement.
+     */
     #[Route('/shift-position/{id}/assign', name: 'app_matrix_position_assign', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('shift:assign')]
     public function assign(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftPosition $shiftPosition, UserRepository $users): Response
@@ -170,10 +178,6 @@ final class MatrixEditController extends AbstractController
             return $this->fail('Unknown user.');
         }
         try {
-            // Through the assignment service, not PositionService directly: that is what audits the
-            // placement, fires the live signal, and puts the volunteer on every member of a grouped
-            // shift. override: true keeps the grid's "the manager decides" behaviour - warnings are
-            // recorded on the entry rather than refusing the placement.
             $this->assignments->assignToPosition($shiftPosition, $user, override: true, actor: $this->getUser());
         } catch (\RuntimeException $e) {
             return $this->fail($e->getMessage(), 409);

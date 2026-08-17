@@ -52,12 +52,19 @@ final class AutoAssignmentPlanner
     ) {
     }
 
+    /**
+     * Build a draft proposal for every published shift in the department.
+     *
+     * A group whose members are not all published is skipped: it is not applicable to anybody yet.
+     * When a volunteer is proposed for a group, the whole group's hours are charged to them at once,
+     * because counting only the first member would let the fair-distribution ranking keep picking
+     * somebody who is already committed to the rest of it.
+     */
     public function propose(Department $department, ?User $actor = null): AssignmentProposal
     {
         $proposal = new AssignmentProposal($department, $actor);
         $this->em->persist($proposal);
 
-        // Per-user state accumulated across the proposal.
         $proposedIntervals = []; // userId => list<[start,end]>
         $projectedHours = [];    // userId => float
         $doneGroups = [];        // group id => true, so each group is considered exactly once
@@ -72,7 +79,6 @@ final class AutoAssignmentPlanner
                 }
                 $doneGroups[$groupId] = true;
 
-                // A group with an unpublished member is not applicable to anybody yet.
                 foreach ($members as $member) {
                     if ($member->getState() !== ShiftState::PUBLISHED) {
                         continue 2;
@@ -92,9 +98,6 @@ final class AutoAssignmentPlanner
                         $groupHours += $member->getDurationHours();
                     }
 
-                    // The whole group's hours land on the volunteer at once. Counting only the first
-                    // member would let the fair-distribution ranking keep picking somebody who is
-                    // already committed to the rest of it.
                     $projectedHours[$user->getId()] = ($projectedHours[$user->getId()] ?? $this->hours->totalForUser($user)) + $groupHours;
                 }
             }
@@ -136,7 +139,6 @@ final class AutoAssignmentPlanner
                         break;
                     }
                 }
-                // A member that does not ask for this role at all rules the group out for it.
                 $open = $memberOpen === null ? 0 : min($open, $memberOpen);
             }
 
@@ -153,6 +155,12 @@ final class AutoAssignmentPlanner
      * A candidate must clear every member; the suggestion is ranked and recorded under the worst
      * declared availability across them.
      *
+     * The other members of the group are excluded from each member's occupancy check: they are taken
+     * together with it, so reading them as occupying the volunteer would rule out every group.
+     *
+     * Soft ranking is willingness first (Preferred before Available before Avoid), then fewer planned
+     * hours for fair distribution. An undeclared availability ranks as Available.
+     *
      * @param list<Shift>                                                          $members
      * @param array<int, list<array{0: \DateTimeImmutable, 1: \DateTimeImmutable}>> $proposedIntervals
      *
@@ -164,31 +172,29 @@ final class AutoAssignmentPlanner
         foreach ($this->memberships->findByVolunteerType($type) as $membership) {
             $user = $membership->getUser();
             if (!$this->memberships->isConfirmedMember($user, $type)) {
-                continue; // hard: confirmed Volunteer Type eligibility
+                continue;
             }
 
             $worst = null;
             $eligible = true;
             foreach ($members as $member) {
                 if ($this->entries->findOneByShiftAndUser($member, $user) !== null) {
-                    $eligible = false; // hard: not already assigned
+                    $eligible = false;
                     break;
                 }
 
-                // The other members are taken together with this one, so they must not be read as
-                // occupying it.
                 $siblings = array_values(array_filter($members, static fn (Shift $m): bool => $m !== $member));
                 $state = $this->availability->planningState($user, $member->getStartsAt(), $member->getEndsAt(), $member, $siblings);
                 if ($state['occupied']) {
-                    $eligible = false; // hard: confirmed existing assignment
+                    $eligible = false;
                     break;
                 }
                 if ($state['value'] !== null && $state['value'] === \App\Enum\AvailabilityValue::UNAVAILABLE) {
-                    $eligible = false; // hard: explicit Unavailable
+                    $eligible = false;
                     break;
                 }
                 if ($this->overlapsProposed($user, $member, $proposedIntervals)) {
-                    $eligible = false; // hard: overlap prohibition within this proposal
+                    $eligible = false;
                     break;
                 }
 
@@ -202,10 +208,8 @@ final class AutoAssignmentPlanner
             }
         }
 
-        // Soft ranking: willingness first (Preferred < Available < Avoid), then
-        // fewer planned hours for fair distribution.
         usort($out, static function (array $a, array $b): int {
-            $ra = $a[1]?->rank() ?? 1; // undeclared treated like "available"
+            $ra = $a[1]?->rank() ?? 1;
             $rb = $b[1]?->rank() ?? 1;
 
             return $ra <=> $rb ?: $a[2] <=> $b[2];
@@ -233,8 +237,11 @@ final class AutoAssignmentPlanner
 
     /**
      * Apply a draft proposal, converting its suggestions into confirmed
-     * assignments (publication is the manager's explicit action).
-     * Suggestions that now conflict are skipped. Returns the number applied.
+     * assignments (publication is the manager's explicit action). Returns the number applied.
+     *
+     * A suggestion whose entry already exists, whether from a sibling applied earlier in this run or
+     * from an assignment made elsewhere, is skipped, and so is one that has since become invalid
+     * because capacity or availability moved: it is never force-published.
      *
      * A grouped suggestion carries one row per member, and assigning the first of them already puts
      * the volunteer on the rest. The count therefore follows the entries actually created rather than
@@ -249,14 +256,12 @@ final class AutoAssignmentPlanner
         $applied = 0;
         foreach ($proposal->getAssignments() as $suggestion) {
             if ($this->entries->findOneByShiftAndUser($suggestion->getShift(), $suggestion->getUser()) !== null) {
-                continue; // already there, whether from a sibling in this run or from elsewhere
+                continue;
             }
             try {
                 $this->manual->assign($suggestion->getShift(), $suggestion->getUser(), $suggestion->getVolunteerType(), false, $actor);
                 ++$applied;
             } catch (\RuntimeException) {
-                // A suggestion that became invalid (capacity/availability changed)
-                // is skipped rather than force-published.
             }
         }
         $proposal->setStatus(ProposalStatus::APPLIED);

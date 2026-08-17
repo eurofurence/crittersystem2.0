@@ -291,11 +291,10 @@ final class BoardController extends AbstractController
     /**
      * The day as it appears in a board URL.
      *
-     * Formatted here rather than in the templates. The board's day is midnight in the *display*
-     * timezone, and Twig's `date` filter renders in PHP's default one - so with the two zones
-     * disagreeing, every link the board generated named the day before or after the one on screen,
-     * and each hop through the pager moved another day further out. The header stayed right the
-     * whole time, which is what made it hard to see.
+     * Formatted here rather than in the templates: the board's day is midnight in the *display*
+     * timezone, while Twig's `date` filter renders in PHP's default one, so where the two zones
+     * disagree a template-formatted link names the day before or after the one on screen and each
+     * hop through the pager drifts another day further out.
      *
      * Anything that renders a board URL takes this string; nothing formats the day itself.
      */

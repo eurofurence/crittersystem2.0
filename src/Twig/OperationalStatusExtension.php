@@ -30,6 +30,10 @@ final class OperationalStatusExtension extends AbstractExtension
     }
 
     /**
+     * Rendered by the shared layout on every page, error pages included. If the status lookup fails
+     * (the database being what broke, for instance), the widget degrades to hidden rather than
+     * breaking the error page itself.
+     *
      * @return array{value: string, label: string, freeToHelp: bool, expiresAt: ?\DateTimeImmutable, durations: int[]}|null
      */
     public function currentStatus(): ?array
@@ -39,9 +43,6 @@ final class OperationalStatusExtension extends AbstractExtension
             return null;
         }
 
-        // Rendered by the shared layout on every page, error pages included. If
-        // the status lookup fails (e.g. the database is what broke), the widget
-        // must degrade to hidden rather than break the error page itself.
         try {
             return $this->status->viewModel($user);
         } catch (\Throwable $e) {

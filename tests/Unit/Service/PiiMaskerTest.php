@@ -13,12 +13,12 @@ use Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage;
 
 final class PiiMaskerTest extends TestCase
 {
+    /** StepUpManager is final, so it is driven through a real session instead of a test double. */
     private function masker(bool $canSee, bool $stepUpFresh = true): PiiMasker
     {
         $security = $this->createStub(Security::class);
         $security->method('isGranted')->willReturn($canSee);
 
-        // StepUpManager is final; drive it through a real session instead of a double.
         $request = new Request();
         $session = new Session(new MockArraySessionStorage());
         $request->setSession($session);
@@ -45,13 +45,13 @@ final class PiiMaskerTest extends TestCase
         self::assertTrue($this->masker(true, false)->canRevealPii());
     }
 
+    /** Without the PII privilege the address is masked and no reveal control is offered at all. */
     public function testNonAdminGetsMaskedEmail(): void
     {
         $masked = $this->masker(false)->email('john.doe@example.com');
         self::assertNotSame('john.doe@example.com', $masked);
         self::assertStringContainsString('@', $masked);
         self::assertStringContainsString('•', $masked);
-        // No privilege means no reveal control, only masking.
         self::assertFalse($this->masker(false)->canRevealPii());
     }
 

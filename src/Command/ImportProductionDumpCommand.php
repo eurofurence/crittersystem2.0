@@ -32,6 +32,12 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * links, 2FA secrets that this instance's key cannot open - is neutralised
  * before the command returns. See {@see DevImportSanitizer} and
  * {@see DevStatePreserver}, and docs/dev-db-import.md.
+ *
+ * The order of the steps is itself a safety rule. The restore client is checked before anything is
+ * downloaded or dropped, because a client the server cannot work with, discovered later, leaves an
+ * empty database behind. Sanitising runs even when the migration fails, because skipping it leaves a
+ * database full of live production data that can still reach the people in it and that nobody can
+ * log into.
  */
 #[AsCommand(
     name: 'app:db:import-prod',
@@ -80,8 +86,6 @@ final class ImportProductionDumpCommand extends Command
             return Command::FAILURE;
         }
 
-        // Checked before anything is downloaded or dropped: a client the server
-        // cannot work with, found later, would leave an empty database behind.
         $problem = $this->restorer->clientProblem();
         if ($problem !== null) {
             $io->error([$problem, 'Use ./bin/import-prod-db, which runs this inside the app container.']);
@@ -139,9 +143,6 @@ final class ImportProductionDumpCommand extends Command
                 $migrated = ($migrate?->run(new ArrayInput([]), $output) ?? Command::SUCCESS) === Command::SUCCESS;
             }
 
-            // Runs even when the migration failed. Skipping it would leave a
-            // database full of live production data that can still reach the
-            // people in it, and that nobody can log into.
             $io->section('Making it safe to run locally');
             foreach ($this->sanitizer->sanitize() as $note) {
                 $io->writeln(' - ' . $note);

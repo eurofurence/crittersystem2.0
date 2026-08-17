@@ -93,6 +93,11 @@ final class ApiTest extends DatabaseWebTestCase
         self::assertArrayHasKey('data', json_decode((string) $this->client->getResponse()->getContent(), true));
     }
 
+    /**
+     * The feed emits absolute UTC instants (a trailing Z) so every device fires the reminder at
+     * the same moment. A floating local time is reinterpreted in the device's own timezone and
+     * fires at the wrong one.
+     */
     public function testIcalEmitsAbsoluteUtcInstants(): void
     {
         $user = $this->makeUser('ical-key', ['export:ical']);
@@ -116,9 +121,6 @@ final class ApiTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
         $body = (string) $this->client->getResponse()->getContent();
 
-        // Absolute UTC instants (trailing Z) so every device fires the reminder at the
-        // correct moment. Floating local times would be reinterpreted in the device's
-        // own timezone and fire at the wrong one.
         self::assertStringContainsString('DTSTART:20260815T200000Z', $body);
         self::assertStringContainsString('DTEND:20260816T040000Z', $body);
         self::assertStringContainsString('DTSTAMP:', $body);

@@ -193,13 +193,17 @@ final class VolunteerTypeMemberAddTest extends DatabaseWebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    /**
+     * Adding a volunteer who holds no staff role to a staff-only type still goes through, because
+     * the manager decides, but the manager is warned that the volunteer cannot see the type.
+     */
     public function testAddingAUserWhoCannotSeeAStaffOnlyTypeWarnsTheManager(): void
     {
         $this->type->setStaffOnly(true);
         $this->em->flush();
 
         $this->client->loginUser($this->manager());
-        $volunteer = $this->user('anna'); // no ROLE_STAFF
+        $volunteer = $this->user('anna');
 
         $this->client->request('POST', '/manage/volunteer-types/'.$this->type->getUuid().'/members/add', [
             '_token' => $this->addToken(),

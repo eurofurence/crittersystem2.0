@@ -40,6 +40,10 @@ final class AuditController extends AbstractController
     ) {
     }
 
+    /**
+     * `storedKeys` is read from storage rather than from the export rows: an AuditExport cannot say
+     * whether its archive is still on disk.
+     */
     #[Route('', name: 'app_manage_audit', methods: ['GET'])]
     public function index(Request $request): Response
     {
@@ -49,7 +53,6 @@ final class AuditController extends AbstractController
         return $this->render('admin/audit/index.html.twig', [
             'events' => $this->events->findRecent($type, $actorUserId !== null && $actorUserId !== '' ? (int) $actorUserId : null),
             'exports' => $this->exports->findRecent(),
-            // Which archives are actually still in storage; the entity cannot answer that any more.
             'storedKeys' => $this->storage->keysUnder(AuditExporter::KEY_PREFIX),
             'eventTypes' => $this->eventTypeChoices(),
             'selectedType' => $type,
@@ -71,6 +74,9 @@ final class AuditController extends AbstractController
         );
     }
 
+    /**
+     * Chain of custody: the act of exporting the audit log is itself audited.
+     */
     #[Route('/export', name: 'app_manage_audit_export', methods: ['POST'])]
     #[IsGranted('audit:export')]
     public function export(Request $request): Response
@@ -103,7 +109,6 @@ final class AuditController extends AbstractController
         $admin = $this->getUser();
         $export = $this->exporter->export($from, $to, $focusUser, $admin, $legalHold);
 
-        // Chain of custody: the act of exporting is itself audited.
         $this->audit->log(AuditEvents::DATA_EXPORT, AuditEvents::EXPORT, [
             'resourceType' => 'AuditExport',
             'resourceId' => $export->getUuid(),

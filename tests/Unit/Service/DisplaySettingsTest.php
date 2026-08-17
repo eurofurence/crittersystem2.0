@@ -22,6 +22,7 @@ final class DisplaySettingsTest extends TestCase
         return new DisplaySettings($store, new NullLogger());
     }
 
+    /** 12:00 UTC is 14:00 in Berlin during summer (CEST, +02:00). */
     public function testConvertsStoredUtcToConfiguredTimezone(): void
     {
         $settings = $this->settings([
@@ -29,7 +30,6 @@ final class DisplaySettingsTest extends TestCase
             EventConfigStore::KEY_DATETIME_FORMAT => 'Y-m-d H:i',
         ]);
 
-        // 12:00 UTC is 14:00 in Berlin during summer (CEST, +02:00).
         $utc = new \DateTimeImmutable('2026-06-21 12:00:00', new \DateTimeZone('UTC'));
 
         self::assertSame('2026-06-21 14:00', $settings->formatDateTime($utc));

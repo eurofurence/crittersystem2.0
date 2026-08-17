@@ -4,7 +4,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-        {# Render Sentry.io #}
+        {# `app-sdn` carries the Sentry DSN; assets/js/sentry.init.js reads it by that name. #}
         {% if sentry_dsn is not null and sentry_dsn is not empty %}
         <meta name="app-sdn" content="{{ sentry_dsn }}">
         {% endif %}
@@ -64,8 +64,8 @@
                         {% if app.user %}
                             {# Not for a user the onboarding gate holds in the wizard: it refuses the
                                fragment endpoints these regions fetch, so they would only ask and be
-                               turned away. Administrators are exempt from that gate and DO get them -
-                               testing onboardingCompleted here hid the bell from every admin. #}
+                               turned away. Administrators are exempt from that gate and do get them,
+                               so gate on live_regions_enabled() and never on onboardingCompleted. #}
                             {% if live_regions_enabled() %}
                                 {% include 'operational_status/_widget.html.twig' with {vm: operational_status()} only %}
 
@@ -78,7 +78,6 @@
                                     {{ d.avatar(app.user, {size: 'sm'}) }}
                                     <div class="d-none d-xl-block ps-2">
                                         <div>{{ app.user.userIdentifier }}</div>
-                                        <!-- <div class="mt-1 small text-secondary">{{ 'ui.user_menu.signed_in'|trans }}</div> -->
                                     </div>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
@@ -122,21 +121,13 @@
                             {# Permission-gated items are hidden when not granted; the backend
                                still enforces access on every route. #}
                             <ul class="navbar-nav">
-                                {# NEWS #}
                                 {% if is_granted('news:view') %}{{ nav.nav_item('ui.nav.news'|trans, 'app_news_index', {icon: 'news', exact: false}) }}{% endif %}
-                                {# My Shifts #}
                                 {% if is_granted('shift:self') %}{{ nav.nav_item('ui.nav.my_shifts'|trans, 'app_my_shifts', {icon: 'checklist'}) }}{% endif %}
-                                {# Shifts #}
                                 {% if is_granted('shift:view') %}{{ nav.nav_item('ui.nav.shifts'|trans, 'app_shift_index', {icon: 'clock', exact: false}) }}{% endif %}
-                                {# Shift Manager #}
                                 {% if is_granted('manageshifts:view') %}{{ nav.nav_item('ui.nav.shift_manager'|trans, 'app_manage_shifts', {icon: 'calendar', exact: false}) }}{% endif %}
-                                {# Volunteer Types #}
                                 {% if is_granted('volunteertype:view') %}{{ nav.nav_item('ui.nav.volunteer_types'|trans, 'app_membership_index', {icon: 'puzzle'}) }}{% endif %}
-                                {# Locations #}
                                 {% if is_granted('location:view') %}{{ nav.nav_item('ui.nav.locations'|trans, 'app_locations', {icon: 'map-pin', exact: false}) }}{% endif %}
-                                {# Bounty Board #}
                                 {% if is_granted('call:respond') %}{{ nav.nav_item('ui.nav.bounty_board'|trans, 'app_bounty_board', {icon: 'award', exact: false}) }}{% endif %}
-                                {# Messages #}
                                 {% if is_granted('message:use') %}
                                     {% if is_granted('ROLE_STAFF') %}
                                         {{ nav.nav_item('ui.nav.messages'|trans, 'app_messages_index', {icon: 'mail', exact: false}) }}
@@ -144,13 +135,9 @@
                                         {{ nav.nav_item('ui.nav.ask_info_desk'|trans, 'app_messages_infodesk', {icon: 'mail', exact: false}) }}
                                     {% endif %}
                                 {% endif %}
-                                {# Certifications #}
                                 {% if is_granted('certification:view') %}{{ nav.nav_item('ui.nav.certifications'|trans, 'app_certifications_index', {icon: 'award'}) }}{% endif %}
-                                {# Departments #}
                                 {% if is_granted('ROLE_STAFF') %}{{ nav.nav_item('ui.nav.departments'|trans, 'app_departments', {icon: 'building', exact: false}) }}{% endif %}
-                                {# Backstage #}
                                 {% if is_granted('backstage:view') %}{{ nav.nav_item('ui.nav.backstage'|trans, 'app_backstage', {icon: 'gift', exact: false}) }}{% endif %}
-                                {# FAQ #}
                                 {% if is_granted('faq:view') %}{{ nav.nav_item('ui.nav.faq'|trans, 'app_faq_index', {icon: 'help'}) }}{% endif %}
 
                                 {# Development submenu. The kit routes only exist outside prod
@@ -166,12 +153,10 @@
                                         <a class="dropdown-item" href="{{ path('app_navigation_kit') }}">{{ 'ui.nav.dev.navigation_kit'|trans }}</a>
                                         <a class="dropdown-item" href="{{ path('app_theme_kit') }}">{{ 'ui.nav.dev.theme_kit'|trans }}</a>
                                         <a class="dropdown-item" href="{{ path('app_dashboard') }}">{{ 'ui.nav.dashboard'|trans }}</a>
-{#                                        {% if is_granted('ROLE_ADMIN') %}{{ nav.nav_item('ui.nav.dashboard'|trans, 'app_dashboard', {icon: 'dashboard'}) }}{% endif %}#}
                                     </div>
                                 </li>
                                 {% endif %}
 
-                                {# Manage #}
                                 {% if is_granted('location:manage') or is_granted('volunteertype:manage') or is_granted('shift:manage') or is_granted('global:admin') or is_granted('config:event') or is_granted('audit:view') %}
                                     {{ nav.nav_item('ui.nav.manage'|trans, 'app_manage', {icon: 'tools', exact: true}) }}
                                 {% endif %}

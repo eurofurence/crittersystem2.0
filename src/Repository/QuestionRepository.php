@@ -17,11 +17,21 @@ class QuestionRepository extends ServiceEntityRepository
         parent::__construct($registry, Question::class);
     }
 
-    /** @return Question[] unanswered first, then newest */
+    /**
+     * The moderation queue: everything still waiting for an answer first, newest first within each
+     * group.
+     *
+     * Ordered on whether an answer exists rather than on `answeredAt` itself. PostgreSQL sorts
+     * nulls last for an ascending order, so ordering on the timestamp put exactly the questions
+     * this screen exists to work through at the bottom of it.
+     *
+     * @return Question[]
+     */
     public function findForModeration(): array
     {
         return $this->createQueryBuilder('q')
-            ->orderBy('q.answeredAt', 'ASC') // nulls first in PostgreSQL ASC
+            ->addSelect('CASE WHEN q.answeredAt IS NULL THEN 0 ELSE 1 END AS HIDDEN answered')
+            ->orderBy('answered', 'ASC')
             ->addOrderBy('q.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

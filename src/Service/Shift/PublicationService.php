@@ -35,6 +35,13 @@ final class PublicationService
     /**
      * Publish every draft shift in the department.
      *
+     * All or nothing: every draft is validated and every expected version checked before anything is
+     * mutated, so one hard error or one stale draft blocks the whole publish.
+     *
+     * Publishing turns drafts into shifts volunteers can see and apply to, so every screen showing
+     * this department has to follow. One signal covers the batch, because they share a department.
+     * Assignees are notified only after the commit has succeeded.
+     *
      * @param array<int, int> $expectedVersions shiftId => version the client last
      *                                           saw; a mismatch aborts the whole
      *                                           publish
@@ -50,7 +57,6 @@ final class PublicationService
             return new PublicationResult([], [], ['There are no draft shifts to publish.']);
         }
 
-        // Validate first; a hard error blocks the entire publish (atomic).
         $errors = [];
         $warnings = [];
         $invalidUuids = [];
@@ -67,7 +73,6 @@ final class PublicationService
             return new PublicationResult([], $warnings, $errors, $invalidUuids);
         }
 
-        // Reject a stale publish before mutating anything.
         foreach ($drafts as $draft) {
             if (isset($expectedVersions[$draft->getId()])) {
                 $this->concurrency->assertVersion($draft, $expectedVersions[$draft->getId()]);
@@ -94,11 +99,8 @@ final class PublicationService
             return $drafts;
         });
 
-        // Publishing turns drafts into shifts volunteers can see and apply to, so every screen
-        // showing this department has to follow. One signal for the batch: they share a department.
         $this->live->staffingChanged($drafts[0]);
 
-        // Notifications happen only after a successful commit.
         $this->notifyAssignees($published);
 
         return new PublicationResult($published, $warnings, []);

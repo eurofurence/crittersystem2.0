@@ -66,6 +66,25 @@ final class SsoController extends AbstractController
         return new RedirectResponse($url);
     }
 
+    /**
+     * The OIDC callback, serving both a real login and the userinfo probe.
+     *
+     * The probe reuses this callback and redirect URI so the diagnostic needs no extra registration
+     * at the provider, and its session flag is consumed up front. A probe only reads the provider's
+     * raw claims for display: it must not provision, mutate or re-authenticate, so the admin's
+     * existing session is left as it is.
+     *
+     * The registration-API lookup runs here because the user's own access token authenticates it and
+     * is only in scope at this point. It self-guards on configuration and never throws out.
+     *
+     * A failure comes from the identity provider or the HTTP client, so its message can carry
+     * endpoint URLs, client ids and provider internals. That goes to the log for the operator, never
+     * onto the login page for whoever is at the browser.
+     *
+     * Access mode may shut a freshly signed-in user out. They go to the notice with their session
+     * kept, so their digital badge stays reachable, rather than to a dashboard the gate would bounce
+     * them off.
+     */
     #[Route('/login/sso/check', name: 'app_sso_check', methods: ['GET'])]
     public function check(Request $request, Security $security): Response
     {
@@ -74,8 +93,6 @@ final class SsoController extends AbstractController
         }
 
         $session = $request->getSession();
-        // A userinfo probe (see probeUserinfo()) reuses this same callback and redirect URI so the
-        // diagnostic needs no extra registration at the provider. Consume the flag up front.
         $isProbe = (bool) $session->get('sso_userinfo_probe', false);
         $session->remove('sso_userinfo_probe');
 
@@ -91,8 +108,6 @@ final class SsoController extends AbstractController
             $token = $provider->getAccessToken('authorization_code', ['code' => (string) $request->query->get('code')]);
             $rawClaims = $provider->getResourceOwner($token)->toArray();
 
-            // A probe only reads the provider's raw claims for display; it must not provision, mutate,
-            // or re-authenticate - the admin's existing session stays as it is.
             if ($isProbe) {
                 $session->set('sso_userinfo_result', $rawClaims);
 
@@ -101,17 +116,10 @@ final class SsoController extends AbstractController
 
             $claims = SsoClaims::fromArray($rawClaims);
             $user = $this->provisioner->provision($claims);
-            // The user's own access token authenticates the registration-API call; do it here where
-            // the token is in scope. It self-guards on configuration and never throws out.
             $this->registrationNumbers->updateFor($user, $provider, $token);
         } catch (BannedIdentityException) {
             return $this->redirectToRoute('app_ban_appeal');
         } catch (\Throwable $e) {
-            /*
-             * The exception here comes from the identity provider or the HTTP client, so its message can
-             * carry endpoint URLs, client ids and provider internals. That belongs in the log, for the
-             * operator - never on the login page, for whoever happens to be at the browser.
-             */
             $this->logger->error('SSO login failed: {reason}', ['reason' => $e->getMessage(), 'exception' => $e]);
             if ($isProbe) {
                 $this->addFlash('danger', new TranslatableMessage('admin.sso.flash.userinfo_failed'));
@@ -129,8 +137,6 @@ final class SsoController extends AbstractController
             'details' => ['method' => 'sso', 'provider' => $this->config->providerLabel()],
         ]);
 
-        // The Access mode may shut this user out; send them to the notice, keeping their session so
-        // their digital badge stays reachable, rather than a dashboard the gate would bounce them off.
         if (!$this->accessModeGate->permits($user)) {
             return $this->redirectToRoute('app_system_unavailable');
         }
@@ -138,6 +144,10 @@ final class SsoController extends AbstractController
         return $this->redirectToRoute('app_news_index');
     }
 
+    /**
+     * Probe results are pulled from the session and cleared in the same breath: the raw claims carry
+     * the admin's own PII (email, name), so they are shown once and never left lingering there.
+     */
     #[Route('/admin/sso', name: 'app_admin_sso', methods: ['GET', 'POST'])]
     #[IsGranted('config:sso')]
     public function status(Request $request): Response
@@ -171,8 +181,6 @@ final class SsoController extends AbstractController
             return $this->redirectToRoute('app_admin_sso');
         }
 
-        // Pull-and-clear: the raw claims carry the admin's own PII (email, name), so they are shown
-        // once after a probe and never left lingering in the session.
         $userinfo = $request->getSession()->get('sso_userinfo_result');
         $request->getSession()->remove('sso_userinfo_result');
 

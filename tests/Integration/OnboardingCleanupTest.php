@@ -10,6 +10,7 @@ use Symfony\Component\Console\Tester\CommandTester;
 
 final class OnboardingCleanupTest extends DatabaseTestCase
 {
+    /** `$stale` backdates creation past the 24h cutoff in SQL, since createdAt is set on construction. */
     private function makeUser(string $name, ?string $role, bool $stale, bool $loggedIn = false): User
     {
         $group = new Group('G'.$name, 'g-'.$name, $role);
@@ -25,7 +26,6 @@ final class OnboardingCleanupTest extends DatabaseTestCase
         $this->em->flush();
 
         if ($stale) {
-            // Backdate creation past the 24h cutoff.
             $this->em->getConnection()->executeStatement(
                 'UPDATE users SET created_at = :old WHERE id = :id',
                 ['old' => (new \DateTimeImmutable('-2 days'))->format('Y-m-d H:i:sP'), 'id' => $user->getId()],

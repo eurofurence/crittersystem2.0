@@ -114,12 +114,16 @@ final class ShiftStaffingUserSelectTest extends DatabaseWebTestCase
         self::assertSame([], $data['results'], 'an already-assigned user is not offered again');
     }
 
+    /**
+     * A batch assignment places every picked volunteer who holds a confirmed membership of the
+     * needed type, and reports back the one who does not rather than failing the whole batch.
+     */
     public function testBatchAssignAddsEveryPickedMemberAndReportsNonMembers(): void
     {
         $this->client->loginUser($this->manager());
         $a = $this->member('anna');
         $b = $this->member('ben');
-        $stranger = $this->member('stray', confirmed: false); // not a confirmed member of the needed type
+        $stranger = $this->member('stray', confirmed: false);
 
         $crawler = $this->client->request('GET', '/manage-shifts/shift/'.$this->shift->getUuid().'/staffing');
         $token = $crawler->filter('input[name="_token"]')->first()->attr('value');

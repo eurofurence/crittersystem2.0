@@ -24,11 +24,11 @@ final class UserLocateTest extends DatabaseTestCase
         $alice = $this->makeUser('alice', 'alice@example.com', 4242);
         $this->makeUser('bob', 'bob@other.org', null);
         $this->em->flush();
-        // Referenced so the id-is-not-searchable test can query a real, badge-less user's id.
         $this->bobId = $this->em->getRepository(User::class)->findOneBy(['name' => 'bob'])->getId();
         self::assertNotSame(4242, $this->bobId, 'guard: the id under test must differ from the seeded badge number');
     }
 
+    /** A real, badge-less user's id, so the id-is-not-searchable test has one to query. */
     private int $bobId;
 
     private function makeUser(string $name, string $email, ?int $badge): User
@@ -55,11 +55,13 @@ final class UserLocateTest extends DatabaseTestCase
         self::assertSame(['alice'], $this->names($this->users->locate('ALICE@Example.com')));
     }
 
+    /**
+     * A truncated address still containing '@' is matched in full, so it finds nothing; a bare
+     * domain fragment has no '@', falls into name search, and cannot reach the email column.
+     */
     public function testPartialEmailNeverMatches(): void
     {
-        // A truncated address (still containing '@') is matched exactly, so it finds nothing.
         self::assertSame([], $this->users->locate('alice@exam'));
-        // A bare domain fragment (no '@') falls into name search and cannot reach the email column.
         self::assertSame([], $this->users->locate('example.com'));
     }
 
@@ -69,9 +71,9 @@ final class UserLocateTest extends DatabaseTestCase
         self::assertSame([], $this->users->locate('42'));
     }
 
+    /** A digit string is read as a registration number, so a real user's id matches nobody. */
     public function testDatabaseIdIsNotSearchable(): void
     {
-        // Querying a real user's id (as digits) must be read as a registration number, not the id.
         self::assertSame([], $this->users->locate((string) $this->bobId));
     }
 

@@ -12,8 +12,6 @@
     ]
   }) }}
 
-  {# ------------------------------------------------------------------ flashes #}
-
   {{ d.card_start('flash_messages', {subtitle: 'Rendered once, for the whole app, by base.html.twig.'}) }}
     <p>
       The three alerts <strong>above the page header</strong> are Symfony flash messages: this
@@ -35,8 +33,6 @@ $this-&gt;addFlash('success', 'Demo Department was saved.');
 {% import 'components/notification/_macros.twig' as n %}
 {{ n.flash_messages(app) }}{% endverbatim %}</code></pre>
   {{ d.card_end() }}
-
-  {# ------------------------------------------------------------------- alerts #}
 
   {{ d.card_start('alert', {subtitle: 'An inline, in-page message. Types: success, info, warning, danger (and secondary).'}) }}
     {{ n.alert('success', 'Demo Department was saved.') }}
@@ -75,8 +71,6 @@ $this-&gt;addFlash('success', 'Demo Department was saved.');
 {{ n.alert('danger', 'Could not reach the demo server.', {dismissible: true}) }}
 {{ n.alert('info', 'Heads up - the demo event starts in 3 days.', {icon: 'ℹ️'}) }}{% endverbatim %}</code></pre>
   {{ d.card_end() }}
-
-  {# ------------------------------------------------------------------- toasts #}
 
   {{ d.card_start('toast', {subtitle: 'A transient, floating message. Shown by assets/js/notifications.js on click of [data-toast-target].'}) }}
     <p>

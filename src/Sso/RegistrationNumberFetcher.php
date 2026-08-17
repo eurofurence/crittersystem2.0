@@ -53,6 +53,7 @@ final class RegistrationNumberFetcher
         $this->em->flush();
     }
 
+    /** The registration API answers with { "ids": [ <regnum>, ... ] }; the first id is the number. */
     private function query(GenericProvider $provider, AccessTokenInterface $token, string $url): ?int
     {
         try {
@@ -64,7 +65,6 @@ final class RegistrationNumberFetcher
             return null;
         }
 
-        // The registration API answers with { "ids": [ <regnum>, ... ] }; the first id is the number.
         if (!\is_array($response) || !isset($response['ids'][0]) || !is_numeric($response['ids'][0])) {
             return null;
         }

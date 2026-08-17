@@ -52,6 +52,22 @@ final class BotShiftController extends AbstractController
     ) {
     }
 
+    /**
+     * Browses shifts for the acting volunteer.
+     *
+     * Publication state and audience are filtered in SQL, as are the department, location and
+     * shift-task filters, so they narrow the whole result set before the cap. Filtering after the
+     * cap would spend it on shifts that are then discarded, and this endpoint has no cursor, so
+     * whatever sits behind them is unreachable by any second request. Without a `date` the window
+     * is shifts that have not ended yet, otherwise the bot pages through every shift the event
+     * ever ran and each row costs its own availability queries.
+     *
+     * The cap is hard: the response is built per shift, so an unbounded list is both a query storm
+     * and a Telegram message the bot cannot render. `filterVisible()` then applies the visibility
+     * rule a second time as a backstop against the two expressions of it drifting apart, batched
+     * into two queries for the whole set, and `ShiftEligibility::warmUp()` batches the staffing,
+     * membership and own-booking lookups each row would otherwise run on its own.
+     */
     #[Route('/shifts', name: 'app_api_bot_shifts', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
@@ -126,6 +142,20 @@ final class BotShiftController extends AbstractController
         return $this->json($this->normalizer->shift($shift, $actor));
     }
 
+    /**
+     * Signs the acting volunteer up for a shift.
+     *
+     * Applying to a grouped shift commits the volunteer to every member of it, so the bot has to
+     * have shown them the whole group first: that is what `confirm_group` asserts, and without it
+     * somebody taps "apply" on a one-hour rehearsal and is booked for a six-hour show as well.
+     *
+     * No sign-up option at all means sign-up is refused rather than a type being missing, so the
+     * response carries the actual reason instead of an empty list to choose from.
+     *
+     * The entry for the shift that was asked about is the top-level body, and `group_entries` is
+     * additive: it lists everything created so the caller can tell the volunteer what they are now
+     * on, without changing the shape an existing bot flow reads.
+     */
     #[Route('/shifts/{id}/apply', name: 'app_api_bot_shift_apply', methods: ['POST'])]
     public function apply(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): JsonResponse
     {
@@ -145,7 +175,6 @@ final class BotShiftController extends AbstractController
         if ($type === null) {
             $options = $this->signup->signupOptions($shift, $actor);
 
-            // Several types on offer: the volunteer genuinely has to pick one.
             if (\count($options) > 1) {
                 return $this->json([
                     'error' => 'volunteer_type_required',
@@ -207,6 +236,11 @@ final class BotShiftController extends AbstractController
         return $this->json($body, Response::HTTP_CREATED);
     }
 
+    /**
+     * Cancels the acting volunteer's sign-up. A grouped commitment is dropped whole: cancelling a
+     * single shift answers 204 with no body, and only the grouped case returns the list of shifts
+     * that went, so the bot can tell the volunteer.
+     */
     #[Route('/shifts/{id}/cancel', name: 'app_api_bot_shift_cancel', methods: ['POST'])]
     public function cancel(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): JsonResponse
     {
@@ -235,8 +269,8 @@ final class BotShiftController extends AbstractController
     }
 
     /**
-     * A malformed value is a caller bug worth surfacing on this surface, the same as a malformed
-     * filter uuid: without this the date parser throws and the bot sees a 500 it cannot act on.
+     * A malformed date answers 400, like a malformed filter uuid: left alone the parser throws and
+     * the bot sees a 500 it cannot act on.
      */
     private function parseDate(string $value): \DateTimeImmutable
     {

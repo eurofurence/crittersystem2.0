@@ -111,7 +111,10 @@ final class PlannerPublishFeedbackTest extends DatabaseWebTestCase
 
     /**
      * The regression: once the drafts are published the counter must read zero and the button must
-     * be disabled. Re-reading the page is exactly what the grid reload now does for that region.
+     * be disabled. Re-reading the page is exactly what the grid reload does for that region.
+     *
+     * The disabled state is asserted as not-null rather than as a value, because a valueless HTML
+     * attribute reads back as '' when present and null when absent.
      */
     public function testAfterPublishingTheCounterIsZeroAndTheButtonIsDisabled(): void
     {
@@ -125,14 +128,13 @@ final class PlannerPublishFeedbackTest extends DatabaseWebTestCase
 
         $bar = $this->plannerBar()->filter('#planner-publish-bar');
         self::assertStringContainsString('0', $bar->text(), 'no drafts remain');
-        // A valueless HTML attribute reads back as '' when present, null when absent.
         self::assertNotNull(
             $bar->filter('button[type="submit"]')->attr('disabled'),
             'a button over zero drafts must not invite the "nothing to publish" error',
         );
     }
 
-    /** Publishing twice is what produced the reported error; the second attempt still says so. */
+    /** Publishing a second time reports that nothing is left, rather than reporting success. */
     public function testASecondPublishReportsThereIsNothingLeft(): void
     {
         $this->login();
@@ -149,13 +151,14 @@ final class PlannerPublishFeedbackTest extends DatabaseWebTestCase
 
     /**
      * A rejected publish names the offending shifts by uuid, so the grid can outline them instead of
-     * leaving the manager to match error text against blocks.
+     * leaving the manager to match error text against blocks. Publication is atomic, so a rejected
+     * attempt leaves every draft, valid or not, in the draft state.
      */
     public function testARejectedPublishIdentifiesTheOffendingShifts(): void
     {
         $this->login();
         $good = $this->draft('Fine');
-        $bad = $this->draft('   ');   // blank title: fails validation
+        $bad = $this->draft('   ');
         $this->em->flush();
 
         $token = $this->plannerBar()->filter('form[action*="/publish"] input[name="_token"]')->attr('value');
@@ -169,7 +172,6 @@ final class PlannerPublishFeedbackTest extends DatabaseWebTestCase
         self::assertSame([(string) $bad->getUuid()], $payload['invalid']);
         self::assertNotContains((string) $good->getUuid(), $payload['invalid'], 'a valid shift is not flagged');
 
-        // Publication is atomic: a rejected attempt leaves every draft alone.
         $this->em->clear();
         foreach ($this->em->getRepository(Shift::class)->findAll() as $shift) {
             self::assertSame(ShiftState::DRAFT, $shift->getState());
@@ -177,16 +179,15 @@ final class PlannerPublishFeedbackTest extends DatabaseWebTestCase
     }
 
     /**
-     * A shift with no Shift Task must not publish. It used to succeed with a warning shown
-     * afterwards, so a manager who painted a shift, hit Publish and read "has no Shift Task set"
-     * as something to fix found it already live - the click had published it before the modal
-     * even opened.
+     * A shift with no Shift Task is refused outright. Publishing it and warning afterwards would
+     * put it live before the manager has read the warning, so the warning must be a refusal.
+     *
+     * The fixture is exactly what painting produces: the toolbar's task picker defaults to "None".
      */
     public function testAShiftWithoutATaskIsRefusedRatherThanPublishedWithAWarning(): void
     {
         $this->login();
 
-        // Exactly what painting produces: the toolbar's task picker defaults to "None".
         $taskless = (new Shift())->setTitle('Logistics shift')
             ->setStartsAt(new \DateTimeImmutable('+1 day 10:00'))
             ->setEndsAt(new \DateTimeImmutable('+1 day 12:00'))

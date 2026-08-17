@@ -41,6 +41,10 @@ final class LocationImporter
     }
 
     /**
+     * A row whose name is already worn by a different location, in the database or earlier in this
+     * batch, is skipped with a warning: names are unique, and letting it through would abort the
+     * whole flush.
+     *
      * @param array<int, mixed> $rows
      *
      * @return array{imported: int, warnings: string[]}
@@ -78,8 +82,6 @@ final class LocationImporter
                 continue;
             }
 
-            // Name is unique. Refuse a name already worn by a different location (in the DB or earlier
-            // in this batch), which would otherwise abort the whole flush.
             $clash = $this->locations->findOneByName($name);
             if (($clash !== null && $clash->getAlias() !== $alias)
                 || (($usedNames[mb_strtolower($name)] ?? $alias) !== $alias)) {
@@ -116,6 +118,9 @@ final class LocationImporter
     }
 
     /**
+     * The assembled tree is validated only once every parent is in place, so nesting depth is
+     * measured against the final shape rather than whatever order the rows happened to arrive in.
+     *
      * @param array<string, Location> $byAlias
      * @param array<string, ?string>  $parents
      * @param string[]                $warnings
@@ -136,8 +141,6 @@ final class LocationImporter
             $location->setParent($parent);
         }
 
-        // Validate the assembled tree only once every parent is in place, so depth is measured against
-        // the final shape rather than whatever order the rows happened to be in.
         foreach ($byAlias as $alias => $location) {
             if (!$this->parentChainOk($location)) {
                 $location->setParent(null);

@@ -39,18 +39,17 @@ final class FormKitController extends AbstractController
             'form' => $form,
             'submitted' => $submitted,
             'data' => $data,
-            // Two more never-submitted demo forms; separate names so their field ids do not collide.
             'extras' => $this->demoForm('kit_extras')->createView(),
             'narrow' => $this->demoForm('kit_narrow')->createView(),
         ]);
     }
 
+    /** The candidates are invented on purpose: this page must never show real departments. */
     #[Route('/dev/kit/search-frame', name: 'app_form_kit_search_frame')]
     public function searchFrame(Request $request): Response
     {
         $q = trim((string) $request->query->get('q', ''));
 
-        // Obviously fake data - this page must never show real departments.
         $items = [
             'Demo Department',
             'Demo Registration',
@@ -78,6 +77,10 @@ final class FormKitController extends AbstractController
      * A never-submitted demo form: it exists purely so the kit page can show the field
      * variants FormKitDemoType does not cover (help text, prefix/suffix, checkbox, single
      * choice, a disabled field, and a field carrying a validation error).
+     *
+     * Each instance is created under its own name so two of them on one page do not share field ids.
+     * The error is added by hand, which leaves exactly what a failed constraint would, so the macro
+     * renders the same markup as on a real submit without needing a round-trip.
      */
     private function demoForm(string $name): FormInterface
     {
@@ -115,8 +118,6 @@ final class FormKitController extends AbstractController
             ])
             ->getForm();
 
-        // The error state, without needing an actual round-trip: this is exactly what a failed
-        // constraint leaves behind, so the macro renders the same markup as on a real submit.
         $form->get('email')->addError(new FormError('This value is not a valid e-mail address (try example@demo.invalid).'));
 
         return $form;

@@ -47,16 +47,20 @@ final class HoursCacheServiceTest extends DatabaseTestCase
         $this->em->persist($e);
     }
 
+    /**
+     * A daytime shift counts 4h, a night shift 8h doubled to 16, a 4h no-show costs -8, and a shift
+     * still ahead counts nothing. With 5 worklog hours the total is 17.
+     */
     public function testBreakdownFromCompletedShiftsAndWorklogs(): void
     {
         $type = new VolunteerType('Logistics');
         $this->em->persist($type);
         $user = $this->user('hank');
 
-        $this->entry($user, $type, '-3 day 10:00', '-3 day 14:00');          // day, 4h
-        $this->entry($user, $type, '-2 day 22:00', '-1 day 06:00');          // night, 8h -> x2 = 16
-        $this->entry($user, $type, '-4 day 10:00', '-4 day 14:00', true);    // no-show, 4h -> -8
-        $this->entry($user, $type, '+2 day 10:00', '+2 day 14:00');          // future -> ignored
+        $this->entry($user, $type, '-3 day 10:00', '-3 day 14:00');
+        $this->entry($user, $type, '-2 day 22:00', '-1 day 06:00');
+        $this->entry($user, $type, '-4 day 10:00', '-4 day 14:00', true);
+        $this->entry($user, $type, '+2 day 10:00', '+2 day 14:00');
 
         $worklog = new Worklog($user);
         $worklog->setHours(5.0);
@@ -69,12 +73,13 @@ final class HoursCacheServiceTest extends DatabaseTestCase
         self::assertSame(16.0, $cache->getNightShiftsHours());
         self::assertSame(-8.0, $cache->getNoshowPenaltyHours());
         self::assertSame(5.0, $cache->getWorklogHours());
-        self::assertSame(17.0, $cache->getTotalHours()); // 4 + 16 - 8 + 5
+        self::assertSame(17.0, $cache->getTotalHours());
         self::assertSame(2, $cache->getCompletedShiftsCount());
         self::assertSame(1, $cache->getNightShiftsCount());
         self::assertSame(1, $cache->getNoshowShiftsCount());
     }
 
+    /** Hours added after the cache was built stay invisible to get() until a refresh is asked for. */
     public function testGetReusesFreshCacheButRefreshRecalculates(): void
     {
         $user = $this->user('iris');
@@ -86,7 +91,6 @@ final class HoursCacheServiceTest extends DatabaseTestCase
         $first = $this->service()->get($user);
         self::assertSame(3.0, $first->getTotalHours());
 
-        // Add more hours; a plain get() should return the still-fresh cache.
         $extra = new Worklog($user);
         $extra->setHours(4.0);
         $this->em->persist($extra);

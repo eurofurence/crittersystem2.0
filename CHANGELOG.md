@@ -10,14 +10,84 @@ Critter 2.0 is production. **`1.1.0`**
 
 ## [Unreleased]
 
+### Added
+
+- feat(manage): `/manage/volunteer-types/repair` finds the users who finished onboarding without a
+  Critter type and gives it to one of them, to a selection, or to all of them, recording each. It
+  leads with the cause rather than the symptom: onboarding matches the base type on its role, a type
+  only carries a role if somebody gave it one, and while no type claims `volunteer` the repair
+  assigns nobody anything, so the screen offers to hand the role to an existing type first
+- feat(manage): the Critter type form exposes the system role, so a base type that never had one is
+  recoverable without editing the database by hand. Only one type may hold each role, and the form
+  says so instead of failing on the database constraint
+- feat(demo): `bin/demo-instance` builds and serves an instance of fictional data on a database and
+  port of its own, so the development instance keeps running untouched; `app:demo:seed` fills it and
+  refuses to run where the data could be real
+- feat(demo): `bin/demo-screenshots.php` and `bin/build-slides.php` build an introduction slide deck
+  from that instance; it carries everything it needs, so it opens from an e-mail attachment with no
+  network at all. The deck itself is built into the ignored `docs/slides/`, not committed
+- feat(ui): a favicon and a navbar logo of the app's own, in place of the Symfony skeleton's
+  placeholder
+
 ### Changed
 
+- chore(templates): comments across all 271 Twig templates sit above what they explain and say why
+  rather than what, and commented-out markup is gone. Three that no longer matched the code were
+  corrected, including one telling the reader the board needs `importmap('app')` when the file
+  renders `importmap('board')`, which is the single change that would break the board's isolation
 - perf(tests): the suite runs in ~1 minute against ~19 before, and the per-test database reset costs
   9ms against 1.5s; it needs `docker compose -f compose.dev.yaml up -d test-database`
 - test: `bin/ptest` runs the suite in parallel, one database per worker
+- feat(shifts): the per-shift check-in override is relabelled "Require check-in (Setup/Teardown)"
+  and shown read-only, in the shift form and in both planner panels. It forces the event check-in
+  requirement on a shift outside the main event, which requires it anyway, so the switch only ever
+  changed a setup or teardown shift
+- docs(testing): the three test layers, what each one catches, and what the browser suite's
+  flakiness is not
 
 ### Fixed
 
+- fix(board): opening the shifts view no longer raises the call-for-help confirmation once for every
+  shift on the page before anyone has pressed anything. Twig prints a false boolean as the empty
+  string and Stimulus reads an empty value as true, so each closed dialog told its controller it was
+  open and showed itself as soon as it connected
+- fix(certifications): the scanning QR rotates from a live region instead of a
+  `<meta http-equiv="refresh">`. Turbo swaps the body and never loads a document, so the refresh
+  stayed scheduled against the page that set it and pulled the user back there long after they had
+  moved on. A token already inside the rotation margin is reissued rather than shown, so the region
+  is never handed a moment that has passed
+- fix(staff): the live duty board names the operational departments nobody is covering again. It had
+  been switched off on both sides by accident. Organizational departments stay out of the warning,
+  since nobody is ever on duty in one, and it appears only beside the grid, because with nobody on
+  duty at all the empty state already says so
+- fix(ui): a toast asked not to hide now reaches Bootstrap as a boolean it accepts. Twig bound the
+  `'true'`/`'false'` pair to the default rather than to the option, so an explicit setting rendered
+  as an empty attribute or a bare `1` and the toast failed to build
+- fix(planner): the toolbar offers the matrix view again. The link had been left commented out,
+  which made the view reachable only by typing its URL
+- fix(shifts): every screen naming a shift leads with its title and follows with its task, the way
+  the browse list already did. The planner, the staff apply grid and the staff schedule showed the
+  task alone, so a department running one task all week drew a column of blocks that all read the
+  same word. My Shifts, the bounty board, the department grid, the staff stats table, the backstage
+  lookup and the assignment proposal gained the task line they never had
+- fix(shifts): the planner and staff apply grids leave a half-hour shift room for its time and its
+  title; both were short enough to clip the title away entirely
+- fix(planner): saving a shift in the side panel keeps its check-in override. The control is
+  read-only, so the browser submits nothing for it, and the missing field was read as "off": any
+  edit at all switched off an override the panel was showing as ticked
+- fix(schedule): a staff schedule cell names its location by full path, so it says which building
+  "Hall 5" is in
+- fix(ui): the scrollbar gutter no longer opens an empty strip down the left of any page long enough
+  to scroll, and the page no longer jumps sideways when a dialog opens
+- fix(onboarding)!: a user finishing onboarding is given the base volunteer type even when the event
+  has renamed it; renaming it stopped the assignment silently. Run `doctrine:migrations:migrate`:
+  one additive migration pins the base types and assigns the type to users who finished without one
+- fix(rbac): every seeded staff group holds `news:view`, so staff are not met with a 403 on the page
+  sign-in sends them to; a migration grants it to existing databases
+- fix(onboarding): the baseline permission group is granted to staff as well, matching what SSO
+  provisioning has always done
+- fix(sso): a permission group a mapping names but the installation does not have is logged instead
+  of skipped in silence
 - test(security): the access-control gate test built no schema and passed only when another test had
   already built one
 
@@ -25,6 +95,8 @@ Critter 2.0 is production. **`1.1.0`**
 
 - fix(deps): guzzlehttp/guzzle 7.15.1 to 7.15.3, closing CVE-2026-69246 (a noncanonical host bypasses
   host-based checks) and CVE-2026-69245 (a noncanonical cookie domain keeps subdomain scope)
+- fix(security): the login form generates its stateless CSRF token instead of posting the sentinel,
+  so a session that has submitted any other form can still sign in
 
 ## [1.1.0] - 2026-08-10
 

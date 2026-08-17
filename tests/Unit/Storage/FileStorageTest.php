@@ -29,9 +29,9 @@ final class FileStorageTest extends TestCase
         }
     }
 
+    /** The DSN path is absolute, so the project dir handed to the factory never comes into play. */
     private function storage(): FileStorage
     {
-        // projectDir is irrelevant here because the DSN path is absolute.
         $filesystem = (new FileStorageFactory('/nonexistent'))->create('local://' . $this->tmpDir);
 
         return new FileStorage($filesystem);
@@ -69,9 +69,9 @@ final class FileStorageTest extends TestCase
         (new FileStorageFactory('/tmp'))->create('ftp://example.com/x');
     }
 
+    /** Building the S3-backed filesystem performs no network I/O, so no bucket has to exist. */
     public function testS3DsnBuildsAFilesystemWithoutContacting(): void
     {
-        // Constructing the S3-backed filesystem must not require network I/O.
         $filesystem = (new FileStorageFactory('/tmp'))->create('s3://my-bucket?region=eu-central-1&prefix=uploads');
 
         self::assertInstanceOf(\League\Flysystem\FilesystemOperator::class, $filesystem);

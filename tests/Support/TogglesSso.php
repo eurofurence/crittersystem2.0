@@ -15,13 +15,15 @@ trait TogglesSso
     /** @var array<string, string|null> */
     private array $ssoEnvBackup = [];
 
+    /**
+     * $_ENV wins over $_SERVER in Symfony's env resolution and .env already sets SSO_ENABLED=0, so
+     * both have to be overridden. {@see restoreSsoEnv()} puts the originals back rather than
+     * unsetting them: deleting a variable .env defined leaves the next kernel unable to resolve it.
+     */
     private function bootWithSso(): KernelBrowser
     {
         self::ensureKernelShutdown();
 
-        // $_ENV wins over $_SERVER in Symfony's env resolution and .env already sets SSO_ENABLED=0,
-        // so both have to be overridden. The originals are restored afterwards rather than unset:
-        // deleting a variable .env defined leaves the next kernel unable to resolve it at all.
         foreach (['SSO_ENABLED' => '1', 'SSO_CLIENT_ID' => 'test-client'] as $name => $value) {
             $this->ssoEnvBackup[$name] ??= $_ENV[$name] ?? null;
             $_ENV[$name] = $_SERVER[$name] = $value;

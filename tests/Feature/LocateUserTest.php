@@ -83,6 +83,7 @@ final class LocateUserTest extends DatabaseWebTestCase
         self::assertSelectorTextContains('body', 'No matches');
     }
 
+    /** The scanner pastes the whole verify URL, so the search extracts the token out of it. */
     public function testScannedBadgeResolvesToTheUser(): void
     {
         $this->client->loginUser($this->locator());
@@ -91,31 +92,31 @@ final class LocateUserTest extends DatabaseWebTestCase
         $this->em->persist($token);
         $this->em->flush();
 
-        // The scanner pastes the whole verify URL; the token is extracted from it.
         $this->client->request('GET', '/backstage/distribute?q='.urlencode('https://host/digital-id/verify/'.$token->getToken()));
 
         self::assertResponseRedirects('/backstage/distribute/'.$target->getUuid());
     }
 
+    /**
+     * The email column is redacted for non-admin staff, and the raw address is absent from the
+     * markup rather than merely hidden. Holding the privilege is not enough on its own: an admin
+     * without a fresh 2FA step-up still sees it redacted, and only a stepped-up admin gets it.
+     */
     public function testEmailIsRedactedForNonAdminsButNotAdmins(): void
     {
         $this->target('target-one');
         $this->target('target-two');
 
-        // Non-admin staff: the email column is redacted, and the raw address is absent from the page.
         $this->client->loginUser($this->locator());
         $this->client->request('GET', '/backstage/distribute?q=target');
         self::assertResponseIsSuccessful();
         self::assertStringNotContainsString('target-one@example.com', (string) $this->client->getResponse()->getContent());
         self::assertSelectorTextContains('td.small', '-');
 
-        // Admin without a fresh 2FA step-up: still redacted. Holding the privilege
-        // is not enough to unmask on its own.
         $this->client->loginUser($this->user('boss', 'ROLE_ADMIN', 'global:admin'));
         $this->client->request('GET', '/backstage/distribute?q=target');
         self::assertStringNotContainsString('target-one@example.com', (string) $this->client->getResponse()->getContent());
 
-        // Same admin, after a fresh step-up: the address is shown.
         $session = $this->client->getRequest()->getSession();
         $session->set('_mfa_verified_at', time());
         $session->save();
@@ -134,6 +135,7 @@ final class LocateUserTest extends DatabaseWebTestCase
         self::assertSelectorTextContains('body', '987654');
     }
 
+    /** Checking a volunteer in records an arrival, and removing the check-in undoes both flags. */
     public function testCheckInAndRemoval(): void
     {
         $this->client->loginUser($this->locator());
@@ -148,7 +150,6 @@ final class LocateUserTest extends DatabaseWebTestCase
         self::assertTrue($reloaded->getState()->isArrived());
         self::assertNotNull($reloaded->getState()->getArrivalDate());
 
-        // And it can be undone.
         $crawler = $this->client->request('GET', '/backstage/distribute/'.$target->getUuid());
         $this->client->submit($crawler->selectButton('Remove check-in')->form());
 

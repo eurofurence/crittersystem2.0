@@ -30,6 +30,10 @@ final class NotificationExtension extends AbstractExtension
     }
 
     /**
+     * Rendered by the shared layout on every page, error pages included, which are shown precisely
+     * when something (often the database) has failed. A failing lookup must hide the bell rather than
+     * turn the friendly error page back into a 500.
+     *
      * @return array{count: int, recent: array<int, \App\Entity\Notification>}|null
      */
     public function bell(): ?array
@@ -39,10 +43,6 @@ final class NotificationExtension extends AbstractExtension
             return null;
         }
 
-        // Rendered on every page via the shared layout - including the error
-        // pages, which are shown precisely when something (often the database)
-        // has failed. A broken bell must hide itself, not turn the friendly
-        // error page back into a 500.
         try {
             return [
                 'count' => $this->notifications->unreadCount($user),

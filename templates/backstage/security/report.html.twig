@@ -1,0 +1,57 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'backstage.security.report.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('backstage.security.report.title'|trans, {
+    subtitle: 'backstage.security.report.subtitle'|trans,
+    actions: [
+      {label: 'backstage.security.action.export'|trans, href: path('app_backstage_security_report_csv', {day: day|date('Y-m-d')}), class: 'btn btn-outline-secondary'},
+      {label: 'backstage.security.action.back'|trans, href: path('app_backstage_security'), class: 'btn btn-outline-secondary'}
+    ]
+  }) }}
+
+  <form method="get" action="{{ path('app_backstage_security_report') }}" class="row g-2 mb-3">
+    <div class="col-12 col-md-4">
+      <input type="date" class="form-control" name="day" value="{{ day|date('Y-m-d') }}">
+    </div>
+    <div class="col-12 col-md-auto"><button class="btn btn-primary">{{ 'backstage.security.action.show_day'|trans }}</button></div>
+  </form>
+
+  <div class="row g-3 mb-3">
+    {{ d.stat_card(counts.total, 'backstage.security.stat.total'|trans, {col: 'col-4'}) }}
+    {{ d.stat_card(counts.staff, 'backstage.security.stat.staff'|trans, {col: 'col-4'}) }}
+    {{ d.stat_card(counts.volunteers, 'backstage.security.stat.volunteers'|trans, {col: 'col-4'}) }}
+  </div>
+
+  {% if rows is empty %}
+    {{ d.empty_state('backstage.security.report.empty.title'|trans, {message: 'backstage.security.report.empty.message'|trans}) }}
+  {% else %}
+    {{ d.table_start() }}
+      <thead>
+        <tr>
+          <th>{{ 'common.label.name'|trans }}</th>
+          <th>{{ 'backstage.security.label.registration'|trans }}</th>
+          <th>{{ 'backstage.security.label.kind'|trans }}</th>
+          <th>{{ 'backstage.security.label.when'|trans }}</th>
+          <th>{{ 'backstage.security.label.by'|trans }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td class="fw-semibold">
+              <a href="{{ path('app_backstage_security_user', {id: row.user.uuid}) }}">{{ row.user.name }}</a>
+              {% if row.overridden %}{{ d.badge('backstage.security.label.overridden'|trans, 'bg-red-lt') }}{% endif %}
+            </td>
+            <td class="small">{{ row.user.personalData and row.user.personalData.badgeNumber is not null ? row.user.personalData.badgeNumber : '-' }}</td>
+            <td>{{ (row.user.isStaff ? 'backstage.security.kind.staff' : 'backstage.security.kind.volunteer')|trans }}</td>
+            <td class="small">{{ row.occurredAt|app_time }}</td>
+            <td class="small">{{ row.actor ? row.actor.name : '-' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end() }}
+  {% endif %}
+{% endblock %}

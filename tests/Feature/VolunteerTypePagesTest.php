@@ -44,13 +44,14 @@ final class VolunteerTypePagesTest extends DatabaseWebTestCase
         return $type;
     }
 
+    /** A non-staff viewer gets the public types only, and a staff-only type is 404 on its own page. */
     public function testNonStaffSeesOnlyPublicTypes(): void
     {
         $public = $this->publicType();
         $staff = $this->staffType();
         $this->em->flush();
 
-        $this->login(); // non-staff
+        $this->login();
         $crawler = $this->client->request('GET', '/volunteer-types');
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Greeter', $crawler->text());

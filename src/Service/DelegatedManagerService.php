@@ -101,6 +101,10 @@ class DelegatedManagerService
         );
     }
 
+    /**
+     * A delegated grant is time-boxed to the end of teardown when that date is configured, so
+     * delegation does not outlive the event it was granted for.
+     */
     private function grant(User $subject, Department $department, string $groupSlug): void
     {
         $group = $this->groups->findOneBySlug($groupSlug);
@@ -108,7 +112,6 @@ class DelegatedManagerService
             return;
         }
 
-        // Time-box delegated grants to the end of teardown when configured.
         $expiresAt = $this->config->getDate(EventConfigStore::KEY_TEARDOWN_END);
 
         $this->em->persist(new UserGroupAssignment($subject, $group, $department, $expiresAt));

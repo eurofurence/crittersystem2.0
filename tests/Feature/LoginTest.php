@@ -52,6 +52,10 @@ final class LoginTest extends DatabaseWebTestCase
         self::assertSelectorExists('input[name="_username"]');
     }
 
+    /**
+     * A username sign-in lands on /news. The group badges are asserted on /dashboard, because that
+     * is where they live now that the dashboard is no longer the landing page.
+     */
     public function testValidLoginWithUsernameRedirectsToNews(): void
     {
         $this->submitLogin('tester', 'secret123');
@@ -61,7 +65,6 @@ final class LoginTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'tester');
 
-        // The group badges live on the dashboard, which is no longer the landing page.
         $this->client->request('GET', '/dashboard');
         self::assertSelectorTextContains('body', 'Volunteer');
     }

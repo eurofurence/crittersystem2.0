@@ -64,6 +64,11 @@ final class AvailabilityController extends AbstractController
         ]);
     }
 
+    /**
+     * The grid builds the submitted payload itself, so a rejected entry means a client bug. Saying
+     * "saved" while quietly discarding part of what the user drew loses their work without a trace,
+     * so the count of unreadable entries is reported back to them.
+     */
     #[Route('/availability', name: 'app_availability_submit', methods: ['POST'])]
     public function submit(Request $request): Response
     {
@@ -100,10 +105,6 @@ final class AvailabilityController extends AbstractController
 
         $this->availability->submit($user, $ranges, (string) $request->request->get('comment') ?: null);
 
-        /*
-         * The grid builds this payload itself, so a rejected entry means a client bug - and telling the
-         * user "saved" while quietly discarding part of what they drew loses their work without a trace.
-         */
         if ($rejected > 0) {
             $this->addFlash('warning', sprintf(
                 'Your availability was saved, but %d entr%s could not be read and %s not stored. Please check the grid.',
@@ -136,6 +137,9 @@ final class AvailabilityController extends AbstractController
     }
 
     /**
+     * Split per day for the same reason as the declared ranges: an overnight shift belongs to both
+     * days it touches, not only to the one it starts in.
+     *
      * @param list<array{start: \DateTimeImmutable, end: \DateTimeImmutable, title: string}> $overlays
      *
      * @return list<array{day: string, startMin: int, endMin: int, title: string}>
@@ -144,8 +148,6 @@ final class AvailabilityController extends AbstractController
     {
         $out = [];
         foreach ($overlays as $overlay) {
-            // Split for the same reason as the declared ranges: an overnight shift belongs to both
-            // days it touches, and was previously drawn only on the one it started in.
             foreach ($this->splitByDay($overlay['start'], $overlay['end'], $tz) as $segment) {
                 $out[] = $segment + ['title' => $overlay['title']];
             }
@@ -158,14 +160,14 @@ final class AvailabilityController extends AbstractController
      * Cut a span into one entry per calendar day, in the display timezone.
      *
      * The grid is a column per day addressed as {day, startMin, endMin}, so it cannot express a span
-     * that crosses midnight - and spans that cross midnight are the normal case, because touching
-     * same-value ranges are consolidated on save. Two whole days painted the same value become one
-     * 48-hour range, and emitting that as a single entry clamped to 1440 minutes made the second day
-     * disappear on reload, which read as the application deleting the volunteer's work. Leaving a gap
-     * between the days avoided the merge and so avoided the bug, which is how it was reported.
+     * that crosses midnight, and such spans are the normal case: touching same-value ranges are
+     * consolidated on save, so two whole days painted alike become one 48-hour range. Emitting that
+     * as a single entry clamped to 1440 minutes drops every day but the first, which reads to the
+     * volunteer as the application deleting their work.
      *
      * Minutes are wall-clock, not elapsed: on the days a clock changes, a "day" is 23 or 25 hours,
-     * and the grid is still 1440 minutes tall. Measuring elapsed time would slide every block on
+     * and the grid is still 1440 minutes tall, so a segment running to the next midnight is emitted
+     * as 1440 whatever the clock did in between. Measuring elapsed time would slide every block on
      * those two days of the year.
      *
      * @return list<array{day: string, startMin: int, endMin: int}>
@@ -187,8 +189,6 @@ final class AvailabilityController extends AbstractController
             $segments[] = [
                 'day' => $cursor->format('Y-m-d'),
                 'startMin' => (int) $cursor->format('H') * 60 + (int) $cursor->format('i'),
-                // A segment running to the next midnight is a full day's worth of grid, whatever the
-                // clock did in between.
                 'endMin' => $segmentEnd == $nextMidnight
                     ? 1440
                     : (int) $segmentEnd->format('H') * 60 + (int) $segmentEnd->format('i'),

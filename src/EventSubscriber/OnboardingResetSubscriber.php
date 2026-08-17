@@ -40,6 +40,7 @@ final class OnboardingResetSubscriber implements EventSubscriberInterface
         return [LoginSuccessEvent::class => 'onLoginSuccess'];
     }
 
+    /** Applying the reset consumes it: resetOnboarding() also clears the pending request. */
     public function onLoginSuccess(LoginSuccessEvent $event): void
     {
         if ($event->getFirewallName() !== self::FIREWALL) {
@@ -52,7 +53,7 @@ final class OnboardingResetSubscriber implements EventSubscriberInterface
         }
 
         $requestedAt = $user->getOnboardingResetRequestedAt();
-        $user->resetOnboarding(); // also clears the pending request
+        $user->resetOnboarding();
         $this->em->flush();
 
         $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, [

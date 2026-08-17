@@ -52,6 +52,12 @@ final class DepartmentImporter
     }
 
     /**
+     * Slugs handed out during the batch are tracked in memory, because two new rows are not flushed
+     * yet and would otherwise be free to collide.
+     *
+     * The organizational flag can only change while the department owns no shifts; a row that asks
+     * for it anyway is refused with a warning rather than applied.
+     *
      * @param array<int, mixed> $rows
      *
      * @return array{imported: int, created: int, updated: int, warnings: string[]}
@@ -63,7 +69,6 @@ final class DepartmentImporter
         $updated = 0;
         $warnings = [];
 
-        // Slugs assigned during this batch, so two unflushed new rows cannot collide.
         $batchSlugs = [];
         $vtIndex = $this->volunteerTypeIndex();
 
@@ -119,8 +124,6 @@ final class DepartmentImporter
 
             if (\array_key_exists('organizational', $row)) {
                 $wanted = (bool) $row['organizational'];
-                // The organizational flag can only change while the
-                // department owns no shifts.
                 if ($wanted !== $dept->isOrganizational() && !$isNew && $this->shifts->countForDepartment($dept) > 0) {
                     $warnings[] = "Row $i: cannot change organizational flag for '$name' - it already has shifts.";
                 } else {
@@ -201,6 +204,9 @@ final class DepartmentImporter
     /**
      * Replace the department's volunteer types with those named.
      *
+     * A global type is refused, as it is on the department form: it is already available to every
+     * department, so an import must not be able to restrict it to one.
+     *
      * @param array<int, mixed>              $names
      * @param array<string, VolunteerType>   $vtIndex
      * @param string[]                       $warnings
@@ -216,8 +222,6 @@ final class DepartmentImporter
                 $warnings[] = "Row $i: unknown volunteer type '$name'.";
                 continue;
             }
-            // A global type is already available to every department; claiming one is refused here
-            // as it is on the department form, so an import cannot restrict it.
             if ($type->isGlobal()) {
                 $warnings[] = "Row $i: '$name' is a global volunteer type and is offered to every department already.";
                 continue;

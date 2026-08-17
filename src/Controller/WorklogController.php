@@ -108,6 +108,10 @@ final class WorklogController extends AbstractController
         return $user;
     }
 
+    /**
+     * A worklog is self-editable only when the user is both its subject and the person who recorded
+     * it; anything a manager entered stays theirs to change.
+     */
     private function ownEditable(string $id, User $user): Worklog
     {
         $worklog = $this->em->getRepository(Worklog::class)->findOneBy(['uuid' => $id]);
@@ -115,7 +119,6 @@ final class WorklogController extends AbstractController
             throw $this->createNotFoundException();
         }
 
-        // Editable only when the user recorded it for themselves.
         $isOwnSubject = $worklog->getUser()->getId() === $user->getId();
         $isOwnCreator = $worklog->getCreator()?->getId() === $user->getId();
         if (!$isOwnSubject || !$isOwnCreator) {

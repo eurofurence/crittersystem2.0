@@ -16,13 +16,15 @@ final class StaffingForecast
     {
     }
 
+    /**
+     * Buckets are anchored to the running hour, so the first column really is "now" rather than a
+     * boundary that has already passed.
+     */
     public static function build(BoardContext $context): self
     {
         $step = $context->settings->forecastStepHours();
         $horizon = $context->settings->forecastHorizonHours();
 
-        // Anchored to the running hour so the first column really is "now" rather than a boundary
-        // that has already passed.
         $anchor = $context->now->setTime((int) $context->now->format('H'), 0);
 
         $buckets = [];

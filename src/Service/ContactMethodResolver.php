@@ -49,6 +49,11 @@ class ContactMethodResolver
     }
 
     /**
+     * The subject themselves and the admin PII override see every channel regardless of consent;
+     * everyone else needs both a qualifying relationship ({@see relationshipAllows()}) and the
+     * subject's per-channel consent. The internal message is the one channel nobody can withhold, so
+     * it is always offered, and always last.
+     *
      * @return array<int, array{type: string, label: string, href: ?string}>
      */
     public function methodsFor(User $subject, ?Department $context = null): array
@@ -57,9 +62,7 @@ class ContactMethodResolver
         $contact = $subject->getContact();
         $consent = $subject->getConsent();
 
-        // Self and the admin override see every channel regardless of consent.
         $unrestricted = $this->seesEverything($subject);
-        // The consent-gated relationship: a manager of the subject's department, or Info Desk.
         $related = $unrestricted || $this->relationshipAllows($subject, $context);
 
         $telegramShared = $unrestricted || ($related && (bool) $consent?->isTelegramVisible());
@@ -82,7 +85,6 @@ class ContactMethodResolver
             $methods[] = ['type' => 'phone', 'label' => $mobile, 'href' => 'tel:'.preg_replace('/[^0-9+]/', '', $mobile)];
         }
 
-        // Internal message is always available and always last.
         $methods[] = ['type' => 'message', 'label' => 'Internal message', 'href' => null];
 
         return $methods;
@@ -121,17 +123,19 @@ class ContactMethodResolver
     /**
      * Whether the viewer stands in a relationship that, given the subject's
      * consent, entitles them to the subject's contact channels.
+     *
+     * `user:contact:view` is Info Desk's grant and reaches consented contacts org-wide. A
+     * department or shift manager reaches only members of a department they manage, and both halves
+     * are required: the privilege is scoped by passing the Department as the subject, then
+     * membership is confirmed separately. Checking the privilege without a subject grants
+     * unconditionally, and checking it against the User resolves to no departments and grants too.
      */
     private function relationshipAllows(User $subject, ?Department $context): bool
     {
-        // Info Desk sees consented contacts org-wide.
         if ($this->security->isGranted('user:contact:view')) {
             return true;
         }
 
-        // A department/shift manager sees consented contacts of members of a
-        // department they manage. Scope by the Department (safe), then confirm the
-        // subject is actually a member of it.
         if ($context !== null
             && ($this->security->isGranted('department:manage', $context) || $this->security->isGranted('shift:manage', $context))
             && $this->isMember($subject, $context)

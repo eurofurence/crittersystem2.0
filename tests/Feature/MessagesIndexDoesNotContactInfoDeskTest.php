@@ -79,14 +79,16 @@ final class MessagesIndexDoesNotContactInfoDeskTest extends DatabaseWebTestCase
         self::assertSame(0, $this->notificationCount());
     }
 
-    /** The entry points at the action, not at a conversation that does not exist yet. */
+    /**
+     * The entry points at the action, not at a conversation that does not exist yet. The assertion
+     * is scoped to the list entry because the navbar carries its own "Ask Info Desk" link to the
+     * same action, and matching that would pass whatever the list does.
+     */
     public function testTheInfoDeskEntryLinksToTheActionThatOpensTheConversation(): void
     {
         $this->client->loginUser($this->volunteer());
         $crawler = $this->client->request('GET', '/messages');
 
-        // Scoped to the list entry: the navbar has its own "Ask Info Desk" link to the same action,
-        // and matching that instead would pass whatever the list does.
         self::assertCount(
             1,
             $crawler->filter('a.list-group-item[href="/messages/info-desk"]'),

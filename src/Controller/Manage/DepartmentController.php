@@ -55,6 +55,10 @@ final class DepartmentController extends AbstractController
         return $response;
     }
 
+    /**
+     * An uploaded file wins over the textarea, which holds the pasted contents. The modal always
+     * submits both fields, so an empty (no-file) upload has to fall through instead of being read.
+     */
     #[Route('/import', name: 'app_manage_department_import', methods: ['POST'])]
     public function import(Request $request): Response
     {
@@ -62,8 +66,6 @@ final class DepartmentController extends AbstractController
             return $this->redirectToRoute('app_manage_department_index');
         }
 
-        // An uploaded file wins over the textarea; fall back to the pasted contents. The modal always
-        // submits both fields, so an empty (no-file) upload must fall through, not be read.
         $upload = $request->files->get('file');
         $payload = $upload !== null && $upload->isValid()
             ? (string) $upload->getContent()
@@ -115,10 +117,13 @@ final class DepartmentController extends AbstractController
         ]);
     }
 
+    /**
+     * The organizational flag may only change while the department has no shifts, so the form locks
+     * it once any exist.
+     */
     #[Route('/{id}/edit', name: 'app_manage_department_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
     public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Department $department): Response
     {
-        // The organizational flag can only change while the department has no shifts.
         $hasShifts = $this->shifts->countForDepartment($department) > 0;
         $form = $this->createForm(DepartmentType::class, $department, ['lock_organizational' => $hasShifts]);
         $form->handleRequest($request);

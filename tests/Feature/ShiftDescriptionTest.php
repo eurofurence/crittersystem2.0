@@ -206,7 +206,9 @@ final class ShiftDescriptionTest extends DatabaseWebTestCase
 
     /**
      * RFC 5545 caps a content line at 75 octets. A description long enough to exceed it must be
-     * folded, or a strict calendar client rejects the entire feed over the one line.
+     * folded, or a strict calendar client rejects the entire feed over the one line. Unfolding it
+     * (dropping each CRLF and the single leading space that follows) has to give the text back
+     * unchanged.
      */
     public function testIcalFoldsLongLines(): void
     {
@@ -223,7 +225,6 @@ final class ShiftDescriptionTest extends DatabaseWebTestCase
         foreach (explode("\r\n", trim($body)) as $line) {
             self::assertLessThanOrEqual(75, \strlen($line), 'iCalendar content line exceeds 75 octets');
         }
-        // Unfolding (strip CRLF + one leading space) restores the original text.
         self::assertStringContainsString(trim(str_repeat('long ', 60)), str_replace("\r\n ", '', $body));
     }
 

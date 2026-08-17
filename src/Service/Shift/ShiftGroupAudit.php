@@ -28,6 +28,9 @@ final class ShiftGroupAudit
     }
 
     /**
+     * Mixed state and mixed audience are warned about because a member nobody can see makes the
+     * whole group inapplicable: a volunteer is never signed up for a shift they cannot see.
+     *
      * @return list<array{key: string, params: array<string, string|int>}> translation keys with
      *                                                                    parameters, so the manage
      *                                                                    screen stays translatable
@@ -43,8 +46,6 @@ final class ShiftGroupAudit
             return $warnings;
         }
 
-        // A member nobody can see makes the whole group inapplicable, because a volunteer is never
-        // signed up for a shift they cannot see.
         $states = [];
         $audiences = [];
         foreach ($members as $member) {

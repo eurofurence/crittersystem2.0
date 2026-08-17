@@ -23,6 +23,9 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  * minimisation requires it to actually be deleted. The export record itself is kept (the request and
  * its expiry are auditable); only the archive goes.
  *
+ * Dropping the storage key off the record is what makes the purge idempotent: the next run no longer
+ * sees the record.
+ *
  * Must run on a schedule - cron, or the CronJob in deploy/k8s/app.yaml.
  */
 #[AsCommand(
@@ -53,7 +56,6 @@ final class PurgeDataExportsCommand extends Command
                 ++$purged;
             }
 
-            // Forgetting the key is what makes the purge idempotent: the next run skips this record.
             $export->forgetArchive();
 
             $this->audit->system(AuditEvents::DATA_EXPORT, AuditEvents::EXPIRE, [

@@ -118,6 +118,10 @@ final class ShiftGroupPageTest extends DatabaseWebTestCase
         self::assertSelectorTextContains('body', 'Main Show');
     }
 
+    /**
+     * The dialog body names every member of the group and is a fragment: a full document would mean
+     * the fragment route rendered the layout, which the dialog then injects wholesale.
+     */
     public function testTheDialogBodyDescribesEveryMember(): void
     {
         $rehearsal = $this->scenario->shift('Show rehearsal', 'tomorrow 12:00');
@@ -132,8 +136,6 @@ final class ShiftGroupPageTest extends DatabaseWebTestCase
         $html = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('Show rehearsal', $html);
         self::assertStringContainsString('Main event', $html);
-        // A full page would mean the fragment route rendered the layout, which the dialog would then
-        // inject wholesale.
         self::assertStringNotContainsString('<html', $html);
     }
 
@@ -157,6 +159,11 @@ final class ShiftGroupPageTest extends DatabaseWebTestCase
         self::assertStringNotContainsString('Secret briefing', (string) $this->client->getResponse()->getContent());
     }
 
+    /**
+     * Signing up to one member of a group creates an entry on every member. It is submitted through
+     * the rendered form because the page itself mints the CSRF token into the session, and a token
+     * built outside a request has no session to mint it in.
+     */
     public function testSigningUpThroughTheFormCreatesEveryEntry(): void
     {
         $rehearsal = $this->scenario->shift('Show rehearsal', 'tomorrow 12:00');
@@ -166,8 +173,6 @@ final class ShiftGroupPageTest extends DatabaseWebTestCase
         $user = $this->scenario->user(['shift:view', 'shift:apply', 'shift:self'], $this->scenario->type);
         $this->client->loginUser($user);
 
-        // Submitted through the rendered form: the CSRF token is minted into the session by the page
-        // itself, and building one outside a request has no session to mint it in.
         $crawler = $this->client->request('GET', '/shifts/'.$show->getUuid());
         $this->client->submit($crawler->filter('form[action*="/signup"]')->form());
 

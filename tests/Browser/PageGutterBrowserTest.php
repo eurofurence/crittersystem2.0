@@ -9,8 +9,8 @@ use Facebook\WebDriver\WebDriverDimension;
  *
  * Tabler reserves the scrollbar gutter above 992px by shifting the whole document right with
  * `:root { margin-left: calc(100vw - 100%) }`, which is correct only for a centered container. Every
- * layout here is `layout-fluid`, so that margin used to open an empty strip one scrollbar wide down
- * the left of the navbar and the page. `assets/styles/app.css` cancels it and reserves the gutter on
+ * layout here is `layout-fluid`, where that margin opens an empty strip one scrollbar wide down the
+ * left of the navbar and the page. `assets/styles/app.css` cancels it and reserves the gutter on
  * the scroll container instead.
  *
  * Only a real browser can see this: the server sends identical markup either way, and the defect

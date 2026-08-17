@@ -201,7 +201,6 @@ final class DepartmentImportTest extends DatabaseTestCase
         $this->em->persist($dept);
         $this->em->flush();
 
-        // A row without the 'locations' key must leave the existing link intact.
         $this->importer()->import([['name' => 'Logistics', 'description' => 'Updated.']]);
 
         $this->em->clear();

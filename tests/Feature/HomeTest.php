@@ -38,6 +38,10 @@ final class HomeTest extends DatabaseWebTestCase
         self::assertStringContainsString('Credits', $text);
     }
 
+    /**
+     * The page states the deployed version. The assertion is on a non-empty code value rather than
+     * a literal, because the resolver's answer depends on how the checkout was built.
+     */
     public function testItShowsTheDeployedVersion(): void
     {
         $this->login();
@@ -46,7 +50,6 @@ final class HomeTest extends DatabaseWebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('Version:', $crawler->filter('body')->text());
-        // Whatever the resolver returns, it must be rendered as a non-empty code value.
         self::assertNotSame('', trim($crawler->filter('code')->first()->text()));
     }
 

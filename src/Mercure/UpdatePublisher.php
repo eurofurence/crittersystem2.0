@@ -36,19 +36,17 @@ final class UpdatePublisher
      * authorization runs. Nothing about the change travels over the hub, so a subscriber holding a
      * token that has not yet caught up with a revocation learns only that activity happened.
      *
+     * One update is queued per topic, each naming only its own topic. The name is needed so a page
+     * with several live regions refreshes the one that changed rather than all of them, but putting
+     * the whole list in a single shared payload would leak: a fan-out to two users' topics would
+     * tell each of them that the other exists and has activity. One update per topic costs a few
+     * more publishes and says nothing extra.
+     *
      * @param string|list<string>  $topics
      * @param array<string, mixed> $payload extra hints (e.g. which conversation) - never user data
      */
     public function signal(string|array $topics, array $payload = []): void
     {
-        /*
-         * One update per topic, each naming only its own topic.
-         *
-         * The name is needed so a page with several live regions refreshes the one that changed
-         * rather than all of them. Putting the whole list in a single shared payload would leak:
-         * a fan-out to two users' topics would tell each of them that the other exists and has
-         * activity. One update per topic costs a few more publishes and says nothing extra.
-         */
         foreach ((array) $topics as $topic) {
             $this->queue($topic, json_encode(
                 ['signal' => true, 'topic' => $topic] + $payload,
@@ -87,6 +85,9 @@ final class UpdatePublisher
     /**
      * Send everything queued. Called on kernel.terminate and by the messenger worker after a
      * consumed message, so nothing is published before its transaction has committed.
+     *
+     * A hub that is down must never take a request down with it: the page degrades to its polling
+     * fallback, which is what that fallback is for.
      */
     public function flush(): void
     {
@@ -97,8 +98,6 @@ final class UpdatePublisher
             try {
                 $this->hub->publish($update);
             } catch (\Throwable $e) {
-                // A hub that is down must never take a request down with it. The page degrades to
-                // its polling fallback, which is exactly what that fallback is for.
                 $this->logger->error('Mercure publish failed.', ['exception' => $e]);
             }
         }

@@ -36,13 +36,14 @@ final class PlannerDraftStoreTest extends DatabaseTestCase
         );
     }
 
+    /** An interval touching the previous one merges, as does an overlapping one; a gap starts a new span. */
     public function testConsolidateMergesOverlappingAndTouchingIntervals(): void
     {
         $intervals = $this->intervals([
             ['2026-06-01 10:00', '2026-06-01 11:00'],
-            ['2026-06-01 11:00', '2026-06-01 12:00'], // touches previous -> merge
-            ['2026-06-01 11:30', '2026-06-01 12:30'], // overlaps -> merge
-            ['2026-06-01 14:00', '2026-06-01 15:00'], // separate
+            ['2026-06-01 11:00', '2026-06-01 12:00'],
+            ['2026-06-01 11:30', '2026-06-01 12:30'],
+            ['2026-06-01 14:00', '2026-06-01 15:00'],
         ]);
 
         $merged = $this->store()->consolidateIntervals($intervals);
@@ -53,6 +54,7 @@ final class PlannerDraftStoreTest extends DatabaseTestCase
         self::assertEquals(new \DateTimeImmutable('2026-06-01 14:00'), $merged[1][0]);
     }
 
+    /** The two touching intervals become one 10:00 to 12:00 draft of two hours, the third its own. */
     public function testCreateConsolidatedPersistsOneDraftPerMergedSpan(): void
     {
         $dept = $this->dept();
@@ -67,10 +69,10 @@ final class PlannerDraftStoreTest extends DatabaseTestCase
             self::assertSame(ShiftState::DRAFT, $shift->getState(), 'painted shifts are drafts');
             self::assertNotNull($shift->getId());
         }
-        // First merged span is 10:00–12:00 = 2h.
         self::assertSame(2.0, $shifts[0]->getDurationHours());
     }
 
+    /** A 15-minute draft falls under the 30-minute minimum and is refused. */
     public function testMinimumDurationIsEnforced(): void
     {
         $dept = $this->dept();
@@ -78,7 +80,7 @@ final class PlannerDraftStoreTest extends DatabaseTestCase
         $this->store()->createDraft(
             $dept,
             new \DateTimeImmutable('2026-06-01 10:00'),
-            new \DateTimeImmutable('2026-06-01 10:15'), // 15 min < 30 min minimum
+            new \DateTimeImmutable('2026-06-01 10:15'),
         );
     }
 

@@ -145,6 +145,10 @@ final class CertificationHoldersPageTest extends DatabaseWebTestCase
         self::assertStringContainsString('carol', $crawler->filter('turbo-frame#cert-holders-approved')->text());
     }
 
+    /**
+     * A hand-edited URL carrying a blank page number, or a page far past the end, lands on real
+     * rows rather than answering 400 or rendering an empty table.
+     */
     public function testPagingIsClampedRatherThanRefused(): void
     {
         $this->manager();
@@ -152,8 +156,6 @@ final class CertificationHoldersPageTest extends DatabaseWebTestCase
         $this->record($this->volunteer('only-one'), $certification, UserCertification::STATUS_PENDING);
         $this->em->flush();
 
-        // A hand-edited URL: a blank page number and a page far past the end both land on real rows
-        // rather than a 400 or an empty table.
         $crawler = $this->client->request('GET', '/manage/certifications/'.$certification->getUuid().'?pending_page=');
         self::assertResponseIsSuccessful();
         self::assertStringContainsString('only-one', $crawler->filter('turbo-frame#cert-holders-pending')->text());

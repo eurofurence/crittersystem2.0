@@ -21,6 +21,9 @@ use Symfony\Component\Validator\Constraints as Assert;
  * Not bound to the entity: a new group needs its department before it can be constructed at all, and
  * the controller refuses to move a group that already holds members (its members would land in
  * another department's permission scope).
+ *
+ * The department choices hold only departments this manager has `shift:manage` on, and never an
+ * organizational one: those cannot own shifts, so they cannot own a group of them.
  */
 final class ShiftGroupType extends AbstractType
 {
@@ -50,8 +53,6 @@ final class ShiftGroupType extends AbstractType
                 'choice_label' => 'name',
                 'help' => 'manage.shift_group.field.department.help',
                 'constraints' => [new Assert\NotNull()],
-                // Only departments this manager holds shift:manage on, and never an organizational
-                // one: those cannot own shifts, so they cannot own a group of them.
                 'choices' => $this->manageableDepartments($options['group_department']),
             ]);
     }

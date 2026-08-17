@@ -44,6 +44,10 @@ final class ShiftTaskController extends AbstractController
         ]);
     }
 
+    /**
+     * The form only offers departments the user may manage, but the submitted department id is user
+     * input, so it is re-checked here rather than trusted because it came from the choice list.
+     */
     #[Route('/new', name: 'app_manage_shift_task_new', methods: ['GET', 'POST'])]
     public function new(Request $request): Response
     {
@@ -52,8 +56,6 @@ final class ShiftTaskController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // The form only offers departments the user may manage, but a submitted id is user
-            // input: re-check it here rather than trusting the choice list.
             if (!$this->access->canManageDepartment($shiftTask->getDepartment())) {
                 throw $this->createAccessDeniedException('You cannot create a shift task for that department.');
             }
@@ -71,6 +73,10 @@ final class ShiftTaskController extends AbstractController
         ]);
     }
 
+    /**
+     * The target department is checked as well as the current one: moving a task into a department
+     * the user does not manage would hand it away.
+     */
     #[Route('/{id}/edit', name: 'app_manage_shift_task_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
     public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftTask $shiftTask): Response
     {
@@ -82,7 +88,6 @@ final class ShiftTaskController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            // Moving a task into a department the user does not manage would hand it away.
             if (!$this->access->canManageDepartment($shiftTask->getDepartment())) {
                 throw $this->createAccessDeniedException('You cannot move a shift task to that department.');
             }

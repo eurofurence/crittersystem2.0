@@ -46,10 +46,12 @@ final class AuthenticationAuditSubscriber implements EventSubscriberInterface
         ]);
     }
 
+    /**
+     * A refusal by the brute-force throttle is not recorded here: it is already recorded once, as
+     * LOGIN_LOCKED, and the lockout row carries the failure count.
+     */
     public function onLoginFailure(LoginFailureEvent $event): void
     {
-        // A refusal by the brute-force throttle is already recorded once, as LOGIN_LOCKED, and the
-        // lockout row carries the failure count.
         if ($event->getException() instanceof AccountLockedOutException) {
             return;
         }

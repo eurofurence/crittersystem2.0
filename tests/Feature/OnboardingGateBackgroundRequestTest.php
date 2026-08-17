@@ -22,6 +22,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  */
 final class OnboardingGateBackgroundRequestTest extends DatabaseWebTestCase
 {
+    /** A user who never calls completeOnboarding(), so they are still inside the wizard. */
     private function pendingUser(): User
     {
         $group = new Group('Volunteer', 'volunteer-'.bin2hex(random_bytes(2)), null);
@@ -37,7 +38,6 @@ final class OnboardingGateBackgroundRequestTest extends DatabaseWebTestCase
         $user->setName('newcomer')->setEmail('newcomer@example.com')->setApiKey(bin2hex(random_bytes(16)));
         $user->setPassword($hasher->hashPassword($user, 'secret123'));
         $user->addGroup($group);
-        // Deliberately NOT completeOnboarding(): this user is still in the wizard.
         $this->em->persist($user);
         $this->em->flush();
 

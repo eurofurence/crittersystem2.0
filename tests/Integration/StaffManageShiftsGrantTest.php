@@ -11,8 +11,8 @@ use Doctrine\DBAL\Connection;
 /**
  * Every staff group reaches the staff shift-apply screen.
  *
- * The shift list points staff at /manage-shifts/apply, which enforces `manageshifts:view`. Several
- * staff groups never carried it, so a staff member in one of them followed the link and was refused.
+ * The shift list points staff at /manage-shifts/apply, which enforces `manageshifts:view`. A staff
+ * group that does not carry it sends its members from that link straight to a refusal.
  * Both halves are covered: the seeded presets a fresh install builds from, and the migration that
  * repairs an existing database.
  */

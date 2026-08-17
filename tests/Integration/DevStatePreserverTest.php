@@ -60,12 +60,12 @@ final class DevStatePreserverTest extends DatabaseTestCase
         return $this->connection()->fetchOne('SELECT password FROM users WHERE name = ?', [$name]);
     }
 
+    /** The import brings its own account of the same name, and the local password has to survive it. */
     public function testItPutsTheLocalPasswordBackOnTheImportedAccount(): void
     {
         $this->admin(self::LOCAL_HASH);
         $snapshot = $this->preserver()->capture('admin');
 
-        // The import brings its own account of the same name.
         $this->connection()->executeStatement('UPDATE users SET password = ? WHERE name = ?', [self::IMPORTED_HASH, 'admin']);
 
         $this->preserver()->reapply($snapshot, false);

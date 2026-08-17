@@ -26,7 +26,9 @@
         {% for block in grid.blocks|filter(b => b.dayIndex == dayIndex) %}
           {% set shift = block.shift %}
           {# left/width come from the lane assignment: shifts running at the same time share the
-             column instead of covering each other. A lone shift is lane 0 of 1, so full width. #}
+             column instead of covering each other. A lone shift is lane 0 of 1, so full width.
+             A shared column is too narrow to show the whole time range, so the full times stay
+             reachable in the title attribute as well as in the accessible name. #}
           <div
             class="planner-block {{ shift.audience.isPublic ? 'planner-audience-public' : 'planner-audience-staff' }} {{ shift.draft ? 'planner-block-draft' : 'planner-block-published' }}{{ block.lanes > 1 ? ' planner-block-shared' : '' }}"
             style="top: {{ block.top }}%; height: {{ block.height }}%; left: {{ block.left }}%; width: calc({{ block.width }}% - 4px);"
@@ -40,13 +42,11 @@
             data-delete-url="{{ path('app_manage_shifts_planner_delete', {id: shift.uuid}) }}"
             tabindex="0"
             role="button"
-            {# A block sharing its column with three others is too narrow for the whole range, so the
-               full times stay reachable on hover as well as in the accessible name. #}
             title="{{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }} {{ shift.title }}{{ shift.distinctTaskName ? ' · ' ~ shift.distinctTaskName : '' }}"
             aria-label="{{ shift.title }} {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}{{ shift.draft ? ('planner.grid.draft_suffix'|trans) : '' }}"
           >
-            {# Time and badge share a row rather than the badge floating over the time: absolutely
-               positioned, it covered the end time on every narrow block. #}
+            {# Time and badge share a row: a badge positioned over the time covers the end time
+               on every narrow block. #}
             <span class="planner-block-head">
               <span class="planner-block-time"
                 >{{ shift.startsAt|app_time }}<span class="planner-block-to">–{{ shift.endsAt|app_time }}</span></span>

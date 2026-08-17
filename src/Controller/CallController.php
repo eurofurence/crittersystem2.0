@@ -19,7 +19,8 @@ use Symfony\Component\Uid\Uuid;
 /**
  * Global Call for Help and the Bounty Board. Managers/Info
  * Desk trigger and cancel calls; eligible users see and accept/refuse them on the
- * Bounty Board, which polls for live capacity. Acceptance is transaction-safe.
+ * Bounty Board, which follows remaining capacity over Mercure. Acceptance takes a row
+ * lock inside a transaction, so a call cannot be filled past its slots.
  */
 #[IsGranted('ROLE_USER')]
 final class CallController extends AbstractController
@@ -28,6 +29,11 @@ final class CallController extends AbstractController
     {
     }
 
+    /**
+     * The slots box is optional, so clearing it posts an empty string. That is why the count is read
+     * with a cast and not getInt(), which rejects an empty string as malformed instead of falling
+     * back to the default of 1.
+     */
     #[Route('/calls/trigger', name: 'app_call_trigger', methods: ['POST'])]
     #[IsGranted('call:trigger')]
     public function trigger(Request $request, \App\Repository\ShiftRepository $shifts): Response
@@ -55,6 +61,10 @@ final class CallController extends AbstractController
         return $this->returnTo($request, $shift);
     }
 
+    /**
+     * The CSRF token id is keyed by the public uuid, not the primary key: it is rendered into the
+     * page, and sequential keys reveal how many calls the event has raised.
+     */
     #[Route('/calls/{id}/cancel', name: 'app_call_cancel', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('call:cancel')]
     public function cancel(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] HelpCall $call): Response

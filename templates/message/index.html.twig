@@ -10,8 +10,8 @@
     <div class="col-12 col-lg-4">
       {{ d.card_start(null, {bodyClass: ''}) }}
         <div class="list-group list-group-flush">
-          {# The action, not a conversation. Linking to a conversation meant the page had to have one,
-             so rendering this list opened one for every visitor and queued it for the Info Desk.
+          {# Link the action, never a conversation: a conversation link needs one to exist, so
+             rendering this list would open one for every visitor and queue it for the Info Desk.
              app_messages_infodesk opens it on click and redirects to it. #}
           <a href="{{ path('app_messages_infodesk') }}"
              class="list-group-item list-group-item-action d-flex align-items-center">

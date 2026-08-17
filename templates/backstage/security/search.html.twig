@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'backstage.security.page.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('backstage.security.page.title'|trans, {
+    subtitle: 'backstage.security.page.subtitle'|trans,
+    actions: [
+      {label: 'backstage.security.action.report'|trans, href: path('app_backstage_security_report'), class: 'btn btn-outline-secondary'},
+      {label: 'backstage.action.back_to_backstage'|trans, href: path('app_backstage'), class: 'btn btn-outline-secondary'}
+    ]
+  }) }}
+
+  <div class="row g-3 mb-3">
+    {{ d.stat_card(today.total, 'backstage.security.stat.total'|trans, {col: 'col-4'}) }}
+    {{ d.stat_card(today.staff, 'backstage.security.stat.staff'|trans, {col: 'col-4'}) }}
+    {{ d.stat_card(today.volunteers, 'backstage.security.stat.volunteers'|trans, {col: 'col-4'}) }}
+  </div>
+
+  <form method="get" action="{{ path('app_backstage_security') }}" class="row g-2 mb-3">
+    <div class="col-12 col-md-8">
+      <input type="search" name="q" value="{{ q }}" class="form-control"
+             placeholder="{{ 'backstage.security.search.placeholder'|trans }}" autofocus>
+    </div>
+    <div class="col-12 col-md-4"><button class="btn btn-primary w-100">{{ 'common.action.search'|trans }}</button></div>
+  </form>
+
+  {% if q != '' %}
+    {% if results is empty %}
+      {{ d.empty_state('backstage.security.no_matches.title'|trans, {message: 'backstage.security.no_matches.message'|trans}) }}
+    {% else %}
+      {{ d.table_start() }}
+        <thead>
+          <tr>
+            <th>{{ 'common.label.name'|trans }}</th>
+            <th>{{ 'backstage.security.label.registration'|trans }}</th>
+            <th class="text-end"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for u in results %}
+            <tr>
+              <td class="fw-semibold">{{ u.name }}</td>
+              <td class="small">{{ u.personalData and u.personalData.badgeNumber is not null ? u.personalData.badgeNumber : '-' }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-primary" href="{{ path('app_backstage_security_user', {id: u.uuid}) }}">{{ 'backstage.action.open'|trans }}</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      {{ d.table_end() }}
+    {% endif %}
+  {% endif %}
+{% endblock %}

@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\Exception\UnsupportedUserException;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
@@ -184,6 +185,57 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->getResult();
     }
 
+    /**
+     * Onboarded accounts holding no volunteer type at all.
+     *
+     * These cannot take a shift: eligibility asks for a confirmed membership of a type the shift
+     * needs, and they have none. It happens when no volunteer type carried the role onboarding
+     * matches on, so the assignment silently did nothing.
+     *
+     * Group assignments are fetch-joined because the caller asks each user whether they are staff,
+     * to decide which default they should have had, and that would otherwise be a query per row.
+     *
+     * @return User[]
+     */
+    public function findOnboardedWithoutVolunteerType(string $query = '', int $limit = 50, int $offset = 0): array
+    {
+        $qb = $this->onboardedWithoutVolunteerTypeQuery($query)
+            ->leftJoin('u.groupAssignments', 'ga')->addSelect('ga')
+            ->leftJoin('ga.group', 'g')->addSelect('g')
+            ->orderBy('u.name', 'ASC')
+            ->setMaxResults($limit)
+            ->setFirstResult($offset);
+
+        return $qb->getQuery()->getResult();
+    }
+
+    public function countOnboardedWithoutVolunteerType(string $query = ''): int
+    {
+        return (int) $this->onboardedWithoutVolunteerTypeQuery($query)
+            ->select('COUNT(DISTINCT u.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Matching is on the username only. The real name and the email are PII, and this screen is
+     * reachable by anyone who may edit volunteer types, which is not the same set as those who may
+     * read personal data.
+     */
+    private function onboardedWithoutVolunteerTypeQuery(string $query): QueryBuilder
+    {
+        $qb = $this->createQueryBuilder('u')
+            ->andWhere('u.onboardingCompleted = true')
+            ->andWhere('NOT EXISTS (SELECT uvt.id FROM App\Entity\UserVolunteerType uvt WHERE uvt.user = u)');
+
+        if ('' !== trim($query)) {
+            $qb->andWhere('LOWER(u.name) LIKE :q')
+                ->setParameter('q', '%'.mb_strtolower(trim($query)).'%');
+        }
+
+        return $qb;
+    }
+
     /** @return User[] users who opted in to news emails (settings.emailNews) */
     public function findSubscribedToNews(): array
     {
@@ -195,7 +247,12 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
     }
 
     /**
-     * Info-desk user lookup
+     * Info-desk user lookup, dispatching on the shape of what was typed.
+     *
+     * An '@' means the operator already has a full address, so it is matched exactly and never
+     * widened to a LIKE. All digits is a registration (badge) number, matched exactly, and never
+     * the database id. Anything else is a name, and email is deliberately excluded from that branch
+     * so a partial term can never be used to enumerate addresses.
      *
      * @return User[]
      */
@@ -206,7 +263,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             return [];
         }
 
-        // Exact email - an '@' means the operator has a full address, so never widen it to a LIKE.
         if (str_contains($query, '@')) {
             return $this->createQueryBuilder('u')
                 ->andWhere('LOWER(u.email) = :email')
@@ -215,7 +271,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 ->getResult();
         }
 
-        // All digits - a registration (badge) number, matched exactly. Never the database id.
         if (ctype_digit($query)) {
             return $this->createQueryBuilder('u')
                 ->join('u.personalData', 'p')
@@ -227,8 +282,6 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
                 ->getResult();
         }
 
-        // Anything else is treated as a name. Email is intentionally excluded here so a
-        // partial term can never enumerate addresses.
         return $this->createQueryBuilder('u')
             ->andWhere('LOWER(u.name) LIKE :like')
             ->setParameter('like', '%'.mb_strtolower($query).'%')

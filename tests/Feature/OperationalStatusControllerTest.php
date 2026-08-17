@@ -26,9 +26,9 @@ final class OperationalStatusControllerTest extends DatabaseWebTestCase
         $this->client->loginUser($this->user);
     }
 
+    /** Reads the token out of the rendered widget, because a token minted here is not the session's. */
     private function csrf(): string
     {
-        // Read the token from the rendered widget so it is valid for the session.
         $crawler = $this->client->request('GET', '/status');
 
         return $crawler->filter('input[name="_op_token"]')->first()->attr('value');

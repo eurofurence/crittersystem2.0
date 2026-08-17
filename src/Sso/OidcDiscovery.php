@@ -22,6 +22,10 @@ final class OidcDiscovery
     }
 
     /**
+     * A discovery failure is logged in full because this runs on the live login path and the status
+     * page only ever reports "could not resolve OIDC endpoints". Whether that is DNS, TLS, a 5xx
+     * from the provider or malformed JSON is the whole of the diagnosis, and it exists only here.
+     *
      * @return array{issuer: string, authorization: string, token: string, userinfo: string}|null
      */
     public function endpoints(): ?array
@@ -37,11 +41,6 @@ final class OidcDiscovery
                     'userinfo' => (string) ($data['userinfo_endpoint'] ?? ''),
                 ];
             } catch (\Throwable $e) {
-                /*
-                 * This runs on the live login path, and the status page only ever reports "could not
-                 * resolve OIDC endpoints". Whether that is DNS, TLS, a 5xx from the provider or malformed
-                 * JSON is the whole of the diagnosis, and it exists only here.
-                 */
                 $this->logger->error('OIDC discovery failed for {url}: {reason}', [
                     'url' => $this->config->discoveryUrl(),
                     'reason' => $e->getMessage(),

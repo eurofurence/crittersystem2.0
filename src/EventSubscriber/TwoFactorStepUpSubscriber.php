@@ -59,8 +59,6 @@ final class TwoFactorStepUpSubscriber implements EventSubscriberInterface
         }
 
         foreach ($this->twoFactorAttributes($event->getController()) as $permission) {
-            // Only challenge users who actually hold the permission; others fall
-            // through to the ordinary authorization denial.
             if (!$this->authChecker->isGranted($permission)) {
                 continue;
             }
@@ -82,13 +80,17 @@ final class TwoFactorStepUpSubscriber implements EventSubscriberInterface
                 return;
             }
 
-            return; // holds the permission and step-up is fresh - allow through
+            return;
         }
     }
 
     /**
      * Distinct permission names required by the controller (class- and
      * method-level #[IsGranted]) that demand step-up.
+     *
+     * An empty result means "this controller needs no step-up", so a reflection failure fails
+     * *open* on a security gate. Symfony has already resolved the controller, so it should be
+     * impossible, but it must not happen quietly.
      *
      * @return string[]
      */
@@ -104,11 +106,6 @@ final class TwoFactorStepUpSubscriber implements EventSubscriberInterface
                 return [];
             }
         } catch (\ReflectionException $e) {
-            /*
-             * Returning [] means "this controller needs no step-up", so a reflection failure here fails
-             * *open* on a security gate. It should be impossible - Symfony has already resolved the
-             * controller - but if it ever happens it must not happen quietly.
-             */
             $this->logger->error('Could not read step-up attributes; treating the controller as unprotected: {reason}', [
                 'reason' => $e->getMessage(),
                 'exception' => $e,

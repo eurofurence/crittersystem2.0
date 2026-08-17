@@ -44,6 +44,11 @@ final class LiveUpdatesBrowserTest extends BrowserTestCase
         return $user;
     }
 
+    /**
+     * With no hub configured the page must not advertise one, while the heartbeat runs regardless
+     * because it is what keeps the session alive. Both navbar regions carry this user's own topics,
+     * and the polling controller they replace exists nowhere in the application any more.
+     */
     public function testLiveRegionsConnectAndAreScopedToTheSignedInUser(): void
     {
         $user = $this->volunteer();
@@ -53,17 +58,13 @@ final class LiveUpdatesBrowserTest extends BrowserTestCase
 
         $html = $this->client->getPageSource();
 
-        // No hub is configured in this environment, so the page must not advertise one - see the
-        // class docblock. The heartbeat runs regardless; it is what keeps the session alive.
         self::assertStringNotContainsString('name="mercure-hub"', $html);
         self::assertStringContainsString('name="heartbeat-url"', $html);
 
-        // Both navbar regions are wired to this user's own topics.
         self::assertStringContainsString(Topics::userNotifications($user), $html);
         self::assertStringContainsString(Topics::userStatus($user), $html);
         self::assertStringContainsString('data-controller="live-stream"', $html);
 
-        // The polling controller these replaced no longer exists anywhere in the application.
         self::assertStringNotContainsString('live-refresh', $html);
 
         $this->assertNoConsoleErrors('the dashboard with live regions');
@@ -90,7 +91,14 @@ final class LiveUpdatesBrowserTest extends BrowserTestCase
         );
     }
 
-    /** A user still in onboarding gets no token, and the wizard renders clean. */
+    /**
+     * A user still in onboarding gets no token, and the wizard renders clean.
+     *
+     * It carries no live regions either: the onboarding gate refuses the fragments they fetch, so
+     * rendering them would only produce a timer that is turned away every time. The gate must also
+     * refuse a background request rather than redirect it, or the fetch follows the redirect, gets
+     * the whole onboarding document back and injects a second `<html>` into the navbar.
+     */
     public function testOnboardingWizardHasNoLiveRegionsAndNoInjectedDocument(): void
     {
         $group = new Group('Volunteer', 'volunteer-'.bin2hex(random_bytes(2)), null);
@@ -104,7 +112,6 @@ final class LiveUpdatesBrowserTest extends BrowserTestCase
         $user->setName('newcomer')->setEmail('newcomer@example.com')->setApiKey(bin2hex(random_bytes(16)));
         $user->setPassword($hasher->hashPassword($user, 'secret123'));
         $user->addGroup($group);
-        // Deliberately not onboarded.
         $this->em->persist($user);
         $this->em->flush();
 
@@ -118,12 +125,8 @@ final class LiveUpdatesBrowserTest extends BrowserTestCase
 
         self::assertStringNotContainsString('name="mercure-hub"', $html);
 
-        // No live regions either: the gate refuses the fragments they fetch, so rendering them would
-        // only produce a timer that is turned away every time.
         self::assertStringNotContainsString('data-controller="live-stream"', $html);
 
-        // The defect this replaced: a background request was answered with the whole onboarding
-        // document and injected into the navbar, so the page contained a second <html>.
         self::assertSame(1, substr_count(strtolower($html), '<html'), 'a document was injected into the page');
 
         $this->assertNoConsoleErrors('the onboarding wizard');

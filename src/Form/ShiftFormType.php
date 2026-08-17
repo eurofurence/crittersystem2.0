@@ -23,6 +23,18 @@ use Symfony\Component\Form\Extension\Core\Type\UrlType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
+/**
+ * Times are entered as wall-clock values in the configured event timezone and stored in UTC
+ * (`model_timezone`), so every datetime in the system is an absolute instant.
+ * See {@see DisplaySettings}.
+ *
+ * Organizational departments are left out of the department choices: they cannot own shifts.
+ *
+ * The shift-group choices are deliberately not narrowed to the chosen department. A group and its
+ * members must share one owning department, because `shift:manage` is scoped by department and a
+ * group spanning two would have none to check against; a mismatched pick is rejected on submit with
+ * a field error instead.
+ */
 final class ShiftFormType extends AbstractType
 {
     public function __construct(
@@ -33,9 +45,6 @@ final class ShiftFormType extends AbstractType
 
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
-        // The admin enters wall-clock times in the configured event timezone;
-        // they are stored in UTC (model_timezone) so every datetime in the
-        // system is an absolute instant. See {@see DisplaySettings}.
         $tz = $this->display->timezone()->getName();
 
         $builder
@@ -68,7 +77,6 @@ final class ShiftFormType extends AbstractType
                 'label' => 'common.label.department',
                 'class' => Department::class,
                 'choice_label' => 'name',
-                // Organizational departments cannot own shifts.
                 'query_builder' => fn (DepartmentRepository $repo) => $repo->createQueryBuilder('d')
                     ->andWhere('d.organizational = false')
                     ->orderBy('d.name', 'ASC'),
@@ -95,10 +103,6 @@ final class ShiftFormType extends AbstractType
                 'required' => false,
                 'placeholder' => 'manage.shift.placeholder.none',
                 'help' => 'manage.shift.field.shift_group.help',
-                // A group and its members share one department, because shift:manage is scoped by
-                // department and a group spanning two would have none to check against. Membership is
-                // otherwise managed on the group's own screen, where the manager is warned about the
-                // volunteers a change leaves on a partial commitment.
                 'query_builder' => fn (ShiftGroupRepository $repo) => $repo->createQueryBuilder('g')
                     ->orderBy('g.name', 'ASC'),
             ])

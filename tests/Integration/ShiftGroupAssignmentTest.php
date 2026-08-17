@@ -230,10 +230,12 @@ final class ShiftGroupAssignmentTest extends DatabaseTestCase
         self::assertSame(1, $applied, 'Assigning the first member already creates the sibling, so it counts once.');
     }
 
+    /**
+     * The staffing screen assigns through the assignment service. Persisting an entry inline
+     * instead leaves no audit trail and pushes no live update to anyone else's open screen.
+     */
     public function testStaffingPageAssignmentIsAuditedAndSignalled(): void
     {
-        // Phase 0 of the shift-group work: the staffing screen used to persist entries inline, which
-        // left no audit trail and pushed no live update to anyone else's open screen.
         $user = $this->user();
         $shift = $this->shift('Standalone', '2036-06-01 12:00', '2036-06-01 13:00');
 

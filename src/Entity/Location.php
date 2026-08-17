@@ -93,14 +93,14 @@ class Location
         return $this->children;
     }
 
-    /** 0 for a root, 1 for a child, 2 for a grandchild. */
+    /** 0 for a root, 1 for a child, 2 for a grandchild. The walk gives up after 10 hops so a parent cycle cannot hang it. */
     public function depth(): int
     {
         $depth = 0;
         for ($node = $this->parent; $node !== null; $node = $node->getParent()) {
             ++$depth;
             if ($depth > 10) {
-                break; // cycle guard
+                break;
             }
         }
 

@@ -34,7 +34,13 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         $this->em->persist($this->memberGroup);
     }
 
-    /** @param string|null $realName set to also give the member consented personal data */
+    /**
+     * Membership is granted with assignGroup() rather than a bare `new UserGroupAssignment`, because
+     * only that puts the assignment on the user's own collection. Without it isStaff() sees no groups
+     * at all for the rest of this EntityManager's life and quietly files every member under Non-staff.
+     *
+     * @param string|null $realName set to also give the member consented personal data
+     */
     private function member(string $name, ?string $realName = null): User
     {
         $user = new User();
@@ -50,9 +56,6 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         }
         $this->em->persist($user);
         $this->em->persist($user->getConsent());
-        // assignGroup() rather than a bare `new UserGroupAssignment`: only the former puts the
-        // assignment on the user's own collection, and without it isStaff() sees no groups at all
-        // for the rest of this EntityManager's life, quietly filing every member under Non-staff.
         $this->em->persist($user->assignGroup($this->memberGroup, $this->department));
 
         return $user;
@@ -82,6 +85,10 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         return '/departments/'.$this->department->getUuid().($query ? '?'.http_build_query($query) : '');
     }
 
+    /**
+     * Only one page of a section is rendered; the rest is reachable by paging. The section header
+     * still reports the whole section (60 members plus the manager), never the page size.
+     */
     public function testOnlyOnePageOfMembersIsRenderedAndTheRestArePaged(): void
     {
         $this->seedDepartment();
@@ -100,7 +107,6 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         self::assertStringContainsString('member00', $frame->text());
         self::assertStringNotContainsString('member30', $frame->text(), 'a later page must not be rendered');
 
-        // The header still reports the whole section (60 members plus the manager), not the page size.
         $header = $crawler->filterXPath(
             '//turbo-frame[@id="dept-members-staff"]/parent::div/div[contains(@class, "card-header")]'
         );
@@ -144,6 +150,7 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         self::assertSame($sorted, $seen, 'members are paged in a stable username order');
     }
 
+    /** Search spans the whole section: member55 sits on page 3 and must be found without paging there. */
     public function testSearchFindsAMemberFromABeyondTheCurrentPage(): void
     {
         $this->seedDepartment();
@@ -154,7 +161,6 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         $this->em->flush();
         $this->client->loginUser($manager);
 
-        // member55 sits on page 3; the search must reach it without paging there.
         $crawler = $this->client->request('GET', $this->url(['staff_q' => 'member55']));
         self::assertResponseIsSuccessful();
 
@@ -163,6 +169,11 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         self::assertStringContainsString('member55', $frame->text());
     }
 
+    /**
+     * Search matches usernames only. A manager may see Bernadette's real name because she consented
+     * to it, but searching for it must not become a way to confirm that a real name belongs to an
+     * account.
+     */
     public function testSearchMatchesTheUsernameButNeverTheRealName(): void
     {
         $this->seedDepartment();
@@ -172,8 +183,6 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         $this->em->flush();
         $this->client->loginUser($manager);
 
-        // The manager may see Bernadette's name (she consented), but searching by it must not be a
-        // way to confirm a real name - only usernames are matched.
         $crawler = $this->client->request('GET', $this->url(['staff_q' => 'Bernadette']));
         self::assertResponseIsSuccessful();
         self::assertCount(0, $crawler->filter('#dept-members-staff tbody tr'));
@@ -182,6 +191,10 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         self::assertCount(1, $crawler->filter('#dept-members-staff tbody tr'));
     }
 
+    /**
+     * A page number past the end clamps to the last page rather than rendering an empty table.
+     * The section holds 30 members plus the manager, so the last page holds the remaining 6.
+     */
     public function testAnOutOfRangePageClampsToTheLastPageInsteadOfRenderingNothing(): void
     {
         $this->seedDepartment();
@@ -192,13 +205,16 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         $this->em->flush();
         $this->client->loginUser($manager);
 
-        // 30 members plus the manager, so the second page holds the remaining 6.
         $crawler = $this->client->request('GET', $this->url(['staff_page' => 999]));
         self::assertResponseIsSuccessful();
         self::assertCount(6, $crawler->filter('#dept-members-staff tbody tr'));
         self::assertStringContainsString('member29', $crawler->filter('#dept-members-staff')->text());
     }
 
+    /**
+     * Each section searches independently, and the paging links of an untouched section carry the
+     * other section's search through so paging does not silently drop it.
+     */
     public function testSearchingOneSectionLeavesTheOthersUntouched(): void
     {
         $this->seedDepartment();
@@ -219,15 +235,15 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
             'a search in one section must not filter another',
         );
 
-        // Paging links of the untouched section carry the other section's search through.
         self::assertStringContainsString('managers_q=nothing-matches-this', $crawler->filter('#dept-members-staff')->html());
     }
 
     /**
      * Rows link out of the page (profiles, messages) and post to it (position, removal). A link or
-     * form inside a <turbo-frame> navigates that frame by default, and the profile page has no such
-     * frame, so Turbo rendered "Content missing" instead of the profile. The frame is therefore
-     * marked target="_top" and only the pager opts back into it.
+     * form inside a <turbo-frame> navigates that frame by default, and the profile page carries no
+     * such frame, so Turbo answers "Content missing" instead of the profile. The frame is therefore
+     * marked target="_top", its row links carry no frame target of their own, and only the pager
+     * opts back into the frame so that it still swaps just its own table.
      */
     public function testRowLinksNavigateTheWholePageWhileThePagerStaysInTheFrame(): void
     {
@@ -249,14 +265,12 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
 
         $staff = $crawler->filterXPath('//turbo-frame[@id="dept-members-staff"]');
 
-        // Profile links must not carry a frame target of their own; the frame's _top now covers them.
         $profileLinks = $staff->filterXPath('.//a[contains(@href, "/users/")]');
         self::assertGreaterThan(0, $profileLinks->count());
         foreach ($profileLinks as $node) {
             self::assertNotSame('dept-members-staff', $node->getAttribute('data-turbo-frame'));
         }
 
-        // The pager is the exception: it must still swap only its own table.
         $pageLinks = $staff->filterXPath('.//a[contains(@class, "page-link")]');
         self::assertGreaterThan(0, $pageLinks->count());
         foreach ($pageLinks as $node) {
@@ -267,7 +281,8 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
     /**
      * The regression guard for the whole feature: rendering must not get more expensive as the
      * department grows. Asserted as a ceiling rather than an exact number so unrelated work on the
-     * page does not make this brittle.
+     * page does not make this brittle. The first, unprofiled request warms the hours cache so the
+     * bound applies to the steady state.
      */
     public function testQueryCountDoesNotGrowWithDepartmentSize(): void
     {
@@ -280,7 +295,6 @@ final class DepartmentMemberPaginationTest extends DatabaseWebTestCase
         $this->client->loginUser($manager);
 
         $url = $this->url();
-        // Warm the hours cache first; the cold path is measured by its own bound below.
         $this->client->request('GET', $url);
 
         $this->client->enableProfiler();

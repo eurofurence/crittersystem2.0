@@ -86,6 +86,12 @@ final class AssignmentController extends AbstractController
         return new JsonResponse($formatter->results($candidates));
     }
 
+    /**
+     * Each user is assigned as the first volunteer type the shift needs and they are a confirmed
+     * member of; someone who is a member of none is refused rather than assigned. Every outcome
+     * (assigned, not a member, needs an override) is flashed back, so no selection is dropped
+     * silently.
+     */
     #[Route('/assign', name: 'app_shift_staffing_assign', methods: ['POST'])]
     public function assign(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, UserRepository $users): Response
     {
@@ -118,7 +124,6 @@ final class AssignmentController extends AbstractController
                 continue;
             }
 
-            // The user must be a confirmed member of a type the shift needs; that type is the assignment.
             $type = null;
             foreach ($shift->getNeededVolunteerTypes() as $need) {
                 if ($this->memberships->isConfirmedMember($user, $need->getVolunteerType())) {
@@ -139,7 +144,6 @@ final class AssignmentController extends AbstractController
             }
         }
 
-        // Report every outcome so nothing is silently dropped.
         if ($assigned !== []) {
             $this->addFlash('success', new TranslatableMessage('assignment.flash.assigned', ['%names%' => implode(', ', $assigned)]));
         }

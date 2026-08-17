@@ -33,6 +33,9 @@ final class CertificationCompliance
     /**
      * One entry per volunteer type that requires anything, with the members who fall short.
      *
+     * Counts confirmed memberships only: an unconfirmed request is not membership, so the person
+     * cannot take shifts as that role yet and is not out of compliance with it either.
+     *
      * @return list<array{
      *     type: VolunteerType,
      *     required: list<Certification>,
@@ -54,8 +57,6 @@ final class CertificationCompliance
         }
 
         $held = $this->heldByUser($requiring);
-        // Only confirmed memberships: an unconfirmed request is not membership, so the person
-        // cannot take shifts as that role yet and is not out of compliance with it either.
         $membersByType = $this->memberships->findConfirmedByTypes($requiring);
 
         $report = [];

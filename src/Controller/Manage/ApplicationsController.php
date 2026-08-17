@@ -21,13 +21,16 @@ final class ApplicationsController extends AbstractController
     {
     }
 
+    /**
+     * `volunteertype:manage` sees every pending request; a supporter sees only requests for the
+     * types they support, and none at all denies access.
+     */
     #[Route('', name: 'app_manage_applications', methods: ['GET'])]
     public function index(): Response
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        // Admins see every pending request; supporters see only their types.
         if ($this->isGranted('volunteertype:manage')) {
             $pending = $this->memberships->findPending();
         } else {

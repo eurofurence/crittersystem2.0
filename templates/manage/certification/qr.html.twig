@@ -3,9 +3,6 @@
 
 {% block title %}{{ 'manage.certification.qr.page_title'|trans({'%name%': certification.title}) }}{% endblock %}
 
-{# Rotate before the token expires so the displayed QR stays valid. #}
-{% block stylesheets %}{{ parent() }}<meta http-equiv="refresh" content="{{ ttlSeconds - 30 }}">{% endblock %}
-
 {% block body %}
   {{ d.page_header('manage.certification.qr.heading'|trans({'%name%': certification.title}), {
     subtitle: 'manage.certification.qr.subtitle'|trans,
@@ -14,17 +11,22 @@
 
   <div class="row g-3 justify-content-center">
     <div class="col-12 col-md-7 col-lg-5">
-      {{ d.card_start(null, {class: 'text-center'}) }}
-          <img src="{{ qrDataUri }}" alt="{{ 'manage.certification.qr.image_alt'|trans }}" class="img-fluid mb-2" style="max-width: 360px;">
-          <div class="text-muted small">{{ 'manage.certification.qr.valid_until'|trans({'%time%': token.expiresAt|app_time}) }}</div>
-          <form method="post" action="{{ path('app_manage_certification_qr_refresh', {id: certification.uuid}) }}" class="mt-3">
-            <input type="hidden" name="_token" value="{{ csrf_token('cert-qr-refresh' ~ certification.id) }}">
-            <button class="btn btn-sm btn-outline-primary">{{ 'manage.certification.qr.refresh'|trans }}</button>
-          </form>
-      {{ d.card_end() }}
-      <div class="text-muted small text-center mt-2">
-        {{ 'manage.certification.qr.scan_url'|trans }} <code>{{ verifyUrl }}</code>
+      {#
+        The QR rotates on a clock. Nothing happens on the server when a token expires, so there is
+        no topic to publish and nothing to subscribe to: the card declares the instant it is
+        replaced and the region re-fetches it once at exactly that moment.
+
+        It has to be JavaScript rather than a <meta http-equiv="refresh">: Turbo never reloads the
+        document, so the refresh keeps ticking after the user has navigated away and pulls them
+        back to this page.
+
+        The region holds the card and nothing else, because a refresh replaces everything inside it.
+      #}
+      <div data-controller="live-stream"
+           data-live-stream-url-value="{{ path('app_manage_certification_qr_card', {id: certification.uuid}) }}">
+        {{ include('manage/certification/_qr_card.html.twig') }}
       </div>
+
       <p class="text-muted small mt-3 text-center">
         {{ 'manage.certification.qr.scan_note'|trans }} <a href="{{ path('app_certifications_index') }}">{{ path('app_certifications_index') }}</a>.
       </p>

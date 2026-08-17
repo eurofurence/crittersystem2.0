@@ -53,8 +53,9 @@ final class LocaleEscapeHatchTest extends TestCase
     }
 
     /**
-     * A three-letter language subtag must survive normalisation. Taking the first two characters
-     * turned "tlh" into "tl", which matched nothing, so the locale silently never activated.
+     * A three-letter language subtag must survive normalisation. Truncating to the first two
+     * characters turns "tlh" into "tl", which matches nothing, so the locale never activates and
+     * nothing says why.
      */
     public function testAThreeLetterLanguageSubtagResolves(): void
     {
@@ -74,7 +75,10 @@ final class LocaleEscapeHatchTest extends TestCase
         self::assertNull($normalize->invoke($subscriber, ''));
     }
 
-    /** The novelty catalogue must never claim coverage it does not have. */
+    /**
+     * The novelty catalogue must never claim coverage it does not have, and every key it does
+     * carry has to exist in the English catalogue, or that entry silently translates nothing.
+     */
     public function testTheKlingonCatalogueStaysPartial(): void
     {
         $tlh = \dirname(__DIR__, 2).'/translations/messages.tlh.po';
@@ -90,7 +94,6 @@ final class LocaleEscapeHatchTest extends TestCase
             'a near-complete Klingon catalogue would be mostly invented vocabulary; keep it curated',
         );
 
-        // Everything it does translate must be a real key, or it silently translates nothing.
         self::assertSame([], array_values(array_diff($tlhKeys[1], $enKeys[1])), 'unknown keys in the Klingon catalogue');
     }
 }

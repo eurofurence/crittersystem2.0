@@ -52,6 +52,18 @@ final class TopicBuilder
     }
 
     /**
+     * Conversation topics are filtered through the predicate the controller enforces rather than
+     * taken from the participant rows alone, so the token can never be wider than the predicate if
+     * either side changes. Today a participant row always implies permission, so this rejects
+     * nothing. Being narrower is safe and already the case: an Info Desk member who has never
+     * opened a support thread has no row for it and reaches it through the queue topic instead.
+     *
+     * The Info Desk queue goes to chat:claim holders, because watching any support thread is the
+     * same right that lets a responder claim one.
+     *
+     * Staff get the one all-staff topic, because other departments' all-staff shifts appear on
+     * their apply screen and one topic per department running such a shift is unbounded.
+     *
      * @return list<string> topic strings, de-duplicated and ordered for a stable token
      */
     public function forUser(User $user): array
@@ -63,20 +75,12 @@ final class TopicBuilder
             Topics::userCalls($user),
         ];
 
-        /*
-         * Filtered through the predicate the controller enforces, not merely listed. Today a
-         * participant row always implies permission, so this rejects nothing; it is here so the
-         * token can never be wider than the predicate if either side changes. Being narrower is
-         * safe and is already the case - an Info Desk member who has never opened a support thread
-         * has no row for it, and reaches it through the queue topic below instead.
-         */
         foreach ($this->conversations->findForParticipant($user) as $conversation) {
             if ($this->chat->mayParticipate($conversation, $user)) {
                 $topics[] = Topics::conversation($conversation);
             }
         }
 
-        // Watching any support thread is the same right that lets a responder claim one.
         if ($this->scopes->holds($user, 'chat:claim')) {
             $topics[] = Topics::infoDeskQueue();
         }
@@ -90,8 +94,6 @@ final class TopicBuilder
             }
         }
 
-        // Other departments' all-staff shifts appear on their apply screen, as one bounded topic
-        // rather than one per department running such a shift.
         if ($user->isStaff()) {
             $topics[] = Topics::allStaffShifts();
         }

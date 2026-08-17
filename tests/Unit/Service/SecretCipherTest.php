@@ -65,15 +65,16 @@ final class SecretCipherTest extends TestCase
         (new SecretCipher(''))->encrypt('x');
     }
 
+    /**
+     * Decrypting a modified envelope fails. The replacement character is picked by inspecting the
+     * character it replaces: read any other character and the "tamper" can leave the string
+     * unchanged, so the ciphertext still decrypts and the test fails at random.
+     */
     public function testTamperedCiphertextIsRejected(): void
     {
         $cipher = $this->cipher();
         $encrypted = $cipher->encrypt('value');
 
-        // Flip the second-to-last character of the encoded body. The replacement must be chosen by
-        // looking at THAT character: picking it from the last one instead left the string unchanged
-        // whenever the second-to-last was already an 'a', so the value still decrypted and the test
-        // failed for roughly one run in 64.
         $secondToLast = $encrypted[\strlen($encrypted) - 2];
         $tampered = substr($encrypted, 0, -2).($secondToLast === 'a' ? 'b' : 'a').substr($encrypted, -1);
 

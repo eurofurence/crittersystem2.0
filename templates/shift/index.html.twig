@@ -114,7 +114,6 @@
     </div>
 
 
-  {# SHIFTS / HOURS RENDERING #}
   {% if byHour is empty %}
     {{ d.empty_state('shift.empty.title'|trans, {message: 'shift.empty.filtered'|trans({'%date%': selectedDate|app_date})}) }}
   {% else %}

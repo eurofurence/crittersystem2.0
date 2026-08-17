@@ -19,9 +19,9 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  * The staff application grid in a real browser.
  *
  * The screen is a grid of buttons that fetch a dialog and apply from it. PHPUnit renders the markup
- * but never runs any of that, and this is exactly the shape of bug that shipped before: a Stimulus
- * target placed outside its controller element is not a target, so every click did nothing behind a
- * 200 and perfectly correct HTML.
+ * but never runs any of that, and this is exactly the shape of bug it cannot catch: a Stimulus
+ * target placed outside its controller element is not a target, so every click does nothing behind
+ * a 200 and perfectly correct HTML.
  */
 final class StaffApplyBrowserTest extends BrowserTestCase
 {

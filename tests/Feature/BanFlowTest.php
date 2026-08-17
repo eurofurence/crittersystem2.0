@@ -55,7 +55,6 @@ final class BanFlowTest extends DatabaseWebTestCase
             '_csrf_token' => $token,
         ]);
 
-        // Authentication is refused -> back to the login page.
         self::assertResponseRedirects('/login');
     }
 
@@ -89,7 +88,6 @@ final class BanFlowTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
         $token = $crawler->filter('input[name="_token"]')->first()->attr('value');
 
-        // Extract the ban id from the first lift form action (…/manage/bans/{id}/lift).
         preg_match('#/manage/bans/([0-9a-f-]{36})/lift#', $crawler->filter('form[action*="/lift"]')->first()->attr('action'), $m);
         $this->client->request('POST', '/manage/bans/'.$m[1].'/lift', ['_token' => $token]);
         self::assertResponseRedirects('/manage/bans');

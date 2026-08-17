@@ -38,27 +38,34 @@ final class LoginThrottleSubscriber implements EventSubscriberInterface
         ];
     }
 
+    /**
+     * Three failures are not counted.
+     *
+     * AccountLockedOutException is this throttle's own refusal of an already-locked attempt:
+     * counting it would let continued guessing renew the timeout indefinitely, so it never expires.
+     *
+     * InvalidCsrfTokenException is a login page that went stale in an open tab, not a guess at a
+     * password, and the request never reached the credential check. Counting it would let someone
+     * who left a tab open all afternoon lock themselves out on their third try, and it buys
+     * nothing: an attacker cannot test a password without a token that validates.
+     *
+     * A failure with no passport is one authenticate() refused before it built one, so there is no
+     * identifier to key a counter on.
+     */
     public function onLoginFailure(LoginFailureEvent $event): void
     {
         if ($event->getFirewallName() !== self::THROTTLED_FIREWALL) {
             return;
         }
 
-        // Our own refusal of an already-locked attempt. Counting it would let the attacker's
-        // continued guessing renew the timeout indefinitely, so it never expires.
         if ($event->getException() instanceof AccountLockedOutException) {
             return;
         }
 
-        // A rejected CSRF token is a login page that went stale in an open tab, not a guess at a
-        // password - the request never reached the credential check. Counting it would let someone
-        // who left a tab open all afternoon lock themselves out on their third try, and it buys
-        // nothing: an attacker cannot test a password without a token that validates.
         if ($event->getException() instanceof InvalidCsrfTokenException) {
             return;
         }
 
-        // No passport at all when authenticate() itself refused the request.
         if (!$event->getPassport()?->hasBadge(UserBadge::class)) {
             return;
         }
@@ -69,14 +76,17 @@ final class LoginThrottleSubscriber implements EventSubscriberInterface
         );
     }
 
+    /**
+     * Clears the counter for the identifier that was actually submitted, not for the resolved
+     * username: the account may have been reached by email, and that is the string the counter was
+     * keyed on.
+     */
     public function onLoginSuccess(LoginSuccessEvent $event): void
     {
         if ($event->getFirewallName() !== self::THROTTLED_FIREWALL) {
             return;
         }
 
-        // Clears the identifier that was actually submitted, not the resolved username: the account
-        // may have been reached by email, and that is the string the counter was keyed on.
         $submitted = (string) $this->requests->getCurrentRequest()?->getPayload()->get('_username');
         $this->throttle->clearFailures($submitted !== '' ? $submitted : $event->getUser()->getUserIdentifier());
     }

@@ -44,20 +44,22 @@ final class InstallationGateListener implements EventSubscriberInterface
     ) {
     }
 
+    /**
+     * Priority 256 runs before the firewall, so the gate also seals the login page while a
+     * migration is pending.
+     */
     public static function getSubscribedEvents(): array
     {
-        // Run early - before the firewall - so the gate also seals the login
-        // page while a migration is pending.
         return [KernelEvents::REQUEST => ['onKernelRequest', 256]];
     }
 
+    /** The functional test database is provisioned out-of-band, so the test environment is never gated. */
     public function onKernelRequest(RequestEvent $event): void
     {
         if (!$event->isMainRequest()) {
             return;
         }
 
-        // The functional test database is provisioned out-of-band; never gate it.
         if ($this->environment === 'test') {
             return;
         }
@@ -69,13 +71,11 @@ final class InstallationGateListener implements EventSubscriberInterface
             }
         }
 
-        // Fast path: cached "ready" flag matches the shipped migration set.
         $latest = $this->inspector->latestAvailableVersion();
         if ($this->state->isReadyFor($latest)) {
             return;
         }
 
-        // Cold/!ready: do the authoritative database check.
         if (!$this->inspector->isMigrationNeeded()) {
             $this->state->markReady($latest);
 

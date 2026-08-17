@@ -47,7 +47,6 @@ final class CleanupOnboardingCommand extends Command
 
         $removed = [];
         foreach ($this->users->findStaleIncompleteOnboarding($cutoff) as $user) {
-            // Never remove privileged accounts, even if not onboarded.
             if ($user->getRoles() !== ['ROLE_USER']) {
                 continue;
             }

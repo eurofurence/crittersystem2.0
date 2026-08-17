@@ -85,12 +85,15 @@ final class ScheduleController extends AbstractController
         return ['users' => $data['users'], 'rows' => $data['rows'], 'timezone' => $tz->getName()];
     }
 
-    /** @return array{0: ?Department, 1: list<Department>} */
+    /**
+     * Offers only the departments this manager may actually open: `shift:manage` is scoped, so
+     * listing the rest puts options in the picker that answer 403 when chosen, while an unscoped
+     * holder or an admin still sees them all.
+     *
+     * @return array{0: ?Department, 1: list<Department>}
+     */
     private function resolveDepartment(Request $request): array
     {
-        // Only the departments this manager may actually open. shift:manage is scoped, so offering
-        // the rest puts options in the picker that answer 403 when chosen; an unscoped holder or an
-        // admin still sees them all.
         $planning = array_values(array_filter(
             $this->departments->findAllOrdered(),
             fn (Department $d) => !$d->isOrganizational() && $this->isGranted('shift:manage', $d),

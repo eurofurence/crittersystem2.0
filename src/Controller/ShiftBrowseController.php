@@ -59,6 +59,9 @@ final class ShiftBrowseController extends AbstractController
      * The eligibility rules are preloaded for the whole day and dropped again in a `finally`: what
      * they hold is entities, the volunteer's own entries and the live capacity counts, so a preload
      * left standing would answer the next caller with this render's data.
+     *
+     * A grouped shift is counted here and never described: the card says "part of N shifts" and the
+     * modal fetches the detail, which is where the visibility filter runs.
      */
     #[IsGranted('shift:view')]
     #[Route('/shifts', name: 'app_shift_index', methods: ['GET'])]
@@ -99,8 +102,6 @@ final class ShiftBrowseController extends AbstractController
                     'status' => $status,
                     'options' => $this->signup->signupOptions($shift, $user),
                     'myEntry' => $this->entries->findOneByShiftAndUser($shift, $user),
-                    // Only counted, not described: the card shows "part of N shifts" and the modal
-                    // fetches the detail, which is where the visibility filter runs.
                     'groupSize' => \count($this->groups->membersFor($shift)),
                 ];
             }
@@ -124,6 +125,14 @@ final class ShiftBrowseController extends AbstractController
         ]);
     }
 
+    /**
+     * The volunteer browser exposes only shifts this viewer may see: a draft or staff-only shift
+     * reached by id answers 404, so the page cannot be used to confirm that it exists.
+     *
+     * Group siblings are listed only when the whole group is visible to the viewer. A member they
+     * may not see is absent from the list, and the plan behind the modal then refuses the whole
+     * group without naming it.
+     */
     #[IsGranted('shift:view')]
     #[Route('/shifts/{id}', name: 'app_shift_show', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function show(#[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
@@ -131,8 +140,6 @@ final class ShiftBrowseController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        // The volunteer browser only exposes published public shifts; a draft or
-        // staff-only shift reached by id must not leak here.
         if (!$this->visibility->isVisibleTo($shift, $user)) {
             throw $this->createNotFoundException();
         }
@@ -142,8 +149,6 @@ final class ShiftBrowseController extends AbstractController
             'availability' => $this->signup->availability($shift),
             'myEntry' => $this->entries->findOneByShiftAndUser($shift, $user),
             'signupOptions' => $this->signup->signupOptions($shift, $user),
-            // Siblings the viewer may see. A member they may not see is absent, and the plan behind
-            // the modal refuses the whole group without naming it.
             'groupSiblings' => $this->groups->isFullyVisibleTo($shift, $user) ? $this->groups->siblingsOf($shift) : [],
         ]);
     }
@@ -155,6 +160,9 @@ final class ShiftBrowseController extends AbstractController
      * `volunteer_type`; the dialog, which is where the browse list asks, posts the answer under
      * `group_type` keyed by shift uuid, the origin included. Either way it is looked up in
      * `signupOptions()`, so what the form posts never widens what the volunteer may take.
+     *
+     * A capacity conflict means the group filled between the modal being rendered and submitted, so
+     * it is reported as a warning rather than an error.
      */
     #[IsGranted('shift:view')]
     #[Route('/shifts/{id}/signup', name: 'app_shift_signup', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
@@ -190,7 +198,6 @@ final class ShiftBrowseController extends AbstractController
                         ? new TranslatableMessage('shift.flash.signed_up_group', ['%count%' => \count($created)])
                         : new TranslatableMessage('shift.flash.signed_up', ['%name%' => $type->getName()]));
                 } catch (CapacityConflictException $e) {
-                    // The group filled up between rendering the modal and submitting it.
                     $this->addFlash('warning', $e->getMessage());
                 } catch (\RuntimeException $e) {
                     $this->addFlash('danger', $e->getMessage());
@@ -312,6 +319,9 @@ final class ShiftBrowseController extends AbstractController
      * both the day window ({@see ShiftRepository::findForDay()}) and the rendered date land
      * on the intended day rather than drifting across a UTC midnight boundary.
      *
+     * A date parameter that cannot be parsed falls back to the first available day instead of
+     * failing the request.
+     *
      * @param string[] $days
      */
     private function resolveDate(string $dateParam, array $days, \DateTimeZone $tz): \DateTimeImmutable
@@ -320,7 +330,6 @@ final class ShiftBrowseController extends AbstractController
             try {
                 return (new \DateTimeImmutable($dateParam, $tz))->setTime(12, 0);
             } catch (\Exception) {
-                // fall through to defaults
             }
         }
 

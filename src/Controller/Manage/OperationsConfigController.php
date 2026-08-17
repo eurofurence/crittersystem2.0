@@ -35,6 +35,7 @@ final class OperationsConfigController extends AbstractController
             $this->store->set(EventConfigStore::KEY_INFODESK_WELCOME, $data->infoDeskWelcome);
             $this->store->set(EventConfigStore::KEY_INFODESK_FINALIZATION, $data->infoDeskFinalization);
             $this->store->set(EventConfigStore::KEY_INFODESK_CLAIM_TIMEOUT, $data->infoDeskClaimTimeout);
+            $this->store->set(EventConfigStore::KEY_SECURITY_CHECKIN_WINDOW, $data->securityCheckInWindow);
             $this->store->set(EventConfigStore::KEY_CHECKIN_MESSAGE_EN, $data->checkInMessageEn);
             $this->store->set(EventConfigStore::KEY_CHECKIN_MESSAGE_DE, $data->checkInMessageDe);
             $this->store->set(EventConfigStore::KEY_MESSAGE_EDIT_WINDOW, $data->messageEditWindow);
@@ -84,6 +85,7 @@ final class OperationsConfigController extends AbstractController
         $data->infoDeskWelcome = $store->get(EventConfigStore::KEY_INFODESK_WELCOME, EventConfigStore::DEFAULT_INFODESK_WELCOME);
         $data->infoDeskFinalization = $store->get(EventConfigStore::KEY_INFODESK_FINALIZATION, EventConfigStore::DEFAULT_INFODESK_FINALIZATION);
         $data->infoDeskClaimTimeout = $store->getInt(EventConfigStore::KEY_INFODESK_CLAIM_TIMEOUT, EventConfigStore::DEFAULT_INFODESK_CLAIM_TIMEOUT);
+        $data->securityCheckInWindow = $store->getInt(EventConfigStore::KEY_SECURITY_CHECKIN_WINDOW, EventConfigStore::DEFAULT_SECURITY_CHECKIN_WINDOW);
         $data->checkInMessageEn = $store->getString(EventConfigStore::KEY_CHECKIN_MESSAGE_EN, EventConfigStore::DEFAULT_CHECKIN_MESSAGE_EN);
         $data->checkInMessageDe = $store->getString(EventConfigStore::KEY_CHECKIN_MESSAGE_DE, EventConfigStore::DEFAULT_CHECKIN_MESSAGE_DE);
         $data->messageEditWindow = $store->getInt(EventConfigStore::KEY_MESSAGE_EDIT_WINDOW, EventConfigStore::DEFAULT_MESSAGE_EDIT_WINDOW);

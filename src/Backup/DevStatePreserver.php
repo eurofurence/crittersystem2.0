@@ -71,16 +71,18 @@ final class DevStatePreserver
     }
 
     /**
+     * The identity map is cleared first: rows are written straight through the connection, so
+     * anything already hydrated would go on reporting the values it was loaded with.
+     *
+     * The administrator's password is restored before anything else. It is the one thing that must
+     * not be lost if a later step fails, because it is what gets you back into the instance.
+     *
      * @return list<string> what was restored, for the command's summary
      */
     public function reapply(DevStateSnapshot $snapshot, bool $grantAdmin): array
     {
-        // Rows are written straight through the connection below, so anything
-        // already hydrated would go on reporting the values it was loaded with.
         $this->entityManager->clear();
 
-        // The password first: it is the one thing that must not be lost if a
-        // later step fails, and it is what gets you back into the instance.
         $notes = [$this->reapplyAdmin($snapshot, $grantAdmin)];
 
         return array_merge($notes, $this->reapplyConfig($snapshot));
@@ -111,7 +113,12 @@ final class DevStatePreserver
         return $rows;
     }
 
-    /** @return array<string, mixed>|null */
+    /**
+     * `enabled` is coerced back to a real bool: the driver may hand a PostgreSQL boolean back as
+     * 't'/'f', which the later INSERT will not take.
+     *
+     * @return array<string, mixed>|null
+     */
     private function captureTelegram(): ?array
     {
         $row = $this->connection->fetchAssociative(
@@ -121,17 +128,20 @@ final class DevStatePreserver
             return null;
         }
 
-        // The driver may hand a PostgreSQL boolean back as 't'/'f'; INSERT needs a real bool.
         $row['enabled'] = filter_var($row['enabled'], \FILTER_VALIDATE_BOOL);
 
         return $row;
     }
 
-    /** @return list<string> */
+    /**
+     * The tables are looked up rather than assumed: an old dump restored with --no-migrate need not
+     * have them yet.
+     *
+     * @return list<string>
+     */
     private function reapplyConfig(DevStateSnapshot $snapshot): array
     {
         $notes = [];
-        // An old dump restored with --no-migrate need not have these tables yet.
         $tables = $this->connection->createSchemaManager()->listTableNames();
         $config = in_array('event_config', $tables, true) ? $snapshot->eventConfig : [];
 

@@ -79,7 +79,6 @@ final class PositionServiceTest extends DatabaseTestCase
         $reloaded = $this->em->getRepository(ShiftEntry::class)->find($entry->getId());
         self::assertCount(2, $reloaded->getPositionAssignments(), 'both positions attach to one entry');
 
-        // Still exactly one shift entry for this user/shift.
         $entries = $this->em->getRepository(ShiftEntry::class)->count([
             'shift' => $shift->getId(),
             'user' => $reloaded->getUser()->getId(),

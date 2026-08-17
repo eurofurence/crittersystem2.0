@@ -64,14 +64,15 @@ final class LoginThrottle
     }
 
     /**
+     * The address is checked before the account, so that an attacker cycling usernames is stopped
+     * even when none of the names they try exists.
+     *
      * @throws AccountLockedOutException when either the account or the client address is timed out
      */
     public function assertNotLocked(string $username, ?string $ip): void
     {
         $now = $this->clock->now();
 
-        // The address is checked first so that an attacker cycling usernames is stopped even when
-        // none of the names they try exists.
         if ($this->isLocked(LoginLockout::SCOPE_IP, $this->hashIp($ip), $now)) {
             throw new AccountLockedOutException();
         }

@@ -51,13 +51,13 @@ final class UnderstaffedImminentRule implements AttentionRule
         return $items;
     }
 
+    /** Two moments per shift: entering the warning window, and leaving it again when the shift starts. */
     public function transitions(BoardContext $context): array
     {
         $window = $context->settings->preStartWarnMinutes();
         $moments = [];
 
         foreach ($context->shifts as $shift) {
-            // Entering the warning window, and leaving it again when the shift starts.
             $moments[] = $shift->getStartsAt()->modify(\sprintf('-%d minutes', $window));
             $moments[] = $shift->getStartsAt();
         }

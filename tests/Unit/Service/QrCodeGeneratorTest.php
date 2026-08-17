@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 final class QrCodeGeneratorTest extends TestCase
 {
+    /** The asserted prefix is the PNG file signature: \x89 P N G \r \n \x1a \n. */
     public function testProducesAPngWithCorrectHeaderAndMimeType(): void
     {
         $generator = new QrCodeGenerator();
@@ -14,7 +15,6 @@ final class QrCodeGeneratorTest extends TestCase
 
         self::assertSame(200, $response->getStatusCode());
         self::assertSame('image/png', $response->headers->get('Content-Type'));
-        // PNG signature: \x89 P N G \r \n \x1a \n
         self::assertSame("\x89PNG\r\n\x1a\n", substr((string) $response->getContent(), 0, 8));
     }
 

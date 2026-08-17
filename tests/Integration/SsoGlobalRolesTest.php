@@ -99,10 +99,10 @@ final class SsoGlobalRolesTest extends DatabaseTestCase
         self::assertNotContains('global-admin', $slugs);
     }
 
+    /** With only the global-admin role id configured, the app has no opinion on the sub-admin group. */
     public function testAnUnconfiguredRoleLeavesItsGroupUntouched(): void
     {
         $this->seedGroups();
-        // Only the global-admin role ID is configured; the app has no opinion on the sub-admin group.
         $this->configure(self::GLOBAL_ADMIN_ROLE, null);
 
         $this->signIn([]);

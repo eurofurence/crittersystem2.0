@@ -17,16 +17,16 @@ final class BackupRetentionTest extends TestCase
         $cutoff = (new \DateTimeImmutable('now'))->modify('-14 days');
 
         $entries = [
-            ['key' => 'critter-20250101-000000.dump', 'lastModified' => $this->ts('-30 days')], // old -> prune
-            ['key' => 'critter-20260101-000000.dump', 'lastModified' => $this->ts('-1 day')],   // fresh -> keep
+            ['key' => 'critter-20250101-000000.dump', 'lastModified' => $this->ts('-30 days')],
+            ['key' => 'critter-20260101-000000.dump', 'lastModified' => $this->ts('-1 day')],
         ];
 
         $this->assertSame(['critter-20250101-000000.dump'], BackupRetention::expired($entries, $cutoff));
     }
 
+    /** An object in the bucket that is not a backup dump is never pruned, however old it is. */
     public function testIgnoresObjectsThatAreNotBackupDumps(): void
     {
-        // A stray object in the bucket must never be pruned, however old it is.
         $entries = [
             ['key' => 'unrelated.txt', 'lastModified' => $this->ts('-100 days')],
             ['key' => 'critter-20250101-000000.sql.gz', 'lastModified' => $this->ts('-100 days')],
@@ -36,9 +36,9 @@ final class BackupRetentionTest extends TestCase
         $this->assertSame([], BackupRetention::expired($entries, new \DateTimeImmutable('now')));
     }
 
+    /** Without a modification time there is no proof the object aged out, so it is kept. */
     public function testTreatsMissingModificationTimeAsNotExpired(): void
     {
-        // Without a timestamp we cannot prove the object aged out, so it is kept.
         $entries = [['key' => 'critter-20250101-000000.dump', 'lastModified' => null]];
 
         $this->assertSame([], BackupRetention::expired($entries, new \DateTimeImmutable('now')));
@@ -69,9 +69,9 @@ final class BackupRetentionTest extends TestCase
         $this->assertSame(2, $latest['count']);
     }
 
+    /** A store that reports no modification time still yields an instant, parsed from the key. */
     public function testLatestFallsBackToTheTimestampInTheKey(): void
     {
-        // A store that reports no modification time still yields an instant from the key.
         $entries = [['key' => 'critter-20260725-022300.dump', 'lastModified' => null]];
 
         $latest = BackupRetention::latest($entries);

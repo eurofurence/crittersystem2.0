@@ -31,9 +31,9 @@ final class UsernameGenerator
         return $candidate;
     }
 
+    /** Leaves room for the "_NN" suffix within the 24-character username limit. */
     private function truncate(string $name): string
     {
-        // Leave room for the "_NN" suffix within the 24-char username limit.
         return mb_substr($name, 0, 21);
     }
 }

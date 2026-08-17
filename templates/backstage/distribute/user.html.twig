@@ -10,12 +10,12 @@
 {% block container_class %}container-fluid{% endblock %}
 
 {% block body %}
-  {# Email is a mining vector: only a fresh-stepped-up PII viewer sees the raw address. #}
   {% set headerActions = [{label: 'backstage.locate.action.back_to_search'|trans, href: path('app_backstage_distribute'), class: 'btn btn-outline-secondary'}] %}
   {% if canViewProfile %}
     {% set headerActions = headerActions|merge([{label: 'backstage.locate.action.view_profile'|trans, href: path('app_profile_show', {id: user.uuid}), class: 'btn btn-outline-primary'}]) %}
   {% endif %}
 
+  {# Email is a mining vector: only a fresh-stepped-up PII viewer sees the raw address. #}
   {{ d.page_header('backstage.locate.user.heading'|trans({'%name%': user.name}), {
     subtitle: can_see_pii() ? user.email : 'backstage.locate.volunteer'|trans,
     actions: headerActions

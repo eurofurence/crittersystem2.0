@@ -132,10 +132,10 @@ class Shift
     #[ORM\OneToMany(mappedBy: 'shift', targetEntity: ShiftPosition::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $shiftPositions;
 
+    /** Starts and ends are pre-filled so the "new shift" form opens with initialised times. */
     public function __construct()
     {
         $this->uuid = Uuid::v4();
-        // Sensible defaults so the "new shift" form has initialised times.
         $next = new \DateTimeImmutable('+1 hour');
         $this->startsAt = $next->setTime((int) $next->format('H'), 0);
         $this->endsAt = $this->startsAt->modify('+1 hour');

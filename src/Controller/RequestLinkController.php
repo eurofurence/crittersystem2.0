@@ -20,9 +20,10 @@ use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Manage department Availability Request and Shift Invitation links. Scoped to
- * departments the manager can manage; creation and revocation
- * are audited by the service.
+ * Manage department Availability Request and Shift Invitation links. Creating and revoking a link
+ * re-check `shift:manage` against that link's department, because `invite:manage` on the class is
+ * unscoped and says no more than "may reach this module". Creation and revocation are audited by
+ * the service.
  */
 #[Route('/manage-shifts/links')]
 #[IsGranted('invite:manage')]

@@ -106,8 +106,8 @@
         {% endif %}
       </div>
       {# target="_top" so the rows behave normally: a link or form inside a frame navigates THAT
-         frame by default, which sent every profile link to a page with no such frame ("Content
-         missing"). Only the pager opts back in, via data-turbo-frame. #}
+         frame by default, and a profile page carries no such frame, so the row links would answer
+         "Content missing". Only the pager opts back in, via data-turbo-frame. #}
       <turbo-frame id="{{ frameId }}" target="_top">
       {% if section.items is empty %}
         {{ d.empty_inline(section.query ? 'department.show.no_matches'|trans : 'department.show.none'|trans, {tag: 'div', class: 'card-body text-secondary'}) }}

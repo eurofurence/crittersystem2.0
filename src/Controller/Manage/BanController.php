@@ -41,6 +41,11 @@ final class BanController extends AbstractController
         return $this->render('manage/ban/index.html.twig', ['bans' => $this->bans->findRecentAll()]);
     }
 
+    /**
+     * A ban still linked to a live user is behavioural: lifting it lifts every ban record that user
+     * holds and resets their no-show counter. A hashed GDPR ban has no user and may only be removed
+     * once the person has appealed.
+     */
     #[Route('/{id}/lift', name: 'app_manage_ban_lift', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function lift(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] BannedIdentity $ban): Response
     {
@@ -50,7 +55,6 @@ final class BanController extends AbstractController
 
         $user = $ban->getUser();
         if ($user !== null) {
-            // Behavioural ban: lift all of the user's ban records and reset the counter.
             $this->noShowBans->liftAndReset($user, 'Lifted by administrator');
             $this->addFlash('success', new TranslatableMessage('manage.ban.flash.lifted_reset'));
 

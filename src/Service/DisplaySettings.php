@@ -25,6 +25,10 @@ class DisplaySettings
     ) {
     }
 
+    /**
+     * An unusable configured zone is logged at error level: the fallback silently renders every
+     * date in the application in a zone the administrator did not choose.
+     */
     public function timezone(): \DateTimeZone
     {
         if ($this->timezone === null) {
@@ -32,7 +36,6 @@ class DisplaySettings
             try {
                 $this->timezone = new \DateTimeZone($name !== '' ? $name : EventConfigStore::DEFAULT_TIMEZONE);
             } catch (\Exception $e) {
-                // Every date in the application is now rendered in a zone the administrator did not choose.
                 $this->logger->error('Configured timezone "{name}" is not usable; falling back to {fallback}: {reason}', [
                     'name' => $name,
                     'fallback' => EventConfigStore::DEFAULT_TIMEZONE,

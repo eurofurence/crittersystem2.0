@@ -50,6 +50,7 @@ final class AdminStorageTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
     }
 
+    /** Every round-trip step passes on the local backend, and no step reports a failure. */
     public function testAppStorageRoundTripSucceeds(): void
     {
         $this->client->loginUser($this->user('ROLE_ADMIN', 'global:admin'));
@@ -58,11 +59,14 @@ final class AdminStorageTest extends DatabaseWebTestCase
         $this->client->submit($crawler->selectButton('Run storage test')->form());
 
         self::assertResponseIsSuccessful();
-        // Each round-trip step passes on the local backend; no step reports a failure.
         self::assertSelectorTextContains('body', 'Delete file');
         self::assertStringNotContainsString('Failed', (string) $this->client->getResponse()->getContent());
     }
 
+    /**
+     * An invalid submission re-renders the form with a 422 rather than redirecting, because
+     * Turbo silently discards a rendered 200 answer to a form post, and no backup is attempted.
+     */
     public function testBackupFormRejectsEmptyBucket(): void
     {
         $this->client->loginUser($this->user('ROLE_ADMIN', 'global:admin'));
@@ -72,7 +76,6 @@ final class AdminStorageTest extends DatabaseWebTestCase
             'backup_test[bucket]' => '',
         ]));
 
-        // Invalid submission re-renders the form (422 under Turbo); no backup is attempted.
         self::assertResponseStatusCodeSame(422);
         self::assertSelectorExists('form[name="backup_test"]');
     }

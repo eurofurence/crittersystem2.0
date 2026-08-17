@@ -93,10 +93,15 @@ final class StaffController extends AbstractController
         return $this->redirectToRoute('app_staff_overview');
     }
 
+    /**
+     * Open duties grouped by department, plus the operational departments nobody is covering.
+     *
+     * Organizational departments are left out of that second list: nobody is ever rostered on duty
+     * in one, so they would sit in the warning permanently and train the reader to ignore it.
+     */
     #[Route('/live', name: 'app_staff_live', methods: ['GET'])]
     public function live(DutyRecordRepository $duties): Response
     {
-        // Group open duties by department; departments with nobody on duty are warnings.
         $byDepartment = [];
         foreach ($duties->findActive() as $record) {
             $key = $record->getDepartment()?->getId() ?? 0;
@@ -106,6 +111,9 @@ final class StaffController extends AbstractController
 
         $understaffed = [];
         foreach ($this->departments->findAllOrdered() as $department) {
+            if ($department->isOrganizational()) {
+                continue;
+            }
             if (!isset($byDepartment[$department->getId()])) {
                 $understaffed[] = $department;
             }
@@ -113,17 +121,22 @@ final class StaffController extends AbstractController
 
         return $this->render('staff/live.html.twig', [
             'byDepartment' => $byDepartment,
-            // 'understaffed' => $understaffed,
+            'understaffed' => $understaffed,
         ]);
     }
 
+    /**
+     * The signed-in user's own statistics, or another user's when `?user=` is given.
+     *
+     * Reading somebody else's needs `global:admin`, and an unknown or unreadable uuid falls back to
+     * the viewer rather than erroring, so the parameter cannot be used to confirm who exists.
+     */
     #[Route('/stats', name: 'app_staff_stats', methods: ['GET'])]
     public function stats(Request $request, UserRepository $users): Response
     {
         /** @var User $me */
         $me = $this->getUser();
 
-        // Admins may view another user's stats via ?user=ID.
         $target = $me;
         if ($this->isGranted('global:admin') && ($id = $request->query->get('user'))) {
             $target = $users->findOneByUuid((string) $id) ?? $me;

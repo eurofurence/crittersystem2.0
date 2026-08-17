@@ -35,6 +35,10 @@ final class GenerateDataExportHandler
     ) {
     }
 
+    /**
+     * A failure is logged as well as recorded on the export: the user only ever sees "failed", so the
+     * reason has to reach the operator some other way.
+     */
     public function __invoke(GenerateDataExport $message): void
     {
         $export = $this->em->getRepository(DataExport::class)->find($message->exportId);
@@ -58,7 +62,6 @@ final class GenerateDataExportHandler
                     ->text("Your data export is ready. Download it within 24 hours:\n".$url),
             );
         } catch (\Throwable $e) {
-            // The user only ever sees "failed", so the reason has to reach the operator somehow.
             $this->logger->error('Data export {uuid} failed: {reason}', [
                 'uuid' => $export->getUuid(),
                 'reason' => $e->getMessage(),

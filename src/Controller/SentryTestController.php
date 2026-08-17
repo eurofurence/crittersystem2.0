@@ -14,14 +14,15 @@ class SentryTestController extends AbstractController
         private LoggerInterface $logger
     ) {}
 
-    // Symfony 8 uses native PHP attributes instead of PHPDoc annotations
+    /**
+     * Checks the Sentry wiring end to end: it logs an error to exercise the Monolog integration and
+     * then throws, so uncaught-exception reporting is exercised too. The exception is deliberate.
+     */
     #[Route(path: '/_sentry-test', name: 'sentry_test')]
     public function testLog(): Response
     {
-        // Tests if Monolog integration logs to Sentry
         $this->logger->error('My custom logged error.');
 
-        // Tests if an uncaught exception logs to Sentry
         throw new \RuntimeException('Example exception.');
     }
 }

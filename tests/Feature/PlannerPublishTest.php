@@ -75,10 +75,14 @@ final class PlannerPublishTest extends DatabaseWebTestCase
         self::assertSame(ShiftState::PUBLISHED, $shift->getState());
     }
 
+    /**
+     * shift:manage alone cannot publish. The token is a dummy because without shift:publish the
+     * page renders no token field to read one from, and the privilege is refused before the token
+     * is examined.
+     */
     public function testPublishForbiddenWithoutPrivilege(): void
     {
         $dept = $this->login(['manageshifts:view', 'shift:manage']);
-        // Without shift:publish there is no token field to read, so post a dummy.
         $this->client->request('POST', '/manage-shifts/planner/publish', [
             '_token' => 'x',
             'department' => $dept->getUuid(),

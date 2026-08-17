@@ -41,26 +41,28 @@ final class TelegramLinkTest extends DatabaseWebTestCase
         return $user;
     }
 
+    /**
+     * The whole link cycle: starting one creates a pending request carrying a code, the bot (a dummy
+     * one here) confirms that code, the live status endpoint then reports linked, and unlinking
+     * reverses it.
+     */
     public function testLinkViaDummyBotThenUnlink(): void
     {
         $this->enableTelegram();
         $user = $this->makeVolunteer();
         $this->client->loginUser($user);
 
-        // Start a link -> a pending request with a code is created.
         $this->client->request('POST', '/profile/telegram/start');
         self::assertResponseRedirects('/profile/telegram');
         $request = $this->em->getRepository(TelegramLinkRequest::class)->findOneBy(['user' => $user]);
         self::assertNotNull($request);
         self::assertTrue($request->isPending());
 
-        // The (dummy) bot confirms the code.
         $this->client->request('POST', '/telegram/dummy/confirm', [
             'code' => $request->getCode(), 'telegram_id' => '555111', 'handle' => '@tguser',
         ]);
         self::assertResponseIsSuccessful();
 
-        // Live status now reports linked.
         $this->client->request('GET', '/profile/telegram/status');
         self::assertJsonStringEqualsJsonString('{"linked":true}', $this->client->getResponse()->getContent());
 

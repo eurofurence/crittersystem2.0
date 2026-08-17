@@ -62,6 +62,10 @@ final class UserController extends AbstractController
     ) {
     }
 
+    /**
+     * Resetting somebody else's second factor is a critical action: it is audited as such and the
+     * account holder is emailed, so it cannot happen without a trace or without their knowing.
+     */
     #[Route('/{id}/reset-2fa', name: 'app_manage_user_reset_2fa', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('global:admin')]
     public function resetTwoFactor(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): Response
@@ -74,7 +78,6 @@ final class UserController extends AbstractController
         }
 
         $this->twoFactor->disable($user);
-        // Critical action: logged as such and the user is notified.
         $this->audit->log(AuditEvents::SECURITY, AuditEvents::UPDATE, [
             'resourceType' => 'User',
             'resourceId' => $user->getId(),
@@ -132,16 +135,17 @@ final class UserController extends AbstractController
     }
 
     /**
-     * Queue a re-run of onboarding for every user - e.g. after the privacy notice
-     * or consent text changes and everyone must see it again.
+     * Queue a re-run of onboarding for every user, for instance after the privacy notice or consent
+     * text changes and everyone must see it again.
+     *
+     * No 2FA step-up: this exposes nothing and changes no credential, it only makes people answer
+     * the wizard again. Step-up is reserved for credential and security-config actions such as
+     * resetting somebody's 2FA or changing SSO settings.
      */
     #[Route('/reset-onboarding-all', name: 'app_manage_user_reset_onboarding_all', methods: ['POST'])]
     #[IsGranted('global:admin')]
     public function resetOnboardingForAll(Request $request): Response
     {
-        // No 2FA step-up: this exposes nothing and changes no credential - it only
-        // makes people answer the wizard again. Step-up is reserved for credential
-        // and security-config actions (resetting someone's 2FA, SSO settings).
         if (!$this->isCsrfTokenValid('reset-onboarding-all', (string) $request->request->get('_token'))) {
             return $this->redirectToRoute('app_manage_user_index');
         }
@@ -165,6 +169,10 @@ final class UserController extends AbstractController
         return $this->render('manage/user/index.html.twig', ['users' => $users, 'query' => $query]);
     }
 
+    /**
+     * The invited account is created with a random password nobody holds: it stays unusable until
+     * the invitee sets one during onboarding.
+     */
     #[Route('/invite', name: 'app_manage_user_invite', methods: ['GET', 'POST'])]
     #[IsGranted('user:create')]
     public function invite(Request $request): Response
@@ -184,7 +192,7 @@ final class UserController extends AbstractController
             $user->setName($this->usernames->unique($data->username))
                 ->setEmail($data->email)
                 ->setApiKey(bin2hex(random_bytes(16)))
-                ->setPassword(bin2hex(random_bytes(16))) // unusable until onboarding sets one
+                ->setPassword(bin2hex(random_bytes(16)))
                 ->setPersonalData((new PersonalData($user))->setFirstName($data->firstName)->setLastName($data->lastName))
                 ->setContact(new Contact($user))
                 ->setSettings(new Settings($user))
@@ -213,6 +221,13 @@ final class UserController extends AbstractController
         return $this->render('manage/user/invite.html.twig', ['form' => $form]);
     }
 
+    /**
+     * A submitted selection that newly grants an admin or sub-admin role demands 2FA step-up, and a
+     * target who is not staff may only be promoted by a global admin.
+     *
+     * The certification block is shown to whoever may decide on certifications, which is a
+     * different privilege from editing the account itself.
+     */
     #[Route('/{id}/edit', name: 'app_manage_user_edit', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
     #[IsGranted('user:edit')]
     public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): Response
@@ -232,8 +247,6 @@ final class UserController extends AbstractController
             if ($this->isGranted('user:promote')) {
                 $groupUuids = array_map(strval(...), (array) $request->request->all('groups'));
                 if ($this->grantsElevatedRole($user, $groupUuids)) {
-                    // Promoting to an admin/sub-admin role requires step-up; a
-                    // non-staff target must be approved by a global admin.
                     if ($stepUp = $this->stepUp->guard($request)) {
                         return $stepUp;
                     }
@@ -263,8 +276,6 @@ final class UserController extends AbstractController
             return $this->redirectToRoute('app_manage_user_index');
         }
 
-        // The certification block is shown to whoever may decide on them, which is a different
-        // privilege from editing the account itself.
         $canGrantCertifications = $this->isGranted('certification:approve');
 
         return $this->render('manage/user/edit.html.twig', [
@@ -319,7 +330,12 @@ final class UserController extends AbstractController
         return array_intersect(['ROLE_ADMIN', 'ROLE_SUBADMIN'], $target->getRoles()) === [];
     }
 
-    /** @return Group[] groups the current user is allowed to assign */
+    /**
+     * Anyone short of a global admin is refused the elevated-role groups, so a sub-admin cannot
+     * grant ROLE_ADMIN or ROLE_SUBADMIN.
+     *
+     * @return Group[] groups the current user is allowed to assign
+     */
     private function assignableGroups(): array
     {
         $all = $this->groups->findBy([], ['name' => 'ASC']);
@@ -327,7 +343,6 @@ final class UserController extends AbstractController
             return $all;
         }
 
-        // Sub-admins cannot grant elevated-role groups.
         return array_values(array_filter(
             $all,
             static fn (Group $g): bool => !\in_array($g->getRole(), ['ROLE_ADMIN', 'ROLE_SUBADMIN'], true),
@@ -356,7 +371,13 @@ final class UserController extends AbstractController
         return false;
     }
 
-    /** @param string[] $groupUuids */
+    /**
+     * Only assignable groups the user no longer has selected are removed: groups outside the
+     * editor's authority are left untouched, so editing an account cannot strip a role the editor
+     * is not allowed to grant back.
+     *
+     * @param string[] $groupUuids
+     */
     private function syncGroups(User $user, array $groupUuids): void
     {
         $assignableByUuid = [];
@@ -364,8 +385,6 @@ final class UserController extends AbstractController
             $assignableByUuid[(string) $g->getUuid()] = $g;
         }
 
-        // Remove only assignable groups the user no longer has selected; leave
-        // groups outside the editor's authority untouched.
         foreach ($user->getGroups() as $group) {
             if (isset($assignableByUuid[(string) $group->getUuid()]) && !\in_array((string) $group->getUuid(), $groupUuids, true)) {
                 $user->removeGroup($group);

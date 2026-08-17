@@ -36,6 +36,11 @@ class NotificationService
     ) {
     }
 
+    /**
+     * An in-app notification signals the user's bell, and the signal carries nothing but "something
+     * arrived": not the title, not the category. The browser re-requests the bell fragment, which is
+     * rendered for whoever is actually signed in.
+     */
     public function notify(User $user, string $category, string $title, string $message, ?string $actionUrl = null): ?Notification
     {
         if (!NotificationCategories::isValid($category)) {
@@ -52,9 +57,6 @@ class NotificationService
             $this->em->persist($created);
             $this->em->flush();
 
-            // Wake this user's bell. The signal says only that something arrived; the browser
-            // re-requests the bell fragment, which is rendered for whoever is actually signed in.
-            // Nothing about the notification crosses the hub - not its title, not its category.
             $this->live->signal(Topics::userNotifications($user));
         }
 
@@ -109,11 +111,11 @@ class NotificationService
         }
     }
 
+    /** Signals the bell: the user may be reading in more than one tab, and the count has to drop in all of them. */
     public function markAllRead(User $user): void
     {
         $this->notifications->markAllRead($user, new \DateTimeImmutable());
 
-        // The user may be reading in more than one tab; the count has to drop in all of them.
         $this->live->signal(Topics::userNotifications($user));
     }
 

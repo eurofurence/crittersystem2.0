@@ -41,6 +41,17 @@ class PrivilegeVoter extends Voter
         return PrivilegeCatalog::isPrivilege($attribute);
     }
 
+    /**
+     * A scoped permission checked without a resource subject GRANTS: it reads only as "may reach
+     * this module at all". Any caller bound to one resource MUST pass it, or a manager scoped to a
+     * single department is granted across the whole event. Forgetting the subject is
+     * indistinguishable here from choosing not to scope, so this voter fails open.
+     *
+     * {@see PrivilegeScopeResolver::departmentsFor()} returns null for "every department"
+     * (ROLE_ADMIN, the global:admin super-permission, a sub-admin holding a sub-admin-level
+     * permission, or a granting group assignment carrying no department scope), and an empty array
+     * when the user does not hold the permission at all.
+     */
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?Vote $vote = null): bool
     {
         $user = $token->getUser();
@@ -48,9 +59,6 @@ class PrivilegeVoter extends Voter
             return false;
         }
 
-        // Null means "every department": ROLE_ADMIN and the global:admin super-privilege, a
-        // sub-admin holding a sub-admin-level permission, or a granting group assignment that
-        // carries no department scope. An empty array means the user does not hold it at all.
         $held = $this->scopes->departmentsFor($user, $attribute);
         if ($held === []) {
             return false;
@@ -62,8 +70,6 @@ class PrivilegeVoter extends Voter
 
         $departments = $this->resolveDepartments($subject);
         if ($departments === []) {
-            // No subject to scope against, so this reads as "may reach this module at all".
-            // Callers bound to one resource MUST pass it; see the class docblock.
             return true;
         }
 
@@ -83,6 +89,10 @@ class PrivilegeVoter extends Voter
     /**
      * Departments a resource belongs to, for scope checks.
      *
+     * A Shift is scoped by its own department, which is authoritative and always set. Its shift
+     * task is optional, so scoping a shift through the task would leave task-less shifts unscoped
+     * and grant every holder of the permission.
+     *
      * @return Department[]
      */
     private function resolveDepartments(mixed $subject): array
@@ -90,9 +100,6 @@ class PrivilegeVoter extends Voter
         return match (true) {
             $subject instanceof Department => [$subject],
             $subject instanceof ShiftTask => array_filter([$subject->getDepartment()]),
-            // A shift's own department is authoritative and always set; its shift
-            // task is optional, so scoping through the task would leave task-less
-            // shifts unscoped and grant every holder of the privilege.
             $subject instanceof Shift => array_filter([$subject->getDepartment()]),
             $subject instanceof VolunteerType => $subject->getDepartments()->toArray(),
             default => [],

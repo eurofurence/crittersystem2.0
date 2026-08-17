@@ -143,7 +143,8 @@ final class LiveChatSignalTest extends DatabaseTestCase
      * The direction that matters: the token may be narrower than the predicate without harm, but
      * never wider, because a wider token means live updates reaching someone a request would refuse.
      * The controller and the topic builder ask ConversationService the same question so the two
-     * cannot drift; this pins the property they exist to guarantee.
+     * cannot drift; this pins the property they exist to guarantee. Someone who may not read the
+     * conversation holds neither route to it: not its topic and not the info-desk queue topic.
      */
     public function testHoldingAConversationTopicImpliesPermissionToReadIt(): void
     {
@@ -164,7 +165,6 @@ final class LiveChatSignalTest extends DatabaseTestCase
             }
         }
 
-        // And the one who may not read it holds neither route to it.
         $strangerTopics = $this->topics()->forUser($stranger);
         self::assertNotContains(Topics::conversation($conversation), $strangerTopics);
         self::assertNotContains(Topics::infoDeskQueue(), $strangerTopics);
@@ -188,10 +188,12 @@ final class LiveChatSignalTest extends DatabaseTestCase
         self::assertCount(1, RecordedUpdates::forTopic(Topics::infoDeskQueue()));
     }
 
-    /** A direct conversation is nobody's queue business. */
+    /**
+     * A direct conversation is nobody's queue business. Only an admin, a sub admin or an info-desk
+     * member may open one, hence the ROLE_SUBADMIN initiator.
+     */
     public function testADirectConversationNeverReachesTheInfoDeskQueue(): void
     {
-        // Only an Admin, Sub Admin or Info Desk member may open a direct conversation.
         $group = new Group('Sub admin', 'subadmin-'.bin2hex(random_bytes(2)), 'ROLE_SUBADMIN');
         $this->em->persist($group);
         $responder = new User();

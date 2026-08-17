@@ -44,6 +44,12 @@ final class InstallController extends AbstractController
 
     private readonly string $installPassword;
 
+    /**
+     * INSTALL_PASSWORD is trimmed: deployment tooling routinely leaves a trailing newline on a
+     * secret value (a Docker/K8s secret file, `$(cat secret)`, `echo` without -n, a quoted env_file
+     * line). Left in, it makes hash_equals reject the correct password, which reads to the operator
+     * as "wrong password".
+     */
     public function __construct(
         private readonly MigrationInspector $inspector,
         private readonly InstallStateStore $state,
@@ -54,19 +60,12 @@ final class InstallController extends AbstractController
         string $installPassword,
         private readonly string $projectDir,
     ) {
-        // Deployment tooling routinely leaves a trailing newline on secret values
-        // (a Docker/K8s secret file, `$(cat secret)`, `echo` without -n, or a quoted
-        // env_file line). Left in, it makes hash_equals reject the correct password,
-        // which then reads to the operator as "wrong password". Normalise it here.
         $this->installPassword = trim($installPassword);
     }
-
-    // ------------------------------------------------------------- step 1: welcome
 
     #[Route('', name: 'app_install', methods: ['GET'])]
     public function welcome(Request $request): Response
     {
-        // The wizard must never be available when there is nothing to do.
         if (!$this->inspector->isInstallNeeded()) {
             return $this->redirectToRoute('app_home');
         }
@@ -82,6 +81,10 @@ final class InstallController extends AbstractController
         return $this->render('install/welcome.html.twig', $this->view(1));
     }
 
+    /**
+     * An invalid CSRF token reports an expired session, not a wrong password: the operator must not
+     * be sent to double-check a password that is correct.
+     */
     #[Route('/authenticate', name: 'app_install_authenticate', methods: ['POST'])]
     public function authenticate(Request $request): Response
     {
@@ -89,8 +92,6 @@ final class InstallController extends AbstractController
             return $this->render('install/disabled.html.twig', [], new Response('', Response::HTTP_FORBIDDEN));
         }
 
-        // A stale/invalid token is a session problem, not a wrong password; say so
-        // rather than sending the operator to double-check a password that is correct.
         if (!$this->isCsrfTokenValid('install_authenticate', (string) $request->request->get('_token'))) {
             $this->addFlash('install_error', new TranslatableMessage('install.flash.session_expired'));
 
@@ -108,8 +109,6 @@ final class InstallController extends AbstractController
 
         return $this->redirectToRoute('app_install_overview');
     }
-
-    // ------------------------------------------------------------ step 2: overview
 
     #[Route('/overview', name: 'app_install_overview', methods: ['GET'])]
     public function overview(Request $request): Response
@@ -134,8 +133,9 @@ final class InstallController extends AbstractController
         ]));
     }
 
-    // ------------------------------------------------------------ step 3: database
-
+    /**
+     * Setup cannot proceed without the encryption key: no secret can be stored until it exists.
+     */
     #[Route('/database', name: 'app_install_database', methods: ['GET'])]
     public function database(Request $request): Response
     {
@@ -143,8 +143,6 @@ final class InstallController extends AbstractController
             return $redirect;
         }
 
-        // The encryption key must exist before any secret can be stored; setup
-        // cannot proceed without it.
         if (!$this->cipher->isConfigured()) {
             $this->addFlash('install_error', new TranslatableMessage('install.flash.encryption_key_required'));
 
@@ -161,6 +159,10 @@ final class InstallController extends AbstractController
         ]));
     }
 
+    /**
+     * The "running" status written here is provisional, so the UI reacts immediately; `app:migrate`
+     * takes ownership of the real status as soon as it boots.
+     */
     #[Route('/migrate', name: 'app_install_migrate', methods: ['POST'])]
     public function migrate(Request $request): Response
     {
@@ -182,8 +184,6 @@ final class InstallController extends AbstractController
 
         $current = $this->state->readStatus();
         if (($current['state'] ?? null) !== InstallStateStore::STATE_RUNNING) {
-            // Provisional "running" so the UI reacts immediately; app:migrate
-            // takes ownership of the real status as soon as it boots.
             $this->state->beginMigration();
             $this->launchMigration();
         }
@@ -208,8 +208,10 @@ final class InstallController extends AbstractController
         ]);
     }
 
-    // --------------------------------------------------------------- step 4: admin
-
+    /**
+     * Creates the first administrator. Migration has to be complete before a user row can be
+     * written, so a pending migration sends the operator back to the database step.
+     */
     #[Route('/admin', name: 'app_install_admin', methods: ['GET', 'POST'])]
     public function admin(Request $request): Response
     {
@@ -217,12 +219,10 @@ final class InstallController extends AbstractController
             return $redirect;
         }
 
-        // Migration must be done before we can write a user row.
         if ($this->inspector->pendingMigrationCount() > 0) {
             return $this->redirectToRoute('app_install_database');
         }
 
-        // Not a fresh install - an admin already exists; skip ahead.
         if ($this->installer->userCount() > 0) {
             return $this->render('install/admin.html.twig', $this->view(4, ['alreadyExists' => true]));
         }
@@ -272,8 +272,10 @@ final class InstallController extends AbstractController
         ]));
     }
 
-    // -------------------------------------------------------------- step 5: config
-
+    /**
+     * Regional configuration. This step is skippable, so values are persisted only when the
+     * operator submits "save".
+     */
     #[Route('/config', name: 'app_install_config', methods: ['GET', 'POST'])]
     public function configure(Request $request): Response
     {
@@ -288,7 +290,6 @@ final class InstallController extends AbstractController
                 return $this->redirectToRoute('app_install_config');
             }
 
-            // Skipping is allowed - only persist when the user submitted "save".
             if ($request->request->get('action') === 'save') {
                 $eventName = trim((string) $request->request->get('event_name'));
                 $timezone = trim((string) $request->request->get('timezone'));
@@ -326,8 +327,10 @@ final class InstallController extends AbstractController
         ]));
     }
 
-    // ------------------------------------------------------------- step 6: privacy
-
+    /**
+     * Privacy-notice essentials. This step is skippable, so the notice is persisted only when the
+     * operator submits "save".
+     */
     #[Route('/privacy', name: 'app_install_privacy', methods: ['GET', 'POST'])]
     public function privacy(Request $request): Response
     {
@@ -342,7 +345,6 @@ final class InstallController extends AbstractController
                 return $this->redirectToRoute('app_install_privacy');
             }
 
-            // Skipping is allowed - only persist when the user submitted "save".
             if ($request->request->get('action') === 'save') {
                 $this->installer->savePrivacyNotice(
                     trim((string) $request->request->get('event_name')),
@@ -356,8 +358,6 @@ final class InstallController extends AbstractController
             return $this->redirectToRoute('app_install_finish');
         }
 
-        // Prefill from an existing notice, falling back to the event name just
-        // captured in the configuration step.
         $notice = $this->privacyNotices->current();
         $eventName = $notice?->getEventName() ?: (string) $this->config->get(EventConfigStore::KEY_NAME, '');
 
@@ -369,8 +369,10 @@ final class InstallController extends AbstractController
         ]));
     }
 
-    // ------------------------------------------------------------- step 7: finish
-
+    /**
+     * Closing the wizard refreshes the maintenance gate's cache so the site reopens immediately,
+     * and drops the install session.
+     */
     #[Route('/finish', name: 'app_install_finish', methods: ['GET'])]
     public function finish(Request $request): Response
     {
@@ -378,8 +380,6 @@ final class InstallController extends AbstractController
             return $this->redirectToRoute('app_install');
         }
 
-        // Refresh the gate's cache so the site reopens immediately, and end the
-        // install session.
         $this->state->markReady($this->inspector->latestAvailableVersion());
         $this->state->resetStatus();
         $request->getSession()->remove(self::SESSION_AUTH);
@@ -388,8 +388,6 @@ final class InstallController extends AbstractController
 
         return $this->redirectToRoute('app_login');
     }
-
-    // -------------------------------------------------------------------- helpers
 
     private function installerDisabled(): bool
     {
@@ -402,7 +400,8 @@ final class InstallController extends AbstractController
     }
 
     /**
-     * Common guard for steps 2–5: the installer must be enabled and unlocked.
+     * Common guard for every step after the welcome page: the installer must be enabled and
+     * unlocked.
      */
     private function guard(Request $request): ?RedirectResponse
     {
@@ -443,13 +442,14 @@ final class InstallController extends AbstractController
      * Launch `app:migrate` as a detached background process so the wizard can
      * poll for live progress. The advisory lock in the command guarantees this
      * is safe even if it races with a container-startup migration.
+     *
+     * The trailing "&" is what detaches the worker: the shell forks it and returns, so the HTTP
+     * request is not held open for the duration of the migration.
      */
     private function launchMigration(): void
     {
         $php = (new PhpExecutableFinder())->find() ?: 'php';
 
-        // Trailing "&" detaches the worker: the shell forks it and returns, so
-        // the HTTP request is not held open for the duration of the migration.
         $process = Process::fromShellCommandline(
             \sprintf('%s bin/console app:migrate --no-interaction > /dev/null 2>&1 &', escapeshellarg($php)),
             $this->projectDir,

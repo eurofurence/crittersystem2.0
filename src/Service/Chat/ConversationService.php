@@ -190,11 +190,18 @@ final class ConversationService
      * The user's open support conversation with the Info Desk Team, created with the configured
      * welcome message on first contact.
      *
-     * This CREATES. Call it when the user has asked to contact the Info Desk, never to render a
-     * link or a label: the messages list used to call it just to build its "Info Desk Team" entry,
-     * so every volunteer who opened that page queued a conversation for the Info Desk to work
-     * through. {@see \App\Repository\ConversationRepository::findOpenSupportForUser()} answers
-     * without creating.
+     * This CREATES. Call it only when the user has asked to contact the Info Desk, never to render a
+     * link or a label: calling it from a listing queues a real conversation for the Info Desk to
+     * work through for every volunteer who merely opens the page.
+     * {@see \App\Repository\ConversationRepository::findOpenSupportForUser()} answers without
+     * creating.
+     *
+     * A new support conversation is the queue's whole reason to change, so it is signalled: a
+     * responder has to see it appear without reloading.
+     *
+     * It sends no notification. The notification says "your message was sent to the Info Desk", and
+     * at this point the user has opened a conversation and written nothing. The first real message
+     * notifies through {@see post()}, which handles every later one too.
      */
     public function startSupport(User $user): Conversation
     {
@@ -213,16 +220,7 @@ final class ConversationService
         }
         $this->em->flush();
 
-        // A new support conversation is the queue's whole reason to change: a responder must see it
-        // appear without reloading.
         $this->signalChanged($conversation);
-
-        /*
-         * Deliberately no notification here. It says "your message was sent to the Info Desk", and
-         * at this point the user has opened a conversation and written nothing - they were being
-         * told about a message that did not exist. The first real message notifies through
-         * {@see post()}, which already handles every later one.
-         */
 
         return $conversation;
     }
@@ -253,7 +251,10 @@ final class ConversationService
         return $conversation;
     }
 
-    /** Post a message (or system/internal notice) to a conversation. */
+    /**
+     * Post a message (or system/internal notice) to a conversation. A reply from the subject of a
+     * support conversation puts it back in front of the Info Desk queue.
+     */
     public function post(Conversation $conversation, ?User $sender, ?string $body, bool $internal = false): ChatMessage
     {
         $message = new ChatMessage($conversation, $sender, $body, $internal);
@@ -263,7 +264,6 @@ final class ConversationService
 
         $this->signalChanged($conversation);
 
-        // A support conversation's user reply re-notifies the Info Desk queue.
         if (!$internal && $sender !== null && $conversation->getType() === ConversationType::SUPPORT
             && $conversation->getSubject() === $sender) {
             $this->notifyInfoDeskQueue($conversation, $sender);
@@ -344,7 +344,10 @@ final class ConversationService
         return $count;
     }
 
-    /** Record that a user is typing . */
+    /**
+     * Record that a user is typing, and signal the conversation: the other side's thread shows "is
+     * typing", and nothing else refreshes it while that person is still typing.
+     */
     public function markTyping(Conversation $conversation, User $user): void
     {
         $participant = $this->participants->findOneBy(['conversation' => $conversation, 'user' => $user]);
@@ -355,8 +358,6 @@ final class ConversationService
         $participant->markTyping();
         $this->em->flush();
 
-        // The other side's thread shows "is typing"; without a signal it would only appear when
-        // something else happened to refresh, which is never while the other person is still typing.
         $this->signalChanged($conversation);
     }
 
@@ -377,12 +378,13 @@ final class ConversationService
         return $names;
     }
 
-    /** In-app-only notification to the Info Desk queue (never email/Telegram). */
+    /**
+     * Records the queue signal in the subject's own notification history. The INFO_DESK category is
+     * in-app only, so this never routes to email or Telegram; fanning the message out to the Info
+     * Desk members is the queue service's job.
+     */
     private function notifyInfoDeskQueue(Conversation $conversation, User $from): void
     {
-        // The INFO_DESK category is in-app-only, so this never routes to
-        // email/Telegram. This records the queue signal in the subject's own
-        // history; fan-out to the Info Desk members is the queue service's job.
         $this->notifications->notify(
             $from,
             NotificationCategories::INFO_DESK,

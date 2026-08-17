@@ -21,7 +21,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 /**
  * Internal messaging and Info Desk chat, on the conversation model.
  * Every user sees the Info Desk Team as their default contact; Info Desk members
- * get waiting/claimed queues. Messages poll for near-real-time updates.
+ * get waiting/claimed queues. Threads and queues follow their Mercure topic and re-fetch their
+ * fragment on a signal; nothing polls.
  */
 #[Route('/messages')]
 #[IsGranted('message:use')]
@@ -79,14 +80,15 @@ final class MessageController extends AbstractController
         ]);
     }
 
+    /**
+     * Predefined contacts reuse the messaging infrastructure: contacting the Info Desk opens the
+     * shared support conversation, which carries the configured welcome message on first contact.
+     */
     #[Route('/info-desk', name: 'app_messages_infodesk', methods: ['GET'])]
     public function infoDesk(): Response
     {
         /** @var User $me */
         $me = $this->getUser();
-        // Predefined contacts reuse the messaging infrastructure: a
-        // contact-Info-Desk action opens the shared support conversation, which
-        // shows the configured welcome message on first contact.
         $conversation = $this->chat->startSupport($me);
 
         return $this->redirectToRoute('app_messages_conversation', ['id' => $conversation->getUuid()]);
@@ -137,6 +139,7 @@ final class MessageController extends AbstractController
         ]);
     }
 
+    /** A message carrying a link is refused unless the sender holds `chat:restricted`. */
     #[Route('/{id}/send', name: 'app_messages_send', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function send(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Conversation $conversation): Response
     {
@@ -144,7 +147,6 @@ final class MessageController extends AbstractController
         if ($conversation->isOpen()
             && ($text = trim((string) $request->request->get('text'))) !== ''
             && $this->isCsrfTokenValid('chat'.$conversation->getId(), (string) $request->request->get('_token'))) {
-            // Only Info Desk / Admins may send links.
             $error = $this->chat->restrictedContentError($text, $this->isGranted('chat:restricted'));
             if ($error !== null) {
                 $this->addFlash('danger', $error);

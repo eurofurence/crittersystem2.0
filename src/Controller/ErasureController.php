@@ -33,6 +33,7 @@ final class ErasureController extends AbstractController
         return $this->render('erase/confirm.html.twig', ['token' => $token]);
     }
 
+    /** The account no longer exists once the erasure has run, so the session goes with it. */
     #[Route('/erase/{token}', name: 'app_erase_execute', methods: ['POST'])]
     public function execute(string $token, Request $request): Response
     {
@@ -43,7 +44,6 @@ final class ErasureController extends AbstractController
 
         $this->erasure->execute($erasureRequest);
 
-        // The account no longer exists; drop the session.
         if ($request->hasSession()) {
             $request->getSession()->invalidate();
         }

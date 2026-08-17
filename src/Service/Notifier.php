@@ -26,7 +26,11 @@ final class Notifier
     ) {
     }
 
-    /** Email news to subscribers (email_news), honouring staff-only visibility. Returns count sent. */
+    /**
+     * Email news to subscribers (email_news), honouring staff-only visibility. Returns count sent.
+     *
+     * News is non-critical email, so every message carries an unsubscribe link.
+     */
     public function newsPublished(News $news): int
     {
         $sent = 0;
@@ -34,7 +38,6 @@ final class Notifier
             if ($news->isStaffOnly() && !$user->isStaff()) {
                 continue;
             }
-            // Non-critical email: always include an unsubscribe link.
             $this->send($user->getEmail(), 'News: '.$news->getTitle(), $news->getPreview(), $user, 'news');
             ++$sent;
         }

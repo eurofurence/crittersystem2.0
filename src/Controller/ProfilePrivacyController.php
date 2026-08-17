@@ -55,6 +55,11 @@ final class ProfilePrivacyController extends AbstractController
         ]);
     }
 
+    /**
+     * Reachability is necessary to run shifts, so withdrawing the last channel a manager could
+     * actually reach the volunteer on is refused rather than silently accepted, exactly as at
+     * onboarding.
+     */
     #[Route('/contact-visibility', name: 'app_profile_contact_visibility', methods: ['POST'])]
     public function contactVisibility(Request $request): Response
     {
@@ -74,8 +79,6 @@ final class ProfilePrivacyController extends AbstractController
         $showPhone = $request->request->getBoolean('show_phone');
         $showTelegram = $request->request->getBoolean('show_telegram');
 
-        // Reachability is necessary to run shifts: withdrawing the last real
-        // channel is refused, not silently accepted, exactly as at onboarding.
         $reachable = ($showEmail && $hasEmail) || ($showPhone && $hasPhone) || ($showTelegram && $hasTelegram);
         if (!$reachable) {
             $this->addFlash('danger', new TranslatableMessage('profile.privacy.visibility.flash.last_channel'));
@@ -144,10 +147,14 @@ final class ProfilePrivacyController extends AbstractController
         return $this->storage->download($key, 'my-data-'.$uuid.'.zip');
     }
 
+    /**
+     * Records the request and emails a confirmation link; nothing is deleted here. The page reaches
+     * this only after two in-app confirmation dialogs, and {@see ErasureController} performs the
+     * irreversible deletion once that link is used.
+     */
     #[Route('/erase-request', name: 'app_profile_erase_request', methods: ['POST'])]
     public function eraseRequest(Request $request): Response
     {
-        // Reached only after the two in-app confirmation dialogs.
         if (!$this->isCsrfTokenValid('erase_request', (string) $request->request->get('_token'))) {
             return $this->redirectToRoute('app_profile_privacy');
         }

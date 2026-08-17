@@ -21,7 +21,6 @@ class ProfileAccessService
             return true;
         }
 
-        // Non-staff may still view managers' profiles.
         return $this->isManager($subject);
     }
 

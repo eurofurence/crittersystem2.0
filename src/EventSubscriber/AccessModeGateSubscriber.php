@@ -58,13 +58,24 @@ final class AccessModeGateSubscriber implements EventSubscriberInterface
     ) {
     }
 
+    /**
+     * Priority 7 runs after the firewall (8) has established the token and ahead of the onboarding
+     * gate (6), so a user who fails the access gate is stopped before any other redirect.
+     */
     public static function getSubscribedEvents(): array
     {
-        // After the firewall has established the token (priority 8), and ahead of the onboarding
-        // gate (priority 6) so a user who fails the access gate is stopped before any other redirect.
         return [KernelEvents::REQUEST => ['onRequest', 7]];
     }
 
+    /**
+     * A path under /api is answered with JSON and never signed out: that firewall is stateless, so
+     * there is no session to touch.
+     *
+     * Elsewhere the session is invalidated, and a background request (poll, Turbo frame, fetch)
+     * gets the same session-expired signal the login entry point uses. Answering one with a
+     * redirect hands it an HTML page, because fetch follows redirects, and the page is then
+     * injected into whatever widget asked.
+     */
     public function onRequest(RequestEvent $event): void
     {
         if (!$event->isMainRequest()) {
@@ -79,7 +90,6 @@ final class AccessModeGateSubscriber implements EventSubscriberInterface
         $request = $event->getRequest();
         $path = $request->getPathInfo();
 
-        // The API firewall is stateless - deny with JSON, never touch a session.
         if (str_starts_with($path, '/api')) {
             if (!str_starts_with($path, self::API_ALLOWLIST)) {
                 $event->setResponse(new JsonResponse(
@@ -99,8 +109,6 @@ final class AccessModeGateSubscriber implements EventSubscriberInterface
 
         $this->signOut($request);
 
-        // A background request (poll, Turbo frame, fetch) must not be answered with an HTML page;
-        // hand it the same session-expired signal the login entry point uses so the client reacts.
         if (LoginFormAuthenticator::isBackgroundRequest($request)) {
             $event->setResponse(new Response('', Response::HTTP_UNAUTHORIZED, [
                 LoginFormAuthenticator::SESSION_EXPIRED_HEADER => '1',

@@ -12,7 +12,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  * Screenshots a fixed set of pages so a change to the board's frontend can be shown, rather than
  * argued, to have left the rest of the application alone.
  *
- * The board now compiles its own Tailwind stylesheet and loads its own entry point. Every mechanism
+ * The board compiles its own Tailwind stylesheet and loads its own entry point. Every mechanism
  * keeping that off the other pages is asserted by tests/Integration/BoardIsolationTest.php, but
  * those assertions describe the plumbing; this describes the result. A reset leaking through would
  * move type and spacing everywhere at once and pass every functional test in the suite.
@@ -36,10 +36,9 @@ final class VisualBaselineTest extends BrowserTestCase
      * layout rather than importance: a card grid, dense tables, a form, a nav-heavy hub.
      *
      * Every page here must render identically on two runs of the same code, or a difference says
-     * nothing. `/dashboard` was the obvious first choice and had to be dropped: it prints the
-     * viewer's last login, which is set by the sign-in this harness performs, so it changed on every
-     * run and reported a leak that did not exist. `/manage/operations` replaces it for the dense-form
-     * coverage.
+     * nothing. `/dashboard` cannot be one of them: it prints the viewer's last login, which the
+     * sign-in this harness performs updates, so it differs on every run and reports a leak that is
+     * not there. `/manage/operations` carries the dense-form coverage instead.
      *
      * @var array<string, string>
      */
@@ -54,6 +53,7 @@ final class VisualBaselineTest extends BrowserTestCase
         'settings' => '/settings',
     ];
 
+    /** Each page is waited on by its body rather than page-specific markup, which keeps the list cheap to extend. */
     public function testCaptureBaseline(): void
     {
         $label = getenv('BOARD_VISUAL') ?: 'before';
@@ -71,8 +71,6 @@ final class VisualBaselineTest extends BrowserTestCase
 
         foreach (self::PAGES as $name => $path) {
             $client->request('GET', $path);
-            // The body is always present; waiting on it rather than on page-specific markup keeps
-            // this list cheap to extend.
             $client->waitFor('body', 10);
             $client->takeScreenshot($directory.'/'.$name.'.png');
         }
@@ -86,9 +84,9 @@ final class VisualBaselineTest extends BrowserTestCase
      * An administrator, so every page in the list is reachable without per-page privilege wiring.
      *
      * Fixed name and email, unlike the random suffixes the rest of the suite uses. The navbar prints
-     * the username on every page, so a random one makes all eight screenshots differ on every run -
-     * which is indistinguishable from a stylesheet leaking, and was the first thing this harness
-     * reported. The schema is reset per test, so nothing can collide.
+     * the username on every page, so a random one makes all eight screenshots differ on every run,
+     * which is indistinguishable from a stylesheet leaking. The schema is reset per test, so nothing
+     * can collide.
      */
     private function admin(): User
     {

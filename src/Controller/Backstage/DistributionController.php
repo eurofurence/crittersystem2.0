@@ -55,6 +55,14 @@ final class DistributionController extends AbstractController
     ) {
     }
 
+    /**
+     * A scanned badge feeds in the digital-id verify URL (or the bare 64-hex token). That token
+     * rotates and expires quickly, so failing to resolve one means the badge is stale rather than
+     * unknown, and the operator is told so.
+     *
+     * An exact lookup (email, registration number, resolved badge) lands on a single user and goes
+     * straight to that page instead of through a one-row list.
+     */
     #[Route('', name: 'app_backstage_distribute', methods: ['GET'])]
     public function search(Request $request): Response
     {
@@ -63,8 +71,6 @@ final class DistributionController extends AbstractController
         $badgeNotResolved = false;
 
         if ($q !== '') {
-            // A scanned badge feeds in the digital-id verify URL (or the bare 64-hex token).
-            // The token rotates and expires quickly, so a miss here means the badge is stale.
             if (preg_match('/[0-9a-f]{64}/', $q, $m)) {
                 $token = $this->digitalId->findActive($m[0]);
                 if ($token !== null) {
@@ -76,8 +82,6 @@ final class DistributionController extends AbstractController
                 $results = $this->users->locate($q);
             }
 
-            // Exact lookups (email, registration number, resolved badge) land on a single user;
-            // send the operator straight there instead of through a one-row list.
             if (\count($results) === 1) {
                 return $this->redirectToRoute('app_backstage_distribute_user', ['id' => $results[0]->getUuid()]);
             }
@@ -90,13 +94,15 @@ final class DistributionController extends AbstractController
         ]);
     }
 
+    /**
+     * The identity card repeats what /users/{uuid} shows, so it is gated on the same rule that page
+     * enforces, and so is the link to it, which would otherwise offer this operator a 403.
+     */
     #[Route('/{id}', name: 'app_backstage_distribute_user', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function user(#[MapEntity(mapping: ['id' => 'uuid'])] User $user, Request $request): Response
     {
         $cache = $this->hoursCache->get($user, $request->query->getBoolean('refresh'));
 
-        // The identity card repeats what /users/{uuid} shows, so it answers to the same rule that page
-        // enforces - and so does the link to it, which would otherwise offer this operator a 403.
         $canViewProfile = $this->profileAccess->canView($this->currentUser(), $user);
 
         return $this->render('backstage/distribute/user.html.twig', [

@@ -29,7 +29,13 @@ final class MigrationInspector
     ) {
     }
 
-    /** Can we open a connection and run a trivial query against the database? */
+    /**
+     * Can we open a connection and run a trivial query against the database?
+     *
+     * A false seals the whole site behind the maintenance page, and every cause (server down, wrong
+     * password, wrong database name, TLS refused) produces that same blank wall, so the failure is
+     * logged at error level: the reason exists only in the exception.
+     */
     public function isDatabaseReachable(): bool
     {
         try {
@@ -37,11 +43,6 @@ final class MigrationInspector
 
             return true;
         } catch (\Throwable $e) {
-            /*
-             * A false here seals the whole site behind the maintenance page, and every cause - server
-             * down, wrong password, wrong database name, TLS refused - produces that same blank wall.
-             * The reason exists only in this exception.
-             */
             $this->logger->error('Database is unreachable: {reason}', [
                 'reason' => $e->getMessage(),
                 'exception' => $e,
@@ -58,17 +59,15 @@ final class MigrationInspector
      * exist (a brand-new database), which is exactly the "first install"
      * situation. Throws nothing - callers gate on {@see isDatabaseReachable()}
      * first to distinguish "DB down" from "DB empty".
+     *
+     * The failure is logged because a misconfigured migrations setup lands in the same place as a
+     * fresh database and is otherwise indistinguishable from it.
      */
     public function pendingMigrationCount(): int
     {
         try {
             return \count($this->dependencyFactory->getMigrationStatusCalculator()->getNewMigrations());
         } catch (\Throwable $e) {
-            /*
-             * Usually the doctrine_migration_versions table simply does not exist yet, so every shipped
-             * migration is pending - the normal first-install path. A misconfigured migrations setup also
-             * lands here and is indistinguishable from a fresh database, so record which one it was.
-             */
             $this->logger->info('Migration status unavailable, treating every migration as pending: {reason}', [
                 'reason' => $e->getMessage(),
                 'exception' => $e,
@@ -94,13 +93,15 @@ final class MigrationInspector
         return (string) $last->getVersion();
     }
 
-    /** True when at least one user row exists (schema must already be migrated). */
+    /**
+     * True when at least one user row exists (schema must already be migrated). A failure is expected
+     * before the schema exists, and is logged at debug level so that any other cause is still visible.
+     */
     public function hasAnyUser(): bool
     {
         try {
             return (bool) $this->connection->fetchOne('SELECT 1 FROM users LIMIT 1');
         } catch (\Throwable $e) {
-            // Expected before the schema exists; anything else here is worth seeing.
             $this->logger->debug('Could not read the users table: {reason}', ['reason' => $e->getMessage()]);
 
             return false;

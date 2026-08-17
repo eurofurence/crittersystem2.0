@@ -3,24 +3,20 @@
 
 
   <div class="btn-group" role="group">
-    <!-- + Add shift -->
     <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#planner-add-modal">
       {{ 'planner.action.add_shift'|trans }}
     </button>
 
-    <!-- Shift Wizard -->
     <a href="{{ path('app_manage_shifts_wizard', {department: department.uuid}) }}" class="btn">
       {{ 'planner.wizard.title'|trans }}
     </a>
 
-    <!-- MATRIX -->
-    <!-- <a href="{{ path('app_manage_shifts_matrix', {department: department.uuid}) }}" class="btn">
+    <a href="{{ path('app_manage_shifts_matrix', {department: department.uuid}) }}" class="btn">
       {{ 'planner.action.matrix_view'|trans }}
-    </a> -->
+    </a>
 
   </div>
 
-    <!-- Auto-Assign -->
     {% if is_granted('assignment:manage', department) %}
       <form method="post" action="{{ path('app_proposal_generate') }}" class="d-inline">
         <input type="hidden" name="_token" value="{{ csrf_token('proposal_generate') }}">
@@ -37,9 +33,7 @@
       <div class="btn-group btn-group-sm" role="group" aria-label="{{ 'planner.field.mode'|trans }}">
         <input type="radio" class="btn-check" name="planner-mode" id="planner-mode-select" value="select" checked data-action="change->planner-defaults#mode">
 
-        <!-- SELECT MODE -->
         <label class="btn btn-outline-secondary" for="planner-mode-select">{{ 'planner.mode.select'|trans }}</label>
-        <!-- SELECT MODE -->
         <input type="radio" class="btn-check" name="planner-mode" id="planner-mode-paint" value="paint" data-action="change->planner-defaults#mode">
         <label class="btn btn-outline-secondary" for="planner-mode-paint"title="{{ 'planner.mode.paint_title'|trans }}">{{ 'planner.mode.paint'|trans }}</label>
       </div>

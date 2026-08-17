@@ -14,9 +14,9 @@
   Local helper macros (ui.*) exist only to lay out this gallery; they are NOT components.
 #}
 
+{# `code` is captured Twig source: |trim casts the Markup object to a plain string so that |e
+   escapes it. Without the cast the source is rendered as HTML instead of shown. #}
 {% macro snippet(code) %}
-  {# `code` is captured Twig source. |trim casts the Markup to a plain string so |e really
-     escapes it - otherwise the snippet would be rendered as HTML instead of shown. #}
   <pre class="mt-2 mb-0 p-2 bg-body-tertiary border rounded small" style="overflow-x: auto;"><code>{{ code|trim|e }}</code></pre>
 {% endmacro %}
 
@@ -41,8 +41,6 @@
 
 {% block body %}
 <div class="container-xl py-4">
-
-  {# ============================================================ 1. Page structure #}
 
   {{ d.page_header(pageTitle, {
     subtitle: 'Live gallery of every macro in components/data/_macros.twig. All data is fake.',
@@ -114,8 +112,6 @@
 {% endverbatim %}{% endset %}
     {{ ui.snippet(code) }}
   {{ ui.demo_end() }}
-
-  {# ============================================================ 2. Cards #}
 
   {{ d.section_header('2. Cards', {size: 'h3', subtitle: 'card_start()/card_end() always come in pairs, and the options must match.'}) }}
 
@@ -232,8 +228,6 @@
     {{ ui.snippet(code) }}
   {{ ui.demo_end() }}
 
-  {# ============================================================ 3. Stat + action cards #}
-
   {{ d.section_header('3. Stat cards & action cards', {size: 'h3', subtitle: 'Both render their own grid column - always wrap a set of them in a row.'}) }}
 
   {{ ui.demo_start('stat_card(value, label, {col, size, class})',
@@ -291,8 +285,6 @@
 {% endverbatim %}{% endset %}
     {{ ui.snippet(code) }}
   {{ ui.demo_end() }}
-
-  {# ============================================================ 4. Tables #}
 
   {{ d.section_header('4. Tables', {size: 'h3', subtitle: 'table_start()/table_end() must be passed the SAME `responsive` value.'}) }}
 
@@ -398,8 +390,6 @@
     {{ ui.snippet(code) }}
   {{ ui.demo_end() }}
 
-  {# ============================================================ 5. Badges #}
-
   {{ d.section_header('5. Badges', {size: 'h3', subtitle: 'badge() is dumb (you pick the style); status_badge() maps a status word to a soft colour.'}) }}
 
   {{ ui.demo_start('badge(text, style, {class, attrs})',
@@ -488,8 +478,6 @@
     {{ ui.snippet(code) }}
   {{ ui.demo_end() }}
 
-  {# ============================================================ 6. Empty states #}
-
   {{ d.section_header('6. Empty states', {size: 'h3', subtitle: 'Three sizes. Pick by how much space you own.'}) }}
 
   {{ ui.demo_start('empty_state(title, {message, iconHtml, actionLabel, actionHref, actionClass})',
@@ -561,8 +549,6 @@
     {{ ui.snippet(code) }}
   {{ ui.demo_end() }}
 
-  {# ============================================================ 7. Definition list #}
-
   {{ d.section_header('7. Definition list', {size: 'h3'}) }}
 
   {{ ui.demo_start('definition_list(items, {labelCol, valueCol, labelClass, valueClass, class})',
@@ -615,8 +601,6 @@
     {{ ui.snippet(code) }}
   {{ ui.demo_end() }}
 
-  {# ============================================================ 8. Turbo Frame #}
-
   {{ d.section_header('8. Turbo Frame: debounced search + table frame', {size: 'h3', subtitle: 'The frame id and the route must match: data_table_frame / app_data_kit_table_frame.'}) }}
 
   {{ d.card_start('Live demo', {subtitle: 'Type "alpha", "demo" or "zzz" - only the frame reloads.'}) }}
@@ -651,8 +635,6 @@
 </turbo-frame>
 {% endverbatim %}{% endset %}
   {{ ui.snippet(code) }}
-
-  {# ============================================================ 9. CSS regression #}
 
   {{ d.section_header('9. CSS regression board', {size: 'h3', subtitle: 'Everything at once. If a global CSS change breaks something, it should be visible here.'}) }}
 

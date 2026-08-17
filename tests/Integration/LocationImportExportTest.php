@@ -59,6 +59,7 @@ final class LocationImportExportTest extends DatabaseTestCase
         self::assertNull($byAlias['venue']['parent']);
     }
 
+    /** The alias identifies the location: a second row carrying it updates in place, it never adds one. */
     public function testImportCreatesAndThenUpdatesByAlias(): void
     {
         $created = $this->importer->import([
@@ -67,7 +68,6 @@ final class LocationImportExportTest extends DatabaseTestCase
         self::assertSame(1, $created['imported']);
         self::assertSame('100', $this->repo->findOneByAlias('main-hall')->getPhone());
 
-        // Same alias, different data → update in place, no second row.
         $updated = $this->importer->import([
             ['name' => 'Main Hall Renamed', 'alias' => 'main-hall', 'phone' => '200'],
         ]);
@@ -93,9 +93,9 @@ final class LocationImportExportTest extends DatabaseTestCase
         self::assertNotNull($this->repo->findOneByAlias('good'));
     }
 
+    /** A child may be listed before its parent: a second pass links them. */
     public function testParentByAliasResolvesRegardlessOfOrder(): void
     {
-        // Child listed before its parent - the second pass still links them.
         $result = $this->importer->import([
             ['name' => 'Desk', 'alias' => 'desk', 'parent' => 'lobby'],
             ['name' => 'Lobby', 'alias' => 'lobby'],
@@ -117,6 +117,7 @@ final class LocationImportExportTest extends DatabaseTestCase
         self::assertNull($this->repo->findOneByAlias('orphan')->getParent());
     }
 
+    /** A grandchild (depth 2) is accepted; anything deeper is warned about and imported as a root. */
     public function testNestingDeeperThanTwoLevelsIsRejected(): void
     {
         $result = $this->importer->import([
@@ -128,7 +129,6 @@ final class LocationImportExportTest extends DatabaseTestCase
 
         $this->em->clear();
         self::assertNotEmpty($result['warnings']);
-        // C (grandchild, depth 2) is allowed; D (depth 3) is dropped to a root.
         self::assertSame('b', $this->repo->findOneByAlias('c')->getParent()?->getAlias());
         self::assertNull($this->repo->findOneByAlias('d')->getParent());
     }

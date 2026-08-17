@@ -32,6 +32,18 @@ final class ActingUserResolver
     ) {
     }
 
+    /**
+     * The single choke point every acting-on-behalf endpoint passes through.
+     *
+     * An account survives the volunteer unlinking in the web UI, because unlinking only nulls
+     * telegramId. An unlinked account is refused here, so the bot cannot keep acting on a revoked
+     * link.
+     *
+     * The uuid names who to act as but is public and permanent, so it proves nothing on its own.
+     * The acting token is the revocable proof that the link is current: it is rotated on every link
+     * and nulled on unlink, so a token from a since-revoked link, or from a different Telegram
+     * account linked before, no longer matches even when the uuid is linked again.
+     */
     public function resolve(Request $request): User
     {
         $uuid = (string) $request->headers->get(self::HEADER, '');
@@ -48,19 +60,10 @@ final class ActingUserResolver
             throw new AccessDeniedHttpException('Acting user is banned.');
         }
 
-        // The account may still exist after the volunteer unlinks in the web UI
-        // (unlink only nulls telegramId). Refuse it here so the bot cannot keep
-        // acting on a revoked link - this is the single choke point every
-        // acting-on-behalf endpoint passes through.
         if (!$user->isTelegramLinked()) {
             throw new ActingUserNotLinkedException();
         }
 
-        // The uuid names who to act as, but is public and permanent. The acting
-        // token is the revocable proof that the link is *current*: it is rotated
-        // on every link and nulled on unlink, so a token from a since-revoked
-        // link (or from a different Telegram account linked before) no longer
-        // matches and is refused - even though the uuid is linked again.
         $expected = $user->getTelegramActingToken();
         $presented = (string) $request->headers->get(self::TOKEN_HEADER, '');
         if ($expected === null || $presented === '' || !hash_equals($expected, $presented)) {

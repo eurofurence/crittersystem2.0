@@ -18,15 +18,16 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 /**
  * Removes support conversations that hold no messages at all.
  *
- * Repairs the wreckage of a defect: the messages list used to open a support conversation merely by
- * being rendered, so every volunteer who visited /messages queued one for the Info Desk to work
- * through. Those conversations contain nothing - not even the welcome message when none is
- * configured - and are indistinguishable from work.
+ * An empty conversation holds nothing, not even the welcome message when none is configured, so the
+ * Info Desk cannot tell it apart from real work.
  *
  * Reports by default and only deletes with --force, because it removes rows a person might be about
- * to write into. The age guard exists for the same reason: opening the conversation is still a
- * legitimate first step, so one created moments ago may simply be waiting for its author to finish
- * typing. Default 24 hours.
+ * to write into. The age guard exists for the same reason: opening the conversation is a legitimate
+ * first step, so one created moments ago may simply be waiting for its author to finish typing.
+ * Default 24 hours.
+ *
+ * Every deletion is audited on its own: the record carries a volunteer's name, and the trail is what
+ * makes the removal answerable afterwards.
  */
 #[AsCommand(
     name: 'app:chat:purge-empty-support',
@@ -93,8 +94,6 @@ final class PurgeEmptySupportConversationsCommand extends Command
         }
 
         foreach ($empty as $conversation) {
-            // Audited individually: this deletes a record a volunteer's name is attached to, and the
-            // trail is what makes that answerable afterwards.
             $this->audit->system(AuditEvents::CHAT, AuditEvents::DELETE, [
                 'resourceType' => 'conversation',
                 'resourceId' => (string) $conversation->getUuid(),

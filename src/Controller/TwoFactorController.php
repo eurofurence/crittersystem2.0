@@ -50,6 +50,11 @@ final class TwoFactorController extends AbstractController
         return $this->render('two_factor/index.html.twig', ['user' => $this->user()]);
     }
 
+    /**
+     * A wrong code redirects rather than renders: Turbo discards a non-redirect response to a form
+     * submission, so a rendered error would show nothing at all. The pending secret lives in the
+     * session, so the same secret and QR come back.
+     */
     #[Route('/setup', name: 'app_2fa_setup', methods: ['GET', 'POST'])]
     public function setup(Request $request): Response
     {
@@ -70,9 +75,6 @@ final class TwoFactorController extends AbstractController
             if ($codes === null) {
                 $this->addFlash('danger', new TranslatableMessage('two_factor.flash.code_incorrect'));
 
-                // Redirect rather than render: Turbo discards a non-redirect response to a
-                // form submission, so a rendered error here would show nothing at all. The
-                // pending secret lives in the session, so the same secret/QR is re-shown.
                 return $this->redirectToRoute('app_2fa_setup');
             }
 
@@ -116,6 +118,10 @@ final class TwoFactorController extends AbstractController
         return $this->redirectToRoute('app_2fa');
     }
 
+    /**
+     * Issuing a new set requires proof of possession first, a current TOTP or an existing recovery
+     * code, so a hijacked session cannot silently rotate away the legitimate owner's codes.
+     */
     #[Route('/recovery-codes/regenerate', name: 'app_2fa_recovery_regenerate', methods: ['POST'])]
     public function regenerateRecoveryCodes(Request $request): Response
     {
@@ -124,9 +130,6 @@ final class TwoFactorController extends AbstractController
             return $this->redirectToRoute('app_2fa');
         }
 
-        // Require proof of possession (a current TOTP or an existing recovery
-        // code) before issuing a new set, so a hijacked session cannot silently
-        // rotate away the legitimate owner's codes.
         if (!$this->twoFactor->verify($user, (string) $request->request->get('code'))) {
             $this->addFlash('danger', new TranslatableMessage('two_factor.flash.regen_invalid_code'));
 
@@ -156,6 +159,11 @@ final class TwoFactorController extends AbstractController
         ]);
     }
 
+    /**
+     * The return target is only ever a path on this site, so the step-up challenge cannot be turned
+     * into an open redirect. A wrong code redirects rather than renders, because Turbo discards a
+     * non-redirect response to a form submission and the error would never be seen.
+     */
     #[Route('/confirm', name: 'app_2fa_confirm', methods: ['GET', 'POST'])]
     public function confirm(Request $request): Response
     {
@@ -177,8 +185,6 @@ final class TwoFactorController extends AbstractController
             }
             $this->addFlash('danger', new TranslatableMessage('two_factor.flash.incorrect_code'));
 
-            // Redirect rather than render: Turbo discards a non-redirect response to a
-            // form submission, so a rendered error here would show nothing at all.
             return $this->redirectToRoute('app_2fa_confirm', ['return' => $return]);
         }
 

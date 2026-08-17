@@ -34,6 +34,10 @@ final class InstallPrivacyStepTest extends DatabaseWebTestCase
         $this->client->submit($crawler->selectButton('Unlock')->form(['password' => self::PASSWORD]));
     }
 
+    /**
+     * The install step stores the four essentials it asks for. It does not ask for the notice
+     * body, but a default body must be seeded all the same so there is something to edit later.
+     */
     public function testSavingTheEssentialsStoresThemOnThePrivacyNotice(): void
     {
         $this->unlock();
@@ -55,7 +59,6 @@ final class InstallPrivacyStepTest extends DatabaseWebTestCase
         self::assertSame('Eurofurence e.V.', $notice->getControllerOrg());
         self::assertSame('privacy@example.org', $notice->getContactEmail());
         self::assertSame(30, $notice->getDeletionDays());
-        // The full body is not asked for here, but must be present for later editing.
         self::assertStringContainsString('Privacy Notice', $notice->getBodyHtml());
     }
 

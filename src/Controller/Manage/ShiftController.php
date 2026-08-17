@@ -39,12 +39,14 @@ final class ShiftController extends AbstractController
     ) {
     }
 
+    /**
+     * findAllOrdered() returns every shift in the event, drafts included, so the list is filtered
+     * per shift to the ones this manager may open. Unfiltered it is a directory of other
+     * departments' unpublished planning.
+     */
     #[Route('', name: 'app_manage_shift_index', methods: ['GET'])]
     public function index(): Response
     {
-        // findAllOrdered() is every shift in the event, drafts included. Show only
-        // the ones this manager may actually open, or the list becomes a directory
-        // of other departments' unpublished planning.
         $shifts = array_values(array_filter(
             $this->shifts->findAllOrdered(),
             fn (Shift $shift): bool => $this->isGranted('shift:manage', $shift),

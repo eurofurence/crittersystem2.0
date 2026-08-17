@@ -24,21 +24,21 @@ final class PdfDocument
     /** @var string[] */
     private array $lines = [];
 
+    /** Long lines are wrapped at a fixed character count; the layout is deliberately approximate. */
     public function addLine(string $text = ''): void
     {
-        // Wrap long lines crudely at a fixed character width for monospaced flow.
         $chunks = $text === '' ? [''] : str_split($text, 110);
         foreach ($chunks as $chunk) {
             $this->lines[] = $chunk;
         }
     }
 
+    /** Object ids are fixed: 1 catalog, 2 pages tree, 3 font. Page objects start at 4. */
     public function render(): string
     {
         $pages = array_chunk($this->lines ?: [''], self::LINES_PER_PAGE);
 
         $objects = [];
-        // 1: catalog, 2: pages tree, 3: font; pages start at object 4.
         $pageObjectIds = [];
         $contentObjectIds = [];
         $next = 4;
@@ -84,9 +84,9 @@ final class PdfDocument
         return $out;
     }
 
+    /** Text is reduced to printable ASCII, and the PDF string delimiters \ ( ) are escaped. */
     private function escape(string $text): string
     {
-        // Keep it to printable ASCII; PDF text strings escape \ ( ).
         $text = preg_replace('/[^\x20-\x7E]/', '?', $text) ?? '';
 
         return strtr($text, ['\\' => '\\\\', '(' => '\\(', ')' => '\\)']);

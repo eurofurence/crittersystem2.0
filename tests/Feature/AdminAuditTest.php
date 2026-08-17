@@ -55,12 +55,19 @@ final class AdminAuditTest extends DatabaseWebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    /**
+     * The audit log is critical data: reading it needs a fresh 2FA step-up, and without one
+     * the admin is redirected to the confirm challenge. A stored, unexpired export offers a
+     * download link; once the archive is gone from storage the row must stop offering a
+     * download it cannot serve.
+     *
+     * The page is rendered a second time only after an export row exists, because rendering
+     * it against an empty list never enters the export table body.
+     */
     public function testGlobalAdminCanViewAndExport(): void
     {
         $this->client->loginUser($this->makeUser('boss', 'ROLE_ADMIN', ['global:admin']));
 
-        // Audit is critical data: viewing it requires a fresh step-up.
-        // Without one the admin is redirected to the 2FA confirm challenge.
         $this->client->request('GET', '/manage/audit');
         self::assertResponseRedirects('/2fa/confirm?return=/manage/audit');
 
@@ -82,10 +89,6 @@ final class AdminAuditTest extends DatabaseWebTestCase
         $storage = static::getContainer()->get(ExportStorage::class);
         self::assertTrue($storage->exists($exports[0]->getStorageKey()));
 
-        /*
-         * Render the page again now that an export row exists. Rendering it while the list is empty never
-         * enters the export table body, so nothing in that markup is exercised.
-         */
         $crawler = $this->client->request('GET', '/manage/audit');
         self::assertResponseIsSuccessful();
         self::assertSame(
@@ -94,7 +97,6 @@ final class AdminAuditTest extends DatabaseWebTestCase
             'a stored, unexpired export offers a download link',
         );
 
-        // With the archive gone from storage, the row must stop offering a download it cannot serve.
         $storage->delete($exports[0]->getStorageKey());
         $crawler = $this->client->request('GET', '/manage/audit');
         self::assertResponseIsSuccessful();

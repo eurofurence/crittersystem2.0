@@ -62,9 +62,14 @@ final class ThemePersistenceTest extends DatabaseWebTestCase
         );
     }
 
+    /**
+     * The user's own theme holds across requests. The administrator default is set to a different
+     * theme so that a revert to it is unmistakable, and the EntityManager is cleared between
+     * requests because a real one always starts cold: keeping Settings in the identity map would
+     * hide a broken lazy-load.
+     */
     public function testTheChosenThemeSurvivesRepeatedRequests(): void
     {
-        // An administrator default that differs, so a revert is unmistakable.
         $store = static::getContainer()->get(EventConfigStore::class);
         $store->set(EventConfigStore::KEY_DEFAULT_THEME, 'default');
         $store->flush();
@@ -73,8 +78,6 @@ final class ThemePersistenceTest extends DatabaseWebTestCase
 
         $seen = [];
         for ($i = 0; $i < 6; ++$i) {
-            // Every real request starts with a cold EntityManager. Without this the identity map keeps
-            // Settings loaded from the previous request and a broken lazy-load would never show.
             $this->em->clear();
 
             $this->client->request('GET', '/dashboard');

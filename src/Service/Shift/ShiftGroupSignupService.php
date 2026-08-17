@@ -46,6 +46,13 @@ final class ShiftGroupSignupService
     /**
      * What applying to this shift would commit the volunteer to, without writing anything.
      *
+     * A group holding a shift this volunteer may not see is not applicable, and the refusal must not
+     * describe the hidden member or even confirm it exists, so no member list is built at all.
+     *
+     * The hours it reports are the members' durations and are independent of the roles, so the total
+     * shown in the confirmation modal does not move as the volunteer works through the role
+     * dropdowns.
+     *
      * @param array<string, string> $typeChoices member shift uuid => volunteer type uuid, for members
      *                                        whose role the volunteer had to pick
      */
@@ -54,8 +61,6 @@ final class ShiftGroupSignupService
         $members = $this->groups->membersFor($shift);
         $group = $shift->isGrouped() ? $shift->getShiftGroup() : null;
 
-        // A group holding a shift this volunteer may not see is not applicable, and the refusal must
-        // not describe the hidden member or even confirm it exists. No member list is built at all.
         if (!$this->groups->isFullyVisibleTo($shift, $user)) {
             return new GroupSignupPlan(
                 $shift,
@@ -77,9 +82,6 @@ final class ShiftGroupSignupService
             $entry = $this->entries->findOneByShiftAndUser($member, $user);
             if ($entry === null) {
                 $alreadyOnAll = false;
-                // Hours are a property of the shift, not of the role, so they are counted before the
-                // role is resolved. Otherwise the total shown in the modal would move as the
-                // volunteer works through the dropdowns.
                 $addedHours += $member->getDurationHours();
             }
 
@@ -146,7 +148,12 @@ final class ShiftGroupSignupService
      * group: every member is write-locked in primary-key order, eligibility is re-checked against
      * that stable view, and the unique (shift, user) constraint is the final backstop. Locking in a
      * fixed order matters - two volunteers applying from opposite members of the same group would
-     * otherwise deadlock.
+     * otherwise deadlock. The plan is also checked once before the transaction opens, so an
+     * application that cannot succeed is refused quickly and with a friendlier message; the check
+     * under the locks is the binding one, because capacity, overlaps and hours may have moved.
+     *
+     * Staffing is signalled only after the commit: a signal that overtakes its own transaction tells
+     * the browser to re-read a row that is not there yet.
      *
      * @param array<string, string> $typeChoices member shift uuid => volunteer type uuid
      *
@@ -163,7 +170,6 @@ final class ShiftGroupSignupService
         ?string $comment = null,
         bool $acknowledgeHours = false,
     ): array {
-        // Pre-check outside the transaction for a fast, friendly error.
         $plan = $this->plan($user, $shift, $requestedType, $typeChoices);
         $this->assertPlanUsable($plan, $acknowledgeHours, static fn (string $m) => new \RuntimeException($m));
 
@@ -173,7 +179,6 @@ final class ShiftGroupSignupService
                     $this->concurrency->lockForUpdate($member);
                 }
 
-                // Re-check under the locks: capacity, overlaps and hours may have moved.
                 $plan = $this->plan($user, $shift, $requestedType, $typeChoices);
                 $this->assertPlanUsable($plan, $acknowledgeHours, static fn (string $m) => new CapacityConflictException($m));
 
@@ -195,8 +200,6 @@ final class ShiftGroupSignupService
             throw new CapacityConflictException($this->translator->trans('shift.refusal.already_signed_up'));
         }
 
-        // After the commit: a signal that overtakes its own transaction tells the browser to re-read
-        // a row that is not there yet.
         foreach ($created as $entry) {
             $this->live->staffingChanged($entry->getShift(), $user);
         }
@@ -289,7 +292,12 @@ final class ShiftGroupSignupService
         return null;
     }
 
-    /** @param callable(string): \RuntimeException $exception */
+    /**
+     * Only a grouped application asks for the hours acknowledgement here; a single shift keeps it on
+     * its own screen, which already handles it.
+     *
+     * @param callable(string): \RuntimeException $exception
+     */
     private function assertPlanUsable(GroupSignupPlan $plan, bool $acknowledgeHours, callable $exception): void
     {
         if ($plan->error !== null) {
@@ -298,8 +306,6 @@ final class ShiftGroupSignupService
         if ($plan->needsChoice()) {
             throw $exception($this->translator->trans('shift.refusal.choose_roles'));
         }
-        // Only a grouped application asks for the acknowledgement here; a single shift keeps the
-        // acknowledgement where its own screen already handles it.
         if ($plan->isGrouped() && $plan->needsHoursAcknowledgement && !$acknowledgeHours) {
             throw $exception($this->translator->trans('shift.refusal.hours_acknowledgement', [
                 '%hours%' => \sprintf('%.1f', $plan->totalHours),

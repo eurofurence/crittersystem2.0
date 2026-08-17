@@ -62,6 +62,7 @@ final class SsoTest extends DatabaseTestCase
         self::assertCount(1, $mapping->getVolunteerTypes());
     }
 
+    /** Exported rows are accepted by import again, updating the mapping in place rather than duplicating it. */
     public function testExportRoundTripsThroughImport(): void
     {
         $this->seedTargets();
@@ -86,7 +87,6 @@ final class SsoTest extends DatabaseTestCase
         self::assertSame(['Volunteer'], $rows[0]['volunteertype']);
         self::assertSame(['security'], $rows[0]['badges']);
 
-        // Re-importing the exported rows updates in place rather than duplicating.
         $result = $importer->import($rows);
         self::assertSame(1, $result['imported']);
         $this->em->clear();
@@ -104,12 +104,15 @@ final class SsoTest extends DatabaseTestCase
         self::assertArrayHasKey('permissiongroup', $rows[0]);
     }
 
+    /**
+     * Two mappings naming the same missing department slug create exactly one department, named
+     * after the first mapping, and both mappings link to it.
+     */
     public function testImportCreatesMissingDepartmentFromSlug(): void
     {
         /** @var SsoMappingImporter $importer */
         $importer = static::getContainer()->get(SsoMappingImporter::class);
 
-        // Two rows point at the same not-yet-existing department slug.
         $result = $importer->import([
             ['id' => 'GRP-A', 'name' => 'Art Show Team', 'slug' => 'art-show-team', 'department' => 'art-show'],
             ['id' => 'GRP-B', 'name' => 'Art Show Crew', 'slug' => 'art-show-crew', 'department' => 'art-show'],
@@ -118,13 +121,11 @@ final class SsoTest extends DatabaseTestCase
         self::assertSame(2, $result['imported']);
         $this->em->clear();
 
-        // Exactly one department was created, named after the first mapping.
         $departments = $this->em->getRepository(Department::class)->findAll();
         self::assertCount(1, $departments);
         self::assertSame('art-show', $departments[0]->getSlug());
         self::assertSame('Art Show Team', $departments[0]->getName());
 
-        // Both mappings link to that same department.
         $repo = $this->em->getRepository(SsoGroupMapping::class);
         self::assertSame('art-show', $repo->findOneBy(['ssoGroupId' => 'GRP-A'])->getDepartment()?->getSlug());
         self::assertSame('art-show', $repo->findOneBy(['ssoGroupId' => 'GRP-B'])->getDepartment()?->getSlug());
@@ -147,6 +148,10 @@ final class SsoTest extends DatabaseTestCase
         );
     }
 
+    /**
+     * An SSO mapping is authoritative: the volunteer type it grants is confirmed on provisioning
+     * without a supporter, and a second login neither duplicates the membership nor re-grants it.
+     */
     public function testProvisionCreatesLockedSsoUserWithMappings(): void
     {
         $this->seedTargets();
@@ -168,18 +173,20 @@ final class SsoTest extends DatabaseTestCase
         $badgeSlugs = array_map(static fn (Badge $b) => $b->getSlug(), $user->getBadges()->toArray());
         self::assertContains('security', $badgeSlugs);
 
-        // The mapping is authoritative: no supporter has to confirm the membership.
         $membership = $this->em->getRepository(UserVolunteerType::class)->findOneBy(['user' => $user->getId()]);
         self::assertNotNull($membership);
         self::assertTrue($membership->isConfirmed(), 'an SSO-mapped volunteer type is confirmed on provisioning');
 
-        // Idempotent: a second login does not duplicate the volunteer type.
         $provisioner->provision($claims);
         $this->em->clear();
         $count = $this->em->getRepository(UserVolunteerType::class)->count(['user' => $user->getId()]);
         self::assertSame(1, $count);
     }
 
+    /**
+     * A volunteer type the user requested themselves stays pending until a mapping grants it. Once
+     * the provider reports the mapped group, that pending membership is confirmed, not duplicated.
+     */
     public function testProvisionConfirmsAnAlreadyPendingVolunteerType(): void
     {
         $this->seedTargets();
@@ -190,7 +197,6 @@ final class SsoTest extends DatabaseTestCase
         /** @var SsoUserProvisioner $provisioner */
         $provisioner = static::getContainer()->get(SsoUserProvisioner::class);
 
-        // First login without the mapped group: the user self-requests the type and it stays pending.
         $claims = new SsoClaims('sub-9', 'bob@example.com', 'bob', 'Bob Builder', []);
         $user = $provisioner->provision($claims);
         $type = $this->em->getRepository(VolunteerType::class)->findOneBy(['name' => 'Volunteer']);
@@ -199,7 +205,6 @@ final class SsoTest extends DatabaseTestCase
         $this->em->flush();
         self::assertFalse($pending->isConfirmed());
 
-        // The provider now reports the group; the pending membership is confirmed rather than duplicated.
         $provisioner->provision(new SsoClaims('sub-9', 'bob@example.com', 'bob', 'Bob Builder', ['GRP1']));
 
         $this->em->clear();
@@ -210,9 +215,9 @@ final class SsoTest extends DatabaseTestCase
 
     /**
      * Several SSO groups granting the same volunteer type must still produce one membership.
-     * The membership lookup is a database query, so it cannot see an insert already pending in
-     * the same flush - applying the grant per mapping made the second one a duplicate INSERT
-     * that the (user, volunteer_type) unique index rejected, failing the whole login.
+     * The membership lookup is a database query and cannot see an insert already pending in the
+     * same flush, so the grant has to be applied once per user rather than once per mapping: a
+     * second INSERT is rejected by the (user, volunteer_type) unique index and fails the login.
      */
     public function testSeveralMappingsGrantingTheSameVolunteerTypeCreateOneMembership(): void
     {
@@ -250,8 +255,9 @@ final class SsoTest extends DatabaseTestCase
 
     /**
      * A department mapping alone must leave the user able to use the app. The positional group a
-     * department confers carries ROLE_STAFF but not the baseline privileges, so an SSO user mapped
-     * only into a department held no news:view and was denied the page every sign-in lands on.
+     * department confers carries ROLE_STAFF but not the baseline privileges, so without the
+     * baseline group a user mapped only into a department holds no news:view and is denied the
+     * page every sign-in lands on. A second sign-in must not add a duplicate unscoped assignment.
      */
     public function testProvisionGrantsTheBaselinePermissionGroupToDepartmentStaff(): void
     {
@@ -277,7 +283,6 @@ final class SsoTest extends DatabaseTestCase
         self::assertContains('volunteer', $slugs);
         self::assertTrue($user->hasPrivilege('news:view'));
 
-        // Idempotent: a second sign-in must not add a duplicate unscoped assignment.
         $provisioner->provision(new SsoClaims('sub-dept', 'dept@example.com', 'deptuser', 'Dept User', ['GRP-DEPT']));
         $this->em->clear();
         $reloaded = $this->em->getRepository(User::class)->find($user->getId());

@@ -21,12 +21,11 @@ final class UiMacrosTest extends KernelTestCase
 {
     private Environment $twig;
 
+    /** The navigation macros read app.request to resolve the active route, so one is pushed. */
     protected function setUp(): void
     {
         self::bootKernel();
         $this->twig = static::getContainer()->get('twig');
-
-        // The navigation macros read app.request to resolve the active route.
         static::getContainer()->get('request_stack')->push(new Request());
     }
 
@@ -82,16 +81,19 @@ final class UiMacrosTest extends KernelTestCase
         self::assertStringNotContainsString('table-hover', $html, 'hover: false must drop table-hover');
     }
 
+    /**
+     * base.html.twig passes exact: false on its nav items so a sub-page keeps the parent
+     * highlighted, and |default(true) would swallow that false.
+     *
+     * With no current request there is no active route, so the macro must still render the link
+     * rather than blow up, and must not mark it active.
+     */
     public function testNavItemPrefixMatchingIsHonoured(): void
     {
-        // base.html.twig passes exact: false on its nav items so a sub-page keeps the parent
-        // highlighted; |default(true) would swallow that false.
         $tpl = "{% import 'components/navigation/_macros.twig' as nav %}"
             ."{{ nav.nav_item('News', 'app_news_index', {exact: false}) }}";
         $html = $this->twig->createTemplate($tpl)->render();
 
-        // With no current request there is no active route, but the macro must render the link
-        // rather than blow up, and must not mark it active.
         self::assertStringContainsString('nav-link', $html);
         self::assertStringNotContainsString('aria-current', $html);
     }
@@ -178,5 +180,30 @@ final class UiMacrosTest extends KernelTestCase
         self::assertStringContainsString('Solo', $html);
         self::assertStringNotContainsString('card-footer', $html, 'no control and no infoUrl → no footer');
         self::assertStringNotContainsString('More information', $html);
+    }
+
+    /** @param array<string, mixed> $options */
+    private function renderToast(array $options): string
+    {
+        return $this->twig
+            ->createTemplate("{% import 'components/notification/_macros.twig' as n %}{{ n.toast('t', 'Title', 'Body', options) }}")
+            ->render(['options' => $options]);
+    }
+
+    /**
+     * Bootstrap type-checks `autohide` as a boolean and throws when the attribute carries anything
+     * else, and it reads an empty attribute as null and a bare 1 as a number. Both explicit values
+     * therefore have to reach the browser as the words, or a sticky toast never constructs.
+     */
+    public function testToastAutohideIsRenderedAsAWordForBothExplicitValues(): void
+    {
+        self::assertStringContainsString('data-bs-autohide="false"', $this->renderToast(['autohide' => false]));
+        self::assertStringContainsString('data-bs-autohide="true"', $this->renderToast(['autohide' => true]));
+    }
+
+    /** Omitting the option leaves a toast that hides itself. */
+    public function testToastAutohidesByDefault(): void
+    {
+        self::assertStringContainsString('data-bs-autohide="true"', $this->renderToast([]));
     }
 }

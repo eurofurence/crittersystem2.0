@@ -14,6 +14,11 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\NotNull;
 
+/**
+ * The department choices are limited to the ones the editor may own, and a department is mandatory
+ * for anyone but an admin: a global task (no department) is shared by every department, so only an
+ * admin may create one.
+ */
 final class ShiftTaskType extends AbstractType
 {
     public function __construct(private readonly ShiftTaskAccess $access)
@@ -36,8 +41,6 @@ final class ShiftTaskType extends AbstractType
                 'label' => 'common.label.department',
                 'class' => Department::class,
                 'choice_label' => 'name',
-                // Only what the user may own. A global task (no department) is shared by every
-                // department, so it stays an admin's to make.
                 'choices' => $isAdmin ? null : $manageable,
                 'required' => !$isAdmin,
                 'placeholder' => $isAdmin ? 'manage.shift_task.field.department.placeholder_admin' : 'manage.shift_task.field.department.placeholder_scoped',

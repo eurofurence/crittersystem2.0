@@ -65,13 +65,16 @@ final class PublicationServiceTest extends DatabaseTestCase
         self::assertTrue($resolver->isVisibleTo($shift, null), 'published public shift is visible');
     }
 
+    /**
+     * One draft is given an invalid interval (ends equal to starts, written past the store guard),
+     * so the whole department publish fails and every draft stays a draft.
+     */
     public function testPublishIsAtomicWhenOneShiftIsInvalid(): void
     {
         $dept = $this->dept();
         $good = $this->draft($dept, 'Good');
-        // Force an invalid interval to trip validation (bypass the store guard).
         $bad = $this->draft($dept, 'Bad');
-        $bad->setEndsAt($bad->getStartsAt()); // ends == starts -> invalid
+        $bad->setEndsAt($bad->getStartsAt());
         $this->em->flush();
 
         $result = $this->publisher()->publishDepartmentDrafts($dept);
@@ -84,6 +87,7 @@ final class PublicationServiceTest extends DatabaseTestCase
         self::assertSame(ShiftState::DRAFT, $bad->getState());
     }
 
+    /** Someone edits the draft after the client last read it, so publishing on the old version is refused. */
     public function testStalePublishIsRejected(): void
     {
         $dept = $this->dept();
@@ -91,7 +95,6 @@ final class PublicationServiceTest extends DatabaseTestCase
         $this->em->flush();
         $staleVersion = $shift->getVersion();
 
-        // Someone edits the draft after the client last saw it.
         $shift->setTitle('Edited');
         $this->em->flush();
 

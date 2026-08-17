@@ -169,6 +169,34 @@ final class BoardStaffAndShiftsTest extends DatabaseWebTestCase
         self::assertGreaterThan(0, $crawler->filter('form[action="/calls/trigger"]')->count());
     }
 
+    /**
+     * The confirmation waits for the button. Raising a call pages real people, so a dialog that
+     * opens itself asks the board to do that once per shift the moment the page loads.
+     *
+     * Twig prints a false boolean as the empty string and Stimulus reads anything other than '0'
+     * and 'false' as true, so the open value has to be printed as an explicit word.
+     */
+    public function testTheCallConfirmationStaysClosedUntilItIsAskedFor(): void
+    {
+        $store = static::getContainer()->get(EventConfigStore::class);
+        $store->set(EventConfigStore::KEY_CALL_MANAGER_LEAD, 3600);
+        $store->flush();
+
+        $shift = $this->scenario->shift('Door', 'today 00:00', '+1 hour', 2);
+        $shift->setStartsAt(new \DateTimeImmutable('+20 minutes'))->setEndsAt(new \DateTimeImmutable('+3 hours'));
+        $this->em->flush();
+
+        $this->login(['board:view', 'call:trigger', 'shift:manage']);
+
+        $crawler = $this->client->request('GET', $this->url('shifts'));
+
+        self::assertResponseIsSuccessful();
+
+        $open = $crawler->filter('[data-alert-dialog-open-value]')->extract(['data-alert-dialog-open-value']);
+        self::assertNotEmpty($open, 'the shifts view should render at least one call dialog');
+        self::assertSame(['false'], array_values(array_unique($open)));
+    }
+
     /** Without call:trigger the action would refuse, so the board must not offer it. */
     public function testTheCallButtonIsWithheldWithoutThePrivilege(): void
     {
@@ -235,8 +263,6 @@ final class BoardStaffAndShiftsTest extends DatabaseWebTestCase
         $this->login(['board:view', 'call:trigger', 'shift:manage']);
         $date = (new \DateTimeImmutable('today', new \DateTimeZone('UTC')))->format('Y-m-d');
 
-        // Submitted as rendered, so the CSRF token and the return fields are the ones the board
-        // really emits rather than ones the test invented.
         $crawler = $this->client->request('GET', $this->url('shifts'));
         $this->client->submit($crawler->filter('form[action="/calls/trigger"]')->form());
 

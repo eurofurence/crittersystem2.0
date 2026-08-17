@@ -25,8 +25,8 @@ use Symfony\Component\Translation\TranslatableMessage;
  * on a single record.
  *
  * Behind `certification:approve` rather than `certification:manage`: editing what a certification is
- * and deciding who holds it are different jobs, and the catalogue has always had a privilege for the
- * second one. `certification:view` would be no gate at all - every volunteer holds it.
+ * and deciding who holds it are different jobs, and the catalogue carries a separate privilege for
+ * the second one. `certification:view` would be no gate at all: every volunteer holds it.
  *
  * A record is addressed by the certification and the volunteer, both by public uuid. The pair is
  * unique, and it keeps the two things being authorised visible in the URL.
@@ -66,6 +66,12 @@ final class CertificationDecisionController extends AbstractController
      *
      * Both identifiers travel in the body rather than the path: the same form is rendered with one
      * side fixed and the other chosen, and a path would have to change as the picker changes.
+     *
+     * The holders are read through `request->all()['user']` because the picker submits `user[]`,
+     * one entry per chip, while the user's own page submits a single fixed `user`. Both are treated
+     * as a list, since granting to one person and to twenty is the same action. Neither accessor
+     * copes with both shapes: `all('user')` insists the value is an array and throws on the single
+     * hidden field, and `get('user')` throws on the picker's array.
      */
     #[Route('/grant', name: 'app_manage_certification_grant', methods: ['POST'])]
     public function grant(Request $request, CertificationRepository $certifications, UserRepository $users): Response
@@ -78,11 +84,6 @@ final class CertificationDecisionController extends AbstractController
 
         $certification = $certifications->findOneByUuid((string) $request->request->get('certification'));
 
-        // The picker submits `user[]`, one entry per chip, and the user's own page submits a single
-        // fixed `user`. Both are read as a list: granting to one person and to twenty is the same
-        // action, and reading only the scalar answered 400 on every grant made through the picker.
-        // Read through all(): request->all('user') insists the value is an array and throws on the
-        // user page's single hidden field, and request->get('user') throws on the picker's array.
         $submitted = $request->request->all()['user'] ?? [];
         $holders = [];
         foreach ((array) $submitted as $uuid) {

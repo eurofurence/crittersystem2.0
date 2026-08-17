@@ -32,6 +32,7 @@ final class HelpCallServiceTest extends DatabaseTestCase
         return static::getContainer()->get(HelpCallService::class);
     }
 
+    /** The shared shift is public and needs the volunteer type, so eligible members can see and accept a call on it. */
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,7 +42,6 @@ final class HelpCallServiceTest extends DatabaseTestCase
         $this->em->persist($this->type);
         $this->staffGroup = new Group('Staff', 'staff-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
         $this->em->persist($this->staffGroup);
-        // A public shift needing the type, so eligible members can see + accept.
         $this->shift = (new Shift())->setTitle('Gate')
             ->setStartsAt(new \DateTimeImmutable('+1 hour'))
             ->setEndsAt(new \DateTimeImmutable('+3 hours'))
@@ -110,10 +110,10 @@ final class HelpCallServiceTest extends DatabaseTestCase
         self::assertSame(HelpCallStatus::EXPIRED, $call->getStatus());
     }
 
+    /** A confirmed member of the needed type is still ineligible without a free-to-help override. */
     public function testNotFreeToHelpIsIneligible(): void
     {
         $call = $this->service()->trigger($this->shift, null, 1);
-        // A member without a Free-to-help override.
         $u = new User();
         $u->setName('busy')->setEmail('busy@e.com')->setApiKey(bin2hex(random_bytes(16)))->setPassword('x');
         $u->addGroup($this->staffGroup);

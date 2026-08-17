@@ -11,8 +11,8 @@
     silently gains a scrollbar nobody is there to use.
   #}
   {#
-    `data-board-*` attributes are test hooks, not styling. Tests that anchored on class names broke
-    the moment the board was restyled, which told us nothing about the board being wrong.
+    `data-board-*` attributes are test hooks, not styling. The class names change whenever the board
+    is restyled, so a test anchored on one fails without saying anything about the board being wrong.
   #}
   <div data-board-shell class="grid h-screen grid-cols-[13rem_1fr] overflow-hidden">
     <aside class="flex min-h-0 flex-col gap-5 border-r border-border bg-card p-4">

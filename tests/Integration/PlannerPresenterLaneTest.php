@@ -19,6 +19,7 @@ final class PlannerPresenterLaneTest extends TestCase
 {
     private const DAY = '2026-07-17';
 
+    /** Lane order tie-breaks on the id, which the database normally assigns, so it is set by reflection. */
     private function shift(string $start, string $end, int $id = 0): Shift
     {
         $tz = new \DateTimeZone('UTC');
@@ -29,7 +30,6 @@ final class PlannerPresenterLaneTest extends TestCase
             ->setState(ShiftState::DRAFT)
             ->setDepartment(new Department('Stage', 'stage'));
 
-        // Lane order tie-breaks on the id, which is normally database-assigned.
         $ref = new \ReflectionProperty(Shift::class, 'id');
         $ref->setValue($shift, $id);
 
@@ -137,9 +137,9 @@ final class PlannerPresenterLaneTest extends TestCase
     }
 
     /**
-     * Clustering still decides which lane a shift lands in - an unrelated afternoon shift takes the
-     * first free lane rather than being pushed past the morning pair - even though the lane width
-     * itself is now the day's.
+     * Clustering decides which lane a shift lands in, even though lane width is a property of the
+     * whole day: an unrelated afternoon shift takes the first free lane rather than being pushed
+     * past the morning pair.
      */
     public function testAnUnrelatedLaterShiftTakesTheFirstLane(): void
     {
@@ -210,7 +210,7 @@ final class PlannerPresenterLaneTest extends TestCase
     public function testAnOvernightShiftReservesOnlyItsVisibleSpan(): void
     {
         $grid = $this->grid([
-            $this->shift('23:00', '02:00', 1), // runs into the next day
+            $this->shift('23:00', '02:00', 1),
             $this->shift('08:00', '09:00', 2),
         ]);
         $lanes = $this->lanesByTitle($grid);

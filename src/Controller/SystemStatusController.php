@@ -15,10 +15,10 @@ use Symfony\Component\Routing\Attribute\Route;
  */
 final class SystemStatusController extends AbstractController
 {
+    /** Public mode gates nobody, so the notice must not stay reachable once the event opens up. */
     #[Route('/unavailable', name: 'app_system_unavailable', methods: ['GET'])]
     public function unavailable(AccessModeGate $gate): Response
     {
-        // Nothing is gated in public mode; don't leave a stale notice reachable.
         if (!$gate->isRestricted()) {
             return $this->redirectToRoute('app_news_index');
         }

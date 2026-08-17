@@ -63,6 +63,10 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
         return $crawler->filter('[data-matrix-token-value]')->attr('data-matrix-token-value');
     }
 
+    /**
+     * Every cell is an actionable control: a read-only matrix cannot be staffed. Each one carries
+     * the identifiers the editing endpoints resolve by, so they have to reach the client.
+     */
     public function testTheMatrixRendersEachCellAsAnActionableControl(): void
     {
         [$shift, , $shiftPosition] = $this->matrix();
@@ -74,12 +78,16 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
         $cell = $crawler->filter('.matrix-cell-button');
         self::assertGreaterThan(0, $cell->count(), 'every cell must be reachable - a read-only matrix cannot be staffed');
 
-        // The identifiers the editing endpoints resolve by must reach the client.
         self::assertSame((string) $shiftPosition->getUuid(), $cell->attr('data-shift-position-uuid'));
         self::assertSame((string) $shift->getUuid(), $cell->attr('data-shift'));
         self::assertNotEmpty($cell->attr('data-assignments'));
     }
 
+    /**
+     * The cell editor clones the page's picker, so that picker has to be the shared type-ahead wired
+     * to the matrix user-search endpoint. A fixed members-only dropdown would leave a department
+     * with no members of its own unable to staff anyone.
+     */
     public function testTheAssignmentPickerSearchesAllUsersViaTypeAhead(): void
     {
         $this->matrix();
@@ -88,9 +96,6 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
         $this->client->request('GET', '/manage-shifts/matrix?department='.$this->scenario->department->getUuid());
 
         self::assertResponseIsSuccessful();
-        // The cell editor clones this picker: it must be the shared type-ahead wired to the matrix
-        // user-search endpoint, not a fixed members-only dropdown that leaves empty departments unable
-        // to staff anyone.
         $html = (string) $this->client->getResponse()->getContent();
         self::assertStringContainsString('id="matrix-user-picker"', $html);
         self::assertStringContainsString('data-controller="user-select"', $html);
@@ -114,6 +119,10 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
         self::assertContains($member->getName(), array_column($data['results'], 'name'));
     }
 
+    /**
+     * The refreshable region has to contain the structure forms as well, so that creating a group
+     * also refreshes their dropdown.
+     */
     public function testTheContentRegionIsServedSoTheClientCanRefreshWithoutAFullReload(): void
     {
         $this->matrix();
@@ -122,7 +131,6 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/manage-shifts/matrix?department='.$this->scenario->department->getUuid());
 
         self::assertCount(1, $crawler->filter('[data-matrix-target="content"]'));
-        // The structure forms live inside it, so a new group also refreshes their dropdown.
         self::assertGreaterThan(0, $crawler->filter('[data-matrix-target="content"] form[action*="/matrix/position"]')->count());
     }
 
@@ -211,10 +219,14 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
         self::assertCount(1, $fresh->getShiftPositions());
     }
 
+    /**
+     * shift:manage alone may edit the matrix structure but not staff it: placing a volunteer needs
+     * shift:assign.
+     */
     public function testAssignmentRequiresTheAssignPrivilege(): void
     {
         [, , $shiftPosition] = $this->matrix();
-        $this->client->loginUser($this->manager()); // shift:manage only - may edit structure, not staff
+        $this->client->loginUser($this->manager());
         $token = $this->token();
 
         $volunteer = $this->scenario->user(memberOf: $this->scenario->type);
@@ -243,10 +255,11 @@ final class MatrixPlannerTest extends DatabaseWebTestCase
         self::assertCount(0, $this->em->getRepository(ShiftPosition::class)->find($shiftPosition->getId())->getAssignments());
     }
 
+    /** A volunteer holding no shift:manage cannot open the matrix at all. */
     public function testTheMatrixIsClosedToAVolunteer(): void
     {
         $this->matrix();
-        $this->client->loginUser($this->scenario->user()); // no shift:manage
+        $this->client->loginUser($this->scenario->user());
 
         $this->client->request('GET', '/manage-shifts/matrix?department='.$this->scenario->department->getUuid());
 

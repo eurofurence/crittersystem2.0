@@ -84,6 +84,10 @@ final class MembershipController extends AbstractController
         ]);
     }
 
+    /**
+     * A restricted type creates an unconfirmed membership that a supporter has to approve; an open
+     * type is confirmed on the spot.
+     */
     #[Route('/{id}/join', name: 'app_membership_join', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function join(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] VolunteerType $type): Response
     {
@@ -95,7 +99,6 @@ final class MembershipController extends AbstractController
         ) {
             $membership = new UserVolunteerType($user, $type);
             if (!$type->isRestricted()) {
-                // Open types are confirmed immediately (no supporter approval needed).
                 $membership->setConfirmedBy($user);
             }
             $this->em->persist($membership);

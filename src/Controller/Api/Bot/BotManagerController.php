@@ -49,6 +49,10 @@ final class BotManagerController extends AbstractController
     ) {
     }
 
+    /**
+     * Every published shift is filtered per row with the shift as the `shift:manage` subject, so
+     * the list holds only what this manager may act on rather than every shift in the event.
+     */
     #[Route('/shifts', name: 'app_api_bot_manager_shifts', methods: ['GET'])]
     public function list(Request $request): JsonResponse
     {
@@ -63,8 +67,6 @@ final class BotManagerController extends AbstractController
 
         $out = [];
         foreach ($shifts as $shift) {
-            // Scoped per shift: the list must only contain what this manager may
-            // actually act on, not every shift in the event.
             if ($this->access->isGranted($actor, 'shift:manage', $shift)) {
                 $out[] = $this->normalizer->shift($shift);
             }
@@ -127,6 +129,12 @@ final class BotManagerController extends AbstractController
         return $this->json($this->normalizer->entry($this->attendance->checkOut($entry)));
     }
 
+    /**
+     * Marking a no-show re-evaluates the ban threshold exactly as
+     * Manage\ShiftStaffingController::toggleNoshow() does: reaching the configured count locks the
+     * account. Without it, a no-show recorded through Telegram would escape a ban the same action
+     * triggers on the web.
+     */
     #[Route('/shifts/{id}/noshow', name: 'app_api_bot_manager_noshow', methods: ['POST'])]
     public function noShow(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): JsonResponse
     {
@@ -135,14 +143,15 @@ final class BotManagerController extends AbstractController
 
         $this->attendance->markNoShow($entry, ($payload['comment'] ?? null) ?: null);
 
-        // Mirrors Manage\ShiftStaffingController::toggleNoshow(): reaching the
-        // configured threshold locks the account. Skipping this would let no-shows
-        // recorded through Telegram bypass a ban the same action triggers on the web.
         $banned = $this->noShowBans->evaluate($entry->getUser());
 
         return $this->json($this->normalizer->entry($entry) + ['user_banned' => $banned]);
     }
 
+    /**
+     * Messages every assignee of the shift. Message is strictly 1:1 and nothing models a broadcast,
+     * so each assignee is notified individually and their own notification preferences apply.
+     */
     #[Route('/shifts/{id}/message', name: 'app_api_bot_manager_message', methods: ['POST'])]
     public function message(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): JsonResponse
     {
@@ -155,8 +164,6 @@ final class BotManagerController extends AbstractController
             return $this->json(['error' => 'empty_message'], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // No VMS entity models a broadcast: Message is strictly 1:1. Notify each
-        // assignee individually so per-user notification preferences still apply.
         $sent = 0;
         foreach ($shift->getEntries() as $entry) {
             $this->notifications->notify(

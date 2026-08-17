@@ -52,6 +52,10 @@ final class TwoFactorSetupTest extends DatabaseWebTestCase
         self::assertTrue($reloaded->isTwoFactorEnabled());
     }
 
+    /**
+     * A wrong code answers with a redirect, not a rendered page: Turbo silently discards a 200 to a
+     * form submission, so the error would never reach the user. Two-factor stays disabled.
+     */
     public function testSetupWithWrongCodeRedirectsBackAndDoesNotEnable(): void
     {
         $user = $this->makeUser();
@@ -60,8 +64,6 @@ final class TwoFactorSetupTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/2fa/setup', ['code' => '000000']);
 
-        // A wrong code must redirect (Post/Redirect/Get); a rendered 200 response to a
-        // form submission is silently discarded by Turbo, so the error would never show.
         self::assertResponseRedirects('/2fa/setup');
 
         $this->em->clear();
@@ -84,6 +86,7 @@ final class TwoFactorSetupTest extends DatabaseWebTestCase
         );
     }
 
+    /** The one-time recovery codes are shown once: a refresh or any later visit must not re-display them. */
     public function testRecoveryCodesAreShownOnlyOnce(): void
     {
         $user = $this->makeUser();
@@ -96,7 +99,6 @@ final class TwoFactorSetupTest extends DatabaseWebTestCase
         $this->client->request('POST', '/2fa/setup', ['code' => $totp->codeForCounter($secret, intdiv(time(), 30))]);
         $this->client->followRedirect();
 
-        // A refresh (or any later visit) must not re-display the one-time codes.
         $this->client->request('GET', '/2fa/recovery-codes');
         self::assertResponseRedirects('/2fa');
     }

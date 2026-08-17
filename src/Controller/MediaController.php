@@ -27,10 +27,14 @@ final class MediaController extends AbstractController
     ) {
     }
 
+    /**
+     * Only the basename of the requested path is used, under the fixed chat/ prefix, so a crafted
+     * path cannot reach a key outside it. Chat attachments are protected by their key being an
+     * opaque random name, not by a per-viewer check.
+     */
     #[Route('/chat/{path<.+>}', name: 'app_media_chat', methods: ['GET'])]
     public function chatImage(string $path): Response
     {
-        // Keys are opaque random names under the chat/ prefix; only serve those.
         $key = 'chat/'.basename($path);
         if (!$this->storage->exists($key)) {
             throw $this->createNotFoundException();

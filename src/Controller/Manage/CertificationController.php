@@ -3,7 +3,6 @@
 namespace App\Controller\Manage;
 
 use App\Entity\Certification;
-use App\Entity\CertificationToken;
 use App\Form\CertificationType;
 use App\Repository\CertificationRepository;
 use App\Service\CertificationService;
@@ -33,19 +32,38 @@ final class CertificationController extends AbstractController
     ) {
     }
 
+    /**
+     * How long before expiry the displayed QR is replaced. It is also the life a token must still
+     * have to be shown at all, so the card never declares a rotation moment that has already passed
+     * and the region cannot fetch itself in a loop.
+     */
+    private const QR_ROTATION_MARGIN_SECONDS = 30;
+
     #[Route('/{id}/qr', name: 'app_manage_certification_qr', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function qr(#[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {
-        $token = $this->service->getOrCreateToken($certification);
+        return $this->render('manage/certification/qr.html.twig', $this->qrCardContext($certification));
+    }
+
+    #[Route('/{id}/qr/card', name: 'app_manage_certification_qr_card', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function qrCard(#[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
+    {
+        return $this->render('manage/certification/_qr_card.html.twig', $this->qrCardContext($certification));
+    }
+
+    /** @return array<string, mixed> */
+    private function qrCardContext(Certification $certification): array
+    {
+        $token = $this->service->getOrCreateToken($certification, self::QR_ROTATION_MARGIN_SECONDS);
         $verifyUrl = $this->urls->generate('app_certification_scan_verify', ['token' => $token->getToken()], UrlGeneratorInterface::ABSOLUTE_URL);
 
-        return $this->render('manage/certification/qr.html.twig', [
+        return [
             'certification' => $certification,
             'token' => $token,
             'verifyUrl' => $verifyUrl,
             'qrDataUri' => $this->qr->dataUri($verifyUrl, 360, 12),
-            'ttlSeconds' => CertificationToken::DEFAULT_TTL_SECONDS,
-        ]);
+            'refreshAt' => $token->getExpiresAt()->modify(sprintf('-%d seconds', self::QR_ROTATION_MARGIN_SECONDS)),
+        ];
     }
 
     #[Route('/{id}/qr/refresh', name: 'app_manage_certification_qr_refresh', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
@@ -76,6 +94,10 @@ final class CertificationController extends AbstractController
      * sections' parameters through, so searching or paging one table leaves the rest of the page
      * where the viewer left it. Only the known parameters are carried, so an arbitrary query string
      * cannot be reflected back into the page's own links.
+     *
+     * Page numbers are cast rather than read with getInt(), which throws on a value it cannot
+     * convert: a malformed or blank one in a hand-edited URL falls back to the first page rather
+     * than answering 400.
      */
     #[Route('/{id}', name: 'app_manage_certification_show', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function show(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
@@ -98,8 +120,6 @@ final class CertificationController extends AbstractController
             $section = $this->service->paginateHolders(
                 $records,
                 (string) $request->query->get($status.'_q', ''),
-                // Cast, not getInt(): a malformed or blank page number in a hand-edited URL falls
-                // back to the first page rather than answering 400.
                 max(1, (int) $request->query->get($status.'_page', 1)),
             );
 

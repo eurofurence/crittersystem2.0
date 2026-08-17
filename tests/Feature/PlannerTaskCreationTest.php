@@ -144,6 +144,11 @@ final class PlannerTaskCreationTest extends DatabaseWebTestCase
         self::assertNull($this->tasks()->findOneBy(['name' => 'No Token']));
     }
 
+    /**
+     * The picker offers this department's tasks and the global ones, never another department's.
+     * Options render as "Department: Task" for a department task and as the bare name for a global
+     * one, so the assertions match on the task name inside that text.
+     */
     public function testTheTaskPickerShowsOnlyThisDepartmentsTasksAndTheGlobalOnes(): void
     {
         $this->task('Alpha Task', $this->alpha);
@@ -153,7 +158,6 @@ final class PlannerTaskCreationTest extends DatabaseWebTestCase
         $this->login(['shift:manage', 'manageshifts:view'], $this->alpha);
         $crawler = $this->client->request('GET', '/manage-shifts/planner?department='.$this->alpha->getUuid());
 
-        // Options render as "Department: Task" for a department task, and the bare name for a global one.
         $options = implode(' | ', $crawler->filter('#paint-task option')->each(fn ($o) => $o->text()));
         self::assertStringContainsString('Alpha Task', $options);
         self::assertStringContainsString('Shared', $options);

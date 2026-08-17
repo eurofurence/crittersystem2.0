@@ -26,7 +26,12 @@ final class BoardAccess
     ) {
     }
 
-    /** @return list<Department> the rail contents, ordered as departments are ordered everywhere else */
+    /**
+     * Ordered by the repository's ordering rather than by grant order, so the rail does not reshuffle
+     * when somebody's group assignments change.
+     *
+     * @return list<Department> the rail contents, ordered as departments are ordered everywhere else
+     */
     public function departmentsFor(User $user): array
     {
         $held = $this->scopes->departmentsFor($user, 'board:view');
@@ -45,8 +50,6 @@ final class BoardAccess
             }
         }
 
-        // Ordered by the repository's ordering rather than by grant order, so the rail does not
-        // reshuffle when somebody's group assignments change.
         return array_values(array_filter(
             $this->departments->findAllOrdered(),
             static fn (Department $department): bool => isset($allowed[$department->getId()]),

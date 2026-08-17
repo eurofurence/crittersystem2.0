@@ -9,7 +9,7 @@
    - the mercure-hub meta, which assets/js/live.js reads on every reconnect;
    - the heartbeat-url meta, which re-mints the 5-minute subscriber cookie so a board left open all
      day keeps receiving updates;
-   - importmap('app'), which carries Turbo, Stimulus and the session-expiry watcher.
+   - importmap('board'), which carries Turbo, Stimulus and the session-expiry watcher.
   Dropping any of them leaves a board that renders correctly and silently stops updating.
 #}
 <html lang="{{ app.request.locale|default('en') }}" data-bs-theme="dark">

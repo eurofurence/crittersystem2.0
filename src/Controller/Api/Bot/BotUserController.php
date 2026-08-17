@@ -54,6 +54,9 @@ final class BotUserController extends AbstractController
      *
      * Notifications sent through VMS (NotificationService::notify) already apply
      * these preferences server-side and need no check here.
+     *
+     * `telegram` is false for in-app-only categories whatever the volunteer set: those never leave
+     * the web UI.
      */
     #[Route('/me/notification-preferences', name: 'app_api_bot_user_notification_preferences', methods: ['GET'])]
     public function notificationPreferences(Request $request): JsonResponse
@@ -64,8 +67,6 @@ final class BotUserController extends AbstractController
         foreach ($this->notifications->preferenceMatrix($actor) as $row) {
             $categories[$row['category']] = [
                 'label' => $row['label'],
-                // False for in-app-only categories whatever the volunteer set:
-                // those never leave the web UI.
                 'telegram' => $row['telegram'],
             ];
         }
@@ -84,6 +85,9 @@ final class BotUserController extends AbstractController
      * restricts to accounts that can ban in the first place.
      *
      * A volunteer's own overview is never narrowed.
+     *
+     * The no-show figure is the ban-relevant count, taken from the user's no-show baseline rather
+     * than the all-time tally, because that is the number that decides the account's fate.
      */
     #[Route('/{id}/overview', name: 'app_api_bot_user_overview', methods: ['GET'])]
     public function overview(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): JsonResponse
@@ -124,6 +128,13 @@ final class BotUserController extends AbstractController
         return $this->json($body);
     }
 
+    /**
+     * Somebody else's shift history needs both halves of the web's rule
+     * (ProfileAccessService::canViewHistory): `profile:history:view` says the holder may read shift
+     * histories, and canView() says they may see this profile at all. Checking only the privilege
+     * lets somebody who cannot open the profile read the history behind it. An unreadable profile
+     * answers 404, so this surface does not confirm the account exists.
+     */
     #[Route('/{id}/shifts', name: 'app_api_bot_user_shifts', methods: ['GET'])]
     public function shifts(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] User $user): JsonResponse
     {
@@ -202,7 +213,11 @@ final class BotUserController extends AbstractController
         return ['eligible' => $earned, 'next' => $next, 'blocked' => $blocked];
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * `display_name` is the username, never the real name: that is PII and lives in PersonalData.
+     *
+     * @return array<string, mixed>
+     */
     private function user(User $user): array
     {
         $departments = [];
@@ -215,7 +230,6 @@ final class BotUserController extends AbstractController
 
         return [
             'id' => (string) $user->getUuid(),
-            // The username, never the real name: that is PII and lives in PersonalData.
             'display_name' => $user->getName(),
             'telegram_handle' => $user->getTelegramHandle(),
             'telegram_linked' => $user->getTelegramId() !== null,

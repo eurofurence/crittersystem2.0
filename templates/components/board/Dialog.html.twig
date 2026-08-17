@@ -9,9 +9,13 @@
 {%- do provide('dialog.id', _dialog_id) -%}
 {%- do provide('dialog.titleId', _dialog_title_id) -%}
 {%- do provide('dialog.descriptionId', _dialog_description_id) -%}
+{# The open value is printed as an explicit 'true'/'false' because Twig renders a false boolean as
+   the empty string, and Stimulus reads any value other than '0' and 'false' as true. Printing
+   `open` directly leaves every closed dialog claiming to be open, so each one calls showModal() as
+   soon as it connects. #}
 <div
     data-slot="dialog"
-    data-dialog-open-value="{{ open }}"
+    data-dialog-open-value="{{ open ? 'true' : 'false' }}"
     aria-labelledby="{{ _dialog_title_id }}"
     aria-describedby="{{ _dialog_description_id }}"
     {{ attributes.defaults({

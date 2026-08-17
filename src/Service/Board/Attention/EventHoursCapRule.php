@@ -15,6 +15,11 @@ use Symfony\Component\Translation\TranslatableMessage;
  */
 final class EventHoursCapRule implements AttentionRule
 {
+    /**
+     * Items are dated to the start of the day: hours accrue with the schedule rather than at an
+     * instant, so that is the most honest "since" available, and it keeps the ranking stable within
+     * a board.
+     */
     public function evaluate(BoardContext $context): array
     {
         $cap = $context->settings->hoursCap();
@@ -43,8 +48,6 @@ final class EventHoursCapRule implements AttentionRule
                     '%hours%' => number_format($hours, 1),
                     '%cap%' => $cap,
                 ]),
-                // Hours accrue with the schedule rather than at an instant, so the day is the most
-                // honest "since" available; it keeps the ranking stable within a board.
                 $context->dayStart,
             );
         }

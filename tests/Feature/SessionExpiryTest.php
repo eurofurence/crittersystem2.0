@@ -117,6 +117,10 @@ final class SessionExpiryTest extends DatabaseWebTestCase
         yield 'scheme relative no slash' => ['evil.example'];
     }
 
+    /**
+     * The idle limit comes from the admin-editable config, so the test sets it to one minute and
+     * ages the activity stamp past it rather than waiting.
+     */
     public function testASessionIdleBeyondTheConfiguredLimitIsTreatedAsSignedOut(): void
     {
         $store = static::getContainer()->get(EventConfigStore::class);
@@ -127,7 +131,6 @@ final class SessionExpiryTest extends DatabaseWebTestCase
         $this->client->request('GET', '/dashboard');
         self::assertResponseIsSuccessful();
 
-        // Age the activity stamp past the one-minute limit.
         $session = $this->client->getRequest()->getSession();
         $session->set('_last_activity', time() - 120);
         $session->save();
@@ -137,6 +140,10 @@ final class SessionExpiryTest extends DatabaseWebTestCase
         self::assertResponseStatusCodeSame(401, 'the idle limit is enforced from the admin-editable config');
     }
 
+    /**
+     * A poll inside the idle window refreshes the activity stamp instead of letting it lapse. This
+     * is what keeps the bounty board signed in on a display nobody touches.
+     */
     public function testAnActiveSessionIsKeptAliveByItsOwnPolling(): void
     {
         $store = static::getContainer()->get(EventConfigStore::class);
@@ -146,8 +153,6 @@ final class SessionExpiryTest extends DatabaseWebTestCase
         $this->client->loginUser($this->user());
         $this->client->request('GET', '/dashboard');
 
-        // A poll 29 minutes in: still inside the window, and it refreshes the stamp. This is what keeps
-        // the bounty board signed in on a display nobody touches.
         $session = $this->client->getRequest()->getSession();
         $session->set('_last_activity', time() - (29 * 60));
         $session->save();

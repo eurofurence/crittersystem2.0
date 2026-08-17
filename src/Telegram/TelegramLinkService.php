@@ -43,7 +43,11 @@ final class TelegramLinkService
         return $request;
     }
 
-    /** Confirm a link from the bot. Returns the linked user, or null if invalid. */
+    /**
+     * Confirm a link from the bot. Returns the linked user, or null if invalid.
+     *
+     * A banned account is refused: it must not gain Telegram bot access.
+     */
     public function confirm(string $code, string $telegramId, ?string $handle): ?User
     {
         $request = $this->requests->findOneByCode($code);
@@ -59,7 +63,6 @@ final class TelegramLinkService
 
         $user = $request->getUser();
 
-        // A banned account cannot gain Telegram Bot access.
         if ($this->bans->isUserBanned($user)) {
             return null;
         }
@@ -77,13 +80,15 @@ final class TelegramLinkService
         return $user;
     }
 
+    /**
+     * Drops the local link only. Revoking the bot's own binding requires the companion API, which is
+     * not called from here.
+     */
     public function unlink(User $user, ?User $actor = null): void
     {
         $user->unlinkTelegram();
         $this->em->flush();
 
-        // Only the local link is dropped: revoking the bot's own binding requires
-        // the companion API, which is not called from here.
         $this->audit->log(AuditEvents::USER_MANAGEMENT, AuditEvents::UPDATE, [
             'resourceType' => 'User',
             'resourceId' => $user->getId(),

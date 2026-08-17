@@ -301,7 +301,9 @@ final class BoardSnapshotBuilderTest extends DatabaseTestCase
 
     /**
      * The board re-renders at the exact instant its content changes rather than on a timer, so this
-     * has to be the earliest such moment - getting it wrong leaves a wall display stale.
+     * has to be the earliest such moment - getting it wrong leaves a wall display stale. At 10:20
+     * the next hour boundary (11:00) is earlier than the shift's warning window (12:45); at 12:30
+     * the warning window is the nearer of the two.
      */
     public function testNextTransitionIsTheEarliestFutureBoundary(): void
     {
@@ -309,7 +311,6 @@ final class BoardSnapshotBuilderTest extends DatabaseTestCase
 
         $snapshot = $this->builder()->build($this->scenario->department, $this->day(), $this->at('10:20'));
 
-        // The next hour boundary at 11:00 beats the shift's warning window at 12:45.
         self::assertEquals($this->at('11:00'), $snapshot->nextTransitionAt);
 
         $later = $this->builder()->build($this->scenario->department, $this->day(), $this->at('12:30'));

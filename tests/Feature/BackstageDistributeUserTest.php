@@ -171,7 +171,8 @@ final class BackstageDistributeUserTest extends DatabaseWebTestCase
 
     /**
      * The card repeats what /users/{uuid} shows, so an operator that page would turn away must not be
-     * handed the same facts here - nor a link to a profile that will refuse them.
+     * handed the same facts here - nor a link to a profile that will refuse them, which the
+     * test confirms by asking for that profile directly.
      */
     public function testTheIdentityCardAndTheProfileLinkFollowProfileVisibility(): void
     {
@@ -186,7 +187,6 @@ final class BackstageDistributeUserTest extends DatabaseWebTestCase
         self::assertStringNotContainsString('Total shifts', $html);
         self::assertStringNotContainsString('/users/'.$volunteer->getUuid(), $html, 'the page must not offer a link the profile will refuse');
 
-        // The guard on the whole point of the gate: that profile really is out of bounds for them.
         $this->client->request('GET', '/users/'.$volunteer->getUuid());
         self::assertResponseStatusCodeSame(403);
     }

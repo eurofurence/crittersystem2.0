@@ -105,6 +105,11 @@ final class LoginThrottleTest extends DatabaseWebTestCase
         self::assertGreaterThanOrEqual(LoginThrottle::MIN_SOURCES_FOR_ACCOUNT_LOCK, $account->getSourceCount());
     }
 
+    /**
+     * An account lockout follows the account, not the source. The correct password is then offered
+     * from an address the throttle has never seen, so only the account-scoped lockout can be
+     * refusing it.
+     */
     public function testAnAccountLockoutHoldsEvenFromAnUnseenAddress(): void
     {
         $this->user();
@@ -113,7 +118,6 @@ final class LoginThrottleTest extends DatabaseWebTestCase
         $this->attemptLogin('target', 'wrong-password', '203.0.113.2');
         $this->attemptLogin('target', 'wrong-password', '203.0.113.3');
 
-        // A fresh address, so only the account-scoped lockout can be refusing this.
         $this->attemptLogin('target', self::PASSWORD, '198.51.100.7');
 
         self::assertResponseRedirects('/login');
@@ -154,6 +158,10 @@ final class LoginThrottleTest extends DatabaseWebTestCase
         self::assertStringNotContainsString('/login', (string) $this->client->getResponse()->headers->get('Location'));
     }
 
+    /**
+     * Releasing a lockout also clears the failures behind it. Leaving them would put the address
+     * straight back over the threshold, so the lift would last exactly one wrong password.
+     */
     public function testLiftingALockoutSurvivesTheNextWrongPassword(): void
     {
         $this->user();
@@ -166,8 +174,6 @@ final class LoginThrottleTest extends DatabaseWebTestCase
         self::assertNotNull($lockout);
         static::getContainer()->get(LoginThrottle::class)->release($lockout);
 
-        // Leaving the failures behind would put the address back over the threshold immediately, so
-        // the lift would last exactly one wrong password.
         $this->attemptLogin('target', 'wrong-password');
         self::assertNull($this->lockout(LoginLockout::SCOPE_IP));
 
@@ -176,12 +182,15 @@ final class LoginThrottleTest extends DatabaseWebTestCase
         self::assertStringNotContainsString('/login', (string) $this->client->getResponse()->headers->get('Location'));
     }
 
+    /**
+     * A successful sign-in resets the failure counter. The sequence is one short of the threshold,
+     * then a success, then another failure: without the reset that third failure overall would tip
+     * the counter and lock the address.
+     */
     public function testASuccessfulSignInClearsTheAccountsFailureHistory(): void
     {
         $this->user();
 
-        // One short of the threshold, then a success, then two more failures: without the reset the
-        // third failure overall would tip the counter and lock the address.
         $this->attemptLogin('target', 'wrong-password');
         $this->attemptLogin('target', 'wrong-password');
         $this->attemptLogin('target', self::PASSWORD);
@@ -214,9 +223,12 @@ final class LoginThrottleTest extends DatabaseWebTestCase
         self::assertStringNotContainsString('/login', (string) $this->client->getResponse()->headers->get('Location'));
     }
 
+    /**
+     * The submitted identifier is arbitrary caller input, and the columns the throttle writes it to
+     * are not: an overlong username must be throttled rather than crash the insert.
+     */
     public function testAnAbsurdlyLongUsernameIsThrottledRatherThanCrashingTheInsert(): void
     {
-        // The submitted identifier is arbitrary caller input; the columns it is written to are not.
         $overlong = str_repeat('z', 4000);
 
         for ($i = 0; $i < LoginThrottle::MAX_FAILURES; ++$i) {

@@ -56,11 +56,9 @@ final class CheckInPolicy
     public function requiresCheckin(Shift $shift): bool
     {
         if ($shift->isRequireCheckin()) {
-            return true; // per-shift override applies in every phase
+            return true;
         }
 
-        // Only the main event requires check-in by default; setup/teardown and an
-        // unknown phase are exempt.
         return $this->phaseOf($shift) === self::PHASE_MAIN;
     }
 

@@ -352,6 +352,9 @@ final class ShiftEligibility implements ResetInterface
      * Whether a shift running at the same time stands in this user's way, which for staff it does
      * not - see {@see OverlapPolicy}.
      *
+     * The shift itself is always excluded: an entry on it is "already signed up", not an overlap,
+     * and the two produce different messages.
+     *
      * @param Shift[] $ignoreOverlapWith
      */
     private function overlaps(User $user, Shift $shift, array $ignoreOverlapWith): bool
@@ -360,8 +363,6 @@ final class ShiftEligibility implements ResetInterface
             return false;
         }
 
-        // The shift itself is always excluded: an entry on it is "already signed up", not an
-        // overlap, and the two produce different messages.
         return $this->isDoubleBooked(
             $user,
             $shift->getStartsAt(),

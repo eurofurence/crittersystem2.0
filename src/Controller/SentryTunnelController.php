@@ -20,10 +20,20 @@ final class SentryTunnelController extends AbstractController
     ) {
     }
 
+    /**
+     * Forwards a browser Sentry envelope upstream, so the report survives an ad blocker.
+     *
+     * Only envelopes addressed to this application's own DSN are relayed: without that check the
+     * endpoint is an open relay into any Sentry project. For the same reason the upstream URL is
+     * built from the configured DSN and never from the value the browser sent. The DSN the browser
+     * claims sits in the envelope's first line, which is a JSON header.
+     *
+     * With no DSN configured the endpoint answers 404 rather than accepting traffic it cannot
+     * deliver.
+     */
     #[Route('/sentry-tunnel', name: 'sentry_tunnel', methods: ['POST'])]
     public function __invoke(Request $request): Response
     {
-        // Tunnel disabled if no DSN is configured.
         if ($this->sentryDsn === '') {
             return new Response('', Response::HTTP_NOT_FOUND);
         }
@@ -33,7 +43,6 @@ final class SentryTunnelController extends AbstractController
             return new Response('', Response::HTTP_BAD_REQUEST);
         }
 
-        // The envelope's first line is a JSON header that carries the target DSN.
         $newline = strpos($envelope, "\n");
         $headerLine = $newline === false ? $envelope : substr($envelope, 0, $newline);
 
@@ -48,14 +57,11 @@ final class SentryTunnelController extends AbstractController
             return new Response('', Response::HTTP_BAD_REQUEST);
         }
 
-        // SECURITY: only relay envelopes addressed to OUR DSN. Without this the
-        // endpoint is an open relay to any Sentry project (SSRF/abuse).
         if (!hash_equals($this->sentryDsn, $incomingDsn)) {
             $this->logger->warning('Sentry tunnel: rejected envelope with mismatched DSN.');
             return new Response('', Response::HTTP_FORBIDDEN);
         }
 
-        // Build the upstream URL from the TRUSTED configured DSN, not the browser value.
         $parts = parse_url($this->sentryDsn);
         if (!\is_array($parts) || empty($parts['host']) || empty($parts['path'])) {
             $this->logger->error('Sentry tunnel: configured sentry_dsn is malformed.');
@@ -79,7 +85,6 @@ final class SentryTunnelController extends AbstractController
                 'timeout' => 15,
             ]);
 
-            // Relay Sentry's status back to the SDK.
             return new Response(
                 $response->getContent(false),
                 $response->getStatusCode(),

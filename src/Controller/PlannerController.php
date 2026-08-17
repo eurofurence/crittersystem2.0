@@ -60,12 +60,20 @@ final class PlannerController extends AbstractController
     ) {
     }
 
+    /**
+     * Only departments this manager may actually plan are offered: `shift:manage` is scoped, so a
+     * manager assigned to one department must not see (and 403 on) the others, while an unscoped
+     * holder or an admin still sees them all. The same scoping is why only the chosen department's
+     * shift groups are offered: a group and its shifts share one department, which is what makes the
+     * batch assignment safe to scope.
+     *
+     * Planning is department-wide and destructive (publish, discard drafts, mass delete), so the
+     * grid loads only once the manager has named the department; defaulting to the first one would
+     * invite edits against a department nobody chose.
+     */
     #[Route('', name: 'app_manage_shifts_planner', methods: ['GET'])]
     public function index(Request $request, VolunteerTypeRepository $types, LocationRepository $locations): Response
     {
-        // Only offer departments this manager may actually plan. shift:manage is scoped, so a
-        // manager assigned to one department must not see (and 403 on) the others; an unscoped
-        // holder or admin still sees them all.
         $planningDepartments = array_values(array_filter(
             $this->departments->findAllOrdered(),
             fn (Department $d) => !$d->isOrganizational() && $this->isGranted('shift:manage', $d),
@@ -74,11 +82,6 @@ final class PlannerController extends AbstractController
             return $this->render('planner/empty.html.twig');
         }
 
-        /*
-         * Planning is department-wide and destructive (publish, discard drafts, mass delete), so the
-         * grid only loads once the manager has named the department. Defaulting to the first one and
-         * rendering it immediately invited edits against a department nobody chose.
-         */
         $department = ($id = $request->query->get('department'))
             ? $this->departments->findOneByUuid((string) $id)
             : null;
@@ -110,8 +113,6 @@ final class PlannerController extends AbstractController
             'volunteerTypes' => $this->typeOrder->forDepartment($types->findAllOrderedWithDepartments(), $department),
             'locations' => $locations->findAllOrderedByPath(),
             'audiences' => ShiftAudience::cases(),
-            // Only this department's groups can be offered: a group and its shifts share one
-            // department, which is what makes the batch assignment safe to scope.
             'shiftGroups' => $this->shiftGroups->findForDepartment($department),
             'timezone' => $tz->getName(),
         ]);
@@ -122,7 +123,7 @@ final class PlannerController extends AbstractController
      *
      * A manager with `shift:manage` on the department owns its tasks, so they may add one without
      * leaving the planner. The task belongs to that department; the global pool stays an admin's to
-     * change.
+     * change. Names are unique per department, and a department cannot shadow a global task either.
      */
     #[Route('/task', name: 'app_manage_shifts_planner_task_create', methods: ['POST'])]
     public function createTask(Request $request): Response
@@ -141,7 +142,6 @@ final class PlannerController extends AbstractController
             return $this->fail('A shift task needs a name.');
         }
 
-        // Names are unique per department, and a department also cannot shadow a global task.
         $clash = $this->tasks->findOneBy(['name' => $name, 'department' => $department])
             ?? $this->tasks->findOneBy(['name' => $name, 'department' => null]);
         if ($clash !== null) {
@@ -257,9 +257,11 @@ final class PlannerController extends AbstractController
         return new JsonResponse(['ok' => true, 'id' => $shift->getUuid()]);
     }
 
-    // No route requirement here: the client generates this URL with an `__ID__` placeholder and
-    // substitutes the shift uuid at runtime, so the placeholder must pass URL generation. The
-    // uuid lookup is still enforced by MapEntity below (a non-uuid simply 404s).
+    /**
+     * No route requirement on the id: the client generates this URL with an `__ID__` placeholder and
+     * substitutes the shift uuid at runtime, so the placeholder has to pass URL generation. The
+     * lookup is still by uuid through MapEntity, so anything else is a 404.
+     */
     #[Route('/shift/{id}/panel', name: 'app_manage_shifts_planner_panel', methods: ['GET'])]
     public function panel(#[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, VolunteerTypeRepository $types, LocationRepository $locations): Response
     {
@@ -275,6 +277,14 @@ final class PlannerController extends AbstractController
         ]);
     }
 
+    /**
+     * Only fields actually present in the request are changed, and `require_checkin` depends on
+     * that: a form offering the check-in override read-only submits nothing for it, exactly like an
+     * unticked box, so treating an absent field as "off" would clear an override the panel is at
+     * that moment showing as ticked. Any form that offers this field for editing must post the value
+     * explicitly, with a hidden `0` ahead of the checkbox, because a checkbox alone cannot say "off"
+     * and the absent case is already taken.
+     */
     #[Route('/shift/{id}/edit', name: 'app_manage_shifts_planner_edit', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function edit(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift, VolunteerTypeRepository $types, LocationRepository $locations): Response
     {
@@ -312,11 +322,6 @@ final class PlannerController extends AbstractController
                 return $this->fail('Invalid start or end time.');
             }
         }
-        // A form that offers the check-in override read-only submits nothing for it, exactly like an
-        // unticked box, so reading the absent field as "off" clears an override the panel is at that
-        // moment showing as ticked. Whatever offers this field for editing has to post the value
-        // explicitly - a hidden `0` ahead of the checkbox - because a checkbox alone cannot say
-        // "off" and the absent case is already taken.
         if ($request->request->has('require_checkin')) {
             $fields['requireCheckin'] = $request->request->getBoolean('require_checkin');
         }
@@ -361,6 +366,22 @@ final class PlannerController extends AbstractController
         ]);
     }
 
+    /**
+     * Apply the batch form to the selected shifts.
+     *
+     * The number inputs are read with a cast rather than getInt(): a manager who only wants to
+     * change the task or the group leaves them blank, which posts an empty string, and getInt()
+     * rejects that as a malformed request instead of reading it as "not set". A blank task picker
+     * likewise leaves each shift's own task alone; choosing one replaces it.
+     *
+     * Everything is validated against the whole selection before anything is written, because
+     * rejecting halfway through leaves the shifts already visited changed and the rest not, with
+     * nothing on screen saying which were which.
+     *
+     * Adding shifts to a populated group can leave volunteers on part of a commitment. The
+     * management screen refuses until the manager confirms, and the planner must not be a way around
+     * that check, so it asks the same question before touching anything.
+     */
     #[Route('/batch', name: 'app_manage_shifts_planner_batch', methods: ['POST'])]
     public function batch(Request $request, VolunteerTypeRepository $types): Response
     {
@@ -369,25 +390,13 @@ final class PlannerController extends AbstractController
         }
 
         $selection = $this->selectedShifts($request);
-        /*
-         * Cast rather than getInt(): the batch form's number inputs post an empty string when the
-         * manager leaves them blank, which is the normal case when they only want to change the task
-         * or the group, and getInt() rejects that as a malformed request rather than reading it as
-         * "not set".
-         */
         $duration = (int) $request->request->get('duration_minutes');
         $needType = $types->findOneByUuid((string) $request->request->get('needed_type'));
         $needCount = (int) $request->request->get('needed_count');
         $taskId = (string) $request->request->get('task');
         $groupChoice = (string) $request->request->get('shift_group', '');
 
-        /*
-         * Everything is validated against the whole selection first. Rejecting halfway through would
-         * leave the shifts already visited changed and the rest not, with nothing on screen saying
-         * which were which.
-         */
         foreach ($selection as $shift) {
-            // A blank picker leaves each shift's own task alone; choosing one replaces it.
             if ($taskId !== '' && !$this->requiredTask($taskId, $shift->getDepartment()) instanceof ShiftTask) {
                 return $this->fail(self::TASK_REQUIRED);
             }
@@ -399,9 +408,6 @@ final class PlannerController extends AbstractController
             return $this->fail($e->getMessage());
         }
 
-        // Adding shifts to a populated group can leave volunteers on part of a commitment. The
-        // management screen refuses until the manager confirms; the planner must not be a way around
-        // that check, so it asks the same question before touching anything.
         if ($group instanceof ShiftGroup && !$request->request->getBoolean('confirm')) {
             $partial = $this->audit->partiallyAssignedCount(array_values(array_unique(
                 array_merge($this->audit->membersOf($group), $selection),
@@ -441,6 +447,10 @@ final class PlannerController extends AbstractController
      * Naming the group is the whole point of the gesture, so this creates it and puts the selected
      * shifts in it rather than leaving an empty group behind for a manager who forgets to press
      * Apply. The other batch fields are independent and still need Apply.
+     *
+     * A group and its shifts share one department, because `shift:manage` is scoped by department
+     * and a group spanning two would have none to check against. `ids[]` is user input, so that is
+     * checked here rather than inferred from the grid the selection came from.
      */
     #[Route('/shift-group', name: 'app_manage_shifts_planner_group_create', methods: ['POST'])]
     public function createShiftGroup(Request $request): Response
@@ -463,9 +473,6 @@ final class PlannerController extends AbstractController
         }
 
         $selection = $this->selectedShifts($request);
-        // A group and its shifts share one department, because shift:manage is scoped by department
-        // and a group spanning two would have none to check against. ids[] is user input, so this is
-        // checked here and not inferred from the grid the selection came from.
         foreach ($selection as $shift) {
             if ($shift->getDepartment() !== $department) {
                 return $this->fail($this->translator->trans('planner.batch.group.other_department'));
@@ -502,6 +509,11 @@ final class PlannerController extends AbstractController
      * The group the batch form asked for: null to leave each shift alone, null-with-clear to take
      * them out, or the group itself.
      *
+     * `ids[]` admits any shift this manager may manage, which can span departments even though the
+     * grid shows one. Without the department check this would be the one way to build a
+     * cross-department group, leaving every scoped permission check against it afterwards with no
+     * authoritative department to use.
+     *
      * @param list<Shift> $selection
      *
      * @throws \InvalidArgumentException when the choice cannot be applied to this selection
@@ -517,10 +529,6 @@ final class PlannerController extends AbstractController
             throw new \InvalidArgumentException($this->translator->trans('planner.batch.group.unknown'));
         }
 
-        // ids[] admits any shift this manager may manage, which can span departments even though the
-        // grid shows one. Without this check the planner would be the one way to build a
-        // cross-department group, and every scoped permission check against it afterwards would have
-        // no authoritative department to use.
         foreach ($selection as $shift) {
             if ($shift->getDepartment() !== $group->getDepartment()) {
                 throw new \InvalidArgumentException($this->translator->trans('planner.batch.group.other_department'));
@@ -575,6 +583,11 @@ final class PlannerController extends AbstractController
         return new JsonResponse(['ok' => true, 'deleted' => \count($drafts)]);
     }
 
+    /**
+     * Only a rejected value is the caller's fault. Echoing any other failure back as if it were one
+     * tells a manager their drag was invalid when the database is down, and leaves no trace, so
+     * everything else is logged and answered as a server error.
+     */
     #[Route('/shift/{id}/move', name: 'app_manage_shifts_planner_move', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function move(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
@@ -595,10 +608,6 @@ final class PlannerController extends AbstractController
         } catch (\InvalidArgumentException $e) {
             return $this->fail($e->getMessage());
         } catch (\Exception $e) {
-            /*
-             * Only a rejected value is the caller's fault. Echoing any other failure back as if it were
-             * one tells a manager their drag was invalid when the database is down, and leaves no trace.
-             */
             $this->logger->error('Rescheduling a draft shift failed: {reason}', [
                 'reason' => $e->getMessage(),
                 'exception' => $e,
@@ -610,12 +619,14 @@ final class PlannerController extends AbstractController
         return new JsonResponse(['ok' => true]);
     }
 
+    /**
+     * Triggered both from the JS grid (a JSON body) and from the panel form (form-encoded), so the
+     * CSRF token is accepted from either.
+     */
     #[Route('/shift/{id}/delete', name: 'app_manage_shifts_planner_delete', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function delete(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
         $this->denyAccessUnlessGranted('shift:manage', $shift->getDepartment());
-        // Delete is triggered both from the JS grid (JSON body) and the panel
-        // form (form-encoded), so accept the token from either.
         $token = (string) ($request->request->get('_token') ?? $this->payload($request)['_token'] ?? '');
         if (!$this->isCsrfTokenValid('planner_edit', $token)) {
             return $this->fail('Invalid token.', 419);
@@ -697,7 +708,12 @@ final class PlannerController extends AbstractController
         return new JsonResponse(['ok' => false, 'error' => $message], $status);
     }
 
-    /** @return array{0: \DateTimeImmutable, 1: \DateTimeImmutable} */
+    /**
+     * The grid window, falling back to a few days around today when the event dates are unset. The
+     * end returned is the day after the last one, so a half-open range still covers that last day.
+     *
+     * @return array{0: \DateTimeImmutable, 1: \DateTimeImmutable}
+     */
     private function range(): array
     {
         $start = $this->config->getDate(EventConfigStore::KEY_BUILDUP_START)
@@ -705,11 +721,10 @@ final class PlannerController extends AbstractController
         $end = $this->config->getDate(EventConfigStore::KEY_TEARDOWN_END)
             ?? $this->config->getDate(EventConfigStore::KEY_EVENT_END);
 
-        // Fall back to a sensible window around today when the event is unconfigured.
         $now = new \DateTimeImmutable('today');
         $start ??= $now;
         $end ??= $start->modify('+3 days');
-        // Make the end exclusive of the day after, so the last day is included.
+
         return [$start, $end->modify('+1 day')];
     }
 }

@@ -179,10 +179,12 @@ final class StaffApplyScreenTest extends DatabaseWebTestCase
     }
 
     /**
-     * The reported defect: the screen took long enough to load that people called it broken. It
-     * asked the database for the whole shift list once per department, and then for staffing,
-     * eligibility, hours and availability once per shift on top. The cost has to stay flat in the
-     * number of shifts and departments on screen, which only a query count can hold it to.
+     * The cost of the screen stays flat in the number of shifts and departments on it, which only a
+     * query count can hold it to: the shift list is easily asked for once per department, and
+     * staffing, eligibility, hours and availability once per shift on top of that.
+     *
+     * The bound is roughly fifty because it covers the page around the grid as well; the grid
+     * itself costs a fixed handful.
      */
     public function testQueryCountDoesNotGrowWithTheNumberOfShifts(): void
     {
@@ -211,8 +213,6 @@ final class StaffApplyScreenTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
 
         $queries = $this->client->getProfile()->getCollector('db')->getQueryCount();
-        // Roughly fifty covers the page around the grid as well; the grid itself is a fixed handful.
-        // The screen this replaces spent 285 on the same fixture.
         self::assertLessThan(
             55,
             $queries,

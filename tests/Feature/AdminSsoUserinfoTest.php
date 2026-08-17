@@ -17,12 +17,14 @@ final class AdminSsoUserinfoTest extends DatabaseWebTestCase
     /** @var array<string, array{env: string|false, server: string|false}> */
     private array $ssoEnvBackup = [];
 
+    /**
+     * isEnabled() needs both flags, and manual endpoint URLs keep the status page and the
+     * authorization-URL build network-free. They must be set before the client boots so the
+     * env-backed SsoConfig picks them up. These are process-global, so tearDown restores them:
+     * a later test that assumes SSO is disabled (LandingTest) must not inherit it enabled.
+     */
     protected function setUp(): void
     {
-        // isEnabled() needs both flags; manual endpoints keep the status page and the authorization-URL
-        // build network-free. Set before the client boots so the env-backed SsoConfig picks them up.
-        // These process-global vars are restored in tearDown so a later test that assumes SSO is
-        // disabled (e.g. LandingTest) is not left with it enabled.
         foreach ([
             'SSO_ENABLED' => '1',
             'SSO_CLIENT_ID' => 'critter-test',
@@ -81,6 +83,11 @@ final class AdminSsoUserinfoTest extends DatabaseWebTestCase
         $s->save();
     }
 
+    /**
+     * A nested claim is rendered as JSON rather than dropped or flattened away, and the claims
+     * are pull-and-clear: reloading the page no longer carries the admin's PII, while the button
+     * that re-runs the flow remains.
+     */
     public function testClaimsRenderOnceThenClear(): void
     {
         $this->loginSteppedUp($this->admin(sso: true), [
@@ -92,12 +99,10 @@ final class AdminSsoUserinfoTest extends DatabaseWebTestCase
         $text = $crawler->text();
         self::assertStringContainsString('abc-123', $text);
         self::assertStringContainsString('root@idp.example.org', $text);
-        // A nested claim is shown as JSON, not dropped or flattened away.
         $html = $crawler->html();
         self::assertStringContainsString('"staff"', $html);
         self::assertStringContainsString('"admins"', $html);
 
-        // Pull-and-clear: reloading the page no longer carries the PII, but the button remains.
         $crawler = $this->client->request('GET', '/admin/sso');
         self::assertStringNotContainsString('abc-123', $crawler->text());
         self::assertStringContainsString('Fetch my userinfo', $crawler->text());

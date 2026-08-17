@@ -44,6 +44,10 @@ final class VolunteerTypeCertificationUiTest extends DatabaseWebTestCase
         return $cert;
     }
 
+    /**
+     * Each certification is offered as a card carrying the shared component and a link to its own
+     * page, and the configuration flags render as toggle switches rather than plain checkboxes.
+     */
     public function testNewFormShowsCertificationCardsAndFlagSwitches(): void
     {
         $cert = $this->certification('First Aid');
@@ -52,15 +56,17 @@ final class VolunteerTypeCertificationUiTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/manage/volunteer-types/new');
         self::assertResponseIsSuccessful();
 
-        // Certification rendered as a card with the shared component + info link.
         self::assertGreaterThan(0, $crawler->filter('.card-title:contains("First Aid")')->count());
         self::assertGreaterThan(0, $crawler->filter('a:contains("More information")')->count());
         self::assertStringContainsString('/certifications/'.$cert->getUuid(), $this->client->getResponse()->getContent());
 
-        // Configuration flags rendered as toggle switches.
         self::assertGreaterThan(0, $crawler->filter('.form-check.form-switch')->count());
     }
 
+    /**
+     * A certification chosen on the create form is stored with the type. The type is marked as shown
+     * on the dashboard because the flag rules require that of a non-staff type.
+     */
     public function testCreatingAVolunteerTypeSelectingACertificationPersistsIt(): void
     {
         $cert = $this->certification('First Aid');
@@ -69,7 +75,6 @@ final class VolunteerTypeCertificationUiTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/manage/volunteer-types/new');
         $token = $crawler->filter('input[name="volunteer_type[_token]"]')->attr('value');
 
-        // A non-staff type must be shown on the dashboard to satisfy the flag rules.
         $this->client->request('POST', '/manage/volunteer-types/new', ['volunteer_type' => [
             'name' => 'Marshal',
             'certifications' => [(string) $cert->getId()],
@@ -99,7 +104,7 @@ final class VolunteerTypeCertificationUiTest extends DatabaseWebTestCase
     public function testStaffOnlyCertificationDetailIsHiddenFromNonStaff(): void
     {
         $cert = $this->certification('Backstage Pass', staffOnly: true);
-        $this->login(); // non-staff
+        $this->login();
 
         $this->client->request('GET', '/certifications/'.$cert->getUuid());
         self::assertResponseStatusCodeSame(404);

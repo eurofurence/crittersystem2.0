@@ -14,6 +14,7 @@
   {# Each card is gated by the privilege that guards its controller. #}
   {% set cards = [
     {priv: 'user:locate', route: 'app_backstage_distribute',            icon: '🔎', title: 'backstage.card.locate_user.title'|trans, text: 'backstage.card.locate_user.text'|trans},
+    {priv: 'security:checkin', route: 'app_backstage_security',         icon: '🚪', title: 'backstage.card.security.title'|trans, text: 'backstage.card.security.text'|trans},
     {priv: 'goodie:manage', route: 'app_backstage_goodie_category_index', icon: '🗂️', title: 'backstage.goodie.category.title'|trans, text: 'backstage.card.goodie_categories.text'|trans},
     {priv: 'goodie:manage', route: 'app_backstage_goodie_item_index',     icon: '🎽', title: 'backstage.goodie.item.title'|trans,      text: 'backstage.card.goodie_items.text'|trans}
   ] %}

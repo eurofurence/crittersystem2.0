@@ -14,10 +14,12 @@ use PHPUnit\Framework\TestCase;
 
 final class HoursCalculatorTest extends TestCase
 {
+    /**
+     * entryHours() and overlapsNight() never touch the repositories, so stubs suffice for them. The
+     * config stub returns each key's default, which keeps the standard multipliers in force.
+     */
     private function calculator(): HoursCalculator
     {
-        // entryHours()/overlapsNight() do not touch the repositories. The config
-        // stub returns each key's default, preserving the standard multipliers.
         $config = $this->createStub(EventConfigStore::class);
         $config->method('getFloat')->willReturnCallback(static fn (string $key, float $default) => $default);
         $config->method('getInt')->willReturnCallback(static fn (string $key, int $default) => $default);

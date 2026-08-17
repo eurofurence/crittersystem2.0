@@ -120,6 +120,9 @@ final class StorageDiagnostics
      * Dummy object write, confirm, delete; then, if requested and the bucket is
      * reachable, prove pg_dump can produce a dump of this app's database.
      *
+     * The listing runs whatever the write round-trip did: even when writing fails, an admin still
+     * wants to know when the last dump actually landed.
+     *
      * @return array{ok: bool, steps: list<array{key: string, ok: bool, detail: ?string}>}
      */
     public function probeBackup(
@@ -181,8 +184,6 @@ final class StorageDiagnostics
             }
         }
 
-        // Listing is independent of the write round-trip: even if writing failed,
-        // an admin still wants to know when the last dump actually landed.
         [$latestBackup, $listStep] = $this->latestBackup($store);
         $steps[] = $listStep;
 
@@ -221,7 +222,12 @@ final class StorageDiagnostics
         return [['listed' => true, 'key' => $latest['key'], 'at' => $latest['at'], 'count' => $latest['count']], $okStep];
     }
 
-    /** @return array{key: string, ok: bool, detail: ?string} */
+    /**
+     * The output is checked for the "PGDMP" magic that opens a custom-format archive. A mismatch
+     * means pg_dump wrote an error or a plain-text file, not a restorable dump.
+     *
+     * @return array{key: string, ok: bool, detail: ?string}
+     */
     private function probePgDump(): array
     {
         $file = (string) tempnam(sys_get_temp_dir(), 'critter-dbtest-');
@@ -231,8 +237,6 @@ final class StorageDiagnostics
             if ($size === 0) {
                 return $this->step('admin.storage.step.pg_dump', false, 'pg_dump produced an empty file.');
             }
-            // A custom-format archive starts with the "PGDMP" magic; a mismatch
-            // means pg_dump wrote an error or a plain-text file, not a restorable dump.
             $magic = (string) file_get_contents($file, false, null, 0, 5);
             if ($magic !== 'PGDMP') {
                 return $this->step('admin.storage.step.pg_dump', false, 'Output is not a valid custom-format dump.');

@@ -121,7 +121,6 @@ final class PlannerDraftStore
         $merged = [];
         foreach ($valid as [$start, $end]) {
             if ($merged !== [] && $start <= $merged[\count($merged) - 1][1]) {
-                // Overlaps or touches the previous span - extend it.
                 $last = &$merged[\count($merged) - 1];
                 if ($end > $last[1]) {
                     $last[1] = $end;
@@ -139,11 +138,18 @@ final class PlannerDraftStore
      * Update a single shift's editable details from the side panel or Add Shift
      * modal. Only the provided keys are changed. Autosaves.
      *
+     * Everything is validated before anything is written: a rejected field has to leave the managed
+     * entity untouched, or the flush would persist half an edit.
+     *
+     * Present-but-empty is meaningful for two keys, so they are read with array_key_exists rather
+     * than isset: an empty description clears the description, and a null `shiftGroup` takes the
+     * shift out of its group. Absent leaves either where it is. The caller is responsible for having
+     * checked that a group it passes shares the shift's department.
+     *
      * @param array{title?: string, description?: ?string, task?: ?ShiftTask, audience?: ShiftAudience, location?: ?Location, requireCheckin?: bool, startsAt?: \DateTimeImmutable, endsAt?: \DateTimeImmutable} $fields
      */
     public function updateDetails(Shift $shift, array $fields, ?User $author = null): Shift
     {
-        // Validate before mutating: a rejected field must leave the managed entity untouched.
         if (\array_key_exists('description', $fields)) {
             $this->assertDescription($fields['description']);
         }
@@ -156,15 +162,12 @@ final class PlannerDraftStore
         if (isset($fields['title']) && $fields['title'] !== '') {
             $shift->setTitle($fields['title']);
         }
-        // Present-but-empty clears the description; absent leaves it untouched.
         if (\array_key_exists('description', $fields)) {
             $shift->setDescription($fields['description']);
         }
         if (\array_key_exists('task', $fields)) {
             $shift->setShiftTask($fields['task']);
         }
-        // Present-but-null takes the shift out of its group; absent leaves it where it is. The caller
-        // is responsible for having checked that the group and the shift share a department.
         if (\array_key_exists('shiftGroup', $fields)) {
             $shift->setShiftGroup($fields['shiftGroup']);
         }
@@ -242,10 +245,12 @@ final class PlannerDraftStore
         return $shift;
     }
 
+    /**
+     * Signals before the flush: afterwards the entity is detached and its department is no longer
+     * reachable to address the update to.
+     */
     public function delete(Shift $shift): void
     {
-        // Signalled before the flush: afterwards the entity is detached and its department is no
-        // longer reachable to address the update to.
         $this->live->staffingChanged($shift);
 
         $this->em->remove($shift);

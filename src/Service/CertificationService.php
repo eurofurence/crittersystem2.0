@@ -95,7 +95,9 @@ final class CertificationService
      *
      * An existing record for this pair is reused rather than refused - the table holds one row per
      * user and certification, and somebody whose certification lapsed or was taken away is exactly
-     * who an admin is most likely to be granting it to again.
+     * who an admin is most likely to be granting it to again. Reusing it clears the previous
+     * decision reason, so a stale refusal does not sit on a record that now says the volunteer holds
+     * this.
      */
     public function grant(
         Certification $certification,
@@ -118,8 +120,6 @@ final class CertificationService
             ->setDateExpires($granting ? ($expires ?? $this->calculateExpiry($certification)) : null)
             ->setCertifiedBy($actor)
             ->setDecidedAt(new \DateTimeImmutable())
-            // A grant answers whatever was decided before, so a stale refusal does not sit on a
-            // record that now says the volunteer holds this.
             ->setDecisionReason(null)
             ->setExpiryRemindedAt(null);
         if ($notes !== null && trim($notes) !== '') {
@@ -332,9 +332,13 @@ final class CertificationService
     }
 
     /**
-     * Submit a new application. Returns null when the user already has a
-     * non-revoked/expired record for this certification (caller should flash a
-     * helpful message instead)
+     * Submit a new application. Returns null when the certification is inactive, or when the user
+     * already holds a record for it whose status is not one of {@see REAPPLICABLE} (the caller
+     * should flash a helpful message instead).
+     *
+     * A declined application may be made again, and an expired certification is renewed the same way.
+     * The record returns to the queue but keeps the previous decision and its reason, so whoever
+     * picks it up sees what happened last time rather than taking the request on trust.
      */
     public function applyFor(User $user, Certification $certification): ?UserCertification
     {
@@ -346,9 +350,6 @@ final class CertificationService
             return null;
         }
 
-        // A declined application may be made again, and an expired certification is renewed the same
-        // way. The record returns to the queue but keeps the previous decision and its reason, so
-        // whoever picks it up sees what happened last time rather than taking the request on trust.
         if ($record === null) {
             $record = new UserCertification($user, $certification);
             $this->em->persist($record);
@@ -393,7 +394,8 @@ final class CertificationService
     /**
      * Approve via an in-person QR scan: the scanning user must already have a
      * pending application. Returns ['record'=>UserCertification] on success or
-     * ['error'=>string] otherwise (so the controller can render a clean message).
+     * ['error'=>string] otherwise (so the controller can render a clean message). The record is left
+     * without a certifying admin, because a QR check-in identifies no individual.
      *
      * @return array{record?: UserCertification, error?: string}
      */
@@ -414,17 +416,35 @@ final class CertificationService
         $record->setStatus(UserCertification::STATUS_APPROVED)
             ->setDateCertified(new \DateTimeImmutable())
             ->setDateExpires($this->calculateExpiry($certification))
-            ->setCertifiedBy(null) // QR check-in has no specific admin
+            ->setCertifiedBy(null)
             ->setExpiryRemindedAt(null);
         $this->em->flush();
 
         return ['record' => $record];
     }
 
-    /** Active QR token for a certification, creating one when missing/expired. */
-    public function getOrCreateToken(Certification $certification): CertificationToken
+    /**
+     * Active QR token for a certification, creating one when missing or expired.
+     *
+     * A caller that is about to put the token on a screen passes the life it needs the token to
+     * still have, and gets a fresh one when the active token is already inside that window.
+     * Without it the QR display would render a token expiring seconds later, re-fetch itself at
+     * that instant, and be handed the same nearly dead token again.
+     */
+    public function getOrCreateToken(Certification $certification, int $minimumRemainingSeconds = 0): CertificationToken
     {
-        return $this->tokens->findActiveForCertification($certification) ?? $this->refreshToken($certification);
+        $token = $this->tokens->findActiveForCertification($certification);
+
+        if (null === $token) {
+            return $this->refreshToken($certification);
+        }
+
+        if ($minimumRemainingSeconds > 0
+            && $token->getExpiresAt() <= new \DateTimeImmutable(sprintf('+%d seconds', $minimumRemainingSeconds))) {
+            return $this->refreshToken($certification);
+        }
+
+        return $token;
     }
 
     public function refreshToken(Certification $certification): CertificationToken

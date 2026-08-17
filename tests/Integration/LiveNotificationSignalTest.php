@@ -96,14 +96,17 @@ final class LiveNotificationSignalTest extends DatabaseTestCase
         self::assertTrue(RecordedUpdates::forTopic(Topics::userNotifications($me))[0]->isPrivate());
     }
 
-    /** Marking all read has to drop the count in the user's other open tabs too. */
+    /**
+     * Marking all read has to drop the count in the user's other open tabs too.
+     *
+     * Updates are queued until the request ends, so the setup notification is flushed before the
+     * recording is cleared; left pending it would arrive later and be counted as the signal.
+     */
     public function testMarkAllReadSignals(): void
     {
         $me = $this->user('reader');
         $this->em->flush();
 
-        // Flush before clearing: updates are queued until the request ends, so an unflushed signal
-        // from the notify() above would still be waiting and would be counted below.
         $this->notifications()->notify($me, NotificationCategories::GENERAL, 'x', 'y');
         $this->flush();
         RecordedUpdates::clear();
@@ -134,9 +137,9 @@ final class LiveNotificationSignalTest extends DatabaseTestCase
     }
 
     /**
-     * The status changes on the clock, so the widget is told when to look again. Without this the
-     * "free to help" badge would sit there after it had lapsed until something unrelated refreshed
-     * it - which is what the old one-minute poll was covering for.
+     * The status changes on the clock, with nothing happening server-side at that instant, so the
+     * view model reports when the widget should look again. Without it the "free to help" badge
+     * sits there after it has lapsed until something unrelated refreshes the page.
      */
     public function testViewModelReportsWhenAnOverrideWillLapse(): void
     {

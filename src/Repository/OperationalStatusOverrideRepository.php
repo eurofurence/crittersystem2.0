@@ -30,12 +30,13 @@ class OperationalStatusOverrideRepository extends ServiceEntityRepository
      * eligibility, so nobody outside this set can answer one. It bounds the fan-out to the handful
      * of people actually available rather than the whole event.
      *
+     * The query is rooted at User because Doctrine cannot return an entity reached only through a
+     * join.
+     *
      * @return User[]
      */
     public function findFreeToHelpUsers(?\DateTimeImmutable $now = null): array
     {
-        // Rooted at User so the query can select it; Doctrine cannot return an entity reached only
-        // through a join.
         return $this->getEntityManager()->createQueryBuilder()
             ->select('u')
             ->from(User::class, 'u')

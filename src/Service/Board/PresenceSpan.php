@@ -48,6 +48,9 @@ final class PresenceSpan
      * Merge overlapping or touching spans into the longest continuous stretches. Input order does
      * not matter; the result is ordered oldest first.
      *
+     * An open span swallows everything after it: it has not finished, so nothing that starts later
+     * can be separated from it by a gap.
+     *
      * @param list<self> $spans
      *
      * @return list<self>
@@ -63,8 +66,6 @@ final class PresenceSpan
         $merged = [];
         $current = $spans[0];
         foreach (\array_slice($spans, 1) as $span) {
-            // An open span swallows everything after it: it has not finished, so nothing that starts
-            // later can be separated from it by a gap.
             if ($current->endedAt === null) {
                 continue;
             }

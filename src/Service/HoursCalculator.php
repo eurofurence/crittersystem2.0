@@ -111,7 +111,8 @@ final class HoursCalculator
     /**
      * Sweep-line over the working intervals: for each elementary segment covered
      * by at least one interval, credit its duration once at the strongest
-     * multiplier active there (night beats day on coincident overlaps).
+     * multiplier active there (night beats day on coincident overlaps). A segment no interval covers
+     * is a gap between disjoint intervals and credits nothing.
      *
      * @param list<array{0:int,1:int,2:float}> $working
      *
@@ -142,7 +143,7 @@ final class HoursCalculator
                 }
             }
             if ($multiplier <= 0.0) {
-                continue; // gap between disjoint intervals
+                continue;
             }
 
             $duration = ($to - $from) / 3600;
@@ -164,7 +165,6 @@ final class HoursCalculator
         $start = $shift->getStartsAt();
         $end = $shift->getEndsAt();
 
-        // Walk each calendar day the shift touches and test the night window.
         $day = $start->setTime(0, 0);
         for ($i = 0; $i < 14 && $day <= $end; ++$i) {
             $nightStart = $day->setTime($nightStartHour, 0);

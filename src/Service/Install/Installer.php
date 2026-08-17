@@ -274,7 +274,8 @@ final class Installer
     /**
      * Seed the catalog and, only on a brand-new database, create a default
      * admin with the given (or a generated) password. On a database that already has users the
-     * groups and privileges are still brought current, but no existing user is touched.
+     * groups and privileges are still brought current, but no existing user is touched. The new
+     * database path seeds the catalog through {@see createAdmin()}, which does it itself.
      *
      * @return array{username: string, password: string}|null the created
      *   credentials, or null when users already existed
@@ -288,7 +289,7 @@ final class Installer
         }
 
         $plainPassword = $password ?? bin2hex(random_bytes(8));
-        $this->createAdmin($username, $email, $plainPassword); // also seeds the catalog
+        $this->createAdmin($username, $email, $plainPassword);
 
         return ['username' => $username, 'password' => $plainPassword];
     }

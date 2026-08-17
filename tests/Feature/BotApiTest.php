@@ -57,7 +57,9 @@ final class BotApiTest extends DatabaseWebTestCase
     /**
      * A user holding $privileges through a group assignment scoped to $department.
      * Scoping is what the manager endpoints must honour, so it cannot be faked with
-     * an unscoped group.
+     * an unscoped group. The assignment goes through assignGroup() rather than a hand-built
+     * UserGroupAssignment, because only that puts it on the user's own collection, which is
+     * what the voter reads.
      *
      * @param string[] $privileges
      */
@@ -77,8 +79,6 @@ final class BotApiTest extends DatabaseWebTestCase
             ->setApiKey(bin2hex(random_bytes(16)));
         $user->completeOnboarding();
         $user->linkTelegram('tg-mgr-'.$suffix, '@mgr-'.$suffix);
-        // assignGroup(), not a hand-built UserGroupAssignment: it adds to the
-        // user's own collection, which is what the voter reads.
         $this->em->persist($user->assignGroup($group, $department));
         $this->em->persist($user);
         $this->em->flush();
@@ -125,9 +125,10 @@ final class BotApiTest extends DatabaseWebTestCase
     }
 
     /**
-     * Unlinking in the web UI must sever the bot's access immediately. Before the
-     * resolver checked link state, the account still resolved by uuid and the bot
-     * kept reading data - including minting a fresh digital-ID token.
+     * Unlinking in the web UI severs the bot's access immediately. Unlinking only nulls the
+     * telegram id, so the resolver has to reject an acting user that is no longer linked rather
+     * than resolve them by uuid. The digital badge is the sharpest case: a revoked link must not
+     * be able to mint a valid identity token.
      */
     public function testUnlinkedActingUserIsRejectedIncludingDigitalId(): void
     {
@@ -139,8 +140,6 @@ final class BotApiTest extends DatabaseWebTestCase
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
         self::assertSame('acting_user_not_linked', $this->json()['error']);
 
-        // The digital badge is the sharpest example: a revoked link must not be
-        // able to generate a valid identity token.
         $this->request('POST', '/api/bot/digital-id/token', $user);
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
@@ -148,7 +147,8 @@ final class BotApiTest extends DatabaseWebTestCase
     /**
      * The acting token is the revocable credential: a token captured before an
      * unlink must not work afterwards, and a re-link must mint a different one -
-     * so the old token stays dead even once the uuid is linked again.
+     * so the old token stays dead even once the uuid is linked again, while the freshly minted
+     * one authorizes.
      */
     public function testStaleActingTokenIsRejectedAcrossRelink(): void
     {
@@ -156,7 +156,6 @@ final class BotApiTest extends DatabaseWebTestCase
         $staleToken = $user->getTelegramActingToken();
         self::assertNotNull($staleToken);
 
-        // Unlink, then re-link (as would happen from a new link code).
         $user->unlinkTelegram();
         $this->em->flush();
         $user->linkTelegram('999888', '@again');
@@ -164,7 +163,6 @@ final class BotApiTest extends DatabaseWebTestCase
 
         self::assertNotSame($staleToken, $user->getTelegramActingToken(), 're-link rotates the token');
 
-        // The uuid is linked again, but the OLD token must not authorize.
         $server = [
             'HTTP_AUTHORIZATION' => 'Bearer '.self::TOKEN,
             'HTTP_X_ACTING_USER' => (string) $user->getUuid(),
@@ -175,7 +173,6 @@ final class BotApiTest extends DatabaseWebTestCase
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
         self::assertSame('acting_user_not_linked', $this->json()['error']);
 
-        // The fresh token works.
         $this->request('GET', '/api/bot/shifts', $user);
         self::assertResponseIsSuccessful();
     }
@@ -630,6 +627,10 @@ final class BotApiTest extends DatabaseWebTestCase
 
     // --- users ----------------------------------------------------------
 
+    /**
+     * The endpoint answers for the acting user, and reports them as linked: the resolver only
+     * ever admits a linked volunteer, so an unlinked one cannot reach this response at all.
+     */
     public function testMeReturnsTheActingUser(): void
     {
         $user = $this->scenario->user();
@@ -638,7 +639,6 @@ final class BotApiTest extends DatabaseWebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSame((string) $user->getUuid(), $this->json()['id']);
-        // The bot only ever acts for a linked volunteer (the resolver enforces it).
         self::assertTrue($this->json()['telegram_linked']);
     }
 

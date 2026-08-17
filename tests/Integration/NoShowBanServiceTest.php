@@ -79,12 +79,12 @@ final class NoShowBanServiceTest extends DatabaseTestCase
         self::assertTrue($this->bans()->isUserBanned($user));
     }
 
+    /** A baseline dated after existing no-shows takes them out of the count. */
     public function testBaselineExcludesOlderNoShows(): void
     {
         $user = $this->makeUser('three');
         $this->addNoShow($user, '-5 days');
         $this->addNoShow($user, '-4 days');
-        // Baseline after those no-shows: they no longer count.
         $user->setNoShowBaselineAt(new \DateTimeImmutable('-1 day'));
         $this->em->flush();
 
@@ -92,6 +92,7 @@ final class NoShowBanServiceTest extends DatabaseTestCase
         self::assertFalse($this->service()->evaluate($user));
     }
 
+    /** Lifting a ban sets a fresh baseline, so the no-shows that caused it stop counting. */
     public function testLiftAndResetClearsBanAndCounter(): void
     {
         $user = $this->makeUser('four');
@@ -104,7 +105,6 @@ final class NoShowBanServiceTest extends DatabaseTestCase
 
         self::assertFalse($this->bans()->isUserBanned($user));
         self::assertNotNull($user->getNoShowBaselineAt());
-        // The old no-shows predate the new baseline, so the counter is back to 0.
         self::assertSame(0, $this->service()->noShowCount($user));
     }
 }

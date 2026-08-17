@@ -29,10 +29,12 @@ final class FileStorageFactory
     {
     }
 
+    /**
+     * The scheme is read off the DSN by hand because parse_url() rejects the empty-authority form
+     * (local:///abs/path).
+     */
     public function create(string $dsn): FilesystemOperator
     {
-        // parse_url() rejects the empty-authority form (local:///abs/path), so
-        // read the scheme directly off the DSN.
         $separator = strpos($dsn, '://');
         $scheme = $separator === false ? '' : strtolower(substr($dsn, 0, $separator));
 

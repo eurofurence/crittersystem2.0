@@ -103,7 +103,8 @@ final class BlankNumericInputTest extends DatabaseWebTestCase
     /**
      * The planner's task picker offers an empty placeholder, so an unchosen task arrives as "". The
      * server has its own message for that, and it has to be reachable rather than resting on the
-     * HTML `required` attribute that normally stops it.
+     * HTML `required` attribute that normally stops it. The refusal must be the planner's own
+     * readable 422, not a 400 BadRequestException.
      */
     public function testAnUnchosenShiftTaskIsReportedRatherThanRefused(): void
     {
@@ -119,7 +120,6 @@ final class BlankNumericInputTest extends DatabaseWebTestCase
             'location' => '',
         ]);
 
-        // A readable refusal (the planner's own 422), not a 400 BadRequestException.
         self::assertSame(422, $this->client->getResponse()->getStatusCode());
         $data = json_decode((string) $this->client->getResponse()->getContent(), true);
         self::assertIsArray($data);
@@ -139,13 +139,17 @@ final class BlankNumericInputTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
     }
 
-    /** A cleared slots box on the help-call form. */
+    /**
+     * A cleared slots box on the help-call form redirects back to the staffing page: a blank
+     * slots box is a legitimate submission, not a malformed request.
+     *
+     * The shift is already running so the call is allowed and the request reaches the slots read,
+     * and the operator holds the unscoped super-privilege because authorization is not what this
+     * test is about and scoping it would only add another thing to go wrong.
+     */
     public function testHelpCallSlotsMayBeBlank(): void
     {
-        // A running shift, so the call is actually allowed and the request reaches the slots read.
         $shift = $this->scenario->shift('Gate', '-1 hour', '+3 hours');
-        // The super-privilege, unscoped: authorization is not what this test is about, and scoping it
-        // would only make the setup another thing that can go wrong.
         $user = $this->manager(['global:admin']);
         $this->scenario->departmentMember($user);
         $this->client->loginUser($user);
@@ -162,7 +166,6 @@ final class BlankNumericInputTest extends DatabaseWebTestCase
             'slots' => '',
         ]);
 
-        // Redirects back to the staffing page; a blank slots box is not a malformed request.
         self::assertResponseRedirects();
         self::assertSame(
             1,

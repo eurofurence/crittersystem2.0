@@ -475,13 +475,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this->telegramId !== null;
     }
 
+    /**
+     * The acting token is rotated on every link, so a token issued for an earlier link can never act
+     * again. Even a re-link by the same account gets a fresh credential.
+     */
     public function linkTelegram(string $telegramId, ?string $handle): static
     {
         $this->telegramId = $telegramId;
         $this->telegramHandle = $handle;
         $this->telegramLinkedAt = new \DateTimeImmutable();
-        // Rotate the acting token on every link so a prior link's token can never
-        // act again - even a re-link by the same account gets a fresh credential.
         $this->telegramActingToken = bin2hex(random_bytes(32));
 
         return $this;

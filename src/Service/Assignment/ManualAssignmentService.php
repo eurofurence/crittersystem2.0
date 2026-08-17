@@ -73,6 +73,11 @@ final class ManualAssignmentService
      * about the one shift they are actually assigning rather than about shifts they chose to leave
      * out.
      *
+     * A missing certification warns rather than refuses. A volunteer signing themselves up is refused
+     * outright when they lack one the role requires; a manager may be holding the paper certificate
+     * as they type, so they are told instead, and the override is recorded on the entry so the
+     * placement is not a silent exception.
+     *
      * @param list<Shift> $members
      *
      * @return array{needsOverride: bool, warnings: list<array{key: string, message: string}>, members: list<Shift>, missing: list<Shift>}
@@ -110,10 +115,6 @@ final class ManualAssignmentService
             $warnings[] = ['key' => 'hours', 'message' => \sprintf('This would bring the user to %.1f planned hours (recommended max %d).', $projected, $recommended)];
         }
 
-        // A volunteer signing themselves up is refused outright when they lack a certification the
-        // role requires. A manager is not - they may be holding the paper certificate as they type -
-        // but they are told, and the override is recorded on the entry so the placement is not a
-        // silent exception.
         if ($type !== null) {
             $missingCertifications = $this->eligibility->missingCertifications($user, $type);
             if ($missingCertifications !== []) {

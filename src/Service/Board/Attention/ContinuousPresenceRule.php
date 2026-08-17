@@ -49,6 +49,7 @@ final class ContinuousPresenceRule implements AttentionRule
         return $items;
     }
 
+    /** Two moments per open stretch: when it crosses the limit, and when it crosses twice it into critical. */
     public function transitions(BoardContext $context): array
     {
         $limit = $context->settings->maxContinuousMinutes();
@@ -59,7 +60,6 @@ final class ContinuousPresenceRule implements AttentionRule
             if ($span === null) {
                 continue;
             }
-            // When this stretch crosses the limit, and when it crosses twice the limit into critical.
             $moments[] = $span->startedAt->modify(\sprintf('+%d minutes', $limit));
             $moments[] = $span->startedAt->modify(\sprintf('+%d minutes', $limit * 2));
         }

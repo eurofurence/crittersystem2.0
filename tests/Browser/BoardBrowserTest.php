@@ -24,6 +24,16 @@ final class BoardBrowserTest extends BrowserTestCase
 
     private ShiftScenario $scenario;
 
+    /**
+     * Volunteers are checked in an hour ago rather than at their shift's start: presence is an open
+     * span from the check-in, so anchoring it to the shift leaves nobody present when the suite runs
+     * early in the morning, the "show all" link never renders, and the dialog test fails on the clock
+     * instead of on the code. One volunteer is on duty without a shift so the presence union is
+     * exercised as well.
+     *
+     * The manager's group carries news:view because signing in with no target lands on the news
+     * index, where a group without it meets a 403 on a page nobody chose.
+     */
     private function seed(): User
     {
         $this->scenario = new ShiftScenario(
@@ -39,12 +49,6 @@ final class BoardBrowserTest extends BrowserTestCase
             $shift->setStartsAt($day->modify(sprintf('+%d hours', 6 + $index)))
                 ->setEndsAt($day->modify(sprintf('+%d hours', 9 + $index)));
 
-            /*
-             * Checked in an hour ago rather than at the shift's start time: presence is an open span
-             * from the check-in, so anchoring it to the shift meant nobody was present yet when the
-             * suite ran early in the morning, the "show all" link had no reason to render, and the
-             * dialog test failed on the clock rather than on the code.
-             */
             for ($v = 0; $v < 2; ++$v) {
                 $volunteer = $this->scenario->user();
                 $entry = $this->scenario->signUp($volunteer, $shift);
@@ -52,14 +56,11 @@ final class BoardBrowserTest extends BrowserTestCase
             }
         }
 
-        // Somebody on duty without a shift, so the presence union is exercised too.
         $roamer = $this->scenario->user();
         $this->em->persist(new DutyRecord($roamer, $this->scenario->department));
 
         $suffix = bin2hex(random_bytes(4));
         $group = new Group('Board '.$suffix, 'board-'.$suffix, 'ROLE_STAFF');
-        // news:view is part of the baseline every staff group needs: sign-in with no target lands on
-        // the news index, and a group without it meets a 403 on a page nobody chose.
         foreach (['board:view', 'manageshifts:view', 'news:view'] as $name) {
             $privilege = $this->em->getRepository(Privilege::class)->findOneBy(['name' => $name]) ?? new Privilege($name);
             $this->em->persist($privilege);
@@ -137,6 +138,12 @@ final class BoardBrowserTest extends BrowserTestCase
     /**
      * The dialog is a Turbo Frame outside the live region. If the frame ids ever stop matching,
      * Turbo drops the response and the link does nothing at all.
+     *
+     * Closing has to empty the frame rather than merely hide the dialog: the next open re-fetches,
+     * so a dialog left in the DOM shows numbers that went stale while it was shut. That emptying is
+     * polled for instead of waited on with a selector: the dialog fades out, so it stops being
+     * visible slightly before the handler clears the frame, and a selector-based wait races one
+     * side or the other of that gap.
      */
     public function testShowAllOpensAndClosesTheDialog(): void
     {
@@ -152,12 +159,7 @@ final class BoardBrowserTest extends BrowserTestCase
         $client->executeScript("document.querySelector('a[data-turbo-frame=\"board-modal\"]').click();");
         $client->waitFor('[data-slot="dialog-content"][open]', 10);
 
-        // Closing must empty the frame, not merely hide the dialog: the next open re-fetches, so a
-        // dialog left in the DOM would show numbers that went stale while it was shut.
         $client->executeScript("document.querySelector('[data-slot=\"dialog-content\"] button[data-action*=\"dialog#close\"]').click();");
-        // Polled rather than waited on with a selector condition: the dialog fades out, so it stops
-        // being visible slightly before the handler empties the frame, and every selector-based wait
-        // races one side or the other of that gap.
         $remaining = null;
         for ($attempt = 0; $attempt < 50; ++$attempt) {
             $remaining = (int) $client->executeScript(
@@ -232,7 +234,8 @@ final class BoardBrowserTest extends BrowserTestCase
      * Raising a call for help notifies real people, so it sits behind a confirmation. The board does
      * not load Bootstrap, which is what the application's shared `confirm` controller needs, and its
      * fallback is a native dialog this project does not allow - so this is the kit's AlertDialog, and
-     * a test that only rendered markup could not tell whether it actually opens.
+     * a test that only rendered markup could not tell whether it actually opens. The form inside the
+     * dialog is what posts, so without it the button confirms nothing.
      */
     public function testTheCallForHelpConfirmationOpens(): void
     {
@@ -252,7 +255,6 @@ final class BoardBrowserTest extends BrowserTestCase
         self::assertTrue($trigger, 'the board must offer a call-for-help trigger on an imminent short shift');
         $client->waitFor('[data-slot="alert-dialog-content"][open]', 10);
 
-        // The form inside the dialog is what actually posts; without it the button confirms nothing.
         self::assertSelectorExists('[data-slot="alert-dialog-content"] form[action="/calls/trigger"]');
         $this->assertNoConsoleErrors('the call-for-help confirmation');
     }
@@ -305,7 +307,6 @@ final class BoardBrowserTest extends BrowserTestCase
         $client->executeScript("document.querySelector('[data-slot=\"combobox-trigger\"]').click();");
         $client->waitForVisibility('[data-slot="combobox-content"]', 10);
 
-        // Filtering is the reason this is a combobox and not a list.
         $client->executeScript(
             "const s = document.querySelector('[data-slot=\"combobox-content\"] input[role=\"searchbox\"]');"
             .' s.value = "Secur"; s.dispatchEvent(new Event("input", { bubbles: true }));'

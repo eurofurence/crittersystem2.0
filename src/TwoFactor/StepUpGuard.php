@@ -24,6 +24,10 @@ final class StepUpGuard
     ) {
     }
 
+    /**
+     * A user for whom 2FA is mandatory but not yet set up is sent to enrolment rather than let
+     * through.
+     */
     public function guard(Request $request): ?RedirectResponse
     {
         $user = $this->security->getUser();
@@ -37,7 +41,6 @@ final class StepUpGuard
                 : new RedirectResponse($this->urlGenerator->generate('app_2fa_confirm', ['return' => $request->getRequestUri()]));
         }
 
-        // No 2FA yet but it is mandatory for this user: force enrolment first.
         if ($user->mustUseTwoFactor()) {
             return new RedirectResponse($this->urlGenerator->generate('app_2fa_setup'));
         }

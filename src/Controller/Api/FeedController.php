@@ -68,6 +68,13 @@ final class FeedController extends AbstractController
         return new Response($body, Response::HTTP_OK, ['Content-Type' => 'application/rss+xml; charset=UTF-8']);
     }
 
+    /**
+     * The volunteer's own shifts as an iCal feed.
+     *
+     * Every timestamp is an absolute UTC instant (the trailing "Z"), never a floating local time.
+     * A floating time is interpreted in each device's own timezone, so a volunteer whose phone is
+     * not set to the venue's timezone would be reminded at the wrong moment.
+     */
     #[IsGranted('export:ical')]
     #[Route('/ical', name: 'app_feed_ical', methods: ['GET'])]
     public function ical(ShiftEntryRepository $entries): Response
@@ -75,13 +82,6 @@ final class FeedController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
-        // Emit absolute UTC instants (the trailing "Z"), never floating local
-        // times. A floating time is interpreted in each device's own timezone,
-        // so a volunteer whose phone is set to a different timezone than the
-        // venue would be reminded at the wrong moment. UTC instants are
-        // converted by every calendar client to the device's local time and
-        // always fire at the correct absolute moment - which is what we want
-        // for international attendees travelling to the event.
         $utc = new \DateTimeZone('UTC');
         $stamp = (new \DateTimeImmutable('now', $utc))->format('Ymd\THis\Z');
 
@@ -143,7 +143,8 @@ final class FeedController extends AbstractController
      * again. Shift descriptions are long enough to need this, and a client that
      * enforces the limit rejects the whole calendar over one overlong line.
      * Splitting is done on character boundaries so a multi-byte sequence is
-     * never cut in half.
+     * never cut in half, and the leading space of a continuation line counts toward its 75 octets,
+     * which is why the limit drops to 74 after the first line.
      */
     private static function fold(string $line): string
     {
@@ -153,7 +154,6 @@ final class FeedController extends AbstractController
 
         $folded = '';
         $current = '';
-        // The leading space of a continuation line counts toward its 75 octets.
         $limit = 75;
         foreach (preg_split('//u', $line, -1, \PREG_SPLIT_NO_EMPTY) ?: [] as $char) {
             if (\strlen($current) + \strlen($char) > $limit) {

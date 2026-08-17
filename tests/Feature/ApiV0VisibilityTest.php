@@ -112,7 +112,6 @@ final class ApiV0VisibilityTest extends DatabaseWebTestCase
         $location = $this->get('/api/v0-beta/locations')['data'][0];
         self::assertSame((string) $this->scenario->location->getUuid(), $location['id']);
 
-        // The id round-trips against the API's own URL.
         $this->client->request('GET', '/api/v0-beta/locations/'.$location['id'].'/shifts');
         self::assertResponseIsSuccessful();
 

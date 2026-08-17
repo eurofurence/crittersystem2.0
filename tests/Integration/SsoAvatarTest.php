@@ -59,6 +59,10 @@ final class SsoAvatarTest extends DatabaseTestCase
         self::assertSame(1, $calls, 'the identical picture URL is fetched only once');
     }
 
+    /**
+     * A manual upload stores a new key and clears the SSO source, as SettingsController does; the
+     * next SSO login re-asserts the provider's picture over it.
+     */
     public function testManualUploadIsOverriddenByTheNextSsoLogin(): void
     {
         $claims = new SsoClaims('sub-c', 'c@example.com', 'c', 'Cy Crop', [], 'https://idp.example/pic/c.png');
@@ -68,7 +72,6 @@ final class SsoAvatarTest extends DatabaseTestCase
         $user = $provisioner->provision($claims);
         $ssoKey = $user->getPersonalData()?->getAvatarPath();
 
-        // Simulate a later manual upload: a new key and a cleared SSO source (see SettingsController).
         $user->getPersonalData()->setAvatarPath('avatars/manual/upload.png')->setAvatarSource(null);
         $this->em->flush();
 
@@ -90,7 +93,6 @@ final class SsoAvatarTest extends DatabaseTestCase
         $user = $provisioner->provision(new SsoClaims('sub-d', 'd@example.com', 'd', 'Di Draw', [], 'https://idp.example/pic/d.png'));
         $key = $user->getPersonalData()?->getAvatarPath();
 
-        // A later login where the provider advertises no picture must not wipe the stored one.
         $provisioner->provision(new SsoClaims('sub-d', 'd@example.com', 'd', 'Di Draw', [], null));
         $this->em->clear();
         $reloaded = static::getContainer()->get(UserRepository::class)->findOneBy(['ssoUserId' => 'sub-d']);

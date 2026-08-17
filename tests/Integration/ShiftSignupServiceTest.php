@@ -87,6 +87,7 @@ final class ShiftSignupServiceTest extends DatabaseTestCase
         self::assertSame('You are already signed up for this shift.', $this->service()->signUpError($user, $shift, $type));
     }
 
+    /** Once the last slot of a role is taken, the shift reads as full to everyone who is not on it. */
     public function testEligibilityStatusReflectsTheUserState(): void
     {
         $service = $this->service();
@@ -104,7 +105,6 @@ final class ShiftSignupServiceTest extends DatabaseTestCase
         $service->signUp($member, $shift, $type);
         self::assertSame('signed_up', $service->eligibilityStatus($shift, $member));
         self::assertSame([], $service->signupOptions($shift, $member));
-        // Role now full for everyone else.
         self::assertSame('full', $service->eligibilityStatus($shift, $stranger));
     }
 

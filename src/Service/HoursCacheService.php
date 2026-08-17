@@ -67,12 +67,14 @@ final class HoursCacheService
         return $result;
     }
 
+    /**
+     * Goodie hours count completed (already-ended) shifts only, and overlapping time is counted
+     * once: the shared breakdown deduplicates it.
+     */
     public function recalculate(User $user, ?UserHoursCache $cache = null): UserHoursCache
     {
         $cache ??= $this->caches->findOneByUser($user) ?? new UserHoursCache($user);
 
-        // Goodie hours count completed (already-ended) shifts only. Overlapping
-        // time is deduplicated by the shared breakdown.
         $completedEntries = array_filter(
             $this->entries->findByUserOrdered($user),
             static fn ($entry) => $entry->getShift()->isPast(),

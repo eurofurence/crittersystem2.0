@@ -116,6 +116,7 @@ final class AvailabilityConsumptionTest extends DatabaseTestCase
         self::assertSame(AvailabilityValue::UNAVAILABLE, $state['value'], 'worst (least willing) value wins');
     }
 
+    /** Re-planning the very shift a user is already on must not count them as occupied. */
     public function testExcludedShiftIsNotConsumed(): void
     {
         $user = $this->user();
@@ -123,7 +124,6 @@ final class AvailabilityConsumptionTest extends DatabaseTestCase
         $shift = $this->shift('2026-06-01 11:00', '2026-06-01 12:00');
         $this->entry($shift, $user, ShiftEntryState::ASSIGNMENT);
 
-        // Re-planning the very shift the user is on should not count as occupied.
         $state = $this->service()->planningState($user, new \DateTimeImmutable('2026-06-01 11:15'), new \DateTimeImmutable('2026-06-01 11:45'), $shift);
         self::assertFalse($state['occupied']);
     }

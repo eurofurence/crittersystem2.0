@@ -40,6 +40,7 @@ final class AuditExportTest extends DatabaseTestCase
         self::assertSame(['k' => 'v'], $events[0]->getDetails());
     }
 
+    /** Issuing is idempotent: a second call hands back the certificate that already exists. */
     public function testCertificateIsGeneratedAndSignatureVerifies(): void
     {
         /** @var CertificateAuthority $ca */
@@ -47,7 +48,6 @@ final class AuditExportTest extends DatabaseTestCase
 
         $certificate = $ca->ensureCertificate();
         self::assertNotEmpty($certificate->getFingerprint());
-        // Idempotent: a second call returns the same certificate.
         self::assertSame($certificate->getId(), $ca->ensureCertificate()->getId());
 
         $signature = $ca->sign('payload');
@@ -76,7 +76,6 @@ final class AuditExportTest extends DatabaseTestCase
         $storage = static::getContainer()->get(ExportStorage::class);
         self::assertTrue($storage->exists($export->getStorageKey()));
 
-        // Inspect the zip package.
         $zip = new \ZipArchive();
         self::assertTrue($zip->open($this->spool($storage->read($export->getStorageKey()))));
         $json = $zip->getFromName('events.json');

@@ -55,11 +55,14 @@ final class CertificationController extends AbstractController
         return $this->render('certification/index.html.twig', ['rows' => $rows]);
     }
 
+    /**
+     * Same visibility rule as the list: a staff-only certification is not shown to volunteers who
+     * cannot see staff content, and it answers 404 rather than 403 so the page does not confirm the
+     * certification exists.
+     */
     #[Route('/{id}', name: 'app_certifications_show', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function show(#[MapEntity(mapping: ['id' => 'uuid'])] Certification $certification): Response
     {
-        // Same visibility rule as the list: a staff-only certification is not
-        // shown to volunteers who cannot see staff content.
         if ($certification->isStaffOnly() && !$this->isGranted('ROLE_STAFF') && !$this->isGranted('global:admin')) {
             throw $this->createNotFoundException();
         }
@@ -112,6 +115,10 @@ final class CertificationController extends AbstractController
      * The volunteer's own certifications as a file, for handing on to whoever asks them to prove it.
      *
      * Their own records only - the export is built from the signed-in user, never from a parameter.
+     *
+     * The fputcsv escape argument is given explicitly because PHP 8.4 deprecates leaving it to a
+     * default that is going to change, and a backslash in a note must not silently alter the next
+     * field.
      */
     #[Route('/export.csv', name: 'app_certifications_export', methods: ['GET'])]
     public function export(): Response
@@ -120,8 +127,6 @@ final class CertificationController extends AbstractController
         $user = $this->getUser();
 
         $handle = fopen('php://temp', 'r+');
-        // Escape given explicitly: PHP 8.4 deprecates leaving it to a default that is going to
-        // change, and a backslash in a note must not silently alter the next field.
         fputcsv($handle, ['Certification', 'Status', 'Certified', 'Expires', 'Notes'], ',', '"', '');
         foreach ($this->userCerts->findByUser($user) as $record) {
             fputcsv($handle, [

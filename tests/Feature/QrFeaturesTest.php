@@ -30,6 +30,7 @@ final class QrFeaturesTest extends DatabaseWebTestCase
         return $user;
     }
 
+    /** The verify page is public: a scanner with no session must still be able to read it. */
     public function testDigitalIdVerifyIsPublicAndShowsTheUser(): void
     {
         $user = $this->user('scanme');
@@ -37,7 +38,6 @@ final class QrFeaturesTest extends DatabaseWebTestCase
         $this->em->persist($token);
         $this->em->flush();
 
-        // No login: the page must still be reachable.
         $this->client->request('GET', '/digital-id/verify/'.$token->getToken());
 
         self::assertResponseIsSuccessful();
@@ -50,6 +50,16 @@ final class QrFeaturesTest extends DatabaseWebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    /**
+     * The card refreshes through the live region, never a <meta http-equiv="refresh">: a meta
+     * refresh survives Turbo navigation and drags the user back to this page long after they left
+     * it. The region is located by its own url value because the layout carries live regions too.
+     *
+     * It declares a moment, not an interval. The card re-renders once when its token is about to
+     * lapse and the fresh fragment then declares its own next moment; a repeating interval keeps
+     * the first token's remaining life forever, so a card opened on a nearly expired token would
+     * re-render every few seconds for as long as it stayed open.
+     */
     public function testDigitalIdRotatesViaStimulusAndNotAMetaRefresh(): void
     {
         $user = $this->user('carrier');
@@ -59,21 +69,12 @@ final class QrFeaturesTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/digital-id');
         self::assertResponseIsSuccessful();
 
-        // A <meta http-equiv="refresh"> survives Turbo navigation and would drag
-        // the user back to this page long after they left it.
         self::assertCount(0, $crawler->filter('meta[http-equiv="refresh"]'), 'the page must not use a meta refresh');
 
-        // The layout has live regions of its own, so scope to this page's.
         $region = $crawler->filter('[data-live-stream-url-value="/digital-id/card"]');
         self::assertCount(1, $region, 'the QR card re-renders itself before its token expires');
         self::assertSame('live-stream', $region->attr('data-controller'));
 
-        /*
-         * The moment, not an interval. The card is re-rendered once when its token is about to
-         * lapse and the fresh fragment then declares its own next moment; a repeating interval kept
-         * the first token's remaining life forever, so a card opened on a nearly-expired token
-         * re-rendered every few seconds for as long as it stayed open.
-         */
         $declared = $crawler->filter('[data-next-transition]');
         self::assertCount(1, $declared, 'the card must declare when it next changes');
         self::assertGreaterThan(
@@ -83,6 +84,7 @@ final class QrFeaturesTest extends DatabaseWebTestCase
         );
     }
 
+    /** The card endpoint answers with a fragment: the layout must not come along with it. */
     public function testDigitalIdCardEndpointReturnsTheQrOnItsOwn(): void
     {
         $user = $this->user('poller');
@@ -93,14 +95,16 @@ final class QrFeaturesTest extends DatabaseWebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertCount(1, $crawler->filter('img[alt="Digital ID QR code"]'));
-        // A fragment, not a full page: the layout must not come along with it.
         self::assertCount(0, $crawler->filter('#navbar-menu'));
     }
 
+    /**
+     * A token that is still alive but has only seconds left is rotated rather than handed out:
+     * scanning it would most likely fail before the reader got there.
+     */
     public function testANearlyExpiredTokenIsRotatedInsteadOfServed(): void
     {
         $user = $this->user('expiring');
-        // Alive, but with only a few seconds left - scanning it would likely fail.
         $stale = new DigitalIdToken($user, 5);
         $this->em->persist($stale);
         $this->em->flush();
@@ -126,6 +130,7 @@ final class QrFeaturesTest extends DatabaseWebTestCase
         self::assertSame($fresh->getToken(), $service->getOrCreateActive($user)->getToken());
     }
 
+    /** A scan link is not public: an anonymous scanner is bounced through /login by the firewall. */
     public function testCertificationScanRedirectsAnonymousToLogin(): void
     {
         $cert = new Certification('Cert under test');
@@ -135,7 +140,6 @@ final class QrFeaturesTest extends DatabaseWebTestCase
         $this->em->persist($token);
         $this->em->flush();
 
-        // Anonymous: the firewall must bounce them through /login.
         $this->client->request('GET', '/certification-scan/verify/'.$token->getToken());
 
         self::assertResponseRedirects();

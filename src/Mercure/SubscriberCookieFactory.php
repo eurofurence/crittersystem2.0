@@ -52,6 +52,13 @@ final class SubscriberCookieFactory
     ) {
     }
 
+    /**
+     * The claim carries `subscribe` only. A subscriber token that also carried `publish` would let
+     * any signed-in user write to the hub.
+     *
+     * The cookie is a session cookie: it dies with the browser session, and is replaced long before
+     * then.
+     */
     public function create(User $user, bool $secure): Cookie
     {
         $now = $this->clock->now();
@@ -60,8 +67,6 @@ final class SubscriberCookieFactory
         $token = (new Builder(new JoseEncoder(), ChainedFormatter::default()))
             ->issuedAt($now)
             ->expiresAt($now->modify('+'.self::TTL_SECONDS.' seconds'))
-            // The claim carries `subscribe` only. A subscriber token that also carried `publish`
-            // would let any signed-in user write to the hub.
             ->withClaim('mercure', ['subscribe' => $topics])
             ->getToken(new Sha256(), InMemory::plainText($this->subscriberSecret))
             ->toString();
@@ -80,7 +85,6 @@ final class SubscriberCookieFactory
             ->withHttpOnly(true)
             ->withSecure($secure)
             ->withSameSite(Cookie::SAMESITE_STRICT)
-            // A session cookie: it dies with the browser session, and is replaced long before then.
             ->withExpires(0);
     }
 

@@ -15,6 +15,7 @@ final class DomainSeedTest extends DatabaseTestCase
         return static::getContainer()->get(Installer::class);
     }
 
+    /** The seeded volunteer types have to satisfy the flag interdependencies, not merely exist. */
     public function testSeedsGlobalShiftTasksAndVolunteerTypes(): void
     {
         $this->installer()->seedDomainDefaults();
@@ -33,7 +34,6 @@ final class DomainSeedTest extends DatabaseTestCase
         self::assertNotNull($volunteer);
         self::assertNotNull($staff);
 
-        // Flags must satisfy the volunteer-type flag interdependencies.
         self::assertFalse($volunteer->isStaffOnly());
         self::assertTrue($volunteer->isShowOnDashboard());
         self::assertFalse($volunteer->isHideOnShiftView());

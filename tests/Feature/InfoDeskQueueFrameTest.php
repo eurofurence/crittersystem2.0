@@ -40,6 +40,10 @@ final class InfoDeskQueueFrameTest extends DatabaseWebTestCase
         return $user;
     }
 
+    /**
+     * The endpoint answers with a fragment, never a document: the live region assigns the response
+     * straight to innerHTML.
+     */
     public function testAResponderGetsTheQueueFragment(): void
     {
         $this->client->loginUser($this->user('responder', 'message:use', 'chat:claim'));
@@ -50,7 +54,6 @@ final class InfoDeskQueueFrameTest extends DatabaseWebTestCase
 
         self::assertResponseIsSuccessful();
 
-        // A fragment, not a document: the live region assigns this to innerHTML.
         $body = (string) $this->client->getResponse()->getContent();
         self::assertStringNotContainsStringIgnoringCase('<html', $body);
     }

@@ -75,6 +75,7 @@ final class ManageGroupTest extends DatabaseWebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    /** rbac:group:view opens the list only; every mutation needs rbac:group:manage. */
     public function testViewerCanListButCannotCreate(): void
     {
         $this->client->loginUser($this->makeUser('viewer', ['rbac:group:view']));
@@ -82,21 +83,23 @@ final class ManageGroupTest extends DatabaseWebTestCase
         $this->client->request('GET', '/manage/groups');
         self::assertResponseIsSuccessful();
 
-        // Mutations require rbac:group:manage.
         $this->client->request('GET', '/manage/groups/new');
         self::assertResponseStatusCodeSame(403);
     }
 
+    /**
+     * rbac:group:manage is a step-up permission: a holder without 2FA is sent to enrol before they
+     * can mutate groups.
+     */
     public function testManagerWithoutTwoFactorIsSentToEnrol(): void
     {
-        // rbac:group:manage is a step-up permission: a holder without 2FA is
-        // redirected to enrol before they can mutate groups.
         $this->client->loginUser($this->makeUser('boss', ['rbac:group:view', 'rbac:group:manage']));
 
         $this->client->request('GET', '/manage/groups/new');
         self::assertResponseRedirects('/2fa/setup');
     }
 
+    /** Creating a group needs a fresh step-up on top of rbac:group:manage. */
     public function testManagerCanCreateGroupWithPermissions(): void
     {
         $boss = $this->makeUser('boss', ['rbac:group:view', 'rbac:group:manage']);
@@ -104,7 +107,6 @@ final class ManageGroupTest extends DatabaseWebTestCase
         $this->client->loginUser($boss);
         $this->seededPrivilege('news:manage');
 
-        // rbac:group:manage requires a fresh step-up.
         $this->stepUp();
 
         $crawler = $this->client->request('GET', '/manage/groups/new');
@@ -129,7 +131,8 @@ final class ManageGroupTest extends DatabaseWebTestCase
 
     /**
      * The matrix answers "who grants this permission", which the per-group screens cannot: reading
-     * it out of a dozen edit pages is how a stray grant goes unnoticed.
+     * it out of a dozen edit pages is how a stray grant goes unnoticed. The header holds one column
+     * per group plus the frozen permission column.
      */
     public function testTheMatrixShowsEveryGroupAgainstEveryPermission(): void
     {
@@ -140,7 +143,6 @@ final class ManageGroupTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/manage/groups/matrix');
         self::assertResponseIsSuccessful();
 
-        // A column per group, plus the frozen permission column.
         self::assertCount(3, $crawler->filter('.perm-matrix thead th'));
 
         $row = $crawler->filter('tr:has(code:contains("news:manage"))');

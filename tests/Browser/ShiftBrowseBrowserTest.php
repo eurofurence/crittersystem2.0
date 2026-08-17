@@ -18,7 +18,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 /**
  * The volunteer shift browser in a real browser.
  *
- * Every action on /shifts now happens inside the dialog, and the card's only control is a link.
+ * Every action on /shifts happens inside the dialog, and the card's only control is a link.
  * PHPUnit renders that link and never clicks it, so the whole apply path on this screen is
  * invisible to it: if the Stimulus action name, the footer links or the field copying broke, the
  * markup would still be correct and every other test would still pass.

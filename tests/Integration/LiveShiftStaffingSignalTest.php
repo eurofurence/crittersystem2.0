@@ -177,15 +177,16 @@ final class LiveShiftStaffingSignalTest extends DatabaseTestCase
      *
      * Staff do see other departments' all-staff shifts on the apply screen, so those capacity
      * changes have to reach them; they arrive on the one all-staff topic. Naming the departments
-     * instead grew the token with the size of the event until it passed the browser's cookie limit
-     * and nginx's header buffer, and the first page after signing in returned 502.
+     * instead grows the token with the size of the event until it passes the browser's cookie limit
+     * and nginx's header buffer, at which point every page returns 502.
+     *
+     * Bravo therefore runs an all-staff shift the Alpha member may apply to without being entitled
+     * to watch Bravo as a whole.
      */
     public function testDepartmentTopicsFollowWhatTheUserCanActuallySee(): void
     {
         $alphaOnly = $this->member('alphastaff', $this->alpha);
 
-        // Bravo runs an all-staff shift too, which this user may apply to without being entitled to
-        // watch Bravo as a whole.
         $bravoShift = (new Shift())->setTitle('Bravo gate')
             ->setStartsAt(new \DateTimeImmutable('+2 days 10:00'))
             ->setEndsAt(new \DateTimeImmutable('+2 days 12:00'))

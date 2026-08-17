@@ -42,6 +42,7 @@ final class ProfilePresenterTest extends DatabaseTestCase
         return $user;
     }
 
+    /** The merged history runs chronologically: the shift two days back precedes yesterday's worklog. */
     public function testWorkHistoryMergesShiftsAndWorklogs(): void
     {
         $user = $this->makeUser('hank');
@@ -70,7 +71,6 @@ final class ProfilePresenterTest extends DatabaseTestCase
         self::assertContains('shift', $kinds);
         self::assertContains('worklog', $kinds);
 
-        // Chronological: the shift (-2 days) precedes the worklog (-1 day).
         self::assertSame('shift', $rows[0]['kind']);
         self::assertSame('done', $rows[0]['status']);
         self::assertSame('mgr', $rows[1]['creator']);

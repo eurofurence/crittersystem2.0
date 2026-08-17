@@ -53,13 +53,14 @@ class UserGroupAssignmentRepository extends ServiceEntityRepository
      * Membership in a department is an active department-scoped assignment, whatever the group -
      * the same definition {@see userIsMember()} and {@see \App\Service\DepartmentMemberService} use.
      *
+     * The query is rooted at Department because Doctrine cannot return an entity reached only
+     * through a join. The inner join means an unscoped assignment (department IS NULL) contributes
+     * nothing here; event-wide grants are resolved separately, see {@see \App\Mercure\TopicBuilder}.
+     *
      * @return Department[]
      */
     public function findActiveDepartmentsForUser(\App\Entity\User $user): array
     {
-        // Rooted at Department so the query can select it; an inner join means an unscoped
-        // assignment (department IS NULL) contributes nothing here. Event-wide grants are resolved
-        // separately, see App\Mercure\TopicBuilder.
         return $this->getEntityManager()->createQueryBuilder()
             ->select('DISTINCT d')
             ->from(Department::class, 'd')

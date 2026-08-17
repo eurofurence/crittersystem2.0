@@ -56,6 +56,10 @@ final class ShiftScenario
      * type - without confirmation the user can browse shifts but can never sign up, which is the
      * single easiest way to write a shift test that passes for the wrong reason.
      *
+     * Privileges are global and unique by name, so an existing row is reused; persisting a second
+     * one with the same name breaks on the unique index. The user is Telegram-linked because the
+     * /api/bot surface only acts for a linked volunteer and its acting-user resolver enforces that.
+     *
      * @param string[] $privileges
      */
     public function user(array $privileges = ['shift:view', 'shift:self'], ?VolunteerType $memberOf = null, string $role = 'ROLE_USER'): User
@@ -64,8 +68,6 @@ final class ShiftScenario
 
         $group = new Group('Grp '.$suffix, 'grp-'.$suffix, $role);
         foreach ($privileges as $name) {
-            // Privileges are global and unique by name - reuse one if a previous user in this
-            // scenario already created it, or the second user blows up on the unique index.
             $privilege = $this->em->getRepository(Privilege::class)->findOneBy(['name' => $name])
                 ?? new Privilege($name);
             $this->em->persist($privilege);
@@ -80,14 +82,12 @@ final class ShiftScenario
         $user->setPassword($this->hasher->hashPassword($user, 'secret123'));
         $user->addGroup($group);
         $user->completeOnboarding();
-        // Telegram-linked by default: the /api/bot surface only ever acts for a
-        // linked volunteer, and the acting-user resolver now enforces that.
         $user->linkTelegram('tg-'.$suffix, '@vol-'.$suffix);
         $this->em->persist($user);
 
         if ($memberOf !== null) {
             $membership = new UserVolunteerType($user, $memberOf);
-            $membership->setConfirmedBy($user); // confirmed; an unconfirmed member cannot sign up
+            $membership->setConfirmedBy($user);
             $this->em->persist($membership);
         }
 

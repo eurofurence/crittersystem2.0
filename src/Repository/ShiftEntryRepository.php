@@ -45,17 +45,67 @@ class ShiftEntryRepository extends ServiceEntityRepository
     }
 
     /**
+     * Is the user due at the venue: assigned to a shift starting inside the window, or to one
+     * already under way?
+     *
+     * The second half is what stops somebody arriving late being turned away at the door. A shift
+     * that has already ended does not qualify, so the badge cannot be collected the morning after.
+     */
+    public function hasShiftStartingOrRunningWithin(User $user, \DateTimeImmutable $now, int $windowSeconds): bool
+    {
+        return null !== $this->createQueryBuilder('e')
+            ->select('1')
+            ->join('e.shift', 's')
+            ->andWhere('e.user = :user')
+            ->andWhere('s.startsAt <= :until')
+            ->andWhere('s.endsAt > :now')
+            ->setParameter('user', $user)
+            ->setParameter('now', $now)
+            ->setParameter('until', $now->modify(sprintf('+%d seconds', $windowSeconds)))
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * One user's shifts overlapping a span, for the security screen's "what are they here for".
+     *
+     * The shift, its task and its location are joined because the caller names the location by its
+     * full path, which walks the parent chain.
+     *
+     * @return ShiftEntry[]
+     */
+    public function findForUserBetween(User $user, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('e')
+            ->join('e.shift', 's')->addSelect('s')
+            ->leftJoin('s.shiftTask', 't')->addSelect('t')
+            ->leftJoin('s.location', 'l')->addSelect('l')
+            ->leftJoin('l.parent', 'lp')->addSelect('lp')
+            ->andWhere('e.user = :user')
+            ->andWhere('s.startsAt < :to')
+            ->andWhere('s.endsAt > :from')
+            ->setParameter('user', $user)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('s.startsAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * The next moment one of this user's shifts starts or ends.
      *
      * Their operational status is derived from the clock, not from a stored value, so it changes on
      * its own when a shift begins or finishes. Nothing happens server-side at that instant and there
      * is therefore nothing to push - the page has to be told in advance when to look again, which is
      * what this answers.
+     *
+     * Start and end are queried separately. One MIN over a combined condition would return the start
+     * of a shift that is already running, hiding a nearer boundary behind it.
      */
     public function findNextBoundaryAfter(User $user, \DateTimeImmutable $after): ?\DateTimeImmutable
     {
-        // Each side is filtered on its own column. Taking one MIN over a combined condition would
-        // return the start of a shift that is already running, hiding a nearer boundary behind it.
         $candidates = [];
         foreach (['startsAt', 'endsAt'] as $column) {
             $value = $this->createQueryBuilder('e')
@@ -81,14 +131,15 @@ class ShiftEntryRepository extends ServiceEntityRepository
     /**
      * Entries for a user, ordered by shift start (joins the shift for display).
      *
+     * The shift group and its other members are joined because "my shifts" renders a grouped
+     * commitment as one block, which otherwise costs two queries per row. The location and its two
+     * ancestors are joined for the same reason: every caller names it with Location::fullName(),
+     * which walks the parent chain and otherwise costs a query per ancestor per row.
+     *
      * @return ShiftEntry[]
      */
     public function findByUserOrdered(User $user): array
     {
-        // The group and its other members come along: "my shifts" renders a grouped commitment as
-        // one block, which would otherwise cost two queries per row. The location and its two
-        // ancestors come along for the same reason: every caller names it with Location::fullName(),
-        // which walks the parent chain and would otherwise cost a query per ancestor per row.
         return $this->createQueryBuilder('e')
             ->join('e.shift', 's')
             ->addSelect('s')
@@ -214,6 +265,9 @@ class ShiftEntryRepository extends ServiceEntityRepository
      * The board reads the assignee, the role and the check-in state of each row, so hydrating them
      * lazily would cost two queries per assignment on a day with a hundred of them.
      *
+     * The user's one-to-one satellites are joined as well: Doctrine fetches every mappedBy one-to-one
+     * on User eagerly, so each hydrated user without them costs five further queries.
+     *
      * @param Shift[] $shifts
      *
      * @return array<int, list<ShiftEntry>> shift id => entries
@@ -229,9 +283,6 @@ class ShiftEntryRepository extends ServiceEntityRepository
         $entries = $this->createQueryBuilder('e')
             ->join('e.user', 'u')->addSelect('u')
             ->join('e.volunteerType', 't')->addSelect('t')
-            // Every mappedBy one-to-one on User is fetched eagerly by Doctrine, so hydrating a user
-            // without these costs five further queries each - 600 of them on a day with 120
-            // assignments.
             ->leftJoin('u.personalData', 'pd')->addSelect('pd')
             ->leftJoin('u.contact', 'c')->addSelect('c')
             ->leftJoin('u.settings', 'st')->addSelect('st')

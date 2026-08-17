@@ -13,11 +13,11 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
- * Covers the demo seeder behind the introduction slide deck (docs/slides).
+ * Covers the demo seeder that fills a database for the introduction screenshots.
  *
- * The properties asserted here are the ones whose failure is silent: a seeder that produced shifts
- * in the past, or volunteers with no confirmed critter type, still exits successfully and still
- * lets the screenshot run finish. It just quietly photographs empty pages.
+ * The properties asserted here are the ones whose failure is silent: a seeder that puts every shift
+ * in the past, or leaves volunteers with no confirmed volunteer type, still exits successfully and
+ * still lets the screenshot run finish. It just quietly photographs empty pages.
  */
 final class DemoSeedCommandTest extends DatabaseTestCase
 {

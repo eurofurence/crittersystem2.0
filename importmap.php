@@ -24,6 +24,9 @@
  */
 return [
     'app' => ['path' => './assets/app.js', 'entrypoint' => true],
+    // The live operations board. A separate entry point because it is the one surface built on
+    // Tailwind and the shadcn kit: it must not receive Tabler or Bootstrap, and nothing it loads
+    // may reach the rest of the application. See assets/board.js.
     'board' => ['path' => './assets/board.js', 'entrypoint' => true],
     '@hotwired/stimulus' => ['version' => '3.2.2'],
     '@symfony/stimulus-bundle' => ['path' => './vendor/symfony/stimulus-bundle/assets/dist/loader.js'],
@@ -40,6 +43,11 @@ return [
     '@sentry/replay-canvas' => ['version' => '10.67.0'],
     '@sentry/core' => ['version' => '10.67.0'],
     '@hotwired/turbo' => ['version' => '8.0.23'],
+    // Tailwind SOURCE for the operations board, not stylesheets any page loads: `assets/vendor/` is
+    // gitignored, so these entries are what `importmap:install` restores before `tailwind:build`
+    // compiles them into assets/styles/board.css. They are `@import`ed by that file and read from
+    // disk by the compiler; nothing imports them from JavaScript, so they are never served.
+    // Removing them to tidy the import map breaks the board's build on a fresh checkout.
     'shadcn/dist/tailwind.css' => ['version' => '4.18.0', 'type' => 'css'],
     'tw-animate-css/dist/tw-animate.css' => ['version' => '1.4.0', 'type' => 'css'],
 ];

@@ -94,14 +94,16 @@ final class CertificationReportController extends AbstractController
     }
 
     /**
+     * The empty escape character passed to fputcsv() is deliberate: PHP 8.4 deprecates leaving it
+     * to a default that is going to change, and a backslash in a note must not silently alter the
+     * next field.
+     *
      * @param list<string>            $header
      * @param list<array<int, string>> $rows
      */
     private function csv(array $header, array $rows, string $filename): Response
     {
         $handle = fopen('php://temp', 'r+');
-        // The escape character is given explicitly: PHP 8.4 deprecates leaving it to a default that
-        // is going to change, and a backslash in a note must not silently alter the next field.
         fputcsv($handle, $header, ',', '"', '');
         foreach ($rows as $row) {
             fputcsv($handle, $row, ',', '"', '');

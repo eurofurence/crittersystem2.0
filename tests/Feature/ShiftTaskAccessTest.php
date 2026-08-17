@@ -56,6 +56,9 @@ final class ShiftTaskAccessTest extends DatabaseWebTestCase
      * A user holding the privileges, scoped to $scope when given. A department-scoped assignment is
      * what makes somebody a *delegated* manager of that department only.
      *
+     * The user is reloaded before signing in: persisting the assignment directly leaves the
+     * in-memory user without groups, and a user with no groups holds no privileges at all.
+     *
      * @param string[] $privileges
      */
     private function login(array $privileges, ?Department $scope = null): User
@@ -78,8 +81,6 @@ final class ShiftTaskAccessTest extends DatabaseWebTestCase
         $this->em->persist(new UserGroupAssignment($user, $group, $scope));
         $this->em->flush();
 
-        // Reload: persisting the assignment directly does not populate the in-memory user, and a
-        // user with no groups has no privileges at all.
         $this->em->clear();
         $fresh = $this->em->getRepository(User::class)->findOneBy(['email' => $user->getEmail()]);
         $this->client->loginUser($fresh);
@@ -109,9 +110,12 @@ final class ShiftTaskAccessTest extends DatabaseWebTestCase
         self::assertSame($this->alpha->getId(), $created->getDepartment()?->getId());
     }
 
+    /**
+     * Task names are unique per department, not globally: otherwise the first department to claim
+     * "Briefing" would block every other department from having one.
+     */
     public function testTwoDepartmentsCanEachHaveATaskOfTheSameName(): void
     {
-        // A globally unique name would let the first department to claim "Briefing" block the rest.
         $this->task('Briefing', $this->bravo);
 
         $this->login(['shift:manage'], $this->alpha);
@@ -131,11 +135,14 @@ final class ShiftTaskAccessTest extends DatabaseWebTestCase
         self::assertNotContains('Bravo', $options, "another department must not be offered as the task's owner");
     }
 
+    /**
+     * The refusal is enforced on the submitted id, not only by the choice list. Bravo's id is posted
+     * directly, because a submitted id is caller input whatever the form offered.
+     */
     public function testADelegatedManagerCannotCreateATaskForAnotherDepartment(): void
     {
         $this->login(['shift:manage'], $this->alpha);
 
-        // The choice list omits Bravo, so post its id directly - a submitted id is user input.
         $this->client->request('POST', '/manage/shift-tasks/new', [
             'shift_task' => ['name' => 'Smuggled', 'department' => (string) $this->bravo->getId()],
         ]);

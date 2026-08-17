@@ -72,9 +72,9 @@ final class HoursDeduplicationTest extends DatabaseTestCase
         return $entries;
     }
 
+    /** Five entries over the same 10:00-11:00 daytime hour reward one hour, with no night multiplier. */
     public function testFiveIdenticalAssignmentsCountAsOneHour(): void
     {
-        // Daytime window, so no night multiplier: 5 x (10:00-11:00) = 1 rewarded hour.
         $user = $this->user();
         $entries = $this->entriesFor($user, array_fill(0, 5, ['2026-06-01 10:00', '2026-06-01 11:00']));
         self::assertSame(1.0, $this->calculator()->breakdown($entries)->total());
@@ -97,9 +97,9 @@ final class HoursDeduplicationTest extends DatabaseTestCase
         self::assertSame(2.0, $this->calculator()->breakdown($entries)->total());
     }
 
+    /** 10:00-12:00 and 11:00-13:00 union to 10:00-13:00, which is three hours. */
     public function testPartialOverlapCountsUnionOnce(): void
     {
-        // 10:00-12:00 and 11:00-13:00 -> union 10:00-13:00 = 3 hours.
         $user = $this->user();
         $entries = $this->entriesFor($user, [
             ['2026-06-01 10:00', '2026-06-01 12:00'],
@@ -108,6 +108,7 @@ final class HoursDeduplicationTest extends DatabaseTestCase
         self::assertSame(3.0, $this->calculator()->breakdown($entries)->total());
     }
 
+    /** Hours come from the one entry per shift, so two positions on it still reward its four hours once. */
     public function testMultiplePositionsInOneShiftAddNoExtraHours(): void
     {
         $user = $this->user();
@@ -132,13 +133,12 @@ final class HoursDeduplicationTest extends DatabaseTestCase
         }
         $this->em->flush();
 
-        // One entry per shift; two positions on it -> still 4 rewarded hours.
         self::assertSame(4.0, $this->calculator()->breakdown([$entry])->total());
     }
 
+    /** 22:00-06:00 touches the 02:00-08:00 night window, so all 8 hours double to 16. */
     public function testNightMultiplierStillAppliesAfterDedup(): void
     {
-        // 22:00-06:00 touches the 02:00-08:00 night window -> whole 8h x2 = 16.
         $user = $this->user();
         $entries = $this->entriesFor($user, [['2026-06-01 22:00', '2026-06-02 06:00']]);
         $breakdown = $this->calculator()->breakdown($entries);
@@ -146,6 +146,7 @@ final class HoursDeduplicationTest extends DatabaseTestCase
         self::assertSame(16.0, $breakdown->total());
     }
 
+    /** A 4-hour no-show carries a penalty of 4h times -2, and rewards no hours. */
     public function testNoShowPenaltyIsSeparateAdditiveTerm(): void
     {
         $user = $this->user();
@@ -154,7 +155,7 @@ final class HoursDeduplicationTest extends DatabaseTestCase
         $this->em->flush();
 
         $breakdown = $this->calculator()->breakdown($entries);
-        self::assertSame(-8.0, $breakdown->noshowPenaltyHours); // 4h x -2
+        self::assertSame(-8.0, $breakdown->noshowPenaltyHours);
         self::assertSame(1, $breakdown->noshowCount);
         self::assertSame(0, $breakdown->completedCount);
     }

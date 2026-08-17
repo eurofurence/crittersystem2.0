@@ -74,6 +74,11 @@
         {% endblock %}
     {% endembed %}
 
+    {# The one page allowed to reschedule a request from an inline script, and the exception
+       tests/Integration/NoInlinePollingTest.php holds: the wizard runs before the application
+       exists, Turbo never navigates it, and the loop ends itself when the migration reports ok or
+       failed. Everywhere else the timer belongs in a Stimulus controller, where disconnect() stops
+       it. #}
     <script>
         (function () {
             var panel = document.getElementById('migration-panel');

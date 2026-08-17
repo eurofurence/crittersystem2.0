@@ -132,9 +132,9 @@ final class PlannerOverlappingShiftsTest extends DatabaseWebTestCase
     }
 
     /**
-     * The rendering half, and the guard that fails against the old grid: two shifts at the same time
-     * must be drawn side by side. Before lanes existed every block was `left: 3px; right: 3px`, so
-     * both sat in exactly the same place and only one was reachable.
+     * Two shifts at the same time are drawn side by side: each block gets its own lane and its own
+     * horizontal position, both at half width and both carrying the shared-lane marker. Blocks that
+     * all span the full width land on top of one another and only the topmost stays reachable.
      */
     public function testParallelShiftsRenderSideBySide(): void
     {
@@ -162,7 +162,6 @@ final class PlannerOverlappingShiftsTest extends DatabaseWebTestCase
         }
         self::assertCount(2, array_unique($lefts), 'parallel shifts must not share the same horizontal position');
 
-        // Both are half-width, and both carry the shared-lane marker.
         self::assertCount(2, $crawler->filter('.planner-block-shared'));
         foreach ($styles as $style) {
             self::assertStringContainsString('width: calc(50%', $style);

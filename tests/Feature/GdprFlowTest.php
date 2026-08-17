@@ -55,6 +55,7 @@ final class GdprFlowTest extends DatabaseWebTestCase
         self::assertTrue(static::getContainer()->get(BanChecker::class)->isEmailBanned($email));
     }
 
+    /** Appealing a ban needs no login, and an admin lifting the ban removes the identity outright. */
     public function testAppealMarksBanAndAdminCanLift(): void
     {
         /** @var BanChecker $bans */
@@ -63,14 +64,12 @@ final class GdprFlowTest extends DatabaseWebTestCase
         $this->em->persist(new BannedIdentity(BannedIdentity::TYPE_EMAIL, $hash));
         $this->em->flush();
 
-        // Public appeal (no login).
         $this->client->request('POST', '/appeal', ['email' => 'banned@example.com']);
         self::assertResponseIsSuccessful();
         $this->em->clear();
         $ban = $this->em->getRepository(BannedIdentity::class)->findOneBy(['hash' => $hash]);
         self::assertTrue($ban->hasAppeal());
 
-        // Admin lifts the ban.
         $this->client->loginUser($this->makeUser('root', 'ROLE_ADMIN', ['global:admin']));
         $crawler = $this->client->request('GET', '/manage/bans');
         self::assertResponseIsSuccessful();
@@ -82,6 +81,7 @@ final class GdprFlowTest extends DatabaseWebTestCase
         self::assertNull($this->em->getRepository(BannedIdentity::class)->findOneBy(['hash' => $hash]));
     }
 
+    /** An invitation to a banned address is refused: no account is created for it. */
     public function testBannedEmailCannotBeReInvited(): void
     {
         $bans = static::getContainer()->get(BanChecker::class);
@@ -96,7 +96,6 @@ final class GdprFlowTest extends DatabaseWebTestCase
         $values['user_invite']['email'] = 'return@example.com';
         $this->client->request('POST', $form->getUri(), $values);
 
-        // No redirect (stays on form) and no user created.
         self::assertNull($this->em->getRepository(User::class)->findOneBy(['name' => 'returnee']));
     }
 }

@@ -181,9 +181,8 @@ final class LiveHelpCallSignalTest extends DatabaseTestCase
     /**
      * Becoming free to help is what makes an already-open call answerable.
      *
-     * Nothing happens to the call at that moment, so without this the board would stay empty until
-     * something unrelated refreshed it - which for a call that is being answered right now means
-     * never.
+     * Nothing happens to the call at that moment, so without this the board stays empty until
+     * something unrelated refreshes it, which for a call being answered right now means never.
      */
     public function testBecomingFreeToHelpWakesTheOwnBoard(): void
     {

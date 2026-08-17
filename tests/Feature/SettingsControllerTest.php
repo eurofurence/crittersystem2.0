@@ -59,6 +59,10 @@ final class SettingsControllerTest extends DatabaseWebTestCase
         self::assertSame('de_DE', $reloaded->getSettings()->getLanguage());
     }
 
+    /**
+     * A wrong current password re-renders the form with a 422 rather than redirecting, and leaves
+     * the stored password untouched.
+     */
     public function testPasswordChangeRejectsWrongCurrent(): void
     {
         $crawler = $this->client->request('GET', '/settings');
@@ -67,7 +71,6 @@ final class SettingsControllerTest extends DatabaseWebTestCase
         $form['account_settings[newPassword]'] = 'brandnewpass1';
         $this->client->submit($form);
 
-        // Invalid form (wrong current password) -> 422, not a redirect.
         self::assertResponseStatusCodeSame(422);
 
         $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);

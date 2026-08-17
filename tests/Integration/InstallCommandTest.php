@@ -26,7 +26,7 @@ final class InstallCommandTest extends DatabaseTestCase
         $this->em->clear();
 
         $groupRepository = $this->em->getRepository(Group::class);
-        self::assertCount(12, $groupRepository->findAll());
+        self::assertCount(13, $groupRepository->findAll());
         self::assertNotNull($groupRepository->findOneBy(['slug' => 'global-admin']));
         self::assertNotNull($groupRepository->findOneBy(['slug' => 'sub-admin']));
 
@@ -44,7 +44,7 @@ final class InstallCommandTest extends DatabaseTestCase
         $this->runInstall();
         $this->em->clear();
 
-        self::assertCount(12, $this->em->getRepository(Group::class)->findAll());
+        self::assertCount(13, $this->em->getRepository(Group::class)->findAll());
         self::assertCount(1, $this->em->getRepository(User::class)->findAll());
         self::assertCount(1, $this->em->getRepository(ConsentText::class)->findAll());
     }
@@ -66,9 +66,9 @@ final class InstallCommandTest extends DatabaseTestCase
     /**
      * Re-running the installer against a renamed base type must adopt it, not seed a second one.
      *
-     * The seed used to match on the shipped name, so an event that renamed Volunteer to Critter got
-     * a fresh Volunteer alongside it on the next deployment - two base types, and onboarding
-     * assigning whichever the lookup happened to find.
+     * The seed matches on the stamped role, never on the shipped name: matching by name hands an
+     * event that renamed Volunteer to Critter a second base type on its next deployment, with
+     * onboarding assigning whichever of the two the lookup happens to find.
      */
     public function testReinstallingAdoptsARenamedBaseTypeInsteadOfDuplicatingIt(): void
     {

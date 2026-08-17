@@ -70,9 +70,9 @@ final class ShiftVisibilityResolverTest extends DatabaseTestCase
         return $shift;
     }
 
+    /** Membership of a department is a group assignment scoped to it; unscoped means member of nothing. */
     private function makeMember(User $user, Department $dept): void
     {
-        // A department-scoped assignment is this user's membership of that department.
         $user->assignGroup($this->staffGroup(), $dept);
     }
 

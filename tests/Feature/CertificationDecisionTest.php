@@ -192,7 +192,11 @@ final class CertificationDecisionTest extends DatabaseWebTestCase
         self::assertNotEmpty($events, 'granting a certification leaves an audit entry');
     }
 
-    /** Re-applying after a refusal returns the record to the queue, carrying the earlier decision. */
+    /**
+     * Re-applying after a refusal returns the record to the queue, carrying the earlier decision.
+     * The re-application is submitted through the volunteer's own apply form, so it takes exactly
+     * the route a declined volunteer would use.
+     */
     public function testAVolunteerMayApplyAgainAfterBeingDeclined(): void
     {
         $this->login(['certification:manage', 'certification:approve']);
@@ -204,8 +208,6 @@ final class CertificationDecisionTest extends DatabaseWebTestCase
         $cert = $this->em->getRepository(Certification::class)->find($certification->getId());
         $this->client->loginUser($fresh);
 
-        // Submitting the volunteer's own apply form, so the re-application goes through exactly the
-        // route a declined volunteer would use.
         $crawler = $this->client->request('GET', '/certifications');
         $form = $crawler->filter('form[action*="/apply"]')->first();
         $this->client->request('POST', $form->attr('action'), [

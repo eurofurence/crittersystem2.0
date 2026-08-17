@@ -38,6 +38,10 @@ final class AppVersion
         return $this->fromGitHead() ?? 'dev';
     }
 
+    /**
+     * `.git/HEAD` holds either a commit hash or `ref: refs/heads/<branch>`; in the second case the
+     * hash lives in the file that ref names, so it has to be followed.
+     */
     private function fromGitHead(): ?string
     {
         $head = $this->projectDir . '/.git/HEAD';
@@ -50,7 +54,6 @@ final class AppVersion
             return null;
         }
 
-        // "ref: refs/heads/main" points at a branch; the commit hash lives in that ref file.
         if (str_starts_with($content, 'ref:')) {
             $ref = trim(substr($content, 4));
             $refFile = $this->projectDir . '/.git/' . $ref;

@@ -85,9 +85,9 @@ class VolunteerTypeContact
         return $this->telegram;
     }
 
+    /** The handle is stored with a leading '@' whatever the caller passes. */
     public function setTelegram(?string $telegram): static
     {
-        // Normalise to a leading '@'.
         $this->telegram = $telegram !== null && $telegram !== '' ? '@'.ltrim($telegram, '@') : null;
 
         return $this;

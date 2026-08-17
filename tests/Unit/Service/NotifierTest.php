@@ -40,7 +40,7 @@ final class NotifierTest extends TestCase
         $users->method('findSubscribedToNews')->willReturn([$staff, $plain]);
 
         $mailer = $this->createMock(MailerInterface::class);
-        $mailer->expects($this->once())->method('send'); // only the staff subscriber
+        $mailer->expects($this->once())->method('send');
 
         $news = (new News())->setTitle('Ops briefing')->setText('secret')->setStaffOnly(true);
 
@@ -60,6 +60,7 @@ final class NotifierTest extends TestCase
         self::assertSame(2, (new Notifier($mailer, $users))->newsPublished($news));
     }
 
+    /** Message email is opt-in: a freshly created Settings row leaves emailMessages false. */
     public function testMessageEmailRespectsPreference(): void
     {
         $sender = $this->user('sender');
@@ -70,7 +71,7 @@ final class NotifierTest extends TestCase
         $optedIn->setSettings($settingsIn);
 
         $optedOut = $this->user('out');
-        $optedOut->setSettings(new Settings($optedOut)); // default false
+        $optedOut->setSettings(new Settings($optedOut));
 
         $users = $this->createStub(UserRepository::class);
         $mailer = $this->createMock(MailerInterface::class);

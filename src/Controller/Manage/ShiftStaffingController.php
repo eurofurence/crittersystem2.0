@@ -51,14 +51,16 @@ final class ShiftStaffingController extends AbstractController
     ) {
     }
 
+    /**
+     * `partialHeld` reports how much of a grouped commitment each volunteer actually holds. A
+     * manager who splits a group, or a volunteer added before the group existed, leaves somebody on
+     * part of it, and that has to stay visible on this screen rather than pass for a full booking.
+     */
     #[Route('/{id}/staffing', name: 'app_manage_shift_needs', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
     public function staffing(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
         $this->denyAccessUnlessGranted('shift:manage', $shift);
 
-        // How much of a grouped commitment each volunteer actually holds. A manager who split a group
-        // (or a volunteer added before the group existed) leaves somebody on part of it, and that has
-        // to stay visible rather than become invisible history.
         $members = $this->groups->membersFor($shift);
         $partial = [];
         foreach ($shift->getEntries() as $entry) {
@@ -92,6 +94,14 @@ final class ShiftStaffingController extends AbstractController
         return new JsonResponse($formatter->results($q === '' ? [] : $this->users->searchByName($q)));
     }
 
+    /**
+     * A manager assignment is an override: capacity and membership are deliberately not enforced,
+     * and the availability and hours warnings are overridden rather than refused.
+     *
+     * It goes through ManualAssignmentService rather than a bare persist, so the assignment is
+     * audited, the live signal fires, and a grouped shift takes the volunteer onto every member
+     * unless the manager asked for a split.
+     */
     #[Route('/{id}/assign', name: 'app_manage_shift_assign', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function assign(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
     {
@@ -106,10 +116,6 @@ final class ShiftStaffingController extends AbstractController
             } elseif ($this->entries->findOneByShiftAndUser($shift, $user) !== null) {
                 $this->addFlash('warning', new TranslatableMessage('manage.shift.staffing.flash.already_on_shift', ['%name%' => $user->getName()]));
             } else {
-                // Manager override: capacity and membership are deliberately not enforced, so the
-                // availability/hours warnings are overridden rather than refused. This goes through
-                // ManualAssignmentService and not a bare persist, so the assignment is audited, the
-                // live signal fires, and a grouped shift takes the volunteer onto every member.
                 $groupSplit = $request->request->getBoolean('group_split');
                 $this->assignments->assign($shift, $user, $type, override: true, actor: $this->getUser(), groupSplit: $groupSplit);
 
@@ -186,11 +192,14 @@ final class ShiftStaffingController extends AbstractController
         return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shift->getUuid()]);
     }
 
+    /**
+     * Scoped to the entry's own shift: marking a no-show can trigger the automatic ban, so this must
+     * never be reachable for another department's shift. Reaching the configured no-show threshold
+     * locks the account.
+     */
     #[Route('/entries/{id}/noshow', name: 'app_manage_shift_entry_noshow', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function toggleNoshow(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftEntry $entry): Response
     {
-        // Scoped to the entry's own shift: a no-show can trigger the automatic
-        // ban, so this must never be reachable for another department's shift.
         $this->denyAccessUnlessGranted('shift:manage', $entry->getShift());
 
         if ($this->isCsrfTokenValid('noshow'.$entry->getId(), (string) $request->request->get('_token'))) {
@@ -198,7 +207,6 @@ final class ShiftStaffingController extends AbstractController
             $entry->setNoshowComment($entry->isNoshow() ? (string) $request->request->get('comment') ?: null : null);
             $this->em->flush();
 
-            // Reaching the configured no-show threshold locks the account.
             if ($entry->isNoshow() && $this->noShowBans->evaluate($entry->getUser())) {
                 $this->addFlash('warning', new TranslatableMessage('manage.shift.staffing.flash.auto_banned'));
             } else {

@@ -17,7 +17,7 @@ final class SecurityController extends AbstractController
 
     /**
      * The login page doubles as the public landing page: it shows the event name,
-     * welcome message and timeline above the sign-in form
+     * welcome message and timeline above the sign-in form.
      */
     #[Route('/login', name: 'app_login')]
     public function login(
@@ -49,11 +49,12 @@ final class SecurityController extends AbstractController
 
     /**
      * When a background request is refused with a 401, the client sends the user here with the page they
-     * were on in `?return=`. Symfony cannot have saved it itself: it never records a target path for an
-     * XHR, and the request that failed was a poll, not the page.
+     * were on in `?return=`. Symfony cannot have saved it itself: it never records a target path for
+     * an XHR, and the request that failed was a background fragment fetch, not the page.
      *
-     * Only a path on this site is accepted - an absolute URL, a protocol-relative `//host` or a
-     * backslash (which some browsers normalise to `/`) would turn the login page into an open redirect.
+     * Only a path on this site is accepted. An absolute URL, a protocol-relative `//host` or a
+     * backslash (which some browsers normalise to `/`) would turn the login page into an open
+     * redirect.
      */
     private function rememberReturnPath(Request $request): void
     {

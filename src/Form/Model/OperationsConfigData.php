@@ -30,6 +30,9 @@ final class OperationsConfigData
     #[Assert\Positive]
     public int $infoDeskClaimTimeout = 300;
 
+    /** How far ahead of a shift somebody may collect a wristband, in seconds. */
+    public int $securityCheckInWindow = 7200;
+
     #[Assert\Positive]
     public int $messageEditWindow = 60;
 

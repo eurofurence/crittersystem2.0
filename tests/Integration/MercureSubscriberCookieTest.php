@@ -156,10 +156,10 @@ final class MercureSubscriberCookieTest extends DatabaseTestCase
      * An administrator's token stays small however many departments exist.
      *
      * Enumerating them is not less secure - the grant is event-wide either way - but it is
-     * unbounded, and it broke the application outright: 62 departments produced a 6.6 KB token,
-     * which is past the browser's cookie limit and past nginx's response-header buffer, so every
-     * page an administrator opened returned 502. One templated selector expresses the same
-     * entitlement in constant space.
+     * unbounded, and it breaks the application outright: 62 departments produce a 6.6 KB token,
+     * past the browser's cookie limit and past nginx's response-header buffer, so every page an
+     * administrator opens returns 502. One templated selector expresses the same entitlement in
+     * constant space.
      */
     public function testAnAdministratorsTokenDoesNotGrowWithTheNumberOfDepartments(): void
     {

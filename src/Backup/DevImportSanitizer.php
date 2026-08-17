@@ -30,6 +30,9 @@ final class DevImportSanitizer
     }
 
     /**
+     * A step carrying a `count` query is counted before it runs, because TRUNCATE reports no affected
+     * rows of its own.
+     *
      * @return list<string> what was done, for the command's summary
      */
     public function sanitize(): array
@@ -44,7 +47,6 @@ final class DevImportSanitizer
                 continue;
             }
 
-            // TRUNCATE reports no affected rows, so those steps say up front how much they will remove.
             $affected = isset($step['count']) ? (int) $this->connection->fetchOne($step['count']) : 0;
             foreach ($step['sql'] as $sql) {
                 $executed = $this->connection->executeStatement($sql);

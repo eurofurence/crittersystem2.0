@@ -25,12 +25,15 @@ final class TotpServiceTest extends TestCase
         self::assertFalse($totp->verify($secret, '000000', 1, $ts), 'wrong code rejected');
     }
 
+    /**
+     * The RFC 6238 SHA-1 vector: the secret "12345678901234567890" is Base32
+     * GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ, and T = 59 falls in counter 1, whose sample code is
+     * 287082 (the last six digits of the RFC's 94287082).
+     */
     public function testKnownVectorRfc6238Sha1(): void
     {
-        // RFC 6238 test secret "12345678901234567890" => Base32 GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ
         $totp = new TotpService();
         $secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
-        // T = 59 -> counter 1 -> RFC sample code 287082 (last 6 of 94287082).
         self::assertSame('287082', $totp->codeForCounter($secret, 1));
     }
 }

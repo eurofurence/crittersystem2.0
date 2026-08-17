@@ -14,16 +14,15 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
  * Keeps a page that is sitting still alive.
  *
  * The live transport is one long-lived connection to the hub, so it makes no requests to this
- * application at all. Two things used to depend on the polling that it replaced:
+ * application at all. Two things still need a request:
  *
  *  - The idle timer. Every request refreshes it (see {@see \App\EventSubscriber\SessionIdleSubscriber}),
  *    which is what keeps an unattended bounty-board display signed in for the length of an event.
- *    Without a heartbeat that display would be logged out overnight.
+ *    Without a heartbeat that display is logged out overnight.
  *  - The subscriber token, which lives five minutes. A user reading one page for an hour must keep
  *    getting a fresh one, recomputed from their current permissions.
  *
- * Both are handled by one small request every five minutes, in place of the fourteen a minute the
- * polling widgets used to make.
+ * Both are served by one small request every five minutes.
  */
 #[IsGranted('ROLE_USER')]
 final class HeartbeatController extends AbstractController
@@ -32,6 +31,10 @@ final class HeartbeatController extends AbstractController
     {
     }
 
+    /**
+     * Never cached: the point of the request is its side effects, the refreshed idle timer and the
+     * newly issued subscriber cookie.
+     */
     #[Route('/session/heartbeat', name: 'app_session_heartbeat', methods: ['GET'])]
     public function heartbeat(Request $request): JsonResponse
     {
@@ -40,7 +43,6 @@ final class HeartbeatController extends AbstractController
 
         $response = new JsonResponse(['ok' => true]);
         $response->headers->setCookie($this->cookies->create($user, $request->isSecure()));
-        // Never cached: the point of the request is its side effects.
         $response->headers->set('Cache-Control', 'no-store, private');
 
         return $response;

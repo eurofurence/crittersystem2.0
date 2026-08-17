@@ -18,6 +18,7 @@ final class EventConfigStoreTest extends DatabaseTestCase
         self::assertNull($this->store()->get('does.not.exist'));
     }
 
+    /** Setting a key again updates the row in place; it never leaves a second row behind. */
     public function testSetGetAndOverwrite(): void
     {
         $store = $this->store();
@@ -29,7 +30,6 @@ final class EventConfigStoreTest extends DatabaseTestCase
         self::assertSame('Eurofurence 28', $store->get(EventConfigStore::KEY_NAME));
         self::assertSame('staff', $store->get(EventConfigStore::KEY_ACCESS_MODE));
 
-        // Overwriting an existing key updates in place (no duplicate row).
         $store->set(EventConfigStore::KEY_NAME, 'Eurofurence 29');
         $store->flush();
 
@@ -51,9 +51,9 @@ final class EventConfigStoreTest extends DatabaseTestCase
     }
 
     /**
-     * Regression: dates round-tripped through the store (saved as DATE_ATOM with
-     * a "+00:00" offset) must come back in the *named* "UTC" zone, otherwise the
-     * event-config form (model_timezone: 'UTC') throws on render.
+     * Dates round-tripped through the store (saved as DATE_ATOM with a "+00:00" offset) must come
+     * back in the *named* "UTC" zone, or the event-config form (model_timezone: 'UTC') throws on
+     * render.
      */
     public function testGetDateReturnsNamedUtcZone(): void
     {

@@ -102,10 +102,10 @@ final class MercureTopicBuilderTest extends DatabaseTestCase
      * An unscoped grant is deliberately event-wide, and is expressed as one templated selector.
      *
      * Treating "unscoped" as "no departments" would silently mute these users. Enumerating every
-     * department authorizes exactly the same set but is unbounded, and at 62 departments the token
-     * outgrew both the browser cookie limit and nginx's header buffer, so every page 502'd. The
-     * template also covers departments created after the token was minted, which the enumeration
-     * did not.
+     * department authorizes exactly the same set but is unbounded: at 62 departments the token
+     * outgrows both the browser cookie limit and nginx's header buffer, so every page returns 502.
+     * The template also covers departments created after the token was minted, which an
+     * enumeration cannot.
      */
     public function testAnUnscopedGrantIsExpressedAsOneTemplatedSelector(): void
     {

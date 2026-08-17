@@ -45,47 +45,52 @@ final class NavbarTest extends DatabaseWebTestCase
         return $crawler->filter('#navbar-menu .nav-link-title')->each(fn ($node) => trim($node->text()));
     }
 
+    /**
+     * The volunteer is granted exactly what the seeded Volunteer group grants, so this test moves
+     * with the catalog instead of drifting from it. Dashboard and Development (the navigation and
+     * theme kits) are admin-only and must stay out of the menu.
+     */
     public function testVolunteerSeesPublicEntriesOnly(): void
     {
-        // Grant exactly what the seeded Volunteer group grants, so this test moves
-        // with the catalog instead of drifting from it.
         $this->login('volunteer', PrivilegeCatalog::VOLUNTEER);
         $titles = $this->navTitles();
 
         foreach (['News', 'My Shifts', 'Shifts', 'Critter Types', 'Locations', 'Bounty Board', 'Ask Info Desk', 'Certifications', 'FAQ'] as $expected) {
             self::assertContains($expected, $titles, "Volunteer should see {$expected}");
         }
-        // Dashboard and Development (the Navigation/Theme kits) are admin-only.
         foreach (['Home', 'Shift Manager', 'Departments', 'Backstage', 'Manage', 'Audit', 'Messages', 'Dashboard', 'Development'] as $absent) {
             self::assertNotContains($absent, $titles, "Volunteer should not see {$absent}");
         }
     }
 
+    /**
+     * The Shift Manager entry is gated on the module privilege, not on the staff role. Staff are
+     * offered "Messages" instead of "Ask Info Desk".
+     */
     public function testStaffSeesShiftManagerAndDepartments(): void
     {
-        // The Shift Manager nav entry is gated on the module privilege.
         $this->login('staff', ['message:use', 'shift:view', 'manageshifts:view'], 'ROLE_STAFF');
         $titles = $this->navTitles();
 
         self::assertContains('Shift Manager', $titles);
         self::assertContains('Departments', $titles);
-        // Staff get "Messages", not "Ask Info Desk".
         self::assertContains('Messages', $titles);
         self::assertNotContains('Ask Info Desk', $titles);
     }
 
+    /**
+     * Audit is not a top-level entry: it lives under Manage, and /admin/audit is not a route.
+     * The viewer holds audit:view as a bare privilege rather than ROLE_ADMIN, which would force a
+     * 2FA-enrolment redirect before the menu could be read.
+     */
     public function testAuditViewerSeesManageAndAuditMovedUnderManage(): void
     {
-        // audit:view as a privilege is enough for the nav gate; avoid ROLE_ADMIN,
-        // which would force a 2FA-enrolment redirect.
         $this->login('auditor', ['audit:view']);
         $titles = $this->navTitles();
 
-        // Audit is not a top-level entry; it lives under Manage.
         self::assertContains('Manage', $titles);
         self::assertNotContains('Audit', $titles);
 
-        // /admin/audit is not a route.
         $this->client->request('GET', '/admin/audit');
         self::assertResponseStatusCodeSame(404);
     }

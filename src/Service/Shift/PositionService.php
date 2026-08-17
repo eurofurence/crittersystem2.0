@@ -201,6 +201,10 @@ final class PositionService
      * user never occupies the same position twice. Returns the existing
      * assignment when the pairing already exists.
      *
+     * Serialized against a concurrent claim of the same exclusive position: the shift is locked,
+     * capacity re-checked under the lock, and the unique (entry, position) constraint backstops a
+     * duplicate.
+     *
      * @throws \RuntimeException when the position is full
      */
     public function assign(ShiftPosition $shiftPosition, ShiftEntry $entry): ShiftPositionAssignment
@@ -215,9 +219,6 @@ final class PositionService
             }
         }
 
-        // Serialize against a concurrent claim of the same exclusive position:
-        // lock the shift, re-check capacity, and let the unique
-        // (entry,position) constraint backstop a duplicate.
         try {
             $assignment = $this->concurrency->transactional(function () use ($shiftPosition, $entry): ShiftPositionAssignment {
                 $this->concurrency->lockForUpdate($shiftPosition->getShift());

@@ -20,6 +20,7 @@ final class CommunicationsTest extends DatabaseTestCase
         return $user;
     }
 
+    /** The public feed drops staff-only items and puts pinned ones first; the staff feed carries all of them. */
     public function testNewsFeedHidesStaffOnlyUnlessRequested(): void
     {
         $public = (new News())->setTitle('Public')->setText('hi');
@@ -34,12 +35,13 @@ final class CommunicationsTest extends DatabaseTestCase
         $repo = $this->em->getRepository(News::class);
 
         $public = $repo->findFeed(false);
-        self::assertCount(2, $public); // staff-only excluded
-        self::assertSame('Pinned', $public[0]->getTitle()); // pinned first
+        self::assertCount(2, $public);
+        self::assertSame('Pinned', $public[0]->getTitle());
 
         self::assertCount(3, $repo->findFeed(true));
     }
 
+    /** Unread is counted per recipient: Bob holds Alice's two messages, Alice holds Bob's one. */
     public function testConversationUnreadAndMarkRead(): void
     {
         $alice = $this->user('alice');
@@ -53,8 +55,8 @@ final class CommunicationsTest extends DatabaseTestCase
         $repo = $this->em->getRepository(Message::class);
 
         self::assertCount(3, $repo->findConversation($alice, $bob));
-        self::assertSame(2, $repo->countUnread($bob)); // two from alice
-        self::assertSame(1, $repo->countUnread($alice)); // one from bob
+        self::assertSame(2, $repo->countUnread($bob));
+        self::assertSame(1, $repo->countUnread($alice));
 
         $repo->markConversationRead($bob, $alice);
         $this->em->clear();

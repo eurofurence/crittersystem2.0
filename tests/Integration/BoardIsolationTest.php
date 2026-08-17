@@ -51,8 +51,9 @@ final class BoardIsolationTest extends DatabaseWebTestCase
     }
 
     /**
-     * The component-architecture rule, made checkable. A `<twig:...>` tag outside the board is the
-     * exact thing CLAUDE.md forbids, and it would not fail any other test.
+     * The component-architecture rule, made checkable. A `<twig:...>` tag outside the board starts
+     * the second component architecture the macro library exists to avoid, and it fails no other
+     * test.
      */
     public function testNoTemplateOutsideTheBoardUsesComponentSyntax(): void
     {
@@ -119,14 +120,16 @@ final class BoardIsolationTest extends DatabaseWebTestCase
         self::assertSame(['assets/styles/board.css'], $input, 'Tailwind must compile the board stylesheet, and only that.');
     }
 
-    /** Kit components must not join the macro library that the whole application imports from. */
+    /**
+     * Kit components must not join the macro library that the whole application imports from. The
+     * macro library is `*_macros.twig` inside per-domain folders, while a kit component is a
+     * PascalCase template, so one at the top level means an `ux:install` was never moved.
+     */
     public function testKitComponentsLiveInTheirOwnDirectory(): void
     {
         $config = (string) file_get_contents(self::ROOT.'/config/packages/twig_component.yaml');
         self::assertStringContainsString("anonymous_template_directory: 'components/board'", $config);
 
-        // The macro library is *_macros.twig files inside per-domain folders; a kit component is a
-        // PascalCase template. One appearing at the top level means an ux:install was not moved.
         $strays = glob(self::ROOT.'/templates/components/[A-Z]*.html.twig') ?: [];
         self::assertSame([], $strays, 'ux:install writes to templates/components/; move its output into board/.');
     }
@@ -134,8 +137,7 @@ final class BoardIsolationTest extends DatabaseWebTestCase
     /**
      * The kit draws its icons with ux-icons, which this project does not install. A component that
      * still calls for one renders a Twig error rather than an icon, and only at the moment somebody
-     * opens the panel that uses it - which has already happened twice, on Pagination and on the
-     * Combobox. Every `ux:install` needs the same edit, so this is the reminder.
+     * opens the panel that uses it. Every `ux:install` needs the same edit, so this is the reminder.
      */
     public function testNoKitComponentCallsForAnUninstalledIconPackage(): void
     {

@@ -67,13 +67,13 @@ final class ShiftConcurrencyTest extends DatabaseTestCase
         return [$shift, $type];
     }
 
+    /** Another writer saves the shift, advancing its version, so the version the caller holds is refused. */
     public function testStaleVersionIsRejected(): void
     {
         [$shift] = $this->shiftWithCapacity(1);
         $this->em->flush();
         $originalVersion = $shift->getVersion();
 
-        // Someone else edits and saves the shift; its version advances.
         $shift->setTitle('Edited elsewhere');
         $this->em->flush();
         self::assertGreaterThan($originalVersion, $shift->getVersion());
@@ -82,13 +82,14 @@ final class ShiftConcurrencyTest extends DatabaseTestCase
         $this->concurrency()->assertVersion($shift, $originalVersion);
     }
 
+    /** The current version passes the guard, so the call returns instead of throwing. */
     public function testCurrentVersionPasses(): void
     {
         [$shift] = $this->shiftWithCapacity(1);
         $this->em->flush();
 
         $this->concurrency()->assertVersion($shift, $shift->getVersion());
-        $this->addToAssertionCount(1); // no exception
+        $this->addToAssertionCount(1);
     }
 
     public function testLastSlotRaceLeavesExactlyOneWinner(): void
@@ -100,7 +101,6 @@ final class ShiftConcurrencyTest extends DatabaseTestCase
 
         $this->signup()->signUp($a, $shift, $type);
 
-        // The single slot is now taken; the second signup must be refused.
         $this->expectException(\RuntimeException::class);
         $this->signup()->signUp($b, $shift, $type);
     }

@@ -77,13 +77,13 @@ final class ManageUserPreSeedTest extends DatabaseWebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    /** Being logged in and holding user:preseed is not enough: the session needs a fresh step-up. */
     public function testRequiresAFreshTwoFactorStepUp(): void
     {
         $user = $this->makeUser('seeder', ['user:preseed']);
         $user->setTotpSecret('SECRET')->setTwoFactorEnabled(true);
         $this->em->flush();
 
-        // Logged in and privileged, but no fresh step-up in the session.
         $this->client->loginUser($user);
         $this->client->request('GET', '/manage/user-preseed');
 
@@ -91,6 +91,11 @@ final class ManageUserPreSeedTest extends DatabaseWebTestCase
         self::assertStringContainsString('/2fa', (string) $this->client->getResponse()->headers->get('Location'));
     }
 
+    /**
+     * The upload writes nothing until it is confirmed, and it answers with a redirect to a GET
+     * preview: Turbo silently discards a rendered response to a form post, so the preview would
+     * never appear.
+     */
     public function testPreviewDoesNotWriteUntilConfirmed(): void
     {
         $this->seedMapping();
@@ -101,8 +106,6 @@ final class ManageUserPreSeedTest extends DatabaseWebTestCase
         $form['file']->upload($this->dumpFile());
         $this->client->submit($form);
 
-        // The upload must redirect to a GET preview (Post/Redirect/Get); a rendered
-        // response to the POST is silently dropped by Turbo in the browser.
         self::assertResponseRedirects();
         self::assertMatchesRegularExpression(
             '#/manage/user-preseed/preview/[0-9a-f]{32}$#',

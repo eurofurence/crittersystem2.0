@@ -12,9 +12,9 @@ use Symfony\Component\Panther\PantherTestCase;
  * Base for tests that drive a real browser.
  *
  * These exist because the rest of the suite renders markup and never executes the JavaScript that
- * drives it. Two defects shipped through that gap: a Stimulus controller that threw before it
- * connected (killing the whole planner), and links inside a Turbo Frame that navigated the frame
- * instead of the page ("Content missing"). Neither is visible to a test that only reads HTML.
+ * drives it, so whole classes of defect pass it: a Stimulus controller that throws before it
+ * connects (killing the planner), links inside a Turbo Frame that navigate the frame instead of the
+ * page ("Content missing"). Neither is visible to a test that only reads HTML.
  *
  * Panther serves the app in its own process against the same test database this class seeds
  * through the kernel, so fixtures written here are visible to the browser.
@@ -44,9 +44,9 @@ abstract class BrowserTestCase extends PantherTestCase
      *
      * Panther keeps one browser for the whole run, and Chrome's console log is a property of that
      * browser rather than of a page: whatever an earlier test left unread is handed to the next one
-     * that asks. That made {@see assertNoConsoleErrors()} report a planner error against the apply
-     * screen, so which test failed depended on the order they ran in. Reading the log here throws
-     * away everything from before this test.
+     * that asks, so {@see assertNoConsoleErrors()} reports another test's error against this one and
+     * which test fails depends on the order they ran in. Reading the log here throws away everything
+     * from before this test.
      */
     protected function browse(): Client
     {

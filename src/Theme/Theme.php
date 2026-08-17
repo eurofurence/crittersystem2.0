@@ -11,7 +11,7 @@ final readonly class Theme
     public function __construct(
         public string $slug,
         public string $name,
-        public string $type, // 'light' or 'dark' (Bootstrap 5.3 data-bs-theme)
+        public string $type,
         public string $assetPath,
     ) {
     }

@@ -36,6 +36,11 @@ final class UserPreSeedController extends AbstractController
         return $this->render('manage/user_preseed/index.html.twig');
     }
 
+    /**
+     * The upload buffers the dump and redirects: the preview is rendered by the GET that follows.
+     * Turbo drops a non-redirecting response to a form submission, so rendering the preview here
+     * directly would show the operator nothing. The redirect also makes the preview refreshable.
+     */
     #[Route('/preview', name: 'app_manage_user_preseed_preview', methods: ['POST'])]
     public function upload(Request $request): Response
     {
@@ -66,9 +71,6 @@ final class UserPreSeedController extends AbstractController
         $token = bin2hex(random_bytes(16));
         $this->storage->write($this->bufferKey($token), $contents, 'application/json');
 
-        // Post/Redirect/Get: the preview is rendered by the GET below. Turbo drops a
-        // non-redirecting response to a form submission, so the upload must redirect
-        // rather than render the preview directly. It also makes the preview refreshable.
         return $this->redirectToRoute('app_manage_user_preseed_preview_show', ['token' => $token]);
     }
 
@@ -150,12 +152,15 @@ final class UserPreSeedController extends AbstractController
         return $rows;
     }
 
+    /**
+     * A failed delete is swallowed: a leftover buffer is harmless, being admin-only and overwritten
+     * by the next upload.
+     */
     private function discard(string $key): void
     {
         try {
             $this->storage->delete($key);
         } catch (FilesystemException) {
-            // A leftover buffer is harmless; it is admin-only and overwritten by the next upload.
         }
     }
 }

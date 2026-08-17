@@ -224,6 +224,9 @@ class ShiftRepository extends ServiceEntityRepository
      * owner: leaving them out silently is what makes a manager wonder whether a shift exists at all.
      * Shifts already in THIS group are excluded, because they are listed above as members.
      *
+     * The day filter is a half-open range anchored on local midnight: shifts are stored as UTC
+     * instants, so comparing a date string against the column would drift across the timezone offset.
+     *
      * @param ShiftGroup|null $exclude the group being edited
      *
      * @return Shift[] soonest first, capped
@@ -257,8 +260,6 @@ class ShiftRepository extends ServiceEntityRepository
         if (!$includePast) {
             $qb->andWhere('s.endsAt >= :now')->setParameter('now', $now ?? new \DateTimeImmutable());
         }
-        // A half-open range anchored on local midnight: shifts are stored as UTC instants, so
-        // comparing a date string against the column would drift across the timezone offset.
         if ($dayFrom !== null && $dayTo !== null) {
             $qb->andWhere('s.startsAt >= :dayFrom AND s.startsAt < :dayTo')
                 ->setParameter('dayFrom', $dayFrom)
@@ -330,6 +331,8 @@ class ShiftRepository extends ServiceEntityRepository
      * Distinct calendar days (Y-m-d) that have at least one upcoming shift,
      * for the date selector.
      *
+     * The days are grouped in PHP against the given timezone because the stored instants are UTC.
+     *
      * @return string[]
      */
     public function findUpcomingDays(\DateTimeZone $tz, int $limit = 30): array
@@ -344,7 +347,6 @@ class ShiftRepository extends ServiceEntityRepository
         /** @var array<int, array{d: \DateTimeImmutable}> $rows */
         $rows = $qb->getQuery()->getResult();
 
-        // Group by the local calendar day (stored instants are UTC)
         $days = [];
         foreach ($rows as $row) {
             $days[$row['d']->setTimezone($tz)->format('Y-m-d')] = true;

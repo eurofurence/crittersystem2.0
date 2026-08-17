@@ -46,9 +46,9 @@ final class RequestLinkServiceTest extends DatabaseTestCase
         return $u;
     }
 
+    /** Auto-join looks the baseline group up by the exact `volunteer` slug. */
     private function volunteerGroup(): void
     {
-        // The auto-join uses the 'volunteer' group slug.
         $this->em->persist(new Group('Volunteer', 'volunteer'));
     }
 
@@ -101,12 +101,12 @@ final class RequestLinkServiceTest extends DatabaseTestCase
         self::assertTrue(static::getContainer()->get(UserGroupAssignmentRepository::class)->userIsMember($user, $dept));
     }
 
+    /** A department carrying an SSO group mapping is SSO-managed, and a link never changes its membership. */
     public function testSsoManagedDepartmentNeverJoined(): void
     {
         $this->config()->set(EventConfigStore::KEY_MEMBERSHIP_AUTO_FROM_LINKS, true);
         $this->volunteerGroup();
         $dept = $this->dept('tech');
-        // Map an SSO group to the department -> SSO-managed.
         $mapping = new SsoGroupMapping('sso-tech');
         $mapping->setDepartment($dept);
         $this->em->persist($mapping);

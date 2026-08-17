@@ -38,6 +38,7 @@ final class PurgeEmptySupportConversationsTest extends DatabaseTestCase
         return $user;
     }
 
+    /** createdAt is set on construction, so the row is aged afterwards in SQL. */
     private function conversation(User $subject, ConversationType $type, string $createdAgo): Conversation
     {
         $conversation = new Conversation($type, $type === ConversationType::SUPPORT ? $subject : null);
@@ -45,7 +46,6 @@ final class PurgeEmptySupportConversationsTest extends DatabaseTestCase
         $this->em->persist(new ConversationParticipant($conversation, $subject));
         $this->em->flush();
 
-        // createdAt is set on construction, so it is moved afterwards to age the row.
         $this->em->getConnection()->executeStatement(
             'UPDATE conversations SET created_at = :at WHERE id = :id',
             ['at' => (new \DateTimeImmutable($createdAgo))->format('Y-m-d H:i:s'), 'id' => $conversation->getId()],

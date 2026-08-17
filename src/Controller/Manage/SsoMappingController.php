@@ -52,6 +52,10 @@ final class SsoMappingController extends AbstractController
         return $response;
     }
 
+    /**
+     * An uploaded file wins over the textarea, which holds the pasted contents. The modal always
+     * submits both fields, so an empty (no-file) upload has to fall through instead of being read.
+     */
     #[Route('/import', name: 'app_manage_sso_mapping_import', methods: ['POST'])]
     public function import(Request $request): Response
     {
@@ -59,8 +63,6 @@ final class SsoMappingController extends AbstractController
             return $this->redirectToRoute('app_manage_sso_mapping_index');
         }
 
-        // An uploaded file wins over the textarea; fall back to the pasted contents. The modal always
-        // submits both fields, so an empty (no-file) upload must fall through, not be read.
         $upload = $request->files->get('file');
         $payload = $upload !== null && $upload->isValid()
             ? (string) $upload->getContent()

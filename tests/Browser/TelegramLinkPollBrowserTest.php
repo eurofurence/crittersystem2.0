@@ -12,10 +12,10 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 /**
  * The link-status poll must not outlive the page that started it.
  *
- * This is the defect exactly as it was reported: the status endpoint kept being hit every few
- * seconds with a Referer pointing at a completely different page, because Turbo swaps the body
- * without tearing the document down and the old inline loop had nothing to stop it. Only a real
- * browser can show this - the request log is the symptom, and PHPUnit never runs the script at all.
+ * An inline loop keeps hitting the status endpoint every few seconds with a Referer pointing at a
+ * completely different page, because Turbo swaps the body without tearing the document down and
+ * nothing owns the timer. Only a real browser can show this: the request log is the symptom, and
+ * PHPUnit never runs the script at all.
  */
 final class TelegramLinkPollBrowserTest extends BrowserTestCase
 {

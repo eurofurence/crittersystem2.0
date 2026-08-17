@@ -40,6 +40,15 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
     ) {
     }
 
+    /**
+     * The brute-force throttle is asserted before the password is looked at, so that a correct
+     * guess arriving inside a timeout is refused exactly like a wrong one.
+     *
+     * PasswordUpgradeBadge names the user provider explicitly because the user loader is a closure
+     * bound to this class: Symfony otherwise infers the upgrader from whatever object the loader is
+     * bound to, finds no PasswordUpgraderInterface there, and silently stops rehashing passwords
+     * whose algorithm or cost has since been raised.
+     */
     public function authenticate(Request $request): Passport
     {
         $username = (string) $request->getPayload()->get('_username');
@@ -48,8 +57,6 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
 
         $request->getSession()->set(SecurityRequestAttributes::LAST_USERNAME, $username);
 
-        // Before the password is looked at, so that a correct guess arriving inside a brute-force
-        // timeout is refused exactly like a wrong one.
         $this->throttle->assertNotLocked($username, $request->getClientIp());
 
         return new Passport(
@@ -57,10 +64,6 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
             new PasswordCredentials($password),
             [
                 new CsrfTokenBadge('authenticate', $csrfToken),
-                // Named explicitly because the user loader above is a closure bound to this class.
-                // Symfony otherwise infers the upgrader from whatever object the loader is bound to,
-                // finds no PasswordUpgraderInterface there, and silently stops rehashing passwords
-                // whose algorithm or cost has since been raised.
                 new PasswordUpgradeBadge($password, $this->userProvider),
             ],
         );
@@ -84,6 +87,11 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
         return $user;
     }
 
+    /**
+     * A user the Access mode shuts out lands on the restricted-access notice rather than on a
+     * target they cannot open. That notice keeps their session, so their digital badge stays
+     * reachable.
+     */
     public function onAuthenticationSuccess(Request $request, TokenInterface $token, string $firewallName): ?Response
     {
         $user = $token->getUser();
@@ -91,8 +99,6 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
             $user->setLastLoginAt(new \DateTimeImmutable());
             $this->entityManager->flush();
 
-            // The Access mode may shut this user out. Land them on the notice (which keeps their
-            // session so their digital badge stays reachable) rather than a target they cannot open.
             if (!$this->accessModeGate->permits($user)) {
                 return new RedirectResponse($this->urlGenerator->generate('app_system_unavailable'));
             }
@@ -126,6 +132,9 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
      * A request the browser made on the page's behalf (poll, Turbo frame, form post over fetch) rather
      * than a top-level navigation. Symfony also skips saving a target path for these, which is what
      * stops a poll of /status from becoming the place the user is returned to after signing in again.
+     *
+     * Sec-Fetch-Mode is sent by every modern browser and absent on curl and old clients, which
+     * therefore read as a navigation.
      */
     public static function isBackgroundRequest(Request $request): bool
     {
@@ -133,7 +142,6 @@ class LoginFormAuthenticator extends AbstractLoginFormAuthenticator
             return true;
         }
 
-        // Sent by every modern browser; absent on curl and old clients, which then read as a navigation.
         $mode = $request->headers->get('Sec-Fetch-Mode');
 
         return $mode !== null && $mode !== 'navigate';

@@ -63,10 +63,13 @@ final class MatrixEditEndpointTest extends DatabaseWebTestCase
         self::assertNotNull($this->em->getRepository(PositionGroup::class)->findOneBy(['name' => 'Light']));
     }
 
+    /**
+     * The cell editor must be able to place any volunteer, not only members of the department, so
+     * the search reaches outsiders too. A department with no members of its own would otherwise be
+     * unable to staff anything.
+     */
     public function testUserSearchSurfacesUsersOutsideTheDepartment(): void
     {
-        // The cell editor must be able to place any volunteer, not only department members - the
-        // whole point of the search box that replaced the members-only dropdown.
         $dept = $this->login();
         $hasher = static::getContainer()->get(UserPasswordHasherInterface::class);
         $outsider = new User();

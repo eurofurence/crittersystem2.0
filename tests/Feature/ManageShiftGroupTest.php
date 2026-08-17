@@ -128,6 +128,11 @@ final class ManageShiftGroupTest extends DatabaseWebTestCase
         self::assertSame('Main Show', $reloaded->getShiftGroup()->getName());
     }
 
+    /**
+     * A group that already holds shifts cannot be moved to another department. The manager is
+     * granted that other department too, so the refusal is the group rule itself and not a
+     * permission check standing in for it.
+     */
     public function testTheDepartmentCannotBeChangedOnceTheGroupHasShifts(): void
     {
         $group = $this->group($this->scenario->department);
@@ -136,8 +141,6 @@ final class ManageShiftGroupTest extends DatabaseWebTestCase
 
         $elsewhere = $this->otherDepartment();
         $manager = $this->scopedManager($this->scenario->department);
-        // Also grants the manager the other department, so the refusal is the group rule and not a
-        // permission check standing in for it.
         $this->em->persist($manager->assignGroup($manager->getGroupAssignments()->first()->getGroup(), $elsewhere));
         $this->em->flush();
 
@@ -186,6 +189,10 @@ final class ManageShiftGroupTest extends DatabaseWebTestCase
         self::assertSame(403, $this->client->getResponse()->getStatusCode());
     }
 
+    /**
+     * A group holds shifts of its own department only. A candidate in the group's own department is
+     * seeded so that the add form, and with it the CSRF token, renders at all.
+     */
     public function testAShiftFromAnotherDepartmentCannotJoinTheGroup(): void
     {
         $group = $this->group($this->scenario->department);
@@ -196,7 +203,6 @@ final class ManageShiftGroupTest extends DatabaseWebTestCase
         $this->em->persist($foreign);
         $this->em->flush();
 
-        // A candidate in the group's own department, so the add form (and its CSRF token) renders.
         $this->scenario->shift('Own shift', 'tomorrow 10:00');
 
         $this->client->loginUser($this->scopedManager($this->scenario->department));
@@ -233,6 +239,11 @@ final class ManageShiftGroupTest extends DatabaseWebTestCase
         self::assertSame(1, $this->em->getRepository(\App\Entity\ShiftEntry::class)->count(['shift' => $shift->getId()]));
     }
 
+    /**
+     * Adding a shift to a group that volunteers already signed up to asks first, before anything is
+     * written, the same way the planner asks. Confirming attaches the shift but does not back-fill
+     * sign-ups: a volunteer is never silently put on a shift they did not apply to.
+     */
     public function testAddingAMemberAsksBeforeLeavingVolunteersOnAPartialCommitment(): void
     {
         $group = $this->group($this->scenario->department);
@@ -248,7 +259,6 @@ final class ManageShiftGroupTest extends DatabaseWebTestCase
         $this->client->loginUser($this->scopedManager($this->scenario->department));
         $token = $this->pickerToken($group);
 
-        // Asked before anything is written, the same way the planner asks.
         $reply = $this->addShifts($group, [(string) $newcomer->getUuid()], $token);
         self::assertFalse($reply['ok']);
         self::assertArrayHasKey('confirm', $reply);
@@ -264,7 +274,6 @@ final class ManageShiftGroupTest extends DatabaseWebTestCase
 
         $this->em->clear();
         self::assertNotNull($this->em->getRepository(Shift::class)->find($newcomer->getId())->getShiftGroup());
-        // No back-filling: the volunteer is not silently put on a shift they never applied to.
         self::assertSame(0, $this->em->getRepository(\App\Entity\ShiftEntry::class)->count(['shift' => $newcomer->getId()]));
     }
 

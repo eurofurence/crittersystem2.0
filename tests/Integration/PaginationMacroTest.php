@@ -78,13 +78,13 @@ final class PaginationMacroTest extends KernelTestCase
     /**
      * A table wrapped in a frame must be marked target="_top" so its row links navigate the whole
      * page; the pager is then the one thing that opts back into the frame. Without `frame` the
-     * page links would navigate the whole page too, defeating the frame entirely.
+     * page links would navigate the whole page too, defeating the frame entirely. Every page link,
+     * and only a page link, carries the target.
      */
     public function testPageLinksTargetTheGivenFrame(): void
     {
         $html = $this->render("{{ d.pagination({route: 'app_departments', page: 2, pages: 4, total: 100, frame: 'dept-members-staff'}) }}");
 
-        // Every page link, and only page links, carries the target.
         self::assertSame(
             substr_count($html, '<a class="page-link"'),
             substr_count($html, 'data-turbo-frame="dept-members-staff"'),

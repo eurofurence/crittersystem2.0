@@ -54,13 +54,15 @@ final class ContactVisibilityEditTest extends DatabaseWebTestCase
         self::assertNotNull($consent->getVisibilityConsentedAt());
     }
 
+    /**
+     * A volunteer may not withdraw their last contact channel. This user has no phone and no
+     * telegram, so withdrawing everything would leave them unreachable and is refused.
+     */
     public function testLastChannelCannotBeWithdrawn(): void
     {
         $user = $this->user();
         $this->client->loginUser($user);
 
-        // Withdraw everything; the user has no phone/telegram, so this leaves them
-        // unreachable and must be refused.
         $this->client->request('POST', '/profile/privacy/contact-visibility', [
             '_token' => $this->token(), 'show_name' => '1',
         ]);

@@ -71,12 +71,12 @@ final class OperationalStatusServiceTest extends DatabaseTestCase
         self::assertNotNull($vm['expiresAt']);
     }
 
+    /** A 30-minute override is spent 31 minutes on, and the status falls back to the automatic one. */
     public function testOverrideExpiresBackToAutomatic(): void
     {
         $user = $this->makeUser('otto');
         $this->service()->setFreeToHelp($user, 30);
 
-        // 31 minutes later the override is spent.
         $later = (new \DateTimeImmutable())->modify('+31 minutes');
         self::assertSame(OperationalStatusService::NO_SHIFTS, $this->service()->effectiveStatus($user, $later));
     }
@@ -87,7 +87,6 @@ final class OperationalStatusServiceTest extends DatabaseTestCase
         $this->service()->setFreeToHelp($user, 120);
         $this->assignActiveShift($user, '-1 hour', '+1 hour');
 
-        // The running shift wins over the free-to-help override.
         self::assertSame(OperationalStatusService::NOT_AVAILABLE, $this->service()->effectiveStatus($user));
     }
 

@@ -82,16 +82,19 @@ final class ShiftSignupHttpTest extends DatabaseWebTestCase
         self::assertNull($this->entries()->findOneByShiftAndUser($shift, $user), 'a bad CSRF token must never create a sign-up');
     }
 
+    /**
+     * A volunteer with no confirmed membership may browse the shift but not join it: no sign-up
+     * control is offered, and posting to the endpoint anyway still creates nothing.
+     */
     public function testAnUnconfirmedMemberIsOfferedNoSignUpAndCannotForceOne(): void
     {
         $shift = $this->scenario->shift('Members Only', 'tomorrow 10:00');
-        $user = $this->scenario->user(); // browsing is allowed; joining is not
+        $user = $this->scenario->user();
         $this->client->loginUser($user);
 
         $crawler = $this->browse($shift);
         self::assertSame(0, $crawler->filter('form[action*="/signup"]')->count());
 
-        // …and posting anyway must not work.
         $this->client->request('POST', '/shifts/'.$shift->getUuid().'/signup', [
             '_token' => 'not-a-real-token',
             'volunteer_type' => $this->scenario->type->getUuid(),
@@ -100,6 +103,7 @@ final class ShiftSignupHttpTest extends DatabaseWebTestCase
         self::assertNull($this->entries()->findOneByShiftAndUser($shift, $user));
     }
 
+    /** Replaying the same sign-up request is idempotent: the volunteer is booked once, not twice. */
     public function testSigningUpTwiceDoesNotCreateASecondEntry(): void
     {
         $shift = $this->scenario->shift('Once Only', 'tomorrow 10:00');
@@ -108,7 +112,7 @@ final class ShiftSignupHttpTest extends DatabaseWebTestCase
 
         $crawler = $this->browse($shift);
         $this->submitCardSignUp($shift, $crawler);
-        $this->submitCardSignUp($shift, $crawler); // replay the same request
+        $this->submitCardSignUp($shift, $crawler);
 
         self::assertCount(
             1,
@@ -195,13 +199,13 @@ final class ShiftSignupHttpTest extends DatabaseWebTestCase
         self::assertNull($this->entries()->findOneByShiftAndUser($past, $user), 'a past shift must not accept sign-ups');
     }
 
+    /** An anonymous caller holding a guessed entry uuid is bounced to login, and the entry survives. */
     public function testAnEntryOfAnotherUserIsNotEvenReachableByUuidGuessing(): void
     {
         $shift = $this->scenario->shift('Private', 'tomorrow 10:00');
         $owner = $this->scenario->user(memberOf: $this->scenario->type);
         $entry = $this->scenario->signUp($owner, $shift);
 
-        // Not logged in at all.
         $this->client->request('POST', '/shifts/entries/'.$entry->getUuid().'/cancel', ['_token' => 'x']);
 
         self::assertResponseRedirects('/login');

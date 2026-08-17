@@ -21,8 +21,6 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final class InfoDeskQueueService
 {
-    private const DEFAULT_TIMEOUT_MINUTES = 5;
-
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ConversationRepository $conversations,
@@ -50,9 +48,19 @@ final class InfoDeskQueueService
         return $this->conversations->findClaimedBy($owner);
     }
 
-    public function timeoutMinutes(): int
+    /**
+     * The configured idle timeout, in seconds.
+     *
+     * Seconds is what the operations screen asks for and stores, so it is what this reads. Treating
+     * the same value as minutes held an idle claim for five hours instead of five minutes as soon as
+     * anyone saved that screen, and the default masked it: unset, the fallback was a bare 5.
+     */
+    public function timeoutSeconds(): int
     {
-        return $this->config->getInt(EventConfigStore::KEY_INFODESK_CLAIM_TIMEOUT, self::DEFAULT_TIMEOUT_MINUTES);
+        return $this->config->getInt(
+            EventConfigStore::KEY_INFODESK_CLAIM_TIMEOUT,
+            EventConfigStore::DEFAULT_INFODESK_CLAIM_TIMEOUT,
+        );
     }
 
     /** Release a claim that has been idle past the timeout. */
@@ -61,7 +69,7 @@ final class InfoDeskQueueService
         if (!$conversation->isClaimed() || $conversation->getClaimedAt() === null) {
             return false;
         }
-        $deadline = $conversation->getClaimedAt()->modify(\sprintf('+%d minutes', $this->timeoutMinutes()));
+        $deadline = $conversation->getClaimedAt()->modify(\sprintf('+%d seconds', $this->timeoutSeconds()));
         if (new \DateTimeImmutable() < $deadline) {
             return false;
         }
@@ -75,6 +83,9 @@ final class InfoDeskQueueService
     /**
      * Claim a support conversation. Exclusive (Admin/Sub Admin)
      * claims block Info Desk claims. Concurrency-safe via a row lock.
+     *
+     * The conversation is signalled: everyone reading the thread sees the header change, and the
+     * other responders need their queue to stop offering a conversation that is now taken.
      *
      * @throws \RuntimeException when already claimed by someone else
      */
@@ -91,8 +102,6 @@ final class InfoDeskQueueService
             $conversation->claim($owner, $exclusive);
             $this->em->flush();
 
-            // Everyone reading the thread sees the header change, and the other responders need
-            // their queue to stop offering a conversation that is now taken.
             $this->chat->signalChanged($conversation);
 
             $this->audit->log(AuditEvents::CHAT, AuditEvents::CLAIM, [

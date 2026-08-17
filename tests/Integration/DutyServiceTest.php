@@ -24,6 +24,7 @@ final class DutyServiceTest extends DatabaseTestCase
         return $user;
     }
 
+    /** Starting again while on duty hands back the open record instead of opening a second one. */
     public function testStartIsIdempotentWhileOnDutyAndEndCloses(): void
     {
         $service = $this->service();
@@ -34,7 +35,6 @@ final class DutyServiceTest extends DatabaseTestCase
         $first = $service->startDuty($user, null);
         self::assertNotNull($service->getCurrentDuty($user));
 
-        // Starting again while on duty returns the same open record (no duplicate).
         $again = $service->startDuty($user, null);
         self::assertSame($first->getId(), $again->getId());
         self::assertCount(1, $this->em->getRepository(DutyRecord::class)->findAll());

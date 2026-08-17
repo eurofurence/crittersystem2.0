@@ -40,6 +40,9 @@ final class StaffApplyGrid
     }
 
     /**
+     * The eligibility preload lives exactly as long as the columns it is read for: it holds
+     * entities, and leaving them behind hands the next thing that runs a detached volunteer type.
+     *
      * @param string[] $departmentUuids the departments the manager narrowed the grid to; empty means
      *                                  every department the other filters leave
      *
@@ -104,8 +107,6 @@ final class StaffApplyGrid
 
         [$windowStart, $windowEnd] = $this->window($shown, $midnight, $tz);
 
-        // The preload lives exactly as long as the columns it is read for: it holds entities, and
-        // leaving them behind hands the next thing that runs a detached volunteer type.
         $this->eligibility->warmUp($user, $shown);
         try {
             $columns = [];

@@ -21,11 +21,13 @@ final class BackstageDistributeBrowserTest extends BrowserTestCase
 {
     private const PASSWORD = 'secret123';
 
+    /**
+     * The desk group carries news:view because signing in lands on /news, where a 403 is a severe
+     * console error that {@see assertNoConsoleErrors()} would report against this test.
+     */
     private function seed(): User
     {
         $group = new Group('Desk', 'desk-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
-        // news:view is part of it because signing in lands on /news, and a 403 there would be a
-        // severe console error that assertNoConsoleErrors() below would report.
         foreach (['user:locate', 'goodie:view', 'goodie:distribute', 'shift:view', 'news:view'] as $name) {
             $privilege = new Privilege($name);
             $this->em->persist($privilege);
@@ -63,6 +65,7 @@ final class BackstageDistributeBrowserTest extends BrowserTestCase
         return $volunteer;
     }
 
+    /** The ladder is server-rendered, so a missing marker points at the projection, not at the CSS. */
     public function testTheHandoverPanesSwitchAndTheLadderRenders(): void
     {
         $volunteer = $this->seed();
@@ -73,7 +76,6 @@ final class BackstageDistributeBrowserTest extends BrowserTestCase
         $this->client->request('GET', '/backstage/distribute/'.$volunteer->getUuid());
         $this->client->waitForVisibility('#goodie-pane-open', 10);
 
-        // The ladder is server-rendered, so a missing marker here means the projection, not the CSS.
         self::assertCount(3, $this->client->getCrawler()->filter('.reward-timeline > li'));
         self::assertGreaterThan(0, $this->client->getCrawler()->filter('.reward-timeline > li.is-blocked')->count());
 

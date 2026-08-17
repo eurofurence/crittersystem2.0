@@ -56,7 +56,14 @@ final class HelpCallService
     ) {
     }
 
-    /** Whether the caller may trigger a call for this shift now. */
+    /**
+     * Whether the caller may trigger a call for this shift now. Info Desk may trigger at any time up
+     * to the end of the shift; a manager only inside the configured lead before it starts.
+     *
+     * That lead is in SECONDS. The key is stored, defaulted and labelled in seconds everywhere it is
+     * written, and reading it as minutes multiplies the window by sixty: the configured five minutes
+     * becomes five hours, and the whole event can be called for help before anybody is due.
+     */
     public function canTriggerNow(User $caller, Shift $shift, bool $isInfoDesk, ?\DateTimeImmutable $now = null): bool
     {
         $now ??= new \DateTimeImmutable();
@@ -64,13 +71,23 @@ final class HelpCallService
             return false;
         }
         if ($isInfoDesk) {
-            return true; // Info Desk may trigger at any time
+            return true;
         }
+
         $lead = $this->config->getInt(EventConfigStore::KEY_CALL_MANAGER_LEAD, EventConfigStore::DEFAULT_CALL_MANAGER_LEAD);
 
         return $now >= $shift->getStartsAt()->modify(\sprintf('-%d seconds', $lead));
     }
 
+    /**
+     * Open a call, or return the one already active for this shift.
+     *
+     * Two signals, and both are needed. The eligible users are signalled because a call nobody has
+     * seen yet has no previous eligible set, so signalling the current one is what puts it on their
+     * board. The shift's department is signalled separately because the operations boards show the
+     * call's state on the shift's row and watch the department rather than their own eligibility, so
+     * the per-user fan-out never reaches them.
+     */
     public function trigger(Shift $shift, ?User $caller, int $slots): HelpCall
     {
         $existing = $this->calls->findActiveForShift($shift);
@@ -95,7 +112,11 @@ final class HelpCallService
         return $call;
     }
 
-    /** Whether the user is eligible to be offered / accept this call. */
+    /**
+     * Whether the user is eligible to be offered / accept this call: the call is still open, they
+     * have not refused it, they are not already on the shift, they may see it, they are Free to help,
+     * they hold no confirmed assignment overlapping it, and they hold a role the shift asks for.
+     */
     public function isEligible(HelpCall $call, User $user): bool
     {
         $shift = $call->getShift();
@@ -123,7 +144,10 @@ final class HelpCallService
         return $this->responses->findOneBy(['call' => $call, 'user' => $user, 'type' => HelpResponseType::REFUSE->value]) !== null;
     }
 
-    /** Refuse a call - suppresses further notifications for it. */
+    /**
+     * Refuse a call - suppresses further notifications for it. Only this user's board is signalled:
+     * refusing takes the call off theirs and nobody else's.
+     */
     public function refuse(HelpCall $call, User $user): void
     {
         if ($this->responses->findOneBy(['call' => $call, 'user' => $user]) !== null) {
@@ -143,6 +167,14 @@ final class HelpCallService
      * Accept a call, creating the assignment transactionally.
      * Rechecks eligibility and the remaining slot under a lock; a call that
      * filled first is refused.
+     *
+     * The eligible set is read once before the lock and once after, and both are signalled. Accepting
+     * removes this user from the set and may fill the call for everyone else, so a set computed only
+     * afterwards would miss exactly the people whose board changed. Racing here costs at most a
+     * superfluous signal, never a wrong one.
+     *
+     * Answering also creates an assignment, so the staffing screens and the accepter's own status
+     * widget are signalled exactly as for any other assignment.
      *
      * @throws \RuntimeException when no slot remains or the user is ineligible
      */

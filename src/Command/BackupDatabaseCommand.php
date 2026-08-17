@@ -82,8 +82,6 @@ final class BackupDatabaseCommand extends Command
             }
         }
 
-        // Pruning runs only after a confirmed upload above, so a failed backup
-        // never removes the older dumps that are still the last good copy.
         $retentionDays = (int) ($this->stores->env('BACKUP_RETENTION_DAYS') ?: '14');
         if ($retentionDays < 1) {
             $io->warning('BACKUP_RETENTION_DAYS < 1 - retention disabled, keeping all dumps.');

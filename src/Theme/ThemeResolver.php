@@ -28,6 +28,14 @@ final class ThemeResolver
     ) {
     }
 
+    /**
+     * Every lookup after the query parameter touches the database, and this runs on every template
+     * render, including the maintenance and install pages, which are shown precisely when the
+     * database may be unreachable or unmigrated. A failure therefore degrades to the fallback theme
+     * rather than turning every page into a 500, and is logged: an unmigrated database is the usual
+     * cause, but anything else failing here is invisible otherwise, because the only symptom a user
+     * reports is "my theme reverted to the default".
+     */
     public function resolve(): Theme
     {
         $request = $this->requestStack->getMainRequest();
@@ -38,11 +46,6 @@ final class ThemeResolver
             }
         }
 
-        // The remaining lookups touch the database (current user, event config).
-        // This global runs on *every* template render, including the maintenance
-        // and install pages that are shown precisely when the database may be
-        // unreachable or unmigrated - so a failure here must degrade to the
-        // fallback theme rather than turning every page into a 500.
         try {
             $user = $this->security->getUser();
             if ($user instanceof User
@@ -57,11 +60,6 @@ final class ThemeResolver
                 return $theme;
             }
         } catch (\Throwable $e) {
-            /*
-             * The database is usually just not migrated yet (install/maintenance pages render precisely
-             * then), so this must not become a 500. But anything else failing here is invisible without a
-             * log line: the only symptom a user reports is "my theme reverted to the default".
-             */
             $this->logger->warning('Falling back to the default theme: {reason}', [
                 'reason' => $e->getMessage(),
                 'exception' => $e,

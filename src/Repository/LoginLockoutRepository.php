@@ -44,6 +44,9 @@ class LoginLockoutRepository extends ServiceEntityRepository
      * subject can cross the threshold concurrently. A plain INSERT would then raise a unique
      * violation, and Doctrine closes the EntityManager on a failed flush - turning a blocked login
      * attempt into a 500. ON CONFLICT settles the race in the database instead.
+     *
+     * The timestamp columns are timestamptz, so the bound values carry an explicit offset: a bare
+     * "Y-m-d H:i:s" would be interpreted in the session timezone.
      */
     public function insertOrExtend(
         string $scope,
@@ -67,8 +70,6 @@ class LoginLockoutRepository extends ServiceEntityRepository
                 'uuid' => $uuid->toRfc4122(),
                 'scope' => $scope,
                 'subject' => $subject,
-                // Timestamps are timestamptz. Binding a bare "Y-m-d H:i:s" would be read in the
-                // session timezone, so the offset is written out explicitly.
                 'lockedAt' => $lockedAt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:sP'),
                 'lockedUntil' => $lockedUntil->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:sP'),
                 'failureCount' => $failureCount,

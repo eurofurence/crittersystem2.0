@@ -51,11 +51,11 @@ final class Topics
      * The one templated selector in the vocabulary, and only for a grant that is genuinely
      * event-wide: an administrator, or a privilege held through an assignment with no department
      * scope. Enumerating instead is not more secure - it authorizes the same thing - but it is
-     * unbounded: 62 departments produced a 6.6 KB token, which a browser drops as an oversized
-     * cookie and which nginx rejects as an oversized response header, so every page 502'd.
+     * unbounded: 62 departments make a 6.6 KB token, which a browser drops as an oversized cookie
+     * and which nginx rejects as an oversized response header, so every page answers 502.
      *
      * It also covers departments created after the token was minted, which enumeration silently
-     * did not.
+     * does not.
      *
      * NEVER hand this to a scoped user. {@see \App\Mercure\TopicBuilder} decides, from
      * {@see \App\Security\PrivilegeScopeResolver}, and nowhere else.

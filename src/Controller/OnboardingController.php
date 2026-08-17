@@ -9,15 +9,12 @@ use App\Entity\PersonalData;
 use App\Entity\Settings;
 use App\Entity\User;
 use App\Entity\UserConsent;
-use App\Entity\UserVolunteerType;
-use App\Entity\VolunteerType;
 use App\Repository\ConsentTextRepository;
 use App\Repository\GroupRepository;
 use App\Repository\PrivacyNoticeRepository;
 use App\Repository\TelegramConfigurationRepository;
-use App\Repository\UserVolunteerTypeRepository;
-use App\Repository\VolunteerTypeRepository;
 use App\Service\EventConfigStore;
+use App\Service\Volunteer\DefaultVolunteerTypeAssigner;
 use App\Service\PrivacyNoticeProvider;
 use App\Service\StaffCheckInService;
 use App\Service\TextVariables;
@@ -53,8 +50,7 @@ final class OnboardingController extends AbstractController
         private readonly PrivacyNoticeRepository $privacyNotices,
         private readonly PrivacyNoticeProvider $privacyProvider,
         private readonly TextVariables $variables,
-        private readonly VolunteerTypeRepository $volunteerTypes,
-        private readonly UserVolunteerTypeRepository $memberships,
+        private readonly DefaultVolunteerTypeAssigner $defaultVolunteerType,
         private readonly GroupRepository $groups,
         private readonly UserPasswordHasherInterface $passwordHasher,
         private readonly AuditLogger $audit,
@@ -138,8 +134,8 @@ final class OnboardingController extends AbstractController
      * when the feature is off rather than showing a screen whose only action is "continue".
      *
      * A code is prepared on load so the "Open in Telegram" button is ready, reusing a still-valid
-     * pending request instead of churning a new one on every reload - the polling script reloads
-     * once linking completes.
+     * pending request instead of churning a new one on every reload; the link-status Stimulus
+     * controller reloads the step once linking completes.
      */
     #[Route('/telegram', name: 'app_onboarding_telegram', methods: ['GET', 'POST'])]
     public function telegram(Request $request): Response
@@ -326,49 +322,15 @@ final class OnboardingController extends AbstractController
      */
     private function assignDefaults(User $user): void
     {
-        $this->assignDefaultVolunteerType($user);
+        $this->defaultVolunteerType->assign($user);
         $this->grantBaselineGroup($user);
-    }
-
-    /**
-     * The base type for who this user is, confirmed straight away because the system grants it
-     * rather than the user asking for it - left unconfirmed it would sit in somebody's queue as a
-     * request to approve.
-     *
-     * An SSO group mapping may have created the membership already, hence the lookup before the
-     * insert: the unique index on (user, type) would otherwise abort the whole step.
-     *
-     * A missing default is logged as an error because nothing else reports it and the result is
-     * invisible: the user is told onboarding finished, and is left with no type and no way to be
-     * rostered. It means the seeded type was deleted or stripped of its role.
-     */
-    private function assignDefaultVolunteerType(User $user): void
-    {
-        $type = $this->volunteerTypes->findDefaultFor($user);
-        if ($type === null) {
-            $this->logger->error('Onboarding could not assign a default volunteer type.', [
-                'user' => (string) $user->getUuid(),
-                'role' => $user->isStaff() ? VolunteerType::ROLE_STAFF : VolunteerType::ROLE_VOLUNTEER,
-            ]);
-
-            return;
-        }
-
-        $membership = $this->memberships->findOneByUserAndType($user, $type);
-        if ($membership === null) {
-            $membership = new UserVolunteerType($user, $type);
-            $this->em->persist($membership);
-        }
-        if (!$membership->isConfirmed()) {
-            $membership->setConfirmedBy($user);
-        }
     }
 
     /**
      * Everyone gets the baseline group, staff included.
      *
-     * The positional groups staff hold - department-staff, shift-manager, department-manager - are
-     * not supersets of it, so gating this on isStaff() left a locally-onboarded staff member with
+     * The positional groups staff hold (department-staff, shift-manager, department-manager) are not
+     * supersets of it, so gating this on isStaff() leaves a locally-onboarded staff member with
      * fewer privileges than the same person arriving through SSO, which grants it unconditionally
      * ({@see \App\Sso\SsoUserProvisioner}). The group carries no role, so granting it widens nobody.
      *

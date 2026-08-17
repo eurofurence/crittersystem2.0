@@ -21,6 +21,7 @@ final class ConversationServiceTest extends DatabaseTestCase
         return static::getContainer()->get(ConversationService::class);
     }
 
+    /** Info-desk membership is recognised by the exact `info-desk` slug, so that group is built verbatim. */
     private function user(string $name, ?string $role = null, ?string $groupSlug = null): User
     {
         $u = new User();
@@ -28,7 +29,6 @@ final class ConversationServiceTest extends DatabaseTestCase
         if ($role !== null || $groupSlug !== null) {
             $group = new Group('G '.$name, ($groupSlug ?? 'g-'.$name).'-'.bin2hex(random_bytes(2)), $role);
             if ($groupSlug !== null) {
-                // Keep the exact slug for info-desk detection.
                 $group = new Group('Info Desk', 'info-desk', 'ROLE_STAFF');
             }
             $this->em->persist($group);
@@ -60,6 +60,7 @@ final class ConversationServiceTest extends DatabaseTestCase
         self::assertCount(2, $conversation->getParticipants());
     }
 
+    /** Contacting support again reuses the open conversation instead of opening a second one. */
     public function testStartSupportShowsWelcomeAndIsShared(): void
     {
         static::getContainer()->get(EventConfigStore::class)->set(EventConfigStore::KEY_INFODESK_WELCOME, 'Welcome! How can we help?');
@@ -71,7 +72,6 @@ final class ConversationServiceTest extends DatabaseTestCase
         self::assertCount(1, $first->getMessages(), 'welcome message present');
         self::assertSame('Welcome! How can we help?', $first->getMessages()->first()->getBody());
 
-        // Re-contacting reuses the same open support conversation.
         $second = $this->service()->startSupport($user);
         self::assertSame($first->getId(), $second->getId());
     }

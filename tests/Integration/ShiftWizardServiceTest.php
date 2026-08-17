@@ -37,30 +37,32 @@ final class ShiftWizardServiceTest extends DatabaseTestCase
         return $d;
     }
 
+    /** A 10:00 to 14:00 window with 120-minute slots yields 10-12 and 12-14. */
     public function testSlotsForDaySplitEvenly(): void
     {
         $slots = $this->wizard()->slotsForDay('2026-06-01', '10:00', '14:00', 120, $this->utc);
-        self::assertCount(2, $slots); // 10-12, 12-14
+        self::assertCount(2, $slots);
         self::assertSame('10:00', $slots[0][0]->format('H:i'));
         self::assertSame('12:00', $slots[0][1]->format('H:i'));
         self::assertSame('14:00', $slots[1][1]->format('H:i'));
     }
 
+    /** 10:00 to 13:00 in 2h slots yields only the full 10-12 slot; the partial 12-13 is dropped. */
     public function testTrailingPartialSlotIsDropped(): void
     {
-        // 10:00–13:00 with 2h slots -> one full 10-12 slot; 12-13 is partial, dropped.
         $slots = $this->wizard()->slotsForDay('2026-06-01', '10:00', '13:00', 120, $this->utc);
         self::assertCount(1, $slots);
     }
 
+    /** 22:00 to 02:00 is a 4h window, so 2h slots run 22-00 and 00-02 on the following day. */
     public function testOvernightWindowWrapsPastMidnight(): void
     {
-        // 22:00–02:00 = 4h window with 2h slots -> 22-00, 00-02.
         $slots = $this->wizard()->slotsForDay('2026-06-01', '22:00', '02:00', 120, $this->utc);
         self::assertCount(2, $slots);
         self::assertSame('2026-06-02 02:00', $slots[1][1]->format('Y-m-d H:i'));
     }
 
+    /** Two slots a day over two days produce four shifts, all created as drafts. */
     public function testGenerateRepeatsAcrossDaysAsDrafts(): void
     {
         $dept = $this->dept();
@@ -81,7 +83,6 @@ final class ShiftWizardServiceTest extends DatabaseTestCase
             [[$type, 2]],
         );
 
-        // 2 slots/day × 2 days = 4 shifts.
         self::assertCount(4, $created);
         foreach ($created as $shift) {
             self::assertSame(ShiftState::DRAFT, $shift->getState());

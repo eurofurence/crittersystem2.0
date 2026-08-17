@@ -49,6 +49,10 @@ final class StaffApplyFlowTest extends DatabaseWebTestCase
         return $user;
     }
 
+    /**
+     * Applying and cancelling both go through the rendered form, so the CSRF token is the one the
+     * page minted into the session.
+     */
     public function testApplyThenCancel(): void
     {
         $group = $this->staffGroup();
@@ -68,7 +72,6 @@ final class StaffApplyFlowTest extends DatabaseWebTestCase
         $this->em->flush();
 
         $this->client->loginUser($user);
-        // Apply, reading the CSRF token from the rendered apply form.
         $this->client->request('POST', '/manage-shifts/apply/'.$shift->getUuid(), [
             '_token' => $this->formToken($shift, 'apply'),
         ]);
@@ -83,6 +86,11 @@ final class StaffApplyFlowTest extends DatabaseWebTestCase
         self::assertNull($this->em->getRepository(ShiftEntry::class)->findOneBy(['shift' => $shift->getId(), 'user' => $user->getId()]));
     }
 
+    /**
+     * The last free slot goes to one applicant only. Both volunteers load the page while the slot is
+     * still open, so the second applies from a view that is already stale and the server, not the
+     * markup, is what refuses them.
+     */
     public function testLastSlotAllowsOnlyOneApplicant(): void
     {
         $group = $this->staffGroup();
@@ -102,16 +110,13 @@ final class StaffApplyFlowTest extends DatabaseWebTestCase
         $second = $this->member($group, $type, 'second');
         $this->em->flush();
 
-        // Both load the page while the single slot is still open (stale UI).
         $this->client->loginUser($first);
         $tokenFirst = $this->formToken($shift, 'apply');
         $this->client->loginUser($second);
         $tokenSecond = $this->formToken($shift, 'apply');
 
-        // First applies and wins the slot.
         $this->client->loginUser($first);
         $this->client->request('POST', '/manage-shifts/apply/'.$shift->getUuid(), ['_token' => $tokenFirst]);
-        // Second applies from a now-stale view - the backend refuses the last slot.
         $this->client->loginUser($second);
         $this->client->request('POST', '/manage-shifts/apply/'.$shift->getUuid(), ['_token' => $tokenSecond]);
 

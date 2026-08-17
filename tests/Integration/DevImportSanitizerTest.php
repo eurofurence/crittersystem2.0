@@ -26,6 +26,10 @@ final class DevImportSanitizerTest extends DatabaseTestCase
         return $connection;
     }
 
+    /**
+     * The Telegram and 2FA columns are written past the ORM so they hold ciphertext this instance's
+     * key cannot open, exactly as a production dump leaves them.
+     */
     private function importedUser(): int
     {
         $user = new User();
@@ -40,8 +44,6 @@ final class DevImportSanitizerTest extends DatabaseTestCase
         $id = (int) $user->getId();
         $this->em->clear();
 
-        // Written past the ORM: the encrypted columns hold ciphertext this
-        // instance's key cannot open, exactly as a production dump leaves them.
         $this->connection()->executeStatement(
             "UPDATE users SET telegram_id = '4242', telegram_handle = 'someone',
              telegram_acting_token = 'acting-token', telegram_linked_at = now(),

@@ -52,6 +52,10 @@ final class ManageEventConfigTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
     }
 
+    /**
+     * Saving redirects back to the config page, and the reload, which re-reads the stored date,
+     * renders cleanly.
+     */
     public function testSavingDatesRoundTripsWithoutError(): void
     {
         $this->loginAdmin();
@@ -62,9 +66,7 @@ final class ManageEventConfigTest extends DatabaseWebTestCase
         $form['event_config[eventStart]'] = '2026-09-01T09:00';
         $this->client->submit($form);
 
-        // Saves and redirects back to the config page…
         self::assertResponseRedirects('/manage/event-config');
-        // …and the reload (which re-reads the stored date) renders cleanly.
         $this->client->followRedirect();
         self::assertResponseIsSuccessful();
 

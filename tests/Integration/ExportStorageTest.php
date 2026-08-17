@@ -69,6 +69,7 @@ final class ExportStorageTest extends DatabaseTestCase
         $this->storage()->delete($key);
     }
 
+    /** The expiry has no setter, so reflection ages the export past its download window. */
     public function testPurgeDeletesTheArchiveOfAnExpiredGdprExport(): void
     {
         $export = new DataExport($this->makeUser('forgetme'), 'uuid-purge-1');
@@ -80,7 +81,6 @@ final class ExportStorageTest extends DatabaseTestCase
         $key = (string) $export->getStorageKey();
         self::assertTrue($this->storage()->exists($key));
 
-        // Age the export past its download window.
         $expiry = new \ReflectionProperty(DataExport::class, 'expiresAt');
         $expiry->setValue($export, new \DateTimeImmutable('-1 hour'));
         $this->em->flush();

@@ -10,12 +10,15 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Validator\Constraints as Assert;
 
+/**
+ * Names are unique within a department, not globally: two departments may each run a "Briefing".
+ * The global pool (department_id IS NULL) keeps unique names of its own, enforced by the partial
+ * index `uniq_shift_task_global_name`, which Doctrine's mapping cannot express and which every
+ * generated migration therefore proposes to drop.
+ */
 #[ORM\Entity(repositoryClass: ShiftTaskRepository::class)]
 #[ORM\Table(name: 'shift_tasks')]
 #[ORM\UniqueConstraint(name: 'uniq_shift_task_department_name', columns: ['department_id', 'name'])]
-// Names are unique WITHIN a department, not globally: two departments may each run a "Briefing".
-// The global pool (department_id IS NULL) keeps unique names of its own, enforced by a partial
-// index the ORM cannot express - see the migration.
 #[UniqueEntity(fields: ['name', 'department'], message: 'validation.shift_task.name_unique', errorPath: 'name')]
 class ShiftTask
 {

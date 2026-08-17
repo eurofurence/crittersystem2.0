@@ -82,7 +82,8 @@ class ProfilePresenter
 
     /**
      * Merged, chronological work history: shift assignments and manual worklog
-     * entries. Worklog rows are flagged so the UI can distinguish them.
+     * entries. Worklog rows are flagged so the UI can distinguish them, and one is marked editable
+     * only when the user recorded it for themselves.
      *
      * @return array<int, array<string, mixed>>
      */
@@ -116,7 +117,6 @@ class ProfilePresenter
                 'rewarded' => $worklog->getHours(),
                 'worklogId' => $worklog->getId(),
                 'worklogUuid' => $worklog->getUuid(),
-                // Self-editable only when the user recorded it for themselves.
                 'editable' => $worklog->getCreator() !== null
                     && $worklog->getCreator()->getId() === $worklog->getUser()->getId(),
             ];

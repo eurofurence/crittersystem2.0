@@ -52,6 +52,10 @@ final class OperationsConfigType extends AbstractType
                 'attr' => ['rows' => 2],
             ])
             ->add('infoDeskClaimTimeout', IntegerType::class, ['label' => 'manage.operations_config.field.infodesk_claim_timeout.label'] + $seconds)
+            ->add('securityCheckInWindow', IntegerType::class, [
+                'label' => 'manage.operations_config.field.security_checkin_window.label',
+                'help' => 'manage.operations_config.field.security_checkin_window.help',
+            ] + $seconds)
             ->add('checkInMessageEn', TextareaType::class, [
                 'label' => 'manage.operations_config.field.checkin_message_en.label',
                 'required' => true,

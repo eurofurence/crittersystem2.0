@@ -63,10 +63,10 @@ final class NotificationServiceTest extends DatabaseTestCase
         self::assertSame(0, $this->service()->unreadCount($user));
     }
 
+    /** A system category is mandatory in-app: the user's preference cannot switch it off. */
     public function testSystemCategoryAlwaysDeliversInApp(): void
     {
         $user = $this->makeUser('sysu');
-        // Even with in-app "disabled", a system category is mandatory in-app.
         $preference = (new NotificationPreference($user, NotificationCategories::SECURITY))->setInApp(false);
         $this->em->persist($preference);
         $this->em->flush();
@@ -97,11 +97,11 @@ final class NotificationServiceTest extends DatabaseTestCase
         self::assertFalse($row['telegram']);
     }
 
+    /** Without a user choice the lead is the system default of 1800 seconds, reported as 30 minutes. */
     public function testReminderLeadFallsBackToSystemDefault(): void
     {
         $user = $this->makeUser('remy');
 
-        // No user choice -> system default (1800s = 30 min).
         self::assertSame(30, $this->service()->reminderLeadMinutes($user));
 
         $user->getSettings()->setNotificationReminderLead(15);

@@ -68,6 +68,7 @@ final class MatrixEditingTest extends DatabaseTestCase
         self::assertSame(3, $b->getDisplayOrder());
     }
 
+    /** The source carries an assignment, which copying the structure must leave behind with it. */
     public function testCopyStructureReplicatesPositionsNotAssignments(): void
     {
         $svc = $this->service();
@@ -80,7 +81,6 @@ final class MatrixEditingTest extends DatabaseTestCase
         $spFoh = $svc->enablePosition($source, $foh, true);
         $spFoh->setNote('bring gloves');
         $svc->enablePosition($source, $spot, false);
-        // Put an assignment on the source that must NOT be copied.
         $type = new VolunteerType('Crew');
         $this->em->persist($type);
         $entry = new \App\Entity\ShiftEntry($source, $type, $this->user('dana'));
@@ -104,6 +104,7 @@ final class MatrixEditingTest extends DatabaseTestCase
         self::assertFalse($byName['Spot']->isRequired());
     }
 
+    /** Disabling an assigned position is refused until the caller forces it, which then removes it. */
     public function testDisablePositionWithAssignmentsRequiresForce(): void
     {
         $svc = $this->service();
@@ -127,7 +128,6 @@ final class MatrixEditingTest extends DatabaseTestCase
             self::addToAssertionCount(1);
         }
 
-        // With force it is removed.
         $svc->disablePosition($sp, true);
         $this->em->clear();
         self::assertCount(0, $this->em->getRepository(Shift::class)->find($shift->getId())->getShiftPositions());

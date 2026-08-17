@@ -43,9 +43,9 @@ final class AuditHealthCommandTest extends DatabaseTestCase
         self::assertStringContainsString('the trail is being written', $tester->getDisplay());
     }
 
+    /** A single message older than the 15-minute limit already means the queue is not draining. */
     public function testItFailsWhenMessagesSitUnconsumed(): void
     {
-        // One message, older than the 15-minute limit: the queue is not draining.
         $this->queueMessage((new \DateTimeImmutable('-3 hours'))->format('Y-m-d H:i:s'));
 
         $tester = $this->tester();

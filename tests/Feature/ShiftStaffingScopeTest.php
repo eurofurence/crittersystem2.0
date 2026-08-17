@@ -107,7 +107,8 @@ final class ShiftStaffingScopeTest extends DatabaseWebTestCase
     /**
      * The whole chain: reaching another department's staffing page also hands
      * over its CSRF tokens, so the no-show button - which can trigger the
-     * automatic ban - is reachable for a volunteer the manager has no claim to.
+     * automatic ban - is reachable for a volunteer the manager has no claim to. The token is taken
+     * out of the rendered page, exactly as an attacker would take it.
      */
     public function testManagerCannotNoShowOnAnotherDepartmentsShift(): void
     {
@@ -117,7 +118,6 @@ final class ShiftStaffingScopeTest extends DatabaseWebTestCase
 
         $this->client->loginUser($this->foreignManager());
 
-        // Take the token from the page itself, exactly as an attacker would.
         $crawler = $this->client->request('GET', '/manage/shifts/'.$shift->getUuid().'/staffing');
         if ($this->client->getResponse()->getStatusCode() !== 200) {
             self::assertSame(403, $this->client->getResponse()->getStatusCode());

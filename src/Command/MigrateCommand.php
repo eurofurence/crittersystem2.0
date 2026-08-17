@@ -23,7 +23,8 @@ use Symfony\Component\Console\Style\SymfonyStyle;
  *
  *  1. A PostgreSQL advisory lock ({@see MigrationLock}) so concurrent replicas
  *     serialise around a single migrator and a killed pod never leaves a stale
- *     lock behind.
+ *     lock behind. The pending count is re-checked once the lock is held: the
+ *     process that was waited for has usually applied everything already.
  *  2. all-or-nothing migrations (configured in doctrine_migrations.yaml), so an
  *     interrupted run rolls back as one transaction instead of leaving the
  *     schema half-migrated.
@@ -67,8 +68,6 @@ final class MigrateCommand extends Command
             return Command::FAILURE;
         }
 
-        // Already up to date? Nothing to do - this is the common steady-state
-        // call from a restarting replica.
         if ($this->inspector->pendingMigrationCount() === 0) {
             $io->success('Database schema is already up to date.');
             $this->state->markReady($this->inspector->latestAvailableVersion());
@@ -88,8 +87,6 @@ final class MigrateCommand extends Command
         }
 
         try {
-            // Re-check under the lock: a process we waited for may have already
-            // applied everything.
             if ($this->inspector->pendingMigrationCount() === 0) {
                 $io->success('Database schema is already up to date.');
                 $this->state->markReady($this->inspector->latestAvailableVersion());
@@ -126,6 +123,9 @@ final class MigrateCommand extends Command
 
     /**
      * Delegate to Doctrine's migrate command, teeing its output to the log file.
+     *
+     * `--all-or-nothing` is deliberately not passed: it is enabled in doctrine_migrations.yaml, and
+     * passing it a value on the command line is deprecated upstream.
      */
     private function runDoctrineMigrate(OutputInterface $output): int
     {
@@ -138,8 +138,6 @@ final class MigrateCommand extends Command
 
         $tee = new TeeOutput($output, fn (string $chunk) => $this->state->appendLog($chunk));
 
-        // all_or_nothing is enabled in doctrine_migrations.yaml, so it is NOT
-        // passed here (passing it a value is deprecated upstream).
         $migrateInput = new ArrayInput([
             'command' => 'doctrine:migrations:migrate',
             'version' => 'latest',

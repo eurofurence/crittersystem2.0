@@ -48,7 +48,6 @@ class OperationalStatusService
     {
         $now ??= new \DateTimeImmutable();
 
-        // An active shift assignment always wins.
         if ($this->entries->hasActiveShiftAt($user, $now)) {
             return self::NOT_AVAILABLE;
         }
@@ -84,9 +83,9 @@ class OperationalStatusService
      * When this status will change of its own accord, if it will.
      *
      * The status is derived from the clock: an override lapses, a shift begins, a shift ends. No
-     * server-side event happens at those instants, so there is nothing to push and the widget used
-     * to poll every minute in case one had passed. Telling the page the exact moment instead lets it
-     * look once, when it matters, rather than sixty times an hour on the chance that it does.
+     * server-side event happens at those instants, so there is nothing to push. The page is told the
+     * exact moment instead and looks once, when it matters, rather than polling on the chance that
+     * one has passed.
      *
      * Null means nothing is scheduled to change; only an actual edit (which does publish) will.
      */
@@ -112,6 +111,12 @@ class OperationalStatusService
         return $candidates === [] ? null : min($candidates);
     }
 
+    /**
+     * Signals both the status widget and the call board. The widget sits in the navbar of every open
+     * tab, so all of them have to follow; and being free to help is a precondition of answering a
+     * call, so calls that were already open become answerable at this moment and nothing else would
+     * announce them.
+     */
     public function setFreeToHelp(User $user, int $minutes): void
     {
         if (!\in_array($minutes, self::DURATIONS, true)) {
@@ -130,9 +135,6 @@ class OperationalStatusService
         }
         $this->em->flush();
 
-        // The widget is in the navbar of every open tab, so all of them have to follow. Their bounty
-        // board changes too: being free to help is a precondition of answering a call, so calls that
-        // were already open become answerable at this moment and nothing else would announce them.
         $this->live->signal([Topics::userStatus($user), Topics::userCalls($user)]);
 
         $this->audit->log(AuditEvents::OPERATIONAL_STATUS, AuditEvents::STATUS_CHANGE, [
@@ -146,6 +148,10 @@ class OperationalStatusService
         ]);
     }
 
+    /**
+     * Signals the call board as well as the status widget: clearing the override takes the user off
+     * the eligible set for every open call.
+     */
     public function clear(User $user): void
     {
         $override = $this->overrides->findOneByUser($user);
@@ -156,7 +162,6 @@ class OperationalStatusService
         $this->em->remove($override);
         $this->em->flush();
 
-        // Clearing it takes them off the eligible set for every open call, so the board goes too.
         $this->live->signal([Topics::userStatus($user), Topics::userCalls($user)]);
 
         $this->audit->log(AuditEvents::OPERATIONAL_STATUS, AuditEvents::STATUS_CHANGE, [

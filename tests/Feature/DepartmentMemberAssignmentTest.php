@@ -115,6 +115,10 @@ final class DepartmentMemberAssignmentTest extends DatabaseWebTestCase
         self::assertSame(DepartmentPosition::SHIFT_MANAGER, $this->positions()->positionOf($this->department, $user));
     }
 
+    /**
+     * An SSO-managed user's position is owned by the provider: the form is not offered, and the
+     * route refuses the post even when the form is forged, so the UI is not the only guard.
+     */
     public function testAnSsoUsersPositionIsNotOfferedOrAccepted(): void
     {
         $this->loginSubAdmin();
@@ -125,7 +129,6 @@ final class DepartmentMemberAssignmentTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', $this->showUrl());
         self::assertCount(0, $crawler->filter(sprintf('form[action="%s"]', $action)), 'no position form is offered');
 
-        // The route refuses it even when the form is forged, so the UI is not the only guard.
         $addToken = $crawler->filter(sprintf('form[action="%s"] input[name="_token"]', $this->showUrl().'/members/add'))->attr('value');
         $this->client->request('POST', $action, [
             '_token' => $addToken,

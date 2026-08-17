@@ -51,6 +51,10 @@ final class UserSearchPickerTest extends DatabaseWebTestCase
         return json_decode((string) $this->client->getResponse()->getContent(), true)['results'];
     }
 
+    /**
+     * The search matches usernames only. "@example.com" is a substring of every seeded address, so
+     * a search that touched the email column would enumerate the whole user table from one term.
+     */
     public function testWorklogSearchMatchesUsernameButNeverEmail(): void
     {
         $editor = $this->makeUser('editor', ['user:worklog:edit']);
@@ -61,7 +65,6 @@ final class UserSearchPickerTest extends DatabaseWebTestCase
         $names = array_column($this->results(), 'name');
         self::assertContains('bumblebee', $names);
 
-        // "@example.com" is every user's email substring; a username search must return nothing for it.
         $this->client->request('GET', '/manage/worklogs/user-search?q=example.com');
         self::assertSame([], $this->results(), 'email substrings must not enumerate users');
     }
@@ -110,6 +113,7 @@ final class UserSearchPickerTest extends DatabaseWebTestCase
         self::assertSame($subject->getId(), $logs[0]->getUser()->getId());
     }
 
+    /** The submitted uuid belongs to nobody, and a worklog must not be persisted against it. */
     public function testManageWorklogFormRejectsAnUnknownUser(): void
     {
         $editor = $this->makeUser('logger', ['user:worklog:edit']);
@@ -120,7 +124,7 @@ final class UserSearchPickerTest extends DatabaseWebTestCase
 
         $this->client->request('POST', '/manage/worklogs/new', ['worklog' => [
             '_token' => $token,
-            'user' => 'de305d54-75b4-431b-adb2-eb6b9e546013', // no such user
+            'user' => 'de305d54-75b4-431b-adb2-eb6b9e546013',
             'hours' => '1',
             'workedAt' => '2026-07-10T09:00',
             'comment' => '',
@@ -157,13 +161,13 @@ final class UserSearchPickerTest extends DatabaseWebTestCase
         self::assertGreaterThan(0, $crawler->filter('[data-controller="user-select"][data-user-select-multiple-value="false"]')->count());
     }
 
+    /** ?user= pre-selects a target, which exercises the chip render path that carries no avatar. */
     public function testStaffStatsRendersThePreselectedTargetChip(): void
     {
         $admin = $this->makeUser('statsadmin', ['global:admin'], 'ROLE_STAFF');
         $other = $this->makeUser('othertarget');
         $this->client->loginUser($admin);
 
-        // ?user= pre-selects a target, exercising the avatar-less chip render path.
         $crawler = $this->client->request('GET', '/staff/stats?user='.$other->getUuid());
         self::assertResponseIsSuccessful();
         self::assertGreaterThan(0, $crawler->filter('.user-select-chip[data-user-select-id="'.$other->getUuid().'"]')->count());

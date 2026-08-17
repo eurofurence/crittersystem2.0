@@ -8,6 +8,7 @@ use App\Enum\ConversationStatus;
 use App\Enum\ConversationType;
 use App\Service\Chat\ConversationService;
 use App\Service\Chat\InfoDeskQueueService;
+use App\Service\EventConfigStore;
 use App\Tests\DatabaseTestCase;
 
 /**
@@ -50,6 +51,7 @@ final class InfoDeskQueueServiceTest extends DatabaseTestCase
         $this->queue()->claim($conversation, $desk2, false);
     }
 
+    /** The claim time cannot be set through the service, so reflection ages it past the timeout. */
     public function testTimedOutClaimIsReleasedAndReclaimable(): void
     {
         $conversation = $this->supportConversation();
@@ -57,7 +59,6 @@ final class InfoDeskQueueServiceTest extends DatabaseTestCase
         $desk2 = $this->user('desk2');
 
         $this->queue()->claim($conversation, $desk1, false);
-        // Force the claim to look stale (past the timeout).
         $ref = new \ReflectionProperty(Conversation::class, 'claimedAt');
         $ref->setValue($conversation, new \DateTimeImmutable('-1 hour'));
         $this->em->flush();
@@ -65,6 +66,49 @@ final class InfoDeskQueueServiceTest extends DatabaseTestCase
         self::assertTrue($this->queue()->releaseIfTimedOut($conversation));
         $reclaimed = $this->queue()->claim($conversation, $desk2, false);
         self::assertSame($desk2->getId(), $reclaimed->getClaimedBy()->getId());
+    }
+
+    /**
+     * The stored timeout is seconds, which is the unit the operations screen asks for and saves.
+     *
+     * Reading it as minutes held an idle claim for five hours instead of five minutes, and only
+     * once somebody had saved that screen: left unset, the fallback happened to mean five minutes
+     * under either reading, so nothing here noticed.
+     */
+    public function testAStoredTimeoutIsReadAsSeconds(): void
+    {
+        $store = static::getContainer()->get(EventConfigStore::class);
+        $store->set(EventConfigStore::KEY_INFODESK_CLAIM_TIMEOUT, 300);
+        $store->flush();
+
+        $conversation = $this->supportConversation();
+        $this->queue()->claim($conversation, $this->user('desk1'), false);
+
+        $ref = new \ReflectionProperty(Conversation::class, 'claimedAt');
+        $ref->setValue($conversation, new \DateTimeImmutable('-10 minutes'));
+        $this->em->flush();
+
+        self::assertTrue(
+            $this->queue()->releaseIfTimedOut($conversation),
+            'a claim idle for ten minutes is past a three hundred second timeout',
+        );
+    }
+
+    /** A claim younger than the timeout is left alone. */
+    public function testAClaimInsideTheTimeoutSurvives(): void
+    {
+        $store = static::getContainer()->get(EventConfigStore::class);
+        $store->set(EventConfigStore::KEY_INFODESK_CLAIM_TIMEOUT, 300);
+        $store->flush();
+
+        $conversation = $this->supportConversation();
+        $this->queue()->claim($conversation, $this->user('desk1'), false);
+
+        $ref = new \ReflectionProperty(Conversation::class, 'claimedAt');
+        $ref->setValue($conversation, new \DateTimeImmutable('-1 minute'));
+        $this->em->flush();
+
+        self::assertFalse($this->queue()->releaseIfTimedOut($conversation));
     }
 
     public function testUnclaimReleasesOwnership(): void

@@ -33,6 +33,10 @@ final class QuestionController extends AbstractController
         ]);
     }
 
+    /**
+     * Opening the form takes (or refreshes) the edit lock on the question, so two moderators do not
+     * answer the same one; submitting an answer releases it again.
+     */
     #[Route('/{id}/answer', name: 'app_manage_questions_answer', methods: ['GET', 'POST'], requirements: ['id' => Requirement::UUID])]
     public function answer(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] Question $question): Response
     {
@@ -59,7 +63,6 @@ final class QuestionController extends AbstractController
             return $this->redirectToRoute('app_manage_questions_index');
         }
 
-        // Acquire (or refresh) the edit lock for this admin.
         $question->setLockedBy($me)->setLockedAt(new \DateTimeImmutable());
         $this->em->flush();
 

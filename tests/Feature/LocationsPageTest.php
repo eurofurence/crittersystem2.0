@@ -25,13 +25,14 @@ final class LocationsPageTest extends DatabaseWebTestCase
         $this->client->loginUser($user);
     }
 
+    /** A staff-only location is absent from the list for a non-staff viewer, and 404 on its own page. */
     public function testNonStaffCannotSeeStaffOnlyLocation(): void
     {
         $staffOnly = (new Location('Backstage'))->setAlias('backstage')->setStaffOnly(true);
         $this->em->persist($staffOnly);
         $this->em->flush();
 
-        $this->login(); // non-staff
+        $this->login();
         $crawler = $this->client->request('GET', '/locations');
         self::assertResponseIsSuccessful();
         self::assertStringNotContainsString('Backstage', $crawler->filter('body')->text());
@@ -52,25 +53,26 @@ final class LocationsPageTest extends DatabaseWebTestCase
         self::assertStringContainsString('Backstage', $crawler->filter('body')->text());
     }
 
+    /**
+     * Resources are addressed by uuid: the uuid resolves, and the internal integer primary key
+     * must never resolve as a URL identifier, because it reveals record counts and creation order.
+     */
     public function testInternalIntegerIdIsRejectedInUrl(): void
     {
-        // Security: resources are addressed by uuid; the internal integer primary key
-        // must never resolve as a URL identifier.
         $loc = (new Location('Foyer'))->setAlias('foyer');
         $this->em->persist($loc);
         $this->em->flush();
 
         $this->login('ROLE_STAFF');
 
-        // The uuid resolves...
         $this->client->request('GET', '/locations/'.$loc->getUuid());
         self::assertResponseIsSuccessful();
 
-        // ...but the integer primary key does not (route requires a uuid → 404).
         $this->client->request('GET', '/locations/'.$loc->getId());
         self::assertResponseStatusCodeSame(404);
     }
 
+    /** A child of a staff-only location inherits it, so a non-staff viewer gets a 404 for the child. */
     public function testHiddenParentDoesNotLeakChild(): void
     {
         $root = (new Location('Restricted Wing'))->setAlias('restricted-wing')->setStaffOnly(true);
@@ -79,8 +81,7 @@ final class LocationsPageTest extends DatabaseWebTestCase
         $this->em->persist($child);
         $this->em->flush();
 
-        $this->login(); // non-staff
-        // The child inherits staff-only, so it must be 404 for non-staff.
+        $this->login();
         $this->client->request('GET', '/locations/'.$child->getUuid());
         self::assertResponseStatusCodeSame(404);
     }

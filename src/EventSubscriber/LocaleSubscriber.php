@@ -40,10 +40,12 @@ final class LocaleSubscriber implements EventSubscriberInterface
         $this->enabledLocales = $enabledLocales;
     }
 
+    /**
+     * Priority 6 runs after the firewall (8), so the user is resolved, and before the kernel syncs
+     * locale-aware services from the request.
+     */
     public static function getSubscribedEvents(): array
     {
-        // Priority 6: after the firewall (8) so the user is resolved, before the kernel syncs
-        // locale-aware services from the request.
         return [KernelEvents::REQUEST => [['onKernelRequest', 6]]];
     }
 

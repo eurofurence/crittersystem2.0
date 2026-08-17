@@ -40,18 +40,21 @@ final class GoodieEligibilityServiceTest extends DatabaseTestCase
         return $item;
     }
 
+    /**
+     * With 10 hours banked, the 5-hour Shirt is eligible and the 20-hour Jacket is pending. The Pin
+     * costs nothing but is pre-claimed to its per-person limit of one, so it counts as claimed.
+     */
     public function testTiersAndDistributionRules(): void
     {
         $cat = new GoodieCategory('Apparel');
         $this->em->persist($cat);
 
         $user = $this->userWithHours('jane', 10.0);
-        $shirt = $this->item($cat, 'Shirt', 5.0, 1);   // eligible
-        $jacket = $this->item($cat, 'Jacket', 20.0);   // pending (needs 10 more)
-        $pin = $this->item($cat, 'Pin', 0.0, 1);       // will become "claimed" after one give
+        $shirt = $this->item($cat, 'Shirt', 5.0, 1);
+        $jacket = $this->item($cat, 'Jacket', 20.0);
+        $pin = $this->item($cat, 'Pin', 0.0, 1);
         $this->em->flush();
 
-        // Pre-claim the pin to its max.
         $this->em->persist(new GoodieDistribution($user, $pin, 1));
         $this->em->flush();
 

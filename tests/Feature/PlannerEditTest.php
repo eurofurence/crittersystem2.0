@@ -104,12 +104,16 @@ final class PlannerEditTest extends DatabaseWebTestCase
         self::assertSame(['ok' => true, 'created' => 1], json_decode($this->client->getResponse()->getContent(), true));
     }
 
+    /**
+     * Three one-hour drafts; only the two named in the request are stretched to two hours, and the
+     * third keeps its own end time.
+     */
     public function testBatchDurationAppliesOnlyToSelectedShifts(): void
     {
         $dept = $this->login();
-        $a = $this->draft($dept, '2026-06-01 10:00', '2026-06-01 11:00'); // 1h
-        $b = $this->draft($dept, '2026-06-01 12:00', '2026-06-01 13:00'); // 1h
-        $untouched = $this->draft($dept, '2026-06-01 14:00', '2026-06-01 15:00'); // 1h
+        $a = $this->draft($dept, '2026-06-01 10:00', '2026-06-01 11:00');
+        $b = $this->draft($dept, '2026-06-01 12:00', '2026-06-01 13:00');
+        $untouched = $this->draft($dept, '2026-06-01 14:00', '2026-06-01 15:00');
 
         $this->client->request('POST', '/manage-shifts/planner/batch', [
             '_token' => $this->editToken(),
@@ -152,7 +156,6 @@ final class PlannerEditTest extends DatabaseWebTestCase
         $dept = $this->login();
         $shift = $this->draft($dept, '2026-06-01 10:00', '2026-06-01 12:00');
 
-        // Panel renders the edit form.
         $this->client->request('GET', '/manage-shifts/planner/shift/'.$shift->getUuid().'/panel');
         self::assertResponseIsSuccessful();
 

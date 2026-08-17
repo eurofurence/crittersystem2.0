@@ -51,11 +51,11 @@ final class EventHoursGuardTest extends DatabaseTestCase
         $this->em->flush();
     }
 
+    /** Two daytime shifts of 6h carry no night multiplier, so 12 hours are planned against a cap of 10. */
     public function testPlannedHoursAndOverBy(): void
     {
         $this->setMax(10);
         $user = $this->user();
-        // Daytime shifts (no night multiplier): 6h + 6h = 12 planned.
         $this->assign($user, '2026-06-01 10:00', '2026-06-01 16:00');
         $this->assign($user, '2026-06-02 10:00', '2026-06-02 16:00');
 
@@ -68,23 +68,24 @@ final class EventHoursGuardTest extends DatabaseTestCase
     {
         $this->setMax(20);
         $user = $this->user();
-        $this->assign($user, '2026-06-01 10:00', '2026-06-01 14:00'); // 4h
+        $this->assign($user, '2026-06-01 10:00', '2026-06-01 14:00');
 
         self::assertFalse($this->guard()->isOver($user));
         self::assertSame(0.0, $this->guard()->overBy($user));
     }
 
+    /** 8 hours are already planned, so a 4-hour candidate would reach 12 against a cap of 10. */
     public function testWouldExceedFlagsAShiftThatCrossesTheThreshold(): void
     {
         $this->setMax(10);
         $user = $this->user();
-        $this->assign($user, '2026-06-01 10:00', '2026-06-01 18:00'); // 8h planned
+        $this->assign($user, '2026-06-01 10:00', '2026-06-01 18:00');
 
         $dept = new Department('D2 '.bin2hex(random_bytes(3)), 'd2-'.bin2hex(random_bytes(3)));
         $this->em->persist($dept);
         $candidate = (new Shift())->setTitle('Extra')
             ->setStartsAt(new \DateTimeImmutable('2026-06-03 10:00'))
-            ->setEndsAt(new \DateTimeImmutable('2026-06-03 14:00')) // +4h -> 12 > 10
+            ->setEndsAt(new \DateTimeImmutable('2026-06-03 14:00'))
             ->setDepartment($dept);
         $this->em->persist($candidate);
         $this->em->flush();

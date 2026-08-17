@@ -1,4 +1,5 @@
-{# Chat thread. Polled for near-real-time updates. #}
+{# One conversation's messages, rendered per viewer: internal notices are hidden from the support
+   subject, so the live region re-fetches this fragment rather than receiving it over the hub. #}
 {% import 'components/data/_macros.twig' as d %}
 <div class="chat-messages">
   {% for message in messages %}

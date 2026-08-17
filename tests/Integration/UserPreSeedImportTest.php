@@ -26,9 +26,13 @@ final class UserPreSeedImportTest extends DatabaseTestCase
         return static::getContainer()->get(UserPreSeedImporter::class);
     }
 
+    /**
+     * The positional and global-role groups the SSO appliers reconcile by slug. GRP-SHIFTMGR is
+     * configured as the shift-manager role and GRP-GADMIN as the global-admin role; neither is a
+     * group mapping, so on their own they place a user in no department.
+     */
     private function seedCatalogue(): void
     {
-        // Positional and global-role groups the SSO appliers reconcile by slug.
         $this->em->persist(new Group('Department staff', 'department-staff'));
         $this->em->persist(new Group('Shift manager', 'shift-manager'));
         $this->em->persist(new Group('Global admin', 'global-admin', 'ROLE_ADMIN'));
@@ -47,8 +51,6 @@ final class UserPreSeedImportTest extends DatabaseTestCase
         $this->em->persist($mapping);
         $this->em->flush();
 
-        // GRP-SHIFTMGR is the shift-manager role; GRP-GADMIN the global-admin role. Neither is a
-        // group mapping, so on their own they place a user in no department.
         static::getContainer()->get(SsoRoleSettings::class)->save(null, 'GRP-SHIFTMGR', 'GRP-GADMIN', null);
     }
 
@@ -116,14 +118,17 @@ final class UserPreSeedImportTest extends DatabaseTestCase
         self::assertTrue($membership->isConfirmed(), 'a mapped volunteer type is auto-confirmed');
     }
 
+    /**
+     * The dump's "level" is ignored. Bob is a shift manager because he sits in the group configured
+     * as the shift-manager role, and Carol, who is only in the global-admin role group, is created,
+     * made admin and placed in no department.
+     */
     public function testPositionAndAdminComeFromRolesNotLevel(): void
     {
         $this->seedCatalogue();
         $this->importer()->import($this->dump());
         $this->em->clear();
 
-        // Bob is "owner" in the dump but that is ignored; he is shift manager because he is in the
-        // group configured as the shift-manager role.
         $bob = $this->user('SUB-B');
         self::assertNotNull($bob);
         $bobArtShow = [];
@@ -135,7 +140,6 @@ final class UserPreSeedImportTest extends DatabaseTestCase
         self::assertContains('shift-manager', $bobArtShow);
         self::assertNotContains('department-staff', $bobArtShow, 'the positional group is reconciled, not stacked');
 
-        // Carol is only in the global-admin role group: created, made admin, placed in no department.
         $carol = $this->user('SUB-C');
         self::assertNotNull($carol);
         self::assertContains('ROLE_ADMIN', $carol->getRoles());
@@ -144,6 +148,7 @@ final class UserPreSeedImportTest extends DatabaseTestCase
         }
     }
 
+    /** A second run leaves Alice with department-staff and info-desk in Art Show, once each. */
     public function testImportIsIdempotent(): void
     {
         $this->seedCatalogue();
@@ -159,7 +164,6 @@ final class UserPreSeedImportTest extends DatabaseTestCase
             $alice->getGroupAssignments()->toArray(),
             static fn ($a): bool => $a->getDepartment()?->getSlug() === 'art-show',
         );
-        // department-staff + info-desk, exactly once each.
         self::assertCount(2, $artShow, 're-running does not duplicate memberships');
     }
 

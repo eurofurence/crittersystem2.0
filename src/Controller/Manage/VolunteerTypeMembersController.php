@@ -146,6 +146,10 @@ final class VolunteerTypeMembersController extends AbstractController
         return $this->redirectToRoute('app_manage_vt_members', ['id' => $type->getUuid()]);
     }
 
+    /**
+     * Promoting somebody to supporter confirms an unconfirmed membership at the same time: a
+     * supporter decides on other people's requests for this type.
+     */
     #[Route('/{membershipId}/supporter', name: 'app_manage_vt_member_supporter', methods: ['POST'], requirements: ['membershipId' => Requirement::UUID])]
     public function toggleSupporter(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] VolunteerType $type, string $membershipId): Response
     {
@@ -153,7 +157,6 @@ final class VolunteerTypeMembersController extends AbstractController
         $membership = $this->resolveMembership($type, $membershipId);
 
         if ($membership !== null && $this->isCsrfTokenValid('supporter'.$membershipId, (string) $request->request->get('_token'))) {
-            // Promoting to supporter also confirms the membership.
             if (!$membership->isSupporter() && !$membership->isConfirmed()) {
                 /** @var User $actor */
                 $actor = $this->getUser();

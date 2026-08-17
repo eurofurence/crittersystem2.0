@@ -25,6 +25,10 @@ final class InviteController extends AbstractController
     ) {
     }
 
+    /**
+     * Accepting stamps the account as logged in, which is what keeps the stale-invite cleanup from
+     * later removing an account whose invitation was used.
+     */
     #[Route('/invite/{token}', name: 'app_invite_accept', methods: ['GET'])]
     public function accept(string $token, Security $security): Response
     {
@@ -34,7 +38,6 @@ final class InviteController extends AbstractController
         }
 
         $user = $invite->getUser();
-        // Mark the account as used so the stale-invite cleanup leaves it alone.
         $user->setLastLoginAt(new \DateTimeImmutable());
         $this->em->remove($invite);
         $this->em->flush();

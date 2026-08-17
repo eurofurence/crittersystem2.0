@@ -76,12 +76,13 @@ final class ShiftVisibilityResolver
     /**
      * The audience rules, with the two lookups they need supplied by the caller so a single shift
      * and a whole list can be answered by the same code.
+     *
+     * Anything not published is invisible here, to everyone. A draft is reached only through the
+     * planner controllers, which run their own permission checks; it is never visible through normal
+     * browsing, not even to the manager who owns it.
      */
     private function decide(Shift $shift, ?User $user, callable $isDepartmentMember, callable $hasEntry): bool
     {
-        // Draft shifts are only ever visible to managers working the planner,
-        // never through normal browsing. Managers reach drafts via the planner
-        // controllers directly, which do their own permission checks.
         if ($shift->getState() !== ShiftState::PUBLISHED) {
             return false;
         }

@@ -196,8 +196,6 @@ final class DemoSeedCommand extends Command
             return Command::FAILURE;
         }
 
-        // Names here are unique, so a second run collides rather than refreshing anything. Recreate
-        // the database instead: bin/demo-instance does that in one step.
         if ($this->em->getRepository(User::class)->count([]) > 0) {
             $io->error([
                 'This database already holds accounts, and seeding on top of them would collide.',
@@ -246,6 +244,9 @@ final class DemoSeedCommand extends Command
      * The event runs from tomorrow so that every seeded shift is in the future and the
      * volunteer-facing pages have something to show. Build-up starts yesterday, which puts the
      * app into its "event is running" state.
+     *
+     * Password login is switched on unconditionally: a demo instance has no identity provider behind
+     * it, so the password form has to stay on the login page even where SSO is configured.
      */
     private function seedEventConfig(): void
     {
@@ -258,8 +259,6 @@ final class DemoSeedCommand extends Command
         $this->config->set(EventConfigStore::KEY_EVENT_END, $this->day1->modify('+2 days')->format('Y-m-d'));
         $this->config->set(EventConfigStore::KEY_TEARDOWN_END, $this->day1->modify('+3 days')->format('Y-m-d'));
 
-        // A demo instance has no identity provider behind it, so the password form has to stay on
-        // the login page even where SSO is configured.
         $this->config->set(EventConfigStore::KEY_PASSWORD_LOGIN_ENABLED, true);
     }
 
@@ -469,6 +468,10 @@ final class DemoSeedCommand extends Command
     }
 
     /**
+     * A fixed rota of [department, task, location, volunteer type, start hours, duration] repeated
+     * on each of the three event days, followed by two draft shifts so the demo also shows what an
+     * unpublished shift looks like before it reaches volunteers.
+     *
      * @return list<array{int, string, string, string, string, int, int, int, int, ShiftState, ShiftAudience}>
      */
     private function shiftPlans(): array
@@ -480,7 +483,6 @@ final class DemoSeedCommand extends Command
 
         $plans = [];
 
-        // [department, task, location, volunteer type] repeated across each day at fixed hours.
         $rota = [
             ['Info Desk', 'Counter Duty', 'Info Counter', 'Info Desk Crew', [9, 13, 17], 4],
             ['Info Desk', 'Phone Duty', 'Info Counter', 'Info Desk Crew', [10, 16], 3],
@@ -516,8 +518,6 @@ final class DemoSeedCommand extends Command
             }
         }
 
-        // Two unpublished shifts, so the deck can show what a draft looks like before it is
-        // released to volunteers.
         $plans[] = [2, 'Stage & Tech', 'Live Operation', 'Main Hall', 'Stage Crew', 21, 3, 4, 0, $draft, $public];
         $plans[] = [2, 'Info Desk', 'Lost & Found', 'Info Counter', 'Info Desk Crew', 14, 4, 2, 0, $draft, $public];
 

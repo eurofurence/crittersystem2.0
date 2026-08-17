@@ -40,15 +40,17 @@ final class ChatPageTest extends DatabaseWebTestCase
         self::assertSelectorTextContains('body', 'Info Desk Team');
     }
 
+    /**
+     * The Info Desk entry links to the action that opens a conversation, never to a conversation
+     * itself: rendering the list must not create one, or every visit queues work for the Info Desk.
+     * Clicking it therefore redirects to the conversation it just opened.
+     */
     public function testUserCanSendToSupportConversation(): void
     {
         $this->login();
         $crawler = $this->client->request('GET', '/messages');
         $link = $crawler->filter('a:contains("Info Desk Team")')->link();
 
-        // The entry links to the action that opens the conversation, not to a conversation: the list
-        // must not create one just by being rendered, or every visit queues work for the Info Desk.
-        // So the click redirects to the conversation it opened.
         $this->client->click($link);
         self::assertResponseRedirects();
         $crawler = $this->client->followRedirect();

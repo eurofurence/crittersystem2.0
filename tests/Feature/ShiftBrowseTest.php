@@ -32,6 +32,7 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         self::assertResponseStatusCodeSame(403);
     }
 
+    /** A published shift is listed with its location, grouped under its start hour. */
     public function testAPublishedShiftIsListedWithItsDetails(): void
     {
         $this->scenario->shift('Morning Briefing', 'tomorrow 09:00');
@@ -42,7 +43,6 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Morning Briefing');
         self::assertSelectorTextContains('body', 'Demo Location');
-        // Grouped under its start hour.
         self::assertStringContainsString('09:00', $crawler->filter('body')->text());
     }
 
@@ -69,10 +69,11 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         self::assertGreaterThan(0, $crawler->filter('form[action*="/signup"]')->count(), 'an eligible volunteer must get a sign-up control');
     }
 
+    /** Without a confirmed membership of the needed type, the shift is visible but not joinable. */
     public function testANonMemberSeesTheShiftButGetsNoSignUpControl(): void
     {
         $this->scenario->shift('Open Shift', 'tomorrow 10:00');
-        $this->client->loginUser($this->scenario->user()); // no confirmed membership
+        $this->client->loginUser($this->scenario->user());
 
         $crawler = $this->client->request('GET', '/shifts?date='.(new \DateTimeImmutable('tomorrow'))->format('Y-m-d'));
 
@@ -112,10 +113,14 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         self::assertSame('/shifts/'.$shift->getUuid(), $view->first()->attr('href'));
     }
 
+    /**
+     * Without a confirmed membership of the needed type, the card opens the read-only dialog and
+     * offers no control that would act on the shift.
+     */
     public function testAVolunteerWhoCannotActGetsTheReadOnlyDialog(): void
     {
         $this->scenario->shift('Open Shift', 'tomorrow 10:00');
-        $this->client->loginUser($this->scenario->user()); // no confirmed membership
+        $this->client->loginUser($this->scenario->user());
 
         $crawler = $this->client->request('GET', '/shifts?date='.(new \DateTimeImmutable('tomorrow'))->format('Y-m-d'));
 
@@ -151,6 +156,7 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         self::assertSelectorTextNotContains('body', 'Already Full');
     }
 
+    /** Filtering by a location that holds no shifts shows nothing, never a fallback to everything. */
     public function testTheLocationFilterNarrowsTheList(): void
     {
         $here = $this->scenario->shift('Here', 'tomorrow 15:00');
@@ -167,19 +173,20 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Here');
 
-        // Filtering by a location that has no shifts must not fall back to showing everything.
         $this->client->request('GET', '/shifts?date='.$date.'&location='.$elsewhere->getUuid());
         self::assertResponseIsSuccessful();
         self::assertSelectorTextNotContains('body', 'Here');
     }
 
+    /**
+     * The "All" option in the location and type dropdowns submits an empty value, which the list
+     * has to read as "no filter" rather than refuse as a malformed request.
+     */
     public function testSelectingAllInADropdownFilterDoesNotError(): void
     {
         $this->scenario->shift('Any Shift', 'tomorrow 10:00');
         $this->client->loginUser($this->scenario->user(memberOf: $this->scenario->type));
 
-        // The "All" option in the location/type dropdowns submits an empty value; the list must
-        // treat that as "no filter", not reject the request.
         $date = (new \DateTimeImmutable('tomorrow'))->format('Y-m-d');
         $this->client->request('GET', '/shifts?date='.$date.'&location=&type=');
 
@@ -187,10 +194,13 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         self::assertSelectorTextContains('body', 'Any Shift');
     }
 
+    /**
+     * The hour heading is the local start hour, not the stored UTC one. Tokyo is UTC+9 and keeps no
+     * DST, so a shift stored at 02:00 UTC belongs under 11:00 on the same day.
+     */
     public function testShiftsAreGroupedUnderTheirLocalStartHour(): void
     {
-        $this->setDisplayTimezone('Asia/Tokyo'); // UTC+9, no DST
-        // Stored at 02:00 UTC, which is 11:00 the same day in Tokyo.
+        $this->setDisplayTimezone('Asia/Tokyo');
         $this->scenario->shift('Tokyo Shift', '2026-08-01 02:00');
         $this->client->loginUser($this->scenario->user(memberOf: $this->scenario->type));
 
@@ -199,15 +209,17 @@ final class ShiftBrowseTest extends DatabaseWebTestCase
         self::assertResponseIsSuccessful();
         $text = $crawler->filter('body')->text();
         self::assertStringContainsString('Tokyo Shift', $text);
-        // The hour heading must be the local start hour, not the stored UTC hour.
         self::assertStringContainsString('11:00', $text);
         self::assertStringNotContainsString('02:00', $text);
     }
 
+    /**
+     * A shift is listed under its local calendar day: 20:00 UTC on 1 August is 05:00 on 2 August in
+     * Tokyo, so it belongs to the second's tab and not the first's.
+     */
     public function testAShiftIsListedUnderItsLocalCalendarDay(): void
     {
         $this->setDisplayTimezone('Asia/Tokyo');
-        // 20:00 UTC on 1 Aug is 05:00 on 2 Aug in Tokyo, so it belongs to the 2nd's tab.
         $this->scenario->shift('Crosses Midnight', '2026-08-01 20:00');
         $this->client->loginUser($this->scenario->user(memberOf: $this->scenario->type));
 

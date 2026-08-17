@@ -91,6 +91,9 @@ final class UserPreSeedImporter
     /**
      * Creates/updates the users and applies their memberships inside a single transaction.
      *
+     * Each user is flushed on its own, so the next created shell's username uniqueness check sees
+     * the one before it.
+     *
      * @param mixed $rows the decoded JSON (expected: list of entries)
      *
      * @return array{created:int, updated:int, skippedUsers:int, skippedBanned:int, warnings:list<string>}
@@ -127,7 +130,6 @@ final class UserPreSeedImporter
                 }
 
                 $this->provisioner->applyGroups($user, $info['groupIds']);
-                // Flush per user so the next created shell's username uniqueness check sees it.
                 $this->em->flush();
             }
         });

@@ -78,12 +78,12 @@ final class DepartmentsPageTest extends DatabaseWebTestCase
         return $user;
     }
 
+    /** A member of a department gets its card, carrying the membership badge, and reaches its page. */
     public function testStaffSeesDepartmentCardsAndDashboard(): void
     {
         $user = $this->staffUser();
         $department = new Department('Stage', 'stage');
         $this->em->persist($department);
-        // Scope the user into the department.
         $memberGroup = new Group('Member', 'member-grp', 'ROLE_STAFF');
         $this->em->persist($memberGroup);
         $this->em->persist(new UserGroupAssignment($user, $memberGroup, $department));
@@ -94,21 +94,23 @@ final class DepartmentsPageTest extends DatabaseWebTestCase
         $crawler = $this->client->request('GET', '/departments');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Stage');
-        self::assertSelectorExists('.badge.text-bg-primary'); // Member badge
+        self::assertSelectorExists('.badge.text-bg-primary');
 
         $this->client->request('GET', '/departments/'.$department->getUuid());
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Staffing');
     }
 
+    /**
+     * Consent alone does not open an address. A plain staff viewer is neither a manager of this
+     * department nor Info Desk, so the email must appear nowhere on the page, including as the
+     * href of a mailto: link in the row actions dropdown.
+     */
     public function testPlainStaffNeverSeesMemberEmailEvenWithConsent(): void
     {
         $viewer = $this->staffUser();
         $department = new Department('Stage', 'stage');
         $this->em->persist($department);
-        // Consent is granted, but a plain staff viewer is neither a manager of this
-        // department nor Info Desk, so the email must still not appear. It was
-        // leaked in the row actions dropdown as visible text and a mailto: link.
         $this->memberOf($department, 'consenting', true);
         $this->em->flush();
 
@@ -131,9 +133,7 @@ final class DepartmentsPageTest extends DatabaseWebTestCase
         $this->client->request('GET', '/departments/'.$department->getUuid());
         self::assertResponseIsSuccessful();
         $body = $this->client->getResponse()->getContent();
-        // Manager of this department sees the consenting member's email...
         self::assertStringContainsString('yes-secret@example.com', $body);
-        // ...but not the member who withheld consent.
         self::assertStringNotContainsString('no-secret@example.com', $body);
     }
 

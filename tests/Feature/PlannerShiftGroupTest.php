@@ -170,7 +170,11 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
         self::assertNotNull($this->em->getRepository(Shift::class)->find($shift->getId())->getShiftGroup());
     }
 
-    /** A group holds one department's shifts, whatever ids[] claims. */
+    /**
+     * A group holds one department's shifts, whatever ids[] claims. The manager legitimately holds
+     * both departments, so the refusal is the group rule itself and not a permission check standing
+     * in for it.
+     */
     public function testAShiftFromAnotherDepartmentIsRefusedAndNothingIsChanged(): void
     {
         $mine = $this->scenario->shift('Rehearsal', 'tomorrow 10:00');
@@ -178,8 +182,6 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
         $foreign = $this->shiftIn($elsewhere, 'Foreign shift');
         $group = $this->group($this->scenario->department);
 
-        // A manager who legitimately holds both departments, so the refusal is the group rule and not
-        // a permission check standing in for it.
         $this->client->loginUser($this->manager($this->scenario->department, $elsewhere));
         $this->post('/manage-shifts/planner/batch', [
             '_token' => $this->token(),
@@ -214,7 +216,8 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
 
     /**
      * Grouping shifts that already carry sign-ups leaves volunteers on part of a commitment, which is
-     * the same question `/manage/shift-groups` asks. The planner must not be a way around it.
+     * the same question `/manage/shift-groups` asks. The planner must not be a way around it, and
+     * answering yes replays the same request carrying the confirm flag.
      */
     public function testGroupingShiftsWithSignUpsAsksForConfirmationFirst(): void
     {
@@ -242,7 +245,6 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
             'Nothing is written until the manager answers.',
         );
 
-        // Answering yes replays the same request with the flag set.
         $this->post('/manage-shifts/planner/batch', [
             '_token' => $token,
             'ids' => [(string) $withEntries->getUuid(), (string) $empty->getUuid()],
@@ -336,7 +338,9 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
 
     /**
      * The batch form's number inputs post an empty string when left blank, which is the normal case
-     * when a manager only wants to set the group. Reading them with getInt() answered 400.
+     * when a manager only wants to set the group. They must be read with a cast, not getInt(),
+     * which refuses an empty string with a 400. The payload below is exactly what the browser sends
+     * for untouched fields: an empty number input, and the placeholder option of each picker.
      */
     public function testBlankNumberFieldsDoNotRefuseTheBatch(): void
     {
@@ -348,8 +352,6 @@ final class PlannerShiftGroupTest extends DatabaseWebTestCase
             '_token' => $this->token(),
             'ids' => [(string) $shift->getUuid()],
             'shift_group' => (string) $group->getUuid(),
-            // Exactly what the browser sends for an untouched field: an empty number input, and the
-            // placeholder option of each picker.
             'duration_minutes' => '',
             'needed_count' => '',
             'needed_type' => '',

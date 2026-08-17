@@ -25,13 +25,16 @@ final class StorageController extends AbstractController
     {
     }
 
+    /**
+     * The app-storage probe takes no input, so it is guarded by a CSRF token alone; the backup probe
+     * runs against credentials the admin types into the form.
+     */
     #[Route('/admin/storage', name: 'app_admin_storage', methods: ['GET', 'POST'])]
     public function index(Request $request): Response
     {
         $appResult = null;
         $backupResult = null;
 
-        // App storage (uploads + exports) needs no input, just a CSRF-guarded button.
         if ($request->isMethod('POST') && $request->request->get('action') === 'app_test') {
             if (!$this->isCsrfTokenValid('storage_app_test', (string) $request->request->get('_token'))) {
                 throw $this->createAccessDeniedException('Invalid CSRF token.');

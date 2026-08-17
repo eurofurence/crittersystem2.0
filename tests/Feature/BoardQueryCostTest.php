@@ -73,6 +73,11 @@ final class BoardQueryCostTest extends DatabaseWebTestCase
         $this->em->flush();
     }
 
+    /**
+     * The query count for a board day must not grow per shift or per assignment. The first
+     * request warms whatever caches the page touches and is not profiled; the steady state
+     * is what the bound applies to.
+     */
     public function testRenderingCostStaysFlatInTheSizeOfTheDay(): void
     {
         $this->seedDay(40, 3);
@@ -80,7 +85,6 @@ final class BoardQueryCostTest extends DatabaseWebTestCase
 
         $url = '/board/'.$this->scenario->department->getUuid().'/'.(new \DateTimeImmutable('today', new \DateTimeZone('UTC')))->format('Y-m-d');
 
-        // First request warms whatever caches the page touches; the steady state is what matters.
         $this->client->request('GET', $url);
         self::assertResponseIsSuccessful();
 

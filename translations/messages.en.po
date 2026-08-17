@@ -7416,3 +7416,258 @@ msgstr "Filter departments…"
 
 msgid "board.rail.no_match"
 msgstr "No department matches."
+
+msgid "manage.volunteer_type.repair.page.title"
+msgstr "Critter type repair"
+
+msgid "manage.volunteer_type.repair.page.subtitle"
+msgstr "Find and fix users who finished onboarding without a Critter type."
+
+msgid "manage.volunteer_type.repair.action.back"
+msgstr "Back to Critter Types"
+
+msgid "manage.volunteer_type.repair.cause.heading"
+msgstr "No Critter type claims this role"
+
+msgid "manage.volunteer_type.repair.cause.explanation"
+msgstr "Onboarding picks the base type by its role, not its name. While a role is unclaimed, everyone finishing onboarding is given nothing and cannot take a shift. Fix this first: repairing the users below does not stop it happening again."
+
+msgid "manage.volunteer_type.repair.cause.pick"
+msgstr "Type to use for the \"%role%\" role"
+
+msgid "manage.volunteer_type.repair.cause.healthy"
+msgstr "Both roles are claimed. Onboarding can assign a base type."
+
+msgid "manage.volunteer_type.repair.cause.ambiguous"
+msgstr "More than one type claims the \"%role%\" role (%types%). New users receive whichever the database returns first."
+
+msgid "manage.volunteer_type.repair.action.claim"
+msgstr "Use this type"
+
+msgid "manage.volunteer_type.repair.affected.heading"
+msgstr "Affected users (%count%)"
+
+msgid "manage.volunteer_type.repair.affected.subtitle"
+msgstr "Onboarded, holding no Critter type at all, and therefore unable to join any shift."
+
+msgid "manage.volunteer_type.repair.affected.search"
+msgstr "Search by username"
+
+msgid "manage.volunteer_type.repair.affected.none"
+msgstr "Nobody is affected."
+
+msgid "manage.volunteer_type.repair.affected.kind"
+msgstr "Counts as"
+
+msgid "manage.volunteer_type.repair.affected.receives"
+msgstr "Will receive"
+
+msgid "manage.volunteer_type.repair.affected.nothing"
+msgstr "nothing, role unclaimed"
+
+msgid "manage.volunteer_type.repair.kind.staff"
+msgstr "Staff"
+
+msgid "manage.volunteer_type.repair.kind.volunteer"
+msgstr "Critter"
+
+msgid "manage.volunteer_type.repair.action.fix_selected"
+msgstr "Assign to selected"
+
+msgid "manage.volunteer_type.repair.action.fix_all"
+msgstr "Assign to all %count% affected"
+
+msgid "manage.volunteer_type.repair.confirm.selected"
+msgstr "Assign the base Critter type to the selected users?"
+
+msgid "manage.volunteer_type.repair.confirm.all"
+msgstr "Assign the base Critter type to all %count% affected users?"
+
+msgid "manage.volunteer_type.repair.flash.role_invalid"
+msgstr "Pick an existing Critter type and a valid role."
+
+msgid "manage.volunteer_type.repair.flash.role_claimed"
+msgstr "\"%type%\" now serves the \"%role%\" role."
+
+msgid "manage.volunteer_type.repair.flash.repaired"
+msgstr "%count% user(s) received the base Critter type."
+
+msgid "manage.volunteer_type.repair.flash.skipped"
+msgstr "%count% user(s) were skipped because no type claims the role they need."
+
+msgid "manage.volunteer_type.repair.action.open"
+msgstr "Repair missing types"
+
+msgid "manage.volunteer_type.field.role.label"
+msgstr "System role"
+
+msgid "manage.volunteer_type.field.role.help"
+msgstr "Onboarding gives new users the type holding the matching role. Exactly one type should hold each role; leave it blank for ordinary types."
+
+msgid "manage.volunteer_type.field.role.none"
+msgstr "None (ordinary type)"
+
+msgid "manage.volunteer_type.field.role.volunteer"
+msgstr "Base type for non-staff users"
+
+msgid "manage.volunteer_type.field.role.staff"
+msgstr "Base type for staff"
+
+msgid "manage.volunteer_type.field.role.taken"
+msgstr "Another Critter type already holds this role. Clear it there first."
+
+msgid "backstage.card.security.title"
+msgstr "Location check-in"
+
+msgid "backstage.card.security.text"
+msgstr "Admit staff and Critters to the venue and record who came in."
+
+msgid "backstage.security.page.title"
+msgstr "Location check-in"
+
+msgid "backstage.security.page.subtitle"
+msgstr "Find somebody and record that they entered the venue."
+
+msgid "backstage.security.search.placeholder"
+msgstr "Username, registration number, or exact email"
+
+msgid "backstage.security.no_matches.title"
+msgstr "Nobody found"
+
+msgid "backstage.security.no_matches.message"
+msgstr "Check the spelling, or try the registration number."
+
+msgid "backstage.security.stat.total"
+msgstr "Inside today"
+
+msgid "backstage.security.stat.staff"
+msgstr "Staff"
+
+msgid "backstage.security.stat.volunteers"
+msgstr "Critters"
+
+msgid "backstage.security.user.title"
+msgstr "Location check-in: %name%"
+
+msgid "backstage.security.user.subtitle"
+msgstr "Entry status, today's shifts and the full history."
+
+msgid "backstage.security.card.identity"
+msgstr "Identity"
+
+msgid "backstage.security.card.entry"
+msgstr "Entry"
+
+msgid "backstage.security.card.shifts"
+msgstr "Shifts today"
+
+msgid "backstage.security.card.history"
+msgstr "History"
+
+msgid "backstage.security.label.registration"
+msgstr "Registration number"
+
+msgid "backstage.security.label.kind"
+msgstr "Counts as"
+
+msgid "backstage.security.label.when"
+msgstr "When"
+
+msgid "backstage.security.label.what"
+msgstr "What"
+
+msgid "backstage.security.label.by"
+msgstr "By"
+
+msgid "backstage.security.label.overridden"
+msgstr "Overridden"
+
+msgid "backstage.security.label.override_reason"
+msgstr "Reason for admitting anyway"
+
+msgid "backstage.security.kind.staff"
+msgstr "Staff"
+
+msgid "backstage.security.kind.volunteer"
+msgstr "Critter"
+
+msgid "backstage.security.state.inside"
+msgstr "Checked in and inside the venue."
+
+msgid "backstage.security.shifts.none"
+msgstr "No shifts today."
+
+msgid "backstage.security.history.none"
+msgstr "Never checked in."
+
+msgid "backstage.security.action.enter"
+msgstr "Check in"
+
+msgid "backstage.security.action.withdraw"
+msgstr "Withdraw check-in"
+
+msgid "backstage.security.action.override"
+msgstr "Admit anyway"
+
+msgid "backstage.security.action.entered"
+msgstr "Checked in"
+
+msgid "backstage.security.action.withdrawn"
+msgstr "Withdrawn"
+
+msgid "backstage.security.action.back"
+msgstr "Back to check-in"
+
+msgid "backstage.security.action.report"
+msgstr "Daily report"
+
+msgid "backstage.security.action.export"
+msgstr "Download CSV"
+
+msgid "backstage.security.action.show_day"
+msgstr "Show day"
+
+msgid "backstage.security.confirm.withdraw"
+msgstr "Withdraw this check-in? The record of it stays in the history."
+
+msgid "backstage.security.confirm.override"
+msgstr "This person does not meet the entry rules. Admit them anyway and record the reason?"
+
+msgid "backstage.security.refused.no_registration"
+msgstr "No registration number, so no wristband can be issued. Send them to the info desk."
+
+msgid "backstage.security.refused.no_shift"
+msgstr "No shift starting within %hours% hours and none under way."
+
+msgid "backstage.security.flash.entered"
+msgstr "%name% was checked in."
+
+msgid "backstage.security.flash.entered_override"
+msgstr "%name% was admitted against the rules, and the reason was recorded."
+
+msgid "backstage.security.flash.withdrawn"
+msgstr "The check-in for %name% was withdrawn."
+
+msgid "backstage.security.flash.refused"
+msgstr "This person does not meet the entry rules."
+
+msgid "backstage.security.flash.override_denied"
+msgstr "You may not override the entry rules."
+
+msgid "backstage.security.report.title"
+msgstr "Location check-in report"
+
+msgid "backstage.security.report.subtitle"
+msgstr "Who entered the venue on a given day."
+
+msgid "backstage.security.report.empty.title"
+msgstr "Nobody checked in"
+
+msgid "backstage.security.report.empty.message"
+msgstr "No entries were recorded for this day."
+
+msgid "manage.operations_config.field.security_checkin_window.label"
+msgstr "Location check-in window (seconds)"
+
+msgid "manage.operations_config.field.security_checkin_window.help"
+msgstr "How far ahead of a shift a Critter may collect a wristband. A shift already under way always qualifies."

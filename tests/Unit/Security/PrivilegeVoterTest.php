@@ -13,14 +13,16 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
 use Symfony\Component\Security\Core\Authorization\Voter\VoterInterface;
 
+/**
+ * The voter is built on the same scope resolver that decides Mercure topics, so the two cannot
+ * answer "which departments does this user hold this privilege in" differently.
+ */
 final class PrivilegeVoterTest extends TestCase
 {
     private PrivilegeVoter $voter;
 
     protected function setUp(): void
     {
-        // The voter is built on the same scope resolver that decides Mercure topics, so the two
-        // cannot answer "which departments does this user hold it in" differently.
         $this->voter = new PrivilegeVoter(new PrivilegeScopeResolver());
     }
 
@@ -76,9 +78,9 @@ final class PrivilegeVoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($admin, 'volunteertype:manage'));
     }
 
+    /** ROLE_ADMIN satisfies every privilege check on its own, without the global:admin privilege. */
     public function testRoleAdminGrantsEverythingWithoutSuperPrivilege(): void
     {
-        // A group carrying ROLE_ADMIN but NOT the global:admin privilege.
         $user = new User();
         $user->addGroup(new Group('Global admin', 'global-admin', 'ROLE_ADMIN'));
 
@@ -87,16 +89,18 @@ final class PrivilegeVoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'location:manage'));
     }
 
+    /**
+     * ROLE_SUBADMIN grants the sub-admin tier of privileges on the role alone and unscoped, while the
+     * critical ones (configuration, audit, PII, RBAC) stay denied to it.
+     */
     public function testRoleSubadminGrantsSubadminLevelButNotAdminLevel(): void
     {
         $user = new User();
         $user->addGroup(new Group('Sub admin', 'sub-admin', 'ROLE_SUBADMIN'));
 
-        // Sub-admin-level permissions are granted by the role alone (unscoped).
         self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'user:view'));
         self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'shift:manage'));
 
-        // Admin-level/critical permissions are denied (config, audit, PII, RBAC).
         self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote($user, 'audit:view'));
         self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote($user, 'config:sso'));
         self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote($user, 'user:pii:view'));
@@ -115,13 +119,16 @@ final class PrivilegeVoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote(null, 'user:view'));
     }
 
+    /**
+     * Voted without a subject, a scoped privilege means no more than "may reach this module" and
+     * therefore grants. Every action bound to one resource has to re-check with that resource.
+     */
     public function testScopedPermissionWithoutSubjectIgnoresScope(): void
     {
         $user = new User();
         $deptA = new Department('Art Show', 'art-show');
         $user->assignGroup($this->group('department-manager', ['department:manage']), $deptA);
 
-        // No subject -> "can reach the area at all".
         self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'department:manage'));
     }
 
@@ -136,11 +143,11 @@ final class PrivilegeVoterTest extends TestCase
         self::assertSame(VoterInterface::ACCESS_DENIED, $this->vote($user, 'department:manage', $deptB));
     }
 
+    /** A group held with no department (addGroup, not assignGroup) grants a scoped privilege everywhere. */
     public function testUnscopedAssignmentGrantsAnyDepartment(): void
     {
         $user = new User();
         $deptB = new Department('Security', 'security');
-        // Unscoped (department null) grant of a scoped permission.
         $user->addGroup($this->group('shift-manager', ['department:manage']));
 
         self::assertSame(VoterInterface::ACCESS_GRANTED, $this->vote($user, 'department:manage', $deptB));

@@ -18,6 +18,12 @@ use Symfony\Component\Form\FormEvents;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\String\Slugger\SluggerInterface;
 
+/**
+ * Global volunteer types are not offered as choices: they belong to every department, so claiming one
+ * here would let a single department's edit restrict a type the whole event relies on.
+ *
+ * A blank slug is derived from the name on PRE_SUBMIT, so validation already sees the derived value.
+ */
 final class DepartmentType extends AbstractType
 {
     public function __construct(
@@ -65,8 +71,6 @@ final class DepartmentType extends AbstractType
                 'label' => 'manage.label.volunteer_types',
                 'class' => VolunteerType::class,
                 'choice_label' => 'name',
-                // Global types belong to every department and are not offered here: claiming one
-                // would let a single department's edit restrict a type the whole event relies on.
                 'query_builder' => static fn (EntityRepository $repo) => $repo->createQueryBuilder('t')
                     ->andWhere('t.global = false')
                     ->orderBy('t.sortOrder', 'ASC')
@@ -78,7 +82,6 @@ final class DepartmentType extends AbstractType
                 'attr' => ['size' => 6],
             ]);
 
-        // Derive the slug from the name when the admin leaves it blank, before validation.
         $builder->addEventListener(FormEvents::PRE_SUBMIT, function (FormEvent $event): void {
             $data = $event->getData();
             if (\is_array($data) && empty($data['slug']) && !empty($data['name'])) {

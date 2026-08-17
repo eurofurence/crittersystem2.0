@@ -35,6 +35,13 @@ final class BotAccountController extends AbstractController
      * Deliberately the only bot endpoint with no acting user: this is what
      * establishes the link in the first place, so the caller cannot yet name a
      * volunteer. The code is the proof of identity.
+     *
+     * Unknown, expired, already-used codes and banned accounts all answer the same `invalid_code`,
+     * so a bot caller cannot probe which codes exist or which accounts are locked.
+     *
+     * This is the one place the acting token leaves the server, to the bot that just proved the
+     * link with a valid code. It is that bot's credential for every subsequent call as this
+     * volunteer and is never returned again.
      */
     #[Route('/users/link-telegram', name: 'app_api_bot_link', methods: ['POST'])]
     public function link(Request $request): JsonResponse
@@ -50,16 +57,10 @@ final class BotAccountController extends AbstractController
         $handle = $payload['telegram_handle'] ?? null;
         $user = $this->linking->confirm($code, $telegramId, $handle !== null ? (string) $handle : null);
 
-        // The service returns null for unknown, expired, already-used codes and for
-        // banned accounts alike. Keep that indistinguishable: a bot caller must not
-        // be able to probe which codes exist or which accounts are locked.
         if ($user === null) {
             return $this->json(['error' => 'invalid_code'], Response::HTTP_FORBIDDEN);
         }
 
-        // The acting token leaves the server exactly once, here, to the bot that
-        // just proved the link with a valid code. It is the bot's credential for
-        // every subsequent call as this volunteer; it is never returned again.
         return $this->json([
             'id' => (string) $user->getUuid(),
             'display_name' => $user->getName(),

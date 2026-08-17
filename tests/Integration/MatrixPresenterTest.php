@@ -34,10 +34,10 @@ final class MatrixPresenterTest extends DatabaseTestCase
         return $d;
     }
 
+    /** Column labels are whatever the department named its position group and position. */
     public function testColumnsComeFromDepartmentDataNotHardCoded(): void
     {
         $dept = $this->dept();
-        // Labels chosen freely by the department - the presenter must echo them.
         $group = new PositionGroup($dept, 'Catering');
         $this->em->persist($group);
         $pos = new NamedPosition($group, 'Head Chef');
@@ -50,6 +50,10 @@ final class MatrixPresenterTest extends DatabaseTestCase
         self::assertSame('Head Chef', $matrix['columns'][0]['name']);
     }
 
+    /**
+     * Cell state is derived structurally: enabled and assigned is `filled`, enabled and required
+     * but unfilled is `open`, enabled and not required is `not_required`.
+     */
     public function testCellStatesMapReferenceValues(): void
     {
         $dept = $this->dept();
@@ -68,7 +72,6 @@ final class MatrixPresenterTest extends DatabaseTestCase
             ->setDepartment($dept);
         $this->em->persist($shift);
 
-        // filled: enabled + assigned
         $spFilled = new ShiftPosition($shift, $filledPos);
         $shift->addShiftPosition($spFilled);
         $this->em->persist($spFilled);
@@ -81,12 +84,10 @@ final class MatrixPresenterTest extends DatabaseTestCase
         $this->em->persist($entry);
         $this->em->persist(new ShiftPositionAssignment($entry, $spFilled));
 
-        // open: enabled + required + unfilled
         $spOpen = (new ShiftPosition($shift, $openPos))->setRequired(true);
         $shift->addShiftPosition($spOpen);
         $this->em->persist($spOpen);
 
-        // not_required: enabled + not required
         $spNot = (new ShiftPosition($shift, $notReqPos))->setRequired(false);
         $shift->addShiftPosition($spNot);
         $this->em->persist($spNot);

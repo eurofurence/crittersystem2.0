@@ -39,12 +39,24 @@ final class MercureSubscriber implements EventSubscriberInterface
     {
         return [
             KernelEvents::RESPONSE => 'onResponse',
-            // After the response has been sent, and therefore after the transaction that produced
-            // the change has committed.
             KernelEvents::TERMINATE => 'onTerminate',
         ];
     }
 
+    /**
+     * Only a full HTML document gets a token: it is the only response that opens a connection. A
+     * fragment, a redirect or a JSON reply is served inside a page that already carries a current
+     * one.
+     *
+     * The gate is asked whether the user is blocked, never whether they have onboarded:
+     * administrators are exempt from the wizard and must still get a token.
+     *
+     * The token is minted on every page, deliberately, even though building the topic list costs a
+     * couple of queries. Throttling it opens a correctness gap: a request can itself widen what the
+     * user may receive (opening a support conversation makes the reader a participant of it), and a
+     * token issued from a cached decision would omit the topic the very page being served needs.
+     * Two queries per page view is the cheaper side of that trade.
+     */
     public function onResponse(ResponseEvent $event): void
     {
         if (!$event->isMainRequest()) {
@@ -54,29 +66,24 @@ final class MercureSubscriber implements EventSubscriberInterface
         $request = $event->getRequest();
         $response = $event->getResponse();
 
-        // Only full HTML documents open a connection; a fragment, a redirect or a JSON reply is
-        // served inside a page that already has a current token.
         if (!str_contains((string) $response->headers->get('Content-Type', 'text/html'), 'text/html')
             || $response->isRedirection()) {
             return;
         }
 
         $user = $this->security->getUser();
-        // Not "has onboarded": administrators are exempt from the gate and must still get a token.
         if (!$user instanceof User || $this->gate->blocks($user)) {
             return;
         }
 
-        /*
-         * Minted on every page, deliberately, even though building the topic list costs a couple of
-         * queries. Throttling it opens a correctness gap: a request can itself widen what the user
-         * may receive - opening a support conversation makes the reader a participant of it - and a
-         * token issued from a cached decision would omit the topic the very page being served needs.
-         * Two queries per page view is the cheaper side of that trade.
-         */
         $response->headers->setCookie($this->cookies->create($user, $request->isSecure()));
     }
 
+    /**
+     * Queued updates are sent on kernel.terminate, after the response has gone out and therefore
+     * after the transaction that produced the change has committed. A signal that overtakes its own
+     * commit tells the browser to re-read a row that is not there yet.
+     */
     public function onTerminate(TerminateEvent $event): void
     {
         $this->publisher->flush();

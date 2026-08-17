@@ -66,12 +66,15 @@ final class AvailabilityMultiDayTest extends DatabaseWebTestCase
         self::assertResponseRedirects('/availability');
     }
 
+    /**
+     * Two consecutive whole days both survive a reload. The ranges are exactly what the grid
+     * posts for a full day: each one ends at the next day's midnight, so the two abut.
+     */
     public function testTwoConsecutiveWholeDaysBothComeBack(): void
     {
         $this->login();
         [$first, $second] = $this->eventDays();
 
-        // Exactly what the grid posts for two full days: each ends at the next day's midnight.
         $this->submit([
             ['start' => $first.'T00:00:00', 'end' => $second.'T00:00:00', 'value' => 'unavailable'],
             ['start' => $second.'T00:00:00', 'end' => '2026-06-04T00:00:00', 'value' => 'unavailable'],

@@ -33,9 +33,9 @@ final class OnboardingGateSubscriber implements EventSubscriberInterface
     ) {
     }
 
+    /** Priority 6 runs after the firewall (8) has established the token. */
     public static function getSubscribedEvents(): array
     {
-        // After the firewall has established the token (priority 8).
         return [KernelEvents::REQUEST => ['onRequest', 6]];
     }
 

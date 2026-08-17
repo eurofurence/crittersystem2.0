@@ -66,6 +66,12 @@ final class ShiftWizardService
     }
 
     /**
+     * Cut a day's window into slots of the given length.
+     *
+     * An end at or before the start means the window runs past midnight. A trailing remainder
+     * shorter than the slot length is dropped rather than emitted as a short slot, and the loop is
+     * capped: a day holds at most 48 half-hour slots plus the overnight ones.
+     *
      * @return list<array{0: \DateTimeImmutable, 1: \DateTimeImmutable}>
      *
      * @throws \InvalidArgumentException
@@ -79,18 +85,16 @@ final class ShiftWizardService
             throw new \InvalidArgumentException('Invalid date or time.');
         }
 
-        // An end at or before the start means the window runs past midnight.
         if ($dayEnd <= $dayStart) {
             $dayEnd = $dayEnd->modify('+1 day');
         }
 
         $slots = [];
         $cursor = $dayStart;
-        // Guard the loop; a day can hold at most 48 half-hour slots plus overnight.
         for ($i = 0; $i < 96; ++$i) {
             $slotEnd = $cursor->modify("+{$slotMinutes} minutes");
             if ($slotEnd > $dayEnd) {
-                break; // drop a trailing partial slot shorter than the duration
+                break;
             }
             $slots[] = [$cursor, $slotEnd];
             $cursor = $slotEnd;

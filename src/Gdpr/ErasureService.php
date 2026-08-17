@@ -55,12 +55,15 @@ final class ErasureService
         return $request;
     }
 
-    /** Permanently delete the account and add it to the ban list. */
+    /**
+     * Permanently delete the account and add it to the ban list.
+     *
+     * The audit entry is written before the removal, because it outlives the account.
+     */
     public function execute(ErasureRequest $request): void
     {
         $user = $request->getUser();
 
-        // Audit BEFORE removal - the record outlives the account.
         $this->audit->log(AuditEvents::GDPR, AuditEvents::DELETE, [
             'resourceType' => 'User',
             'resourceId' => $user->getId(),

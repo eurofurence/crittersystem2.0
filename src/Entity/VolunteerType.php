@@ -15,6 +15,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: VolunteerTypeRepository::class)]
 #[ORM\Table(name: 'volunteer_types')]
 #[UniqueEntity('name')]
+#[UniqueEntity('role', message: 'manage.volunteer_type.field.role.taken')]
 class VolunteerType
 {
     use HasPublicUuid;
@@ -43,7 +44,13 @@ class VolunteerType
     #[Assert\Length(max: 128)]
     private string $name;
 
-    /** Null for every type an administrator creates; only the seeded base types carry one. */
+    /**
+     * Which base type onboarding hands out, null for an ordinary type.
+     *
+     * Unique in the database, so a second claimant is a constraint violation rather than an
+     * ambiguity. The class-level UniqueEntity turns that into a form error: the role is editable,
+     * and an administrator moving it from one type to another would otherwise get a 500.
+     */
     #[ORM\Column(length: 32, unique: true, nullable: true)]
     private ?string $role = null;
 

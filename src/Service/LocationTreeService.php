@@ -50,7 +50,6 @@ class LocationTreeService
                 $children[] = $this->node($child, $viewer);
             }
         }
-        // Stable ordering by name.
         usort($children, static fn ($a, $b) => strcmp($a['location']->getName(), $b['location']->getName()));
 
         return ['location' => $location, 'children' => $children];

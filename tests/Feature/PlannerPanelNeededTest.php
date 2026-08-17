@@ -19,6 +19,10 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
  */
 final class PlannerPanelNeededTest extends DatabaseWebTestCase
 {
+    /**
+     * The requirement is set through the wizard, the way a manager sets it, and the panel that
+     * opens when the shift is reopened has to show that saved count rather than zero.
+     */
     public function testPanelDisplaysSavedNeededCount(): void
     {
         $group = new Group('Managers', 'mgr', 'ROLE_STAFF');
@@ -46,7 +50,6 @@ final class PlannerPanelNeededTest extends DatabaseWebTestCase
         $vtUuid = (string) $vt->getUuid();
         $this->client->loginUser($user);
 
-        // Create a shift and set the requirement through the wizard.
         $crawler = $this->client->request('GET', '/manage-shifts/wizard?department='.$dept->getUuid());
         $token = $crawler->filter('input[name="_token"]')->attr('value');
         $this->client->request('POST', '/manage-shifts/wizard', [
@@ -64,7 +67,6 @@ final class PlannerPanelNeededTest extends DatabaseWebTestCase
         $shift = $this->em->getRepository(Shift::class)->findAll()[0];
         self::assertSame(3, $shift->getNeededVolunteerTypes()->first()->getCount(), 'sanity: the wizard saved the count');
 
-        // The panel that opens when the shift is reopened must show 3, not 0.
         $panel = $this->client->request('GET', '/manage-shifts/planner/shift/'.$shift->getUuid().'/panel');
         $value = $panel->filter('input[name="needed['.$vtUuid.']"]')->attr('value');
         self::assertSame('3', $value, 'the panel must display the saved required count');

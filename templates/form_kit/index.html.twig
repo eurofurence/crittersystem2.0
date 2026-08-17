@@ -19,8 +19,6 @@
     </div>
   {% endif %}
 
-  {# ------------------------------------------------------- the Symfony form demo #}
-
   {{ d.card_start('A Symfony form, rendered with the macros', {
     subtitle: 'FormKitDemoType - every row goes through a macro, so it picks up .form-control / .form-select and the help/error slots.'
   }) }}
@@ -47,8 +45,6 @@
   <button class="btn btn-primary">{{ form.save.vars.label }}</button>
 {{ form_end(form) }}{% endverbatim %}</code></pre>
   {{ d.card_end() }}
-
-  {# ----------------------------------------------------------- the field variants #}
 
   {{ d.card_start('Field variants', {
     subtitle: 'A second, never-submitted demo form (built in FormKitController) so every option has something to hang on.'
@@ -112,8 +108,6 @@
 {{ f.choice_multiple(form.skills, {size: 4}) }}{% endverbatim %}</code></pre>
   {{ d.card_end() }}
 
-  {# -------------------------------------------------------------- narrow container #}
-
   {{ d.section_header('In a narrow container', {
     subtitle: 'The macros are grid-aware: every one takes col (default col-12) and lays out inside whatever column you give it.'
   }) }}
@@ -137,8 +131,6 @@
       {{ d.card_end() }}
     </div>
   </div>
-
-  {# ------------------------------------------------------- search + Turbo Frame #}
 
   {{ d.card_start('search_input + Turbo Frame', {
     subtitle: 'A debounced search box that reloads only the frame - no Symfony form, no page refresh.'

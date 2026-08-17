@@ -12,16 +12,21 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 /**
  * The department member tables, in a real browser.
  *
- * The regression this exists for: the member tables were wrapped in Turbo Frames for search and
- * paging, which silently captured every link inside them. Clicking a member's name asked Turbo to
- * find a `dept-members-staff` frame in the profile page, which has none, so it rendered "Content
- * missing" instead of navigating. The server returned 200 and the markup was correct - only a real
- * click shows it.
+ * The member tables sit in Turbo Frames for search and paging, and a frame silently captures every
+ * link inside it. Unless those links opt out, clicking a member's name asks Turbo to find a
+ * `dept-members-staff` frame in the profile page, which has none, so it renders "Content missing"
+ * instead of navigating. The server answers 200 and the markup is correct, so only a real click
+ * shows it.
  */
 final class DepartmentMembersBrowserTest extends BrowserTestCase
 {
     private const PASSWORD = 'secret123';
 
+    /**
+     * The manager's group carries news:view because signing in lands on /news, where a 403 is a
+     * severe console error every assertNoConsoleErrors() in this file would report. Thirty members
+     * are created so the tables page, which is what puts the frame to work.
+     */
     private function seed(): Department
     {
         $dept = new Department('Stage', 'stage');
@@ -31,8 +36,6 @@ final class DepartmentMembersBrowserTest extends BrowserTestCase
         $this->em->persist($memberGroup);
 
         $group = new Group('Managers', 'mgr-'.bin2hex(random_bytes(2)), 'ROLE_STAFF');
-        // news:view is part of it because signing in lands on /news, and a 403 there is a severe
-        // console error that every assertNoConsoleErrors() in this file would report.
         foreach (['department:manage', 'department:member:manage', 'news:view'] as $p) {
             $priv = new Privilege($p);
             $this->em->persist($priv);
@@ -48,7 +51,6 @@ final class DepartmentMembersBrowserTest extends BrowserTestCase
         $this->em->persist($manager);
         $this->em->persist($manager->assignGroup($group, $dept));
 
-        // Enough members to force a pager, so the frame is doing real work.
         for ($i = 0; $i < 30; ++$i) {
             $member = new User();
             $member->setName(sprintf('member%02d', $i))

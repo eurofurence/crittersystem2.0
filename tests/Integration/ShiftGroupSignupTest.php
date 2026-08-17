@@ -113,6 +113,7 @@ final class ShiftGroupSignupTest extends DatabaseTestCase
         self::assertSame(2, $this->entryCount($user));
     }
 
+    /** Someone else holds the rehearsal's only slot, so the application to its group is refused whole. */
     public function testAFullSiblingRefusesTheWholeApplicationAndLeavesNoEntries(): void
     {
         $blocker = $this->user();
@@ -121,7 +122,6 @@ final class ShiftGroupSignupTest extends DatabaseTestCase
         $show = $this->shift('Main event', '2036-06-02 09:00', '2036-06-02 15:00');
         $this->group([$rehearsal, $show]);
 
-        // The rehearsal's only slot goes to somebody else.
         $this->em->persist(new ShiftEntry($rehearsal, $this->type, $blocker));
         $this->em->flush();
 
@@ -135,10 +135,10 @@ final class ShiftGroupSignupTest extends DatabaseTestCase
         self::assertSame(0, $this->entryCount($user), 'A refused group application must leave nothing behind.');
     }
 
+    /** A briefing running inside the first minutes of its own shift is granted alongside it, not refused as an overlap. */
     public function testMembersOfTheSameGroupDoNotOverlapEachOther(): void
     {
         $user = $this->user();
-        // A briefing that runs inside the first minutes of the shift it belongs to.
         $briefing = $this->shift('Briefing', '2036-06-01 09:00', '2036-06-01 09:30');
         $shift = $this->shift('Main event', '2036-06-01 09:00', '2036-06-01 15:00');
         $this->group([$briefing, $shift]);
@@ -179,6 +179,10 @@ final class ShiftGroupSignupTest extends DatabaseTestCase
         self::assertSame(0, $this->entryCount($user), 'Cancelling one member of a group cancels all of them.');
     }
 
+    /**
+     * The volunteer applied while both members were still ahead and the rehearsal has since run, so
+     * they can no longer drop the group themselves, and the refusal names the member that blocks it.
+     */
     public function testSelfCancellationIsRefusedOnceAnyMemberHasStarted(): void
     {
         $user = $this->user();
@@ -186,7 +190,6 @@ final class ShiftGroupSignupTest extends DatabaseTestCase
         $show = $this->shift('Main event', '2036-06-02 09:00', '2036-06-02 15:00');
         $this->group([$rehearsal, $show]);
 
-        // Applied while both were still ahead; the rehearsal has since happened.
         $this->em->persist(new ShiftEntry($rehearsal, $this->type, $user));
         $this->em->persist(new ShiftEntry($show, $this->type, $user));
         $this->em->flush();
@@ -213,12 +216,12 @@ final class ShiftGroupSignupTest extends DatabaseTestCase
         self::assertNull($this->signup()->cancelError($entry, true));
     }
 
+    /** The hidden member is staff-only while the volunteer is not staff, so its title must never surface in the refusal. */
     public function testAnInvisibleMemberMakesTheGroupInapplicableWithoutNamingIt(): void
     {
         $user = $this->user();
         $show = $this->shift('Main event', '2036-06-02 09:00', '2036-06-02 15:00');
         $secret = $this->shift('Secret briefing', '2036-06-01 12:00', '2036-06-01 13:00');
-        // Staff-only, and the volunteer is not staff.
         $secret->setAudience(ShiftAudience::ALL_STAFF);
         $this->em->flush();
         $this->group([$secret, $show]);
@@ -297,6 +300,10 @@ final class ShiftGroupSignupTest extends DatabaseTestCase
         self::assertSame(1, $this->entryCount($user));
     }
 
+    /**
+     * The volunteer already holds the rehearsal, so applying to the show creates only the missing
+     * member: the service must not double-book the one that exists.
+     */
     public function testCapacityConflictUnderTheLockRollsTheWholeGroupBack(): void
     {
         $user = $this->user();
@@ -304,8 +311,6 @@ final class ShiftGroupSignupTest extends DatabaseTestCase
         $show = $this->shift('Main event', '2036-06-02 09:00', '2036-06-02 15:00');
         $this->group([$rehearsal, $show]);
 
-        // Already on the rehearsal only: applying to the show adds nothing new there, and the
-        // service must not double-book.
         $this->em->persist(new ShiftEntry($rehearsal, $this->type, $user));
         $this->em->flush();
 

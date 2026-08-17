@@ -47,12 +47,14 @@ final class ShiftTaskAccess
         ));
     }
 
-    /** May the current user create/change/delete this task? */
+    /**
+     * May the current user create/change/delete this task? A task with no department is global and
+     * affects every department, so only an admin may touch it.
+     */
     public function canManage(ShiftTask $task): bool
     {
         $department = $task->getDepartment();
 
-        // A global task affects every department; only an admin may touch it.
         return $department === null
             ? $this->isAdmin()
             : $this->security->isGranted('shift:manage', $department);

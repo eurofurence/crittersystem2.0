@@ -11,7 +11,7 @@ use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * The board renders from its own standalone layout instead of base.html.twig, so everything the
- * live stack needs had to be reproduced there by hand.
+ * live stack needs is reproduced there by hand.
  *
  * Losing any of those pieces produces a board that still renders perfectly and silently stops
  * updating, which is the one failure a wall display cannot show. These assertions exist so that

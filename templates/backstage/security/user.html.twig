@@ -1,0 +1,119 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/notification/_macros.twig' as n %}
+
+{% block title %}{{ 'backstage.security.user.title'|trans({'%name%': subject.name}) }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header(subject.name, {
+    subtitle: 'backstage.security.user.subtitle'|trans,
+    actions: [{label: 'backstage.security.action.back'|trans, href: path('app_backstage_security'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  <div class="row g-3">
+    <div class="col-12 col-lg-5">
+      {{ d.card_start('backstage.security.card.identity'|trans) }}
+        {{ d.definition_list([
+          {label: 'backstage.security.label.registration'|trans, value: subject.personalData and subject.personalData.badgeNumber is not null ? subject.personalData.badgeNumber : '-'},
+          {label: 'backstage.security.label.kind'|trans, value: (subject.isStaff ? 'backstage.security.kind.staff' : 'backstage.security.kind.volunteer')|trans},
+          {label: 'common.label.email'|trans, value: can_see_pii() ? subject.email : '-'}
+        ]) }}
+      {{ d.card_end() }}
+
+      {{ d.card_start('backstage.security.card.entry'|trans) }}
+        {% if inside %}
+          {{ n.alert('success', 'backstage.security.state.inside'|trans) }}
+          <form method="post" action="{{ path('app_backstage_security_withdraw', {id: subject.uuid}) }}"
+                data-controller="confirm"
+                data-confirm-message-value="{{ 'backstage.security.confirm.withdraw'|trans }}">
+            <input type="hidden" name="_token" value="{{ csrf_token('security-checkin' ~ subject.id) }}">
+            <button class="btn btn-outline-danger">{{ 'backstage.security.action.withdraw'|trans }}</button>
+          </form>
+        {% else %}
+          {% if decision.allowed %}
+            <form method="post" action="{{ path('app_backstage_security_enter', {id: subject.uuid}) }}">
+              <input type="hidden" name="_token" value="{{ csrf_token('security-checkin' ~ subject.id) }}">
+              <button class="btn btn-primary btn-lg w-100">{{ 'backstage.security.action.enter'|trans }}</button>
+            </form>
+          {% else %}
+            {#
+              The refusal names which rule stopped them: a missing registration number is a trip to
+              the info desk, no qualifying shift is a matter of coming back later.
+            #}
+            {% set reasons %}
+              <ul class="mb-0">
+                {% if decision.refusedFor('no_registration_number') %}<li>{{ 'backstage.security.refused.no_registration'|trans }}</li>{% endif %}
+                {% if decision.refusedFor('no_qualifying_shift') %}<li>{{ 'backstage.security.refused.no_shift'|trans({'%hours%': (windowSeconds / 3600)|round(1)}) }}</li>{% endif %}
+              </ul>
+            {% endset %}
+            {{ n.alert('warning', null, {messageHtml: reasons}) }}
+
+            {% if is_granted('security:checkin:override') %}
+              <form method="post" action="{{ path('app_backstage_security_enter', {id: subject.uuid}) }}"
+                    data-controller="confirm"
+                    data-confirm-message-value="{{ 'backstage.security.confirm.override'|trans }}"
+                    data-confirm-variant-value="danger">
+                <input type="hidden" name="_token" value="{{ csrf_token('security-checkin' ~ subject.id) }}">
+                <label class="form-label" for="override-reason">{{ 'backstage.security.label.override_reason'|trans }}</label>
+                <input type="text" class="form-control mb-2" id="override-reason" name="override_reason" required maxlength="255">
+                <button class="btn btn-outline-danger">{{ 'backstage.security.action.override'|trans }}</button>
+              </form>
+            {% endif %}
+          {% endif %}
+        {% endif %}
+      {{ d.card_end() }}
+    </div>
+
+    <div class="col-12 col-lg-7">
+      {{ d.card_start('backstage.security.card.shifts'|trans) }}
+        {% if shifts is empty %}
+          {{ d.empty_inline('backstage.security.shifts.none'|trans) }}
+        {% else %}
+          <ul class="list-group list-group-flush">
+            {% for entry in shifts %}
+              <li class="list-group-item d-flex justify-content-between">
+                <span>
+                  {{ entry.shift.title }}
+                  {% if entry.shift.location %}<span class="text-muted small">{{ entry.shift.location.fullName }}</span>{% endif %}
+                </span>
+                <span class="text-muted small">{{ entry.shift.startsAt|app_time }} - {{ entry.shift.endsAt|app_time }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {{ d.card_end() }}
+
+      {{ d.card_start('backstage.security.card.history'|trans) }}
+        {% if history is empty %}
+          {{ d.empty_inline('backstage.security.history.none'|trans) }}
+        {% else %}
+          {{ d.table_start({responsive: false}) }}
+            <thead>
+              <tr>
+                <th>{{ 'backstage.security.label.when'|trans }}</th>
+                <th>{{ 'backstage.security.label.what'|trans }}</th>
+                <th>{{ 'backstage.security.label.by'|trans }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in history %}
+                <tr>
+                  <td class="small">{{ row.occurredAt|app_datetime }}</td>
+                  <td>
+                    {{ d.badge((row.isEntry ? 'backstage.security.action.entered' : 'backstage.security.action.withdrawn')|trans,
+                      row.isEntry ? 'bg-green-lt' : 'bg-secondary-lt') }}
+                    {% if row.overridden %}
+                      {{ d.badge('backstage.security.label.overridden'|trans, 'bg-red-lt') }}
+                      <div class="text-muted small">{{ row.overrideReason }}</div>
+                    {% endif %}
+                  </td>
+                  <td class="small">{{ row.actor ? row.actor.name : '-' }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          {{ d.table_end({responsive: false}) }}
+        {% endif %}
+      {{ d.card_end() }}
+    </div>
+  </div>
+{% endblock %}

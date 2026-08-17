@@ -35,7 +35,12 @@ final class SsoAvatarFetcher
     ) {
     }
 
-    /** @return string|null the storage key the picture was written under, or null on any failure */
+    /**
+     * The bytes decide the type, not the advertised Content-Type: only what is genuinely an image
+     * is stored.
+     *
+     * @return string|null the storage key the picture was written under, or null on any failure
+     */
     public function fetchAndStore(string $url, User $user): ?string
     {
         if (!preg_match('#^https?://#i', $url)) {
@@ -57,7 +62,6 @@ final class SsoAvatarFetcher
                 return null;
             }
 
-            // Trust the bytes, not the advertised Content-Type: only store what is genuinely an image.
             $info = @getimagesizefromstring($content);
             $extension = $info !== false ? (self::EXTENSIONS[$info[2]] ?? null) : null;
             if ($extension === null) {

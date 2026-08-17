@@ -50,12 +50,13 @@ final class ShiftSignupService
      * are resolved from it (see {@see plan()}), because the volunteer picks once and commits to the
      * whole group.
      *
+     * A group holding a member this volunteer may not see offers nothing at all, and says nothing
+     * about why: the empty list must not hint that a hidden shift exists.
+     *
      * @return array<string, VolunteerType> keyed by the type's public uuid
      */
     public function signupOptions(Shift $shift, User $user): array
     {
-        // A group with a member this volunteer may not see offers nothing at all, and says nothing
-        // about why.
         if (!$this->groups->isFullyVisibleTo($shift, $user)) {
             return [];
         }
@@ -68,7 +69,8 @@ final class ShiftSignupService
      * signed_up | past | full | overlap | ineligible | available.
      *
      * Grouped shifts report the state of the whole commitment. A shift whose sibling is full is not
-     * "available": offering it would put a button on screen that can only fail.
+     * "available": offering it would put a button on screen that can only fail. Blocking states are
+     * ranked worst-first, so the volunteer is shown the one that actually stops them.
      */
     public function eligibilityStatus(Shift $shift, User $user): string
     {
@@ -86,7 +88,6 @@ final class ShiftSignupService
             return $own;
         }
 
-        // Ranked worst-first: the state the volunteer needs to see is the one that blocks them.
         foreach (['past', 'full', 'overlap', 'ineligible'] as $blocking) {
             foreach ($members as $member) {
                 if ($member === $shift) {
@@ -139,6 +140,10 @@ final class ShiftSignupService
     /**
      * Sign the user up. A grouped shift signs them up for every member of the group, or for none.
      *
+     * The group write returns only the entries it created, so when the volunteer already held one on
+     * the shift they clicked, a newly created sibling entry is handed back instead of a fabricated
+     * one.
+     *
      * @param array<string, int> $typeChoices member shift uuid => volunteer type id
      *
      * @return ShiftEntry the entry on the shift that was applied to
@@ -159,8 +164,6 @@ final class ShiftSignupService
             }
         }
 
-        // Every member already held an entry except the siblings; the caller asked about this shift,
-        // so hand back whatever exists for it rather than inventing one.
         return $created[0] ?? throw new \RuntimeException('You are already signed up for this shift.');
     }
 
