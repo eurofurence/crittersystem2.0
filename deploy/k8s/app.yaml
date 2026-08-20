@@ -203,6 +203,38 @@ spec:
                 - name: APP_ENV
                   value: prod
 ---
+# Cached hours go stale on their own: a shift ending writes nothing, so nothing invalidates the
+# row. This sweep looks for shifts that finished since each row was last calculated and for rows a
+# write flagged, and queues those users for the worker. It is a no-op when nothing has changed.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: critter-recalculate-hours
+  namespace: critter
+spec:
+  schedule: "*/5 * * * *"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: recalculate-hours
+              image: ghcr.io/YOUR_ORG/critter:latest   # <-- replace with your image
+              command:
+                - /bin/sh
+                - -c
+                - php bin/console app:hours:recalculate
+              envFrom:
+                - secretRef:
+                    name: critter-secrets
+              env:
+                - name: APP_ENV
+                  value: prod
+---
 apiVersion: v1
 kind: Service
 metadata:

@@ -29,6 +29,8 @@ framework:
             App\Audit\AuditRecord: async
             # GDPR data-portability exports are built in the background.
             App\Gdpr\GenerateDataExport: async
+            # One per user, so a sweep of everybody does not run inside the cron process.
+            App\Message\RecalculateUserHours: async
 
 when@test:
     framework:
@@ -40,3 +42,4 @@ when@test:
                 # observable without running a worker.
                 App\Audit\AuditRecord: sync
                 App\Gdpr\GenerateDataExport: sync
+                App\Message\RecalculateUserHours: sync

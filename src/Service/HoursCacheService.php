@@ -16,7 +16,14 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final class HoursCacheService
 {
-    private const CACHE_TTL_HOURS = 24;
+    /**
+     * How long a row may go unverified before a read redoes it.
+     *
+     * This is the backstop, not the mechanism: the sweep keeps rows current, and a shorter window
+     * here only decides how far hours can drift if that sweep stops running. It was a day, which is
+     * why hours appeared frozen between manual refreshes.
+     */
+    private const CACHE_TTL_SECONDS = 3600;
 
     public function __construct(
         private readonly EntityManagerInterface $em,
@@ -91,7 +98,8 @@ final class HoursCacheService
             ->setCompletedShiftsCount($breakdown->completedCount)
             ->setNightShiftsCount($breakdown->nightCount)
             ->setNoshowShiftsCount($breakdown->noshowCount)
-            ->setLastCalculatedAt(new \DateTimeImmutable());
+            ->setLastCalculatedAt(new \DateTimeImmutable())
+            ->setDirty(false);
 
         if ($cache->getId() === null) {
             $this->em->persist($cache);
@@ -101,10 +109,11 @@ final class HoursCacheService
         return $cache;
     }
 
+    /** A row flagged by a write is never fresh, however recently it was calculated. */
     private function isFresh(UserHoursCache $cache): bool
     {
         $age = (new \DateTimeImmutable())->getTimestamp() - $cache->getLastCalculatedAt()->getTimestamp();
 
-        return $age < self::CACHE_TTL_HOURS * 3600;
+        return !$cache->isDirty() && $age < self::CACHE_TTL_SECONDS;
     }
 }

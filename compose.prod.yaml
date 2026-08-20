@@ -64,6 +64,28 @@ services:
   # Retention. Export archives are short-lived bundles of personal data: the GDPR archive is a full
   # copy of one user's data and its download window is 24 hours, the audit package is a signed legal
   # artifact kept for 30 days. Without this container both simply accumulate in storage forever.
+  # Hours run on their own cadence: a shift ending writes nothing, so the cached totals only move
+  # when this sweep looks for shifts that have finished since each row was last calculated.
+  hours:
+    build:
+      context: .
+      target: prod
+    env_file: [docker/.env.prod]
+    environment:
+      APP_ENV: prod
+      RUN_MIGRATIONS_ON_START: "0"
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          php bin/console app:hours:recalculate
+          sleep 300
+        done
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
   purge:
     build:
       context: .

@@ -50,6 +50,16 @@ class UserHoursCache
     #[ORM\Column(name: 'last_calculated_at')]
     private \DateTimeImmutable $lastCalculatedAt;
 
+    /**
+     * Set when something this row is derived from has changed, so the sweep knows to redo it.
+     *
+     * A shift ending needs no flag: nothing writes at that moment, and the sweep finds those by
+     * comparing the shift's end against `lastCalculatedAt`. This covers the changes that do have a
+     * write behind them, such as a worklog or a no-show.
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $dirty = false;
+
     public function __construct(User $user)
     {
         $this->user = $user;
@@ -158,6 +168,18 @@ class UserHoursCache
     public function setNoshowShiftsCount(int $noshowShiftsCount): static
     {
         $this->noshowShiftsCount = $noshowShiftsCount;
+
+        return $this;
+    }
+
+    public function isDirty(): bool
+    {
+        return $this->dirty;
+    }
+
+    public function setDirty(bool $dirty): static
+    {
+        $this->dirty = $dirty;
 
         return $this;
     }
