@@ -31,7 +31,7 @@
               <twig:Table:Head class="w-44">{{ 'board.column.filled'|trans }}</twig:Table:Head>
               <twig:Table:Head class="w-32">{{ 'common.label.status'|trans }}</twig:Table:Head>
               <twig:Table:Head>{{ 'common.label.description'|trans }}</twig:Table:Head>
-              <twig:Table:Head class="w-44 text-right">{{ 'common.label.actions'|trans }}</twig:Table:Head>
+              <twig:Table:Head class="w-56 text-right">{{ 'common.label.actions'|trans }}</twig:Table:Head>
             </twig:Table:Row>
           </twig:Table:Header>
           <twig:Table:Body>
@@ -72,6 +72,20 @@
                 </twig:Table:Cell>
 
                 <twig:Table:Cell class="text-right">
+                  <div class="flex flex-wrap items-center justify-end gap-1.5">
+                  {#
+                    Offered for every shift the viewer may open, not only for one that is short: a
+                    full shift is exactly the one that turns out to be short when somebody does not
+                    arrive, and marking that is what the roster is for. `rosterable` is the same
+                    answer the roster action gives, so the link cannot lead to its 404. Whether this
+                    viewer may mark anybody is a further question the dialog decides for itself.
+                  #}
+                  {% if rosterable[uuid] ?? false %}
+                    <a class="shrink-0 text-xs text-primary hover:underline"
+                       href="{{ path('app_board_shift_roster', {department: department.uuid, date: dayParam, shift: uuid}) }}"
+                       data-board-roster-link
+                       data-turbo-frame="board-modal">{{ 'board.roster.open'|trans({'%count%': row.assigned}) }}</a>
+                  {% endif %}
                   {% if row.helpCall %}
                     <span data-board-call-state class="text-xs whitespace-nowrap text-amber-400">
                       {{ 'board.call.flagged'|trans({'%time%': row.helpCall.createdAt|app_time}) }}
@@ -97,6 +111,7 @@
                       slots: row.shortfall
                     }) }}
                   {% endif %}
+                  </div>
                 </twig:Table:Cell>
               </twig:Table:Row>
             {% endfor %}

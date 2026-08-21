@@ -132,6 +132,56 @@ final class ShiftDossierTest extends DatabaseWebTestCase
     }
 
     /**
+     * Marking somebody absent belongs on the shift, because that is the screen anybody looking for
+     * it opens. It is offered on the roster only to a viewer the action itself would accept -
+     * `shift:manage` scoped to this shift - because recording a no-show can lock the account.
+     */
+    public function testAManagerCanMarkANoShowFromTheRoster(): void
+    {
+        $shift = $this->scenario->shift('Morning Gate');
+        $volunteer = $this->scenario->user(['shift:view']);
+        $entry = $this->scenario->signUp($volunteer, $shift);
+
+        $manager = $this->scopedManager($this->scenario->department, ['shift:view', 'shift:manage']);
+
+        $this->client->loginUser($manager);
+        $crawler = $this->client->request('GET', '/shifts/'.$shift->getUuid().'/info');
+
+        self::assertResponseIsSuccessful();
+        self::assertSame(
+            ['/manage/shifts/entries/'.$entry->getUuid().'/noshow'],
+            $crawler->filter('form[action*="/noshow"]')->extract(['action']),
+        );
+
+        $this->client->submit($crawler->filter('form[action*="/noshow"]')->form());
+
+        self::assertResponseRedirects('/shifts/'.$shift->getUuid());
+
+        $this->em->clear();
+        self::assertTrue($this->em->getRepository(\App\Entity\ShiftEntry::class)->find($entry->getId())->isNoshow());
+    }
+
+    /**
+     * The roster reaches further than the no-show control does: `assignment:manage` opens the
+     * privileged tier, but the action enforces `shift:manage` and would refuse.
+     */
+    public function testTheNoShowControlIsWithheldFromAViewerTheActionWouldRefuse(): void
+    {
+        $shift = $this->scenario->shift('Morning Gate');
+        $volunteer = $this->scenario->user(['shift:view']);
+        $this->scenario->signUp($volunteer, $shift);
+
+        $assigner = $this->scopedManager($this->scenario->department, ['shift:view', 'assignment:manage']);
+
+        $this->client->loginUser($assigner);
+        $crawler = $this->client->request('GET', '/shifts/'.$shift->getUuid().'/info');
+
+        self::assertResponseIsSuccessful();
+        self::assertStringContainsString($volunteer->getName(), (string) $this->client->getResponse()->getContent());
+        self::assertSame(0, $crawler->filter('form[action*="/noshow"]')->count());
+    }
+
+    /**
      * A draft is invisible to a volunteer, and the fragment must not become the way to confirm that
      * one exists: 404, never 403.
      */

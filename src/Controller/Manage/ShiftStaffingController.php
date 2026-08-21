@@ -10,6 +10,7 @@ use App\Repository\UserRepository;
 use App\Repository\VolunteerTypeRepository;
 use App\Service\Assignment\ManualAssignmentService;
 use App\Service\NoShowBanService;
+use App\Service\Shift\ShiftAttendanceService;
 use App\Service\Shift\ShiftGroupResolver;
 use App\Service\Shift\VolunteerTypeOrdering;
 use App\Service\ShiftSignupService;
@@ -24,6 +25,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Routing\Requirement\Requirement;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Translation\TranslatableMessage;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Staffing screens for a single shift.
@@ -48,6 +50,7 @@ final class ShiftStaffingController extends AbstractController
         private readonly ManualAssignmentService $assignments,
         private readonly ShiftGroupResolver $groups,
         private readonly VolunteerTypeOrdering $typeOrder,
+        private readonly ShiftAttendanceService $attendance,
     ) {
     }
 
@@ -196,6 +199,10 @@ final class ShiftStaffingController extends AbstractController
      * Scoped to the entry's own shift: marking a no-show can trigger the automatic ban, so this must
      * never be reachable for another department's shift. Reaching the configured no-show threshold
      * locks the account.
+     *
+     * The mutation runs through ShiftAttendanceService so it is announced over Mercure. The
+     * operations board shows a volunteer's no-show state; without the signal a board left up in the
+     * department keeps showing the position as attended until something unrelated redraws it.
      */
     #[Route('/entries/{id}/noshow', name: 'app_manage_shift_entry_noshow', methods: ['POST'], requirements: ['id' => Requirement::UUID])]
     public function toggleNoshow(Request $request, #[MapEntity(mapping: ['id' => 'uuid'])] ShiftEntry $entry): Response
@@ -203,9 +210,11 @@ final class ShiftStaffingController extends AbstractController
         $this->denyAccessUnlessGranted('shift:manage', $entry->getShift());
 
         if ($this->isCsrfTokenValid('noshow'.$entry->getId(), (string) $request->request->get('_token'))) {
-            $entry->setNoshow(!$entry->isNoshow());
-            $entry->setNoshowComment($entry->isNoshow() ? (string) $request->request->get('comment') ?: null : null);
-            $this->em->flush();
+            if ($entry->isNoshow()) {
+                $this->attendance->clearNoShow($entry);
+            } else {
+                $this->attendance->markNoShow($entry, (string) $request->request->get('comment') ?: null);
+            }
 
             if ($entry->isNoshow() && $this->noShowBans->evaluate($entry->getUser())) {
                 $this->addFlash('warning', new TranslatableMessage('manage.shift.staffing.flash.auto_banned'));
@@ -216,6 +225,34 @@ final class ShiftStaffingController extends AbstractController
             }
         }
 
-        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $entry->getShift()->getUuid()]);
+        return $this->returnTo($request, $entry->getShift());
+    }
+
+    /**
+     * Back to the surface the manager marked the no-show from.
+     *
+     * The target is never a URL and never a route name from the request: only three screens are
+     * reachable, each rebuilt here from a resource the caller has already been authorized for or
+     * from parameters the destination re-checks for itself. That is what keeps a field posted by a
+     * browser from becoming an open redirect.
+     */
+    private function returnTo(Request $request, Shift $shift): Response
+    {
+        $department = (string) $request->request->get('board_department', '');
+        $date = (string) $request->request->get('board_date', '');
+
+        if (Uuid::isValid($department) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) === 1) {
+            return $this->redirectToRoute('app_board_show', [
+                'department' => $department,
+                'date' => $date,
+                'view' => 'shifts',
+            ]);
+        }
+
+        if ($request->request->get('return') === 'shift') {
+            return $this->redirectToRoute('app_shift_show', ['id' => $shift->getUuid()]);
+        }
+
+        return $this->redirectToRoute('app_manage_shift_needs', ['id' => $shift->getUuid()]);
     }
 }

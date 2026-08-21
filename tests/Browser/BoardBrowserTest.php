@@ -259,6 +259,95 @@ final class BoardBrowserTest extends BrowserTestCase
         $this->assertNoConsoleErrors('the call-for-help confirmation');
     }
 
+    /*
+     * Confirming has to raise the call. This is the half a markup test cannot reach: the dialog can
+     * open, hold the right form and still do nothing, because the kit's Button is a `type="button"`
+     * unless the caller says otherwise and a plain button inside a form submits nothing. Everything
+     * on screen looks like it worked and nobody is paged, so the assertion is on the stored call
+     * rather than on anything the page shows.
+     */
+    public function testConfirmingTheCallForHelpRaisesIt(): void
+    {
+        $manager = $this->seedCallableShift();
+
+        $client = $this->browse();
+        $client->getWebDriver()->manage()->window()->setSize(new \Facebook\WebDriver\WebDriverDimension(1920, 1080));
+        $this->signIn($manager, self::PASSWORD);
+
+        $client->request('GET', $this->boardUrl().'?view=shifts');
+        $client->waitFor('[data-board-shifts-table]', 10);
+
+        $client->executeScript(
+            "document.querySelector('button[data-action*=\"alert-dialog#open\"]').click();"
+        );
+        $client->waitFor('[data-slot="alert-dialog-content"][open]', 10);
+
+        $client->executeScript(
+            "document.querySelector('[data-slot=\"alert-dialog-content\"] form[action=\"/calls/trigger\"]"
+            ." button[type=\"submit\"]').click();"
+        );
+        $client->waitFor('[data-board-call-state]', 10);
+
+        self::assertNotEmpty(
+            $this->em->getRepository(\App\Entity\HelpCall::class)->findAll(),
+            'confirming the dialog must actually raise the call',
+        );
+        $this->assertNoConsoleErrors('raising a call for help');
+    }
+
+    /*
+     * Marking a volunteer absent from the board, end to end.
+     *
+     * Three things here exist only in a browser. The roster arrives as Turbo Frame content and opens
+     * itself; its confirmation is a second `<dialog>` opened on top of the first, which is where
+     * stacking would break; and the roster's own click-outside handler must not treat a click in the
+     * confirmation as a click on its backdrop and shut the roster underneath it.
+     */
+    public function testAVolunteerCanBeMarkedAbsentFromTheBoardRoster(): void
+    {
+        $manager = $this->seed();
+
+        $privilege = $this->em->getRepository(Privilege::class)->findOneBy(['name' => 'shift:manage']) ?? new Privilege('shift:manage');
+        $this->em->persist($privilege);
+        $manager->getActiveAssignments()[0]->getGroup()->addPrivilege($privilege);
+        $this->em->flush();
+
+        $client = $this->browse();
+        $client->getWebDriver()->manage()->window()->setSize(new \Facebook\WebDriver\WebDriverDimension(1920, 1080));
+        $this->signIn($manager, self::PASSWORD);
+
+        $client->request('GET', $this->boardUrl().'?view=shifts');
+        $client->waitFor('[data-board-shifts-table]', 10);
+
+        $client->executeScript("document.querySelector('[data-board-roster-link]').click();");
+        $client->waitFor('#dialog-board-roster[open]', 10);
+
+        $client->executeScript(
+            "document.querySelector('#dialog-board-roster button[data-action*=\"alert-dialog#open\"]').click();"
+        );
+        $client->waitFor('[data-slot="alert-dialog-content"][open]', 10);
+
+        self::assertTrue(
+            $client->executeScript("return document.querySelector('#dialog-board-roster').open;"),
+            'the roster must stay open underneath its own confirmation',
+        );
+
+        $client->executeScript(
+            "document.querySelector('[data-slot=\"alert-dialog-content\"] form[action*=\"/noshow\"]"
+            ." button[type=\"submit\"]').click();"
+        );
+        $client->waitForInvisibility('#dialog-board-roster', 10);
+
+        $this->em->clear();
+        $noshows = array_filter(
+            $this->em->getRepository(\App\Entity\ShiftEntry::class)->findAll(),
+            static fn (\App\Entity\ShiftEntry $entry): bool => $entry->isNoshow(),
+        );
+        self::assertCount(1, $noshows, 'confirming the dialog must actually record the no-show');
+
+        $this->assertNoConsoleErrors('marking a no-show from the board');
+    }
+
     /** A shift starting shortly and short of people, which is when the call button is offered. */
     private function seedCallableShift(): User
     {

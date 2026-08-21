@@ -52,8 +52,6 @@
   <hr>
 
   {% if descriptionMissing %}
-    {# The reason this screen exists: an empty description is the thing the operator has to route
-       around, so it is stated with the person to ask rather than left blank. #}
     {% set missing %}
       <strong>{{ 'shift.dossier.no_description.title'|trans }}</strong>
       {{ 'shift.dossier.no_description.body'|trans({'%department%': shift.department ? shift.department.name : '-'}) }}
@@ -109,7 +107,8 @@
 {% if privileged %}
   {{ d.card_start('shift.dossier.roster'|trans, {bodyClass: ''}) }}
     {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table'}) }}
-      <thead><tr><th>{{ 'shift.dossier.volunteer'|trans }}</th><th>{{ 'common.label.role'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th>{{ 'shift.dossier.notes'|trans }}</th></tr></thead>
+      <thead><tr><th>{{ 'shift.dossier.volunteer'|trans }}</th><th>{{ 'common.label.role'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th>{{ 'shift.dossier.notes'|trans }}</th>
+        {% if canMarkNoShow %}<th class="text-end">{{ 'common.label.actions'|trans }}</th>{% endif %}</tr></thead>
       <tbody>
         {% for entry in roster %}
           <tr>
@@ -125,9 +124,30 @@
               {% if entry.overridden %}<div>{{ 'shift.dossier.override'|trans({'%reason%': entry.overrideReason ?: '-'}) }}</div>{% endif %}
               {% if entry.noshowComment %}<div>{{ entry.noshowComment }}</div>{% endif %}
             </td>
+            {#
+              `return` brings the manager back to this shift. Without it the action redirects to the
+              shift-needs screen, a different surface reached from a different menu, so recording an
+              absence would move the manager off the shift they were reading.
+            #}
+            {% if canMarkNoShow %}
+              <td class="text-end text-nowrap">
+                <form method="post" action="{{ path('app_manage_shift_entry_noshow', {id: entry.uuid}) }}"
+                      data-controller="confirm"
+                      data-confirm-variant-value="{{ entry.noshow ? 'primary' : 'danger' }}"
+                      data-confirm-message-value="{{ entry.noshow
+                        ? 'manage.shift.staffing.confirm_clear_noshow'|trans({'%name%': entry.user|display_name})
+                        : 'manage.shift.staffing.confirm_noshow'|trans({'%name%': entry.user|display_name}) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('noshow' ~ entry.id) }}">
+                  <input type="hidden" name="return" value="shift">
+                  <button class="btn btn-sm {{ entry.noshow ? 'btn-outline-success' : 'btn-outline-danger' }}">
+                    {{ entry.noshow ? 'manage.shift.staffing.clear_noshow'|trans : 'manage.shift.staffing.mark_noshow'|trans }}
+                  </button>
+                </form>
+              </td>
+            {% endif %}
           </tr>
         {% else %}
-          {{ d.empty_row(4, 'shift.dossier.roster_empty'|trans) }}
+          {{ d.empty_row(canMarkNoShow ? 5 : 4, 'shift.dossier.roster_empty'|trans) }}
         {% endfor %}
       </tbody>
     {{ d.table_end({responsive: false}) }}

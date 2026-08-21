@@ -1,0 +1,56 @@
+{#
+  Marking one volunteer absent, or taking that back, from the board's roster dialog.
+
+  Behind a confirmation because it is not only a note: reaching the configured no-show count locks
+  the volunteer's account through the automatic ban. The board loads no Bootstrap, so the shared
+  `confirm` controller cannot run here and the kit's AlertDialog is the board's equivalent. It opens
+  on top of the roster dialog, which native `<dialog>` stacking handles, and the roster's
+  click-outside only fires for its own backdrop so the nested dialog cannot close it.
+
+  `type="submit"` is not redundant: the kit's Button renders `type="button"` unless the caller says
+  otherwise, which leaves an AlertDialog:Action inside a form inert.
+
+  `data-turbo-frame="_top"` because this form lives inside the modal host frame. Without it Turbo
+  would look for that frame in the board it redirects to and swap the empty host in, leaving the
+  screen showing stale staffing for the shift just changed.
+
+  The two `board_*` fields bring the manager back to this board rather than to the shift-needs
+  screen; ShiftStaffingController re-checks both before using them.
+
+  Expects: entry.
+#}
+{% set marking = not entry.noshow %}
+{% set dialogId = 'noshow-' ~ entry.uuid %}
+
+<twig:AlertDialog id="{{ dialogId }}" class="inline-block">
+  <twig:AlertDialog:Trigger>
+    <twig:Button variant="{{ marking ? 'destructive' : 'outline' }}" size="xs" {{ ...alert_dialog_trigger_attrs }}>
+      {{ marking ? 'manage.shift.staffing.mark_noshow'|trans : 'manage.shift.staffing.clear_noshow'|trans }}
+    </twig:Button>
+  </twig:AlertDialog:Trigger>
+
+  <twig:AlertDialog:Content>
+    <twig:AlertDialog:Header>
+      <twig:AlertDialog:Title>
+        {{ marking ? 'manage.shift.staffing.mark_noshow'|trans : 'manage.shift.staffing.clear_noshow'|trans }}
+      </twig:AlertDialog:Title>
+      <twig:AlertDialog:Description>
+        {{ marking
+          ? 'manage.shift.staffing.confirm_noshow'|trans({'%name%': entry.user|display_name})
+          : 'manage.shift.staffing.confirm_clear_noshow'|trans({'%name%': entry.user|display_name}) }}
+      </twig:AlertDialog:Description>
+    </twig:AlertDialog:Header>
+    <twig:AlertDialog:Footer>
+      <twig:AlertDialog:Cancel size="sm">{{ 'common.action.cancel'|trans }}</twig:AlertDialog:Cancel>
+      <form method="post" data-turbo-frame="_top"
+            action="{{ path('app_manage_shift_entry_noshow', {id: entry.uuid}) }}">
+        <input type="hidden" name="_token" value="{{ csrf_token('noshow' ~ entry.id) }}">
+        <input type="hidden" name="board_department" value="{{ department.uuid }}">
+        <input type="hidden" name="board_date" value="{{ dayParam }}">
+        <twig:AlertDialog:Action type="submit" variant="{{ marking ? 'destructive' : 'default' }}" size="sm">
+          {{ marking ? 'manage.shift.staffing.mark_noshow'|trans : 'manage.shift.staffing.clear_noshow'|trans }}
+        </twig:AlertDialog:Action>
+      </form>
+    </twig:AlertDialog:Footer>
+  </twig:AlertDialog:Content>
+</twig:AlertDialog>

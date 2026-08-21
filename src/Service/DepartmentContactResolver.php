@@ -103,8 +103,7 @@ final class DepartmentContactResolver
      * Everyone with event-wide administrative access, whether by role or by the super-privilege.
      *
      * Asked of the database rather than of each candidate's own groups: a hydrated User answers from
-     * its assignment collection, which costs a query per person, and answers wrongly for one that has
-     * not been loaded from the database at all.
+     * its assignment collection, which costs a query per person.
      *
      * @return int[]
      */

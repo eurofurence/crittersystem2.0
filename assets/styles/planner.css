@@ -299,10 +299,10 @@
 }
 
 /*
- * A shift nobody described sends volunteers to the desk asking what it is, so the gap is marked
- * where the manager plans rather than only where the damage shows up. It shares the badge rules so
- * a narrow block drops it the same way, and it is decorative: the marker repeats nothing the
- * accessible name needs, and the title carries the wording.
+ * The mark on a shift nobody described. It carries planner-block-badge as well, so a block too
+ * narrow for badges drops this one the same way, and it overrides that class's dimmed opacity on
+ * purpose. The element is aria-hidden and its title carries the wording, so the colour and weight
+ * here never have to convey the meaning on their own.
  */
 .planner-block-nodesc {
     font-weight: 700;

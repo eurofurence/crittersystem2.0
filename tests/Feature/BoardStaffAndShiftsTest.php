@@ -197,6 +197,32 @@ final class BoardStaffAndShiftsTest extends DatabaseWebTestCase
         self::assertSame(['false'], array_values(array_unique($open)));
     }
 
+    /**
+     * The button inside the confirmation is the only thing that posts the form, and the kit's Button
+     * renders `type="button"` unless the caller overrides it. A call whose action does nothing looks
+     * exactly like one that worked - the dialog opens, the manager confirms it, and nobody is paged.
+     *
+     * BrowserKit cannot catch this by submitting: it posts the form node whatever its buttons say.
+     */
+    public function testTheCallConfirmationButtonSubmitsTheForm(): void
+    {
+        $store = static::getContainer()->get(EventConfigStore::class);
+        $store->set(EventConfigStore::KEY_CALL_MANAGER_LEAD, 3600);
+        $store->flush();
+
+        $shift = $this->scenario->shift('Door', 'today 00:00', '+1 hour', 2);
+        $shift->setStartsAt(new \DateTimeImmutable('+20 minutes'))->setEndsAt(new \DateTimeImmutable('+3 hours'));
+        $this->em->flush();
+
+        $this->login(['board:view', 'call:trigger', 'shift:manage']);
+
+        $crawler = $this->client->request('GET', $this->url('shifts'));
+
+        $types = $crawler->filter('form[action="/calls/trigger"] button')->extract(['type']);
+        self::assertNotEmpty($types, 'the shifts view should render a call form');
+        self::assertSame(['submit'], array_values(array_unique($types)));
+    }
+
     /** Without call:trigger the action would refuse, so the board must not offer it. */
     public function testTheCallButtonIsWithheldWithoutThePrivilege(): void
     {

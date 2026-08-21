@@ -19,15 +19,17 @@ use Symfony\Bundle\SecurityBundle\Security;
  * Two tiers, and this class is the only place that decides which one applies - a template that
  * decided for itself would be a second answer to the same question.
  *
- * The privileged tier is checked **against the shift's own department**. Without a subject
- * {@see \App\Security\PrivilegeVoter} grants unconditionally, so an unscoped check here would hand
- * every department's roster to anybody who may reach a shift page at all. Passing the department is
- * also what makes the event-wide case work: a grant carrying no department scope resolves to every
- * department, so an info-desk operator still sees the whole event.
+ * The privileged tier is checked **against the shift's own department**.
+ * {@see \App\Security\PrivilegeVoter} scopes only when it is handed the subject, so an unscoped
+ * check here would hand every department's roster to anybody holding one of these privileges in any
+ * single department. Passing the department is also what makes the event-wide case work: a grant
+ * carrying no department scope resolves to every department, so an info-desk operator still sees the
+ * whole event.
  *
- * No personal data crosses this boundary at either tier. Everybody named is named by username,
- * which is not PII, and contact runs through the existing conversation service rather than by
- * handing out an address.
+ * No PII field is read at either tier: everybody is named by username, which is not PII, and contact
+ * runs through the existing conversation service rather than by handing out an address. The entry
+ * comments are free text somebody typed and may hold anything, so they are shown in the privileged
+ * tier only, with the roster they belong to.
  */
 final class ShiftDossierPresenter
 {
@@ -58,6 +60,7 @@ final class ShiftDossierPresenter
      *     descriptionMissing: bool,
      *     canSeeStaffing: bool,
      *     canEditShift: bool,
+     *     canMarkNoShow: bool,
      *     canViewDepartment: bool
      * }
      */
@@ -77,6 +80,7 @@ final class ShiftDossierPresenter
             'descriptionMissing' => $shift->getDescription() === null,
             'canSeeStaffing' => $department !== null && $this->security->isGranted('assignment:manage', $department),
             'canEditShift' => $department !== null && $this->security->isGranted('shift:manage', $department),
+            'canMarkNoShow' => $privileged && $this->security->isGranted('shift:manage', $shift),
             'canViewDepartment' => $department !== null && $this->canReachDepartmentPage($department),
         ];
     }
@@ -97,8 +101,9 @@ final class ShiftDossierPresenter
     /**
      * Whether the viewer may see who planned the shift and who is on it.
      *
-     * A shift whose department has somehow been lost cannot be scoped, and an unscoped check would
-     * grant. It is refused instead: the shift is broken, not public.
+     * A shift whose department has somehow been lost cannot be scoped, and an unscoped check grants
+     * to every holder of these privileges anywhere in the event. It is refused instead: the shift is
+     * broken, not public.
      */
     public function isPrivileged(Shift $shift, User $viewer): bool
     {

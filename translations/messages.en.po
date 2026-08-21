@@ -3776,6 +3776,12 @@ msgstr "Assigned"
 msgid "manage.shift.staffing.col.needed"
 msgstr "Needed"
 
+msgid "manage.shift.staffing.confirm_noshow"
+msgstr "Mark %name% as a no-show for this shift? Reaching the no-show limit locks their account."
+
+msgid "manage.shift.staffing.confirm_clear_noshow"
+msgstr "Clear the no-show recorded for %name% on this shift?"
+
 msgid "manage.shift.staffing.confirm_unassign"
 msgstr "Remove %name% from this shift?"
 
@@ -7555,6 +7561,18 @@ msgstr "Filter departments…"
 
 msgid "board.rail.no_match"
 msgstr "No department matches."
+
+msgid "board.roster.open"
+msgstr "Roster (%count%)"
+
+msgid "board.roster.modal_title"
+msgstr "Roster - %shift%"
+
+msgid "board.roster.empty"
+msgstr "Nobody is on this shift yet."
+
+msgid "board.roster.ban_warning"
+msgstr "Reaching the no-show limit locks the volunteer's account."
 
 msgid "manage.volunteer_type.repair.page.title"
 msgstr "Critter type repair"

@@ -113,7 +113,14 @@
             <td>{{ entry.volunteerType.name }}</td>
             <td>{% if entry.noshow %}{{ d.badge('common.state.no_show'|trans, 'text-bg-danger') }}{% else %}-{% endif %}</td>
             <td class="text-end text-nowrap">
-              <form method="post" action="{{ path('app_manage_shift_entry_noshow', {id: entry.uuid}) }}" class="d-inline">
+              {# Confirmed because it is not only a note: reaching the configured no-show count locks
+                 the volunteer's account through the automatic ban. #}
+              <form method="post" action="{{ path('app_manage_shift_entry_noshow', {id: entry.uuid}) }}" class="d-inline"
+                    data-controller="confirm"
+                    data-confirm-variant-value="{{ entry.noshow ? 'primary' : 'danger' }}"
+                    data-confirm-message-value="{{ entry.noshow
+                      ? 'manage.shift.staffing.confirm_clear_noshow'|trans({'%name%': entry.user|display_name})
+                      : 'manage.shift.staffing.confirm_noshow'|trans({'%name%': entry.user|display_name}) }}">
                 <input type="hidden" name="_token" value="{{ csrf_token('noshow' ~ entry.id) }}">
                 <button class="btn btn-sm {{ entry.noshow ? 'btn-outline-success' : 'btn-outline-danger' }}">
                   {{ entry.noshow ? 'manage.shift.staffing.clear_noshow'|trans : 'manage.shift.staffing.mark_noshow'|trans }}

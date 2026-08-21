@@ -3,6 +3,8 @@
 namespace App\Controller;
 
 use App\Entity\Department;
+use App\Entity\Shift;
+use App\Entity\ShiftEntry;
 use App\Entity\User;
 use App\Repository\ShiftRepository;
 use App\Service\Board\BoardAccess;
@@ -12,6 +14,7 @@ use App\Service\Board\BoardSnapshot;
 use App\Service\Board\BoardSnapshotBuilder;
 use App\Service\Call\HelpCallService;
 use App\Service\DisplaySettings;
+use App\Service\Shift\ShiftDossierPresenter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,6 +45,7 @@ final class BoardController extends AbstractController
         private readonly HelpCallService $calls,
         private readonly ShiftRepository $shifts,
         private readonly DisplaySettings $display,
+        private readonly ShiftDossierPresenter $dossier,
     ) {
     }
 
@@ -102,6 +106,7 @@ final class BoardController extends AbstractController
             'board' => $board,
             'page' => $page,
             'callable' => $view === 'shifts' ? $this->callableShifts($user, $page['items']) : [],
+            'rosterable' => $view === 'shifts' ? $this->rosterableShifts($user, $page['items']) : [],
         ]);
     }
 
@@ -141,6 +146,7 @@ final class BoardController extends AbstractController
             'board' => $board,
             'page' => $page,
             'callable' => $view === 'shifts' ? $this->callableShifts($user, $page['items']) : [],
+            'rosterable' => $view === 'shifts' ? $this->rosterableShifts($user, $page['items']) : [],
         ]);
     }
 
@@ -166,6 +172,58 @@ final class BoardController extends AbstractController
     public function attention(#[MapEntity(mapping: ['department' => 'uuid'])] Department $department, string $date): Response
     {
         return $this->modal($department, $date, 'board/_modal_attention.html.twig');
+    }
+
+    /**
+     * One shift's roster, as Turbo Frame content for the board's modal host.
+     *
+     * Marking a volunteer absent is the reason this exists: during an event the board is the screen
+     * the department is already watching, and the no-show control otherwise lives only on a manage
+     * screen nobody has open.
+     *
+     * Who may read a shift's roster is already decided once, by ShiftDossierPresenter, and this asks
+     * it rather than answering again: `board:view` is a department-wide grant that does not by itself
+     * make somebody answerable for a shift, and two places deciding the same question is how the two
+     * drift apart. A viewer it refuses is answered 404, not 403, so the board does not confirm what
+     * it will not show. The entry comments are free text somebody typed and stay on the dossier.
+     *
+     * The shift is re-checked against the department named in the URL. Without that, somebody who
+     * may see one department's board could name any shift uuid in the event and read its roster.
+     */
+    #[Route('/{department}/{date}/shift/{shift}/roster', name: 'app_board_shift_roster', methods: ['GET'], requirements: [
+        'department' => Requirement::UUID,
+        'date' => '\d{4}-\d{2}-\d{2}',
+        'shift' => Requirement::UUID,
+    ])]
+    public function roster(
+        #[MapEntity(mapping: ['department' => 'uuid'])] Department $department,
+        string $date,
+        #[MapEntity(mapping: ['shift' => 'uuid'])] Shift $shift,
+    ): Response {
+        $this->denyUnlessVisible($department);
+
+        /** @var User $user */
+        $user = $this->getUser();
+
+        $day = $this->parseDay($date);
+        if ($day === null
+            || $shift->getDepartment()?->getId() !== $department->getId()
+            || !$this->dossier->isPrivileged($shift, $user)
+        ) {
+            throw $this->createNotFoundException();
+        }
+
+        $entries = $shift->getEntries()->toArray();
+        usort($entries, static fn (ShiftEntry $a, ShiftEntry $b): int => [$a->isApplication(), mb_strtolower($a->getUser()->getName())]
+            <=> [$b->isApplication(), mb_strtolower($b->getUser()->getName())]);
+
+        return $this->render('board/_modal_roster.html.twig', [
+            'department' => $department,
+            'dayParam' => self::param($day),
+            'shift' => $shift,
+            'roster' => $entries,
+            'canMarkNoShow' => $this->isGranted('shift:manage', $shift),
+        ]);
     }
 
     private function modal(Department $department, string $date, string $template): Response
@@ -261,6 +319,26 @@ final class BoardController extends AbstractController
         }
 
         return $callable;
+    }
+
+    /**
+     * Which of the page's shifts this viewer may open the roster for, keyed by public uuid.
+     *
+     * Gated on the same answer the roster action itself gives, so the link can never lead to the 404
+     * that action would return.
+     *
+     * @param list<BoardShiftRow> $rows
+     *
+     * @return array<string, bool>
+     */
+    private function rosterableShifts(User $user, array $rows): array
+    {
+        $rosterable = [];
+        foreach ($rows as $row) {
+            $rosterable[(string) $row->shift->getUuid()] = $this->dossier->isPrivileged($row->shift, $user);
+        }
+
+        return $rosterable;
     }
 
     /**

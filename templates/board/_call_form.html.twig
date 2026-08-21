@@ -12,6 +12,10 @@
   they fall back to the session token manager. The two `board_*` fields are what brings the browser
   back to this board instead of the staffing screen; CallController re-checks both before using them.
 
+  `type="submit"` is not redundant. The kit's Button renders `type="button"` unless the caller says
+  otherwise, so an AlertDialog:Action inside a form is inert: the confirmation opens and the button
+  does nothing at all. Any future form built on this component needs the same.
+
   Expects: action, token, label, confirm, variant; `shift` and `slots` only when triggering.
 #}
 {% set dialogId = 'call-' ~ (shift ?? action|split('/')|last) %}
@@ -34,7 +38,7 @@
         {% if slots is not null %}<input type="hidden" name="slots" value="{{ slots }}">{% endif %}
         <input type="hidden" name="board_department" value="{{ department.uuid }}">
         <input type="hidden" name="board_date" value="{{ dayParam }}">
-        <twig:AlertDialog:Action variant="{{ variant }}" size="sm">{{ label }}</twig:AlertDialog:Action>
+        <twig:AlertDialog:Action type="submit" variant="{{ variant }}" size="sm">{{ label }}</twig:AlertDialog:Action>
       </form>
     </twig:AlertDialog:Footer>
   </twig:AlertDialog:Content>

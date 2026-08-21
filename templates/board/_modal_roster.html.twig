@@ -1,0 +1,69 @@
+{# Frame id must match the host in board/index.html.twig, or Turbo drops the response. #}
+<turbo-frame id="board-modal">
+  {#
+    `open` so the dialog shows the moment Turbo swaps it in - the frame is only ever loaded by
+    somebody clicking a shift's roster, so there is nothing left to trigger it afterwards.
+
+    The kit's own `data-action` defaults are repeated because `attributes.defaults()` yields to what
+    the caller passes: dropping them here would take Escape and click-outside away with them.
+  #}
+  <twig:Dialog id="board-roster" open="true">
+    <twig:Dialog:Content
+      class="max-w-3xl sm:max-w-3xl"
+      data-action="keydown.esc->dialog#close:prevent click->dialog#closeOnClickOutside close->board-modal#clear">
+      <twig:Dialog:Header>
+        <twig:Dialog:Title>{{ 'board.roster.modal_title'|trans({'%shift%': shift.title}) }}</twig:Dialog:Title>
+        <twig:Dialog:Description>
+          {{ shift.startsAt|app_time }}-{{ shift.endsAt|app_time }}{% if shift.location %} - {{ shift.location.fullName }}{% endif %}
+        </twig:Dialog:Description>
+      </twig:Dialog:Header>
+
+      <div class="max-h-[60vh] overflow-y-auto">
+        {% if roster is empty %}
+          {{ include('board/_empty.html.twig', {message: 'board.roster.empty'|trans}) }}
+        {% else %}
+          <twig:Table>
+            <twig:Table:Header>
+              <twig:Table:Row>
+                <twig:Table:Head>{{ 'common.label.name'|trans }}</twig:Table:Head>
+                <twig:Table:Head>{{ 'common.label.role'|trans }}</twig:Table:Head>
+                <twig:Table:Head>{{ 'common.label.status'|trans }}</twig:Table:Head>
+                {% if canMarkNoShow %}<twig:Table:Head class="text-right">{{ 'common.label.actions'|trans }}</twig:Table:Head>{% endif %}
+              </twig:Table:Row>
+            </twig:Table:Header>
+            <twig:Table:Body>
+              {% for entry in roster %}
+                <twig:Table:Row>
+                  <twig:Table:Cell class="font-medium">{{ entry.user|display_name }}</twig:Table:Cell>
+                  <twig:Table:Cell class="text-muted-foreground">{{ entry.volunteerType.name }}</twig:Table:Cell>
+                  <twig:Table:Cell>
+                    {% if entry.noshow %}
+                      <span class="rounded-full bg-red-500/20 px-2.5 py-1 text-xs whitespace-nowrap text-red-200">{{ 'common.state.no_show'|trans }}</span>
+                    {% elseif entry.checkedIn %}
+                      <span class="rounded-full bg-emerald-500/20 px-2.5 py-1 text-xs whitespace-nowrap text-emerald-200">{{ 'shift.dossier.checked_in'|trans }}</span>
+                    {% else %}
+                      <span class="rounded-full bg-secondary px-2.5 py-1 text-xs whitespace-nowrap text-muted-foreground">
+                        {{ entry.application ? 'backstage.state.applied'|trans : 'backstage.state.assigned'|trans }}
+                      </span>
+                    {% endif %}
+                  </twig:Table:Cell>
+                  {% if canMarkNoShow %}
+                    <twig:Table:Cell class="text-right">
+                      {{ include('board/_noshow_form.html.twig', {entry: entry}) }}
+                    </twig:Table:Cell>
+                  {% endif %}
+                </twig:Table:Row>
+              {% endfor %}
+            </twig:Table:Body>
+          </twig:Table>
+        {% endif %}
+      </div>
+
+      {% if canMarkNoShow %}
+        <twig:Dialog:Footer class="justify-between text-xs text-muted-foreground">
+          <span>{{ 'board.roster.ban_warning'|trans }}</span>
+        </twig:Dialog:Footer>
+      {% endif %}
+    </twig:Dialog:Content>
+  </twig:Dialog>
+</turbo-frame>

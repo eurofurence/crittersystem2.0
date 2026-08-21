@@ -20,6 +20,8 @@ final class ShiftDossierBrowserTest extends BrowserTestCase
     private const PASSWORD = 'secret123';
 
     /**
+     * Opening the dossier must not navigate: the operator stays on the volunteer they are helping.
+     *
      * The desk group carries news:view because signing in lands on /news, where a 403 is a severe
      * console error reported against this test.
      */
@@ -64,7 +66,6 @@ final class ShiftDossierBrowserTest extends BrowserTestCase
         self::assertStringContainsString($volunteer->getName(), $body);
         self::assertStringContainsString('No description was given', $body);
 
-        // The dialog must not have navigated: the operator is still on the volunteer they were helping.
         self::assertStringContainsString('/backstage/distribute/', $this->client->getCurrentURL());
 
         $this->assertNoConsoleErrors('the shift dossier dialog');

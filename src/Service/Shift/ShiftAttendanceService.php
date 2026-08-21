@@ -53,4 +53,18 @@ final class ShiftAttendanceService
 
         return $entry;
     }
+
+    /**
+     * Taking a no-show back. The comment goes with it: it described an absence that is no longer
+     * recorded, and leaving it behind would keep accusing somebody the manager has just cleared.
+     */
+    public function clearNoShow(ShiftEntry $entry): ShiftEntry
+    {
+        $entry->setNoshow(false);
+        $entry->setNoshowComment(null);
+        $this->em->flush();
+        $this->signal->staffingChanged($entry->getShift(), $entry->getUser());
+
+        return $entry;
+    }
 }
