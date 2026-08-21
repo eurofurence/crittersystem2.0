@@ -19,12 +19,23 @@ class HelpCallRepository extends ServiceEntityRepository
     }
 
     /** @return HelpCall[] currently open calls */
+    /**
+     * Open calls, soonest shift first.
+     *
+     * Ordered on the shift rather than on when the call was raised: the board answers "who is needed
+     * next", and a call put out an hour ago for a shift starting shortly matters more than one
+     * raised a minute ago for tomorrow. The shift is joined because every caller reads it.
+     *
+     * @return HelpCall[]
+     */
     public function findActive(): array
     {
         return $this->createQueryBuilder('c')
+            ->join('c.shift', 's')->addSelect('s')
             ->andWhere('c.status = :open')
             ->setParameter('open', HelpCallStatus::OPEN->value)
-            ->orderBy('c.createdAt', 'DESC')
+            ->orderBy('s.startsAt', 'ASC')
+            ->addOrderBy('c.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }

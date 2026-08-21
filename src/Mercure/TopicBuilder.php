@@ -85,6 +85,10 @@ final class TopicBuilder
             $topics[] = Topics::infoDeskQueue();
         }
 
+        if ($this->scopes->holds($user, 'call:respond')) {
+            $topics[] = Topics::allCalls();
+        }
+
         $departments = $this->departmentsFor($user);
         if ($departments === null) {
             $topics[] = Topics::allDepartmentShifts();

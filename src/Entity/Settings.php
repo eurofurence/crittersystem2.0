@@ -2,6 +2,7 @@
 
 namespace App\Entity;
 
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -41,6 +42,10 @@ class Settings
 
     #[ORM\Column(name: 'mobile_show')]
     private bool $mobileShow = false;
+
+    /** @var array<string, array<string, mixed>>|null */
+    #[ORM\Column(name: 'shift_filters', type: Types::JSON, nullable: true)]
+    private ?array $shiftFilters = null;
 
     /**
      * Minutes before a shift a reminder should be created. Null
@@ -163,6 +168,28 @@ class Settings
     public function setEmailNews(bool $emailNews): static
     {
         $this->emailNews = $emailNews;
+
+        return $this;
+    }
+
+    /**
+     * The filters this user last chose on each shift screen, keyed by screen.
+     *
+     * Free-form on the way in and whitelisted on the way out by the service that owns it, so a
+     * value that stops being valid, such as a location since deleted, simply drops rather than
+     * reaching a query.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function getShiftFilters(): array
+    {
+        return $this->shiftFilters ?? [];
+    }
+
+    /** @param array<string, array<string, mixed>> $shiftFilters */
+    public function setShiftFilters(array $shiftFilters): static
+    {
+        $this->shiftFilters = $shiftFilters === [] ? null : $shiftFilters;
 
         return $this;
     }

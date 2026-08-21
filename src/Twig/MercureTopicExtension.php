@@ -81,6 +81,7 @@ final class MercureTopicExtension extends AbstractExtension
             'user_notifications' => Topics::userNotifications($user),
             'user_status' => Topics::userStatus($user),
             'user_calls' => Topics::userCalls($user),
+            'all_calls' => Topics::allCalls(),
             'info_desk_queue' => Topics::infoDeskQueue(),
             'all_staff_shifts' => Topics::allStaffShifts(),
             default => throw new \InvalidArgumentException(\sprintf('Unknown Mercure topic "%s".', $name)),

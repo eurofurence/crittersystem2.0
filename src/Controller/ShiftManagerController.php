@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\Shift;
 use App\Entity\User;
+use App\Service\Shift\ShiftFilterMemory;
 use App\Exception\CapacityConflictException;
 use App\Service\Assignment\EventHoursGuard;
 use App\Service\Shift\ShiftApplyDetail;
@@ -35,6 +36,7 @@ final class ShiftManagerController extends AbstractController
         private readonly ShiftSignupService $signup,
         private readonly EventHoursGuard $hoursGuard,
         private readonly ShiftGroupResolver $groups,
+        private readonly ShiftFilterMemory $filterMemory,
     ) {
     }
 
@@ -127,20 +129,28 @@ final class ShiftManagerController extends AbstractController
     }
 
     /**
-     * An absent `scope` means first load, which starts on the volunteer's own departments; an
-     * explicit empty value is the box being unticked and must not read as absent.
+     * The filters in force, from the request when it states any and from the viewer's last visit
+     * otherwise, so returning to this screen shows what they were working on.
+     *
+     * An absent `scope` means the volunteer's own departments; an explicit empty value is the box
+     * being unticked and must not read as absent. The remembered set is written in the same shape
+     * the query uses, so that distinction survives being stored and read back.
+     *
+     * The day is taken from the request only and never remembered: it expires, and reopening the
+     * screen on a day that has passed looks like a page with no shifts on it.
      *
      * @return array{0: ?string, 1: bool, 2: string[]} day, my-departments-only, department uuids
      */
     private function filters(Request $request): array
     {
-        $day = trim((string) $request->query->get('day', ''));
-        $departments = array_values(array_filter(
-            $request->query->all('departments'),
-            static fn (mixed $uuid): bool => \is_string($uuid) && \Symfony\Component\Uid\Uuid::isValid($uuid),
-        ));
+        /** @var User $user */
+        $user = $this->getUser();
 
-        $mineOnly = !$request->query->has('scope') || $request->query->get('scope') === 'mine';
+        $day = trim((string) $request->query->get('day', ''));
+        $filters = $this->filterMemory->resolve($user, ShiftFilterMemory::SURFACE_APPLY, $request->query->all());
+
+        $departments = $filters['departments'] ?? [];
+        $mineOnly = ($filters['scope'] ?? 'mine') === 'mine';
 
         return [$day === '' ? null : $day, $mineOnly, $departments];
     }

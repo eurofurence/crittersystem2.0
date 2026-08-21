@@ -1,0 +1,17 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+
+msgid "validation.department.slug"
+msgstr "Verwende nur Kleinbuchstaben, Zahlen und Bindestriche."
+
+msgid "validation.shift_task.name_unique"
+msgstr "Dieser Bereich hat bereits eine Schicht-Aufgabe mit diesem Namen."
+
+msgid "validation.shift.end_after_start"
+msgstr "Das Ende muss nach dem Beginn liegen."
+
+msgid "validation.shift_task.department_required"
+msgstr "Wähle den Bereich, zu dem diese Aufgabe gehört."

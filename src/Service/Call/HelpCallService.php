@@ -18,7 +18,6 @@ use App\Mercure\Topics;
 use App\Mercure\UpdatePublisher;
 use App\Repository\HelpCallRepository;
 use App\Repository\HelpCallResponseRepository;
-use App\Repository\OperationalStatusOverrideRepository;
 use App\Repository\ShiftEntryRepository;
 use App\Repository\UserVolunteerTypeRepository;
 use App\Service\Availability\AvailabilityService;
@@ -51,7 +50,6 @@ final class HelpCallService
         private readonly EventConfigStore $config,
         private readonly AuditLogger $audit,
         private readonly UpdatePublisher $live,
-        private readonly OperationalStatusOverrideRepository $freeToHelp,
         private readonly ShiftSignal $shiftSignal,
     ) {
     }
@@ -97,10 +95,7 @@ final class HelpCallService
         $call = new HelpCall($shift, $caller, $slots);
         $this->em->persist($call);
         $this->em->flush();
-        $this->live->signal(array_map(
-            static fn (User $user) => Topics::userCalls($user),
-            $this->eligibleUsersFor($call),
-        ));
+        $this->live->signal(Topics::allCalls());
 
         $this->shiftSignal->staffingChanged($shift);
 
@@ -113,9 +108,18 @@ final class HelpCallService
     }
 
     /**
-     * Whether the user is eligible to be offered / accept this call: the call is still open, they
-     * have not refused it, they are not already on the shift, they may see it, they are Free to help,
-     * they hold no confirmed assignment overlapping it, and they hold a role the shift asks for.
+     * Whether the user may be offered and may accept this call: the call is still open, they have
+     * not refused it, they are not already on the shift, they may see it, they are not in the middle
+     * of a shift, they hold no confirmed assignment overlapping it, and they hold a role the shift
+     * asks for.
+     *
+     * Being marked Free to help is deliberately not required. Requiring it meant the board was empty
+     * for everybody who had not opted in, which is most people, so calls went unanswered while
+     * volunteers who would gladly have helped saw nothing. The status now decides who is interrupted
+     * by a live update, not who is allowed to answer.
+     *
+     * Somebody already working a shift is still excluded: their status is derived from that shift
+     * rather than chosen, and asking them to leave what they are doing is not what a call is for.
      */
     public function isEligible(HelpCall $call, User $user): bool
     {
@@ -129,7 +133,7 @@ final class HelpCallService
         if (!$this->visibility->isVisibleTo($shift, $user)) {
             return false;
         }
-        if ($this->status->effectiveStatus($user) !== OperationalStatusService::FREE_TO_HELP) {
+        if ($this->status->effectiveStatus($user) === OperationalStatusService::NOT_AVAILABLE) {
             return false;
         }
         if ($this->availability->planningState($user, $shift->getStartsAt(), $shift->getEndsAt(), $shift)['occupied']) {
@@ -180,8 +184,6 @@ final class HelpCallService
      */
     public function accept(HelpCall $call, User $user): ShiftEntry
     {
-        $before = $this->eligibleUsersFor($call);
-
         $entry = $this->concurrency->transactional(function () use ($call, $user): ShiftEntry {
             $this->concurrency->lockForUpdate($call);
 
@@ -207,11 +209,7 @@ final class HelpCallService
             return $entry;
         });
 
-        $topics = [];
-        foreach ([...$before, ...$this->eligibleUsersFor($call)] as $affected) {
-            $topics[(string) $affected->getUuid()] = Topics::userCalls($affected);
-        }
-        $this->live->signal(array_values($topics));
+        $this->live->signal(Topics::allCalls());
 
         $this->shiftSignal->staffingChanged($call->getShift(), $user);
 
@@ -260,38 +258,29 @@ final class HelpCallService
      *
      * @param callable():void $change
      */
+    /**
+     * Apply a change that alters who may answer a call, then tell every board to re-read.
+     *
+     * The before and after sets of candidates used to be computed so that both could be signalled
+     * individually. One shared topic makes that unnecessary: everybody re-reads and the controller
+     * decides what each of them sees.
+     */
     private function signallingEligibilityChange(HelpCall $call, callable $change): void
     {
-        $before = $this->eligibleUsersFor($call);
         $change();
-        $after = $this->eligibleUsersFor($call);
 
-        $topics = [];
-        foreach ([...$before, ...$after] as $user) {
-            $topics[(string) $user->getUuid()] = Topics::userCalls($user);
-        }
-
-        $this->live->signal(array_values($topics));
+        $this->live->signal(Topics::allCalls());
     }
 
     /**
-     * Users who could answer this call as things stand.
+     * The open calls this user may answer, soonest shift first.
      *
-     * Being "Free to help" is a precondition of eligibility, so the candidate pool is the handful of
-     * people currently marked as such rather than everyone at the event; each is then put through
-     * the same {@see isEligible()} check the board itself uses.
+     * Ordered by when help is actually needed rather than by when the call was raised: a call put
+     * out an hour ago for a shift starting in ten minutes matters more than one raised a minute ago
+     * for tomorrow.
      *
-     * @return User[]
+     * @return HelpCall[]
      */
-    public function eligibleUsersFor(HelpCall $call): array
-    {
-        return array_values(array_filter(
-            $this->freeToHelp->findFreeToHelpUsers(),
-            fn (User $user) => $this->isEligible($call, $user),
-        ));
-    }
-
-    /** @return HelpCall[] active calls the user may see and is eligible for (Bounty Board) */
     public function eligibleActiveCalls(User $user): array
     {
         return array_values(array_filter(

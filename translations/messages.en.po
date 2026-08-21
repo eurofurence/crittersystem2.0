@@ -1125,7 +1125,7 @@ msgid "call.action.not_now"
 msgstr "Not now"
 
 msgid "call.empty.message"
-msgstr "No open calls - Make sure you set your status to `Free to HELP`"
+msgstr "No open calls right now. Anything that comes up will appear here."
 
 msgid "call.empty.title"
 msgstr "No open calls"
@@ -7671,3 +7671,6 @@ msgstr "Location check-in window (seconds)"
 
 msgid "manage.operations_config.field.security_checkin_window.help"
 msgstr "How far ahead of a shift a Critter may collect a wristband. A shift already under way always qualifies."
+
+msgid "shift.filter.clear"
+msgstr "Clear filters"

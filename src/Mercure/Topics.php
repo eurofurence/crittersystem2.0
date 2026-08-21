@@ -33,7 +33,26 @@ final class Topics
         return self::PREFIX.'user:'.$user->getUuid().':status';
     }
 
-    /** Help calls this user is eligible to answer. Fanned out per user, never broadcast. */
+    /**
+     * Every open help call, for everybody who may answer one.
+     *
+     * Shared rather than fanned out per user. Any call is now offered to anyone who may answer it,
+     * so a per-user fan-out meant one publish per account on the system every time a call was
+     * raised, filled or cancelled. The signal carries nothing but "this changed": the board
+     * re-requests the list and the controller decides what that viewer may see, so subscribing to
+     * this reveals nothing.
+     */
+    public static function allCalls(): string
+    {
+        return self::PREFIX.'calls';
+    }
+
+    /**
+     * Changes to help calls that concern one person only, such as their own refusal.
+     *
+     * Kept alongside {@see allCalls()}: a refusal takes a call off one board and nobody else's, and
+     * nudging every board on the system to re-read for that would be noise.
+     */
     public static function userCalls(User $user): string
     {
         return self::PREFIX.'user:'.$user->getUuid().':calls';

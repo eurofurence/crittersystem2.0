@@ -24,9 +24,12 @@
        data-apply-grid-grid-url-value="{{ path('app_manage_shifts_apply_grid') }}">
 
     {{ d.card_start(null, {bodyClass: 'card-body py-2'}) }}
+      {# The marker states that these filters were chosen here, so a form submitted with everything
+         cleared is not mistaken for a plain arrival and answered with the remembered set. #}
       <form method="get" action="{{ path('app_manage_shifts_apply') }}"
             class="d-flex flex-wrap align-items-end gap-3"
             data-apply-grid-target="filters">
+        <input type="hidden" name="f" value="1">
         <div>
           <label class="form-label mb-1 small" for="apply-day">{{ 'shift_manager.apply.filter.day'|trans }}</label>
           <select id="apply-day" name="day" class="form-select form-select-sm" data-action="change->apply-grid#submitFilters">
@@ -66,6 +69,13 @@
         }) }}
 
         <noscript><button class="btn btn-sm btn-primary" type="submit">{{ 'shift_manager.apply.filter.show'|trans }}</button></noscript>
+
+        {% if not grid.mineOnly or grid.departments|filter(o => o.selected)|length > 0 %}
+          <a class="btn btn-sm btn-outline-secondary"
+             href="{{ path('app_manage_shifts_apply', {day: grid.day, f: 1}) }}">
+            {{ 'shift.filter.clear'|trans }}
+          </a>
+        {% endif %}
       </form>
     {{ d.card_end({bodyClass: 'card-body py-2'}) }}
 

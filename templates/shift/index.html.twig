@@ -80,9 +80,14 @@
 
 
 
-        {# The filter controls auto-submit; the form carries the selected date. #}
+        {# The filter controls auto-submit; the form carries the selected date.
+
+           The hidden marker is what makes "everything unticked" distinguishable from "just arrived":
+           an unticked checkbox and an empty select both submit nothing, so without it a deliberately
+           cleared form looks exactly like a plain visit and the remembered filters would come back. #}
         {{ d.card_start(null, {tag: 'form', class: 'mx-2 my-2', attrs: {method: 'get', action: path('app_shift_index')}}) }}
         <input type="hidden" name="date" value="{{ selectedDate|date('Y-m-d') }}">
+        <input type="hidden" name="f" value="1">
         <div class="row g-2 align-items-end">
             <div class="col-6 col-md-3">
                 <label class="form-label small mb-0" for="f-loc">{{ 'common.label.location'|trans }}</label>
@@ -109,6 +114,14 @@
                 </div>
                 <noscript><button class="btn btn-sm btn-primary">{{ 'common.action.apply'|trans }}</button></noscript>
             </div>
+            {% if filters.location or filters.type or filters.available or filters.mine %}
+                <div class="col-12 col-md-3 text-md-end">
+                    <a class="btn btn-sm btn-outline-secondary"
+                       href="{{ path('app_shift_index', {date: selectedDate|date('Y-m-d'), f: 1}) }}">
+                        {{ 'shift.filter.clear'|trans }}
+                    </a>
+                </div>
+            {% endif %}
         </div>
         {{ d.card_end({tag: 'form'}) }}
     </div>

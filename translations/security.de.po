@@ -1,0 +1,8 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: de\n"
+
+msgid "Your account is locked. If you believe this is a mistake, you can appeal."
+msgstr "Dein Konto ist gesperrt. Wenn du glaubst, dass das ein Fehler ist, kannst du Einspruch einlegen."

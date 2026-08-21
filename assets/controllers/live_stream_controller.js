@@ -20,6 +20,10 @@ import { subscribe, isDegraded } from '../js/live.js';
  *
  * If the stream cannot stay connected the region falls back to a slow poll, so a hub outage during
  * an event degrades the bounty board and the Info Desk rather than freezing them.
+ *
+ * `topic` holds one topic or several separated by spaces. The bounty board needs two: the shared
+ * one carrying every call, and its own, because a refusal concerns one person while a new call
+ * concerns everybody.
  */
 export default class extends Controller {
     static values = {
@@ -31,7 +35,10 @@ export default class extends Controller {
 
     connect() {
         this.missedWhileHidden = false;
-        this.unsubscribe = subscribe(this.topicValue, (data) => this.handle(data));
+        this.unsubscribers = this.topicValue
+            .split(' ')
+            .filter((topic) => topic !== '')
+            .map((topic) => subscribe(topic, (data) => this.handle(data)));
         this.onState = (event) => this.applyState(event.detail.state);
         this.onVisibility = () => this.catchUp();
         window.addEventListener('live:state', this.onState);
@@ -45,8 +52,8 @@ export default class extends Controller {
     }
 
     disconnect() {
-        this.unsubscribe?.();
-        this.unsubscribe = null;
+        this.unsubscribers?.forEach((unsubscribe) => unsubscribe());
+        this.unsubscribers = null;
         window.removeEventListener('live:state', this.onState);
         document.removeEventListener('visibilitychange', this.onVisibility);
         this.stopFallback();

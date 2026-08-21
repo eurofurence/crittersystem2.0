@@ -20,11 +20,18 @@ use App\Tests\Support\RecordedUpdates;
 /**
  * Who a help call wakes.
  *
- * A call is offered per user: eligibility depends on their volunteer types, their operational
- * status, the shift's audience and what else they are already doing. There is therefore no shared
- * "a call happened" topic to publish to - that would tell every volunteer in the event that
- * somewhere, someone needs help, which is not theirs to know. Each affected user is signalled on
- * their own topic instead, and the board they then fetch is filtered server-side as always.
+ * A call is offered to anybody who may answer it, which is no longer a handful of people who opted
+ * in, so the lifecycle of a call goes to one shared topic rather than to a topic per user: waking
+ * everybody individually meant a publish per account on the system each time a call was raised,
+ * filled or cancelled.
+ *
+ * What the shared topic gives away is the existence of a call somewhere, to people who already hold
+ * `call:respond`. It carries no shift, no department and no reason, and the board is still filtered
+ * server-side on the re-fetch, so nobody sees a call they could not already have seen by opening
+ * the page.
+ *
+ * A refusal still goes to the one person it concerns: it takes a call off their board and nobody
+ * else's, and nudging every board to re-read for that would be noise.
  */
 final class LiveHelpCallSignalTest extends DatabaseTestCase
 {
@@ -95,25 +102,20 @@ final class LiveHelpCallSignalTest extends DatabaseTestCase
         return $user;
     }
 
-    public function testTriggeringWakesOnlyThoseWhoCouldAnswer(): void
+    /** One publish, however many people could answer, and none aimed at an individual. */
+    public function testTriggeringWakesTheSharedTopicOnce(): void
     {
         $eligible = $this->member('eligible');
-        $busy = $this->member('busy', freeToHelp: false);
-        $unqualified = $this->member('unqualified', qualified: false);
+        $this->member('also-eligible');
 
         $this->calls()->trigger($this->shift, null, 1);
         $this->flush();
 
-        self::assertCount(1, RecordedUpdates::forTopic(Topics::userCalls($eligible)));
+        self::assertCount(1, RecordedUpdates::forTopic(Topics::allCalls()));
         self::assertCount(
             0,
-            RecordedUpdates::forTopic(Topics::userCalls($busy)),
-            'someone who is not free to help cannot answer and must not be woken',
-        );
-        self::assertCount(
-            0,
-            RecordedUpdates::forTopic(Topics::userCalls($unqualified)),
-            'someone without the volunteer type cannot answer and must not be woken',
+            RecordedUpdates::forTopic(Topics::userCalls($eligible)),
+            'a new call concerns everybody, so it does not go to one person',
         );
     }
 
@@ -125,23 +127,18 @@ final class LiveHelpCallSignalTest extends DatabaseTestCase
         $this->calls()->trigger($this->shift, null, 1);
         $this->flush();
 
-        $data = RecordedUpdates::forTopic(Topics::userCalls($eligible))[0]->getData();
+        $data = RecordedUpdates::forTopic(Topics::allCalls())[0]->getData();
 
         self::assertStringNotContainsString('Gate duty', $data);
         self::assertStringNotContainsString('north entrance', $data);
         self::assertStringContainsString('"signal":true', $data);
     }
 
-    /**
-     * Accepting has to reach the people who can no longer answer.
-     *
-     * They are precisely the ones a set computed after the change would miss, which is why the
-     * eligible set is taken on both sides of it.
-     */
+    /** Accepting has to reach the people who can no longer answer, which is everybody watching. */
     public function testAcceptingWakesTheOthersWhoseBoardChanged(): void
     {
         $first = $this->member('first');
-        $second = $this->member('second');
+        $this->member('second');
 
         $call = $this->calls()->trigger($this->shift, null, 1);
         $this->flush();
@@ -151,10 +148,9 @@ final class LiveHelpCallSignalTest extends DatabaseTestCase
         $this->flush();
 
         self::assertNotEmpty(
-            RecordedUpdates::forTopic(Topics::userCalls($second)),
-            'the call is now full and must come off the other board',
+            RecordedUpdates::forTopic(Topics::allCalls()),
+            'the call is now full and must come off every board still offering it',
         );
-        self::assertNotEmpty(RecordedUpdates::forTopic(Topics::userCalls($first)));
         self::assertNotEmpty(
             RecordedUpdates::forTopic(Topics::userStatus($first)),
             'the accepter now holds an assignment, which their operational status is derived from',
@@ -211,7 +207,7 @@ final class LiveHelpCallSignalTest extends DatabaseTestCase
         $this->calls()->cancel($call);
         $this->flush();
 
-        self::assertNotEmpty(RecordedUpdates::forTopic(Topics::userCalls($eligible)));
+        self::assertNotEmpty(RecordedUpdates::forTopic(Topics::allCalls()));
     }
 
     /** Every update is private, or the hub delivers it to everyone connected. */

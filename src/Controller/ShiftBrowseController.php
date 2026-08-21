@@ -16,6 +16,7 @@ use App\Service\DisplaySettings;
 use App\Service\HoursCalculator;
 use App\Service\Shift\CheckInPolicy;
 use App\Service\Shift\ShiftEligibility;
+use App\Service\Shift\ShiftFilterMemory;
 use App\Service\Shift\ShiftGroupResolver;
 use App\Service\Shift\ShiftGroupSignupService;
 use App\Service\Shift\ShiftRequirementsResolver;
@@ -50,11 +51,18 @@ final class ShiftBrowseController extends AbstractController
         private readonly ShiftEligibility $eligibility,
         private readonly CheckInPolicy $checkIn,
         private readonly CheckInMessageProvider $checkInMessage,
+        private readonly ShiftFilterMemory $filterMemory,
     ) {
     }
 
     /**
      * The browsable shift list for one day, grouped by local start hour.
+     *
+     * The filters are restored from the viewer's last visit when the request states none of its
+     * own, so coming back to this page shows what they were looking at. A URL that carries filters
+     * always wins, so a shared or bookmarked link is never overridden by the recipient's own last
+     * choice. The day is never restored: it expires, and landing somebody on yesterday reads as an
+     * empty page rather than as a remembered filter.
      *
      * The eligibility rules are preloaded for the whole day and dropped again in a `finally`: what
      * they hold is entities, the volunteer's own entries and the live capacity counts, so a preload
@@ -73,10 +81,12 @@ final class ShiftBrowseController extends AbstractController
         $tz = $this->display->timezone();
         $days = $this->shifts->findUpcomingDays($tz);
         $selectedDate = $this->resolveDate((string) $request->query->get('date', ''), $days, $tz);
-        $location = $locationRepo->findOneByUuid((string) $request->query->get('location'));
-        $shiftTask = $shiftTaskRepo->findOneByUuid((string) $request->query->get('type'));
-        $onlyAvailable = $request->query->getBoolean('available');
-        $onlyMine = $request->query->getBoolean('mine');
+
+        $filters = $this->filterMemory->resolve($user, ShiftFilterMemory::SURFACE_BROWSE, $request->query->all());
+        $location = $locationRepo->findOneByUuid((string) ($filters['location'] ?? ''));
+        $shiftTask = $shiftTaskRepo->findOneByUuid((string) ($filters['type'] ?? ''));
+        $onlyAvailable = isset($filters['available']);
+        $onlyMine = isset($filters['mine']);
 
         $shifts = $this->shifts->findForDay($selectedDate, $tz, $location, $shiftTask);
 

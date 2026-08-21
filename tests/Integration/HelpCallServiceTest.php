@@ -110,12 +110,17 @@ final class HelpCallServiceTest extends DatabaseTestCase
         self::assertSame(HelpCallStatus::EXPIRED, $call->getStatus());
     }
 
-    /** A confirmed member of the needed type is still ineligible without a free-to-help override. */
-    public function testNotFreeToHelpIsIneligible(): void
+    /**
+     * A confirmed member of the needed type may answer without marking themselves Free to help.
+     *
+     * Requiring the override left the board empty for everybody who had not opted in, which is
+     * most people, so calls went unanswered while volunteers who would have helped saw nothing.
+     */
+    public function testAMemberWhoIsNotFreeToHelpIsStillEligible(): void
     {
         $call = $this->service()->trigger($this->shift, null, 1);
         $u = new User();
-        $u->setName('busy')->setEmail('busy@e.com')->setApiKey(bin2hex(random_bytes(16)))->setPassword('x');
+        $u->setName('willing')->setEmail('willing@e.com')->setApiKey(bin2hex(random_bytes(16)))->setPassword('x');
         $u->addGroup($this->staffGroup);
         $this->em->persist($u);
         $m = new UserVolunteerType($u, $this->type);
@@ -123,6 +128,6 @@ final class HelpCallServiceTest extends DatabaseTestCase
         $this->em->persist($m);
         $this->em->flush();
 
-        self::assertFalse($this->service()->isEligible($call, $u));
+        self::assertTrue($this->service()->isEligible($call, $u));
     }
 }
