@@ -65,6 +65,32 @@ class DutyRecordRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Duty periods overlapping the given bounds, as scalar rows keyed by user id.
+     *
+     * The user is deliberately not hydrated: every mappedBy one-to-one on User loads eagerly, so
+     * hydrating an event's worth of duty records would cost five further queries each. Either bound
+     * may be null, meaning unbounded on that side. An open session is still running and so counts
+     * whenever it started before the upper bound.
+     *
+     * @return list<array{userId: int, startedAt: \DateTimeImmutable, endedAt: ?\DateTimeImmutable}>
+     */
+    public function findPeriodsOverlapping(?\DateTimeImmutable $from, ?\DateTimeImmutable $to): array
+    {
+        $qb = $this->createQueryBuilder('d')
+            ->select('IDENTITY(d.user) AS userId', 'd.startedAt AS startedAt', 'd.endedAt AS endedAt');
+
+        if ($to !== null) {
+            $qb->andWhere('d.startedAt < :to')->setParameter('to', $to);
+        }
+        if ($from !== null) {
+            $qb->andWhere($qb->expr()->orX('d.endedAt IS NULL', 'd.endedAt > :from'))
+                ->setParameter('from', $from);
+        }
+
+        return $qb->getQuery()->getArrayResult();
+    }
+
     /** @return DutyRecord[] a user's duty history, newest first */
     public function findByUser(User $user): array
     {

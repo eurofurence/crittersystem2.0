@@ -1,0 +1,246 @@
+{% extends 'base.html.twig' %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'manage.statistics.page.title'|trans }}{% endblock %}
+
+{# A fun fact is a big number plus the assumption it rests on. The assumption is rendered with the
+   figure, never hidden behind a tooltip: these are estimates and get read out to an audience. #}
+{% macro fun_card(fact) %}
+  <div class="col-6 col-md-4 col-xl-3">
+    <div class="card fun-card h-100 text-center">
+      <div class="card-body">
+        <div class="fs-2" aria-hidden="true">{{ fact.icon }}</div>
+        <div class="stat-figure fs-2 fw-bold">{{ fact.value|number_format(fact.precision) }}</div>
+        <div class="stat-caption">
+          {% if fact.literalCaption %}
+            {{ fact.literalCaption }}
+          {% else %}
+            {{ fact.captionKey|trans(fact.captionParams) }}
+          {% endif %}
+        </div>
+        {% if fact.basisKey %}
+          <div class="fun-basis text-muted mt-2">{{ fact.basisKey|trans(fact.basisParams) }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endmacro %}
+
+{% block body %}
+  {% set presentLabel = 'manage.statistics.action.present'|trans %}
+
+  {% set headerActions %}
+    <a href="{{ path('app_manage_statistics') }}" class="btn btn-outline-secondary">{{ 'manage.statistics.action.refresh'|trans }}</a>
+    <a href="{{ path('app_manage_statistics_tallies') }}" class="btn btn-outline-secondary">{{ 'manage.statistics.action.edit_tallies'|trans }}</a>
+    <a href="{{ path('app_manage') }}" class="btn btn-outline-secondary">{{ 'manage.action.back_to_hub'|trans }}</a>
+  {% endset %}
+
+  {{ d.page_header('manage.statistics.page.title'|trans, {
+    subtitle: 'manage.statistics.page.subtitle'|trans,
+    actionsHtml: headerActions
+  }) }}
+
+  <div class="statistics-board"
+       data-controller="presentation"
+       data-presentation-enter-label-value="{{ presentLabel }}"
+       data-presentation-exit-label-value="{{ 'manage.statistics.action.exit_present'|trans }}">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <div class="text-muted small">
+        {% if stats.window.isBounded %}
+          {{ 'manage.statistics.scope.window'|trans({
+            '%from%': stats.window.from ? stats.window.from|app_datetime : '?',
+            '%to%': stats.window.to ? stats.window.to|app_datetime : '?'
+          }) }}
+        {% else %}
+          {{ 'manage.statistics.scope.unbounded'|trans }}
+        {% endif %}
+        &middot;
+        {{ 'manage.statistics.scope.generated'|trans({'%at%': stats.generatedAt|app_datetime}) }}
+      </div>
+
+      <button type="button" class="btn btn-primary" data-action="presentation#toggle">
+        <span data-presentation-target="label">{{ presentLabel }}</span>
+      </button>
+    </div>
+
+    <h2 class="h4 mb-2">{{ 'manage.statistics.section.base'|trans }}</h2>
+    <p class="text-muted small presentation-hide">{{ 'manage.statistics.section.base_help'|trans }}</p>
+
+    <div class="row row-cards mb-3">
+      {{ d.stat_card(stats.shiftsPublished|number_format(0), 'manage.statistics.stat.shifts'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-1 fw-bold', labelClass: 'stat-caption text-muted'
+      }) }}
+      {{ d.stat_card(stats.usersActive|number_format(0), 'manage.statistics.stat.people_active'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-1 fw-bold', labelClass: 'stat-caption text-muted'
+      }) }}
+      {{ d.stat_card(stats.worked.raw|number_format(0), 'manage.statistics.stat.hours_worked'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-1 fw-bold', labelClass: 'stat-caption text-muted',
+        hint: 'manage.statistics.stat.hours_worked_hint'|trans
+      }) }}
+      {{ d.stat_card(stats.usersRegistered|number_format(0), 'manage.statistics.stat.registered'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-1 fw-bold', labelClass: 'stat-caption text-muted'
+      }) }}
+    </div>
+
+    <div class="row row-cards mb-3">
+      <div class="col-12 col-lg-6">
+        {{ d.card_start('manage.statistics.card.hours'|trans, {class: 'h-100', bodyClass: ''}) }}
+          <div class="table-responsive">
+            <table class="table card-table table-vcenter">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th class="text-end">{{ 'manage.statistics.hours.wallclock'|trans }}</th>
+                  <th class="text-end">{{ 'manage.statistics.hours.credited'|trans }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>{{ 'manage.statistics.hours.planned'|trans }}</td>
+                  <td class="text-end">{{ stats.planned.raw|number_format(1) }}</td>
+                  <td class="text-end">{{ stats.planned.credited|number_format(1) }}</td>
+                </tr>
+                <tr class="fw-bold">
+                  <td>{{ 'manage.statistics.hours.worked'|trans }}</td>
+                  <td class="text-end">{{ stats.worked.raw|number_format(1) }}</td>
+                  <td class="text-end">{{ stats.worked.credited|number_format(1) }}</td>
+                </tr>
+                <tr>
+                  <td class="ps-4 text-muted">{{ 'manage.statistics.hours.by_volunteers'|trans }}</td>
+                  <td class="text-end">{{ stats.workedVolunteer.raw|number_format(1) }}</td>
+                  <td class="text-end">{{ stats.workedVolunteer.credited|number_format(1) }}</td>
+                </tr>
+                <tr>
+                  <td class="ps-4 text-muted">{{ 'manage.statistics.hours.by_staff'|trans }}</td>
+                  <td class="text-end">{{ stats.workedStaff.raw|number_format(1) }}</td>
+                  <td class="text-end">{{ stats.workedStaff.credited|number_format(1) }}</td>
+                </tr>
+                <tr>
+                  <td class="text-muted">{{ 'manage.statistics.hours.duty'|trans }}</td>
+                  <td class="text-end">{{ stats.dutyHours|number_format(1) }}</td>
+                  <td class="text-end text-muted">&mdash;</td>
+                </tr>
+                <tr>
+                  <td class="text-muted">{{ 'manage.statistics.hours.worklog'|trans }}</td>
+                  <td class="text-end">{{ stats.worklogHours|number_format(1) }}</td>
+                  <td class="text-end">{{ stats.worklogHours|number_format(1) }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        {{ d.card_end({bodyClass: ''}) }}
+      </div>
+
+      <div class="col-12 col-lg-6">
+        {{ d.card_start('manage.statistics.card.shifts'|trans, {class: 'h-100', bodyClass: ''}) }}
+          <div class="table-responsive">
+            <table class="table card-table table-vcenter">
+              <thead>
+                <tr>
+                  <th>{{ 'manage.statistics.shifts.audience'|trans }}</th>
+                  <th class="text-end">{{ 'manage.statistics.shifts.count'|trans }}</th>
+                  <th class="text-end">{{ 'manage.statistics.shifts.hours'|trans }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for value, count in stats.shiftsByAudience %}
+                  <tr>
+                    <td>{{ ('planner.audience.' ~ value)|trans }}</td>
+                    <td class="text-end">{{ count|number_format(0) }}</td>
+                    <td class="text-end">{{ stats.shiftHoursByAudience[value]|number_format(1) }}</td>
+                  </tr>
+                {% endfor %}
+                <tr class="fw-bold">
+                  <td>{{ 'manage.statistics.shifts.total'|trans }}</td>
+                  <td class="text-end">{{ stats.shiftsPublished|number_format(0) }}</td>
+                  <td class="text-end">{{ stats.shiftHoursScheduled|number_format(1) }}</td>
+                </tr>
+                {% if stats.shiftsDraft > 0 %}
+                  <tr>
+                    <td class="text-muted">{{ 'manage.statistics.shifts.draft'|trans }}</td>
+                    <td class="text-end text-muted">{{ stats.shiftsDraft|number_format(0) }}</td>
+                    <td class="text-end text-muted">&mdash;</td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        {{ d.card_end({bodyClass: ''}) }}
+      </div>
+    </div>
+
+    <div class="row row-cards mb-3">
+      {{ d.stat_card(stats.shiftsVolunteerAudience|number_format(0), 'manage.statistics.stat.shifts_volunteer'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-2 fw-bold', labelClass: 'stat-caption text-muted'
+      }) }}
+      {{ d.stat_card(stats.shiftsStaffAudience|number_format(0), 'manage.statistics.stat.shifts_staff'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-2 fw-bold', labelClass: 'stat-caption text-muted'
+      }) }}
+      {{ d.stat_card(stats.shiftHoursScheduled|number_format(0), 'manage.statistics.stat.hours_scheduled'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-2 fw-bold', labelClass: 'stat-caption text-muted'
+      }) }}
+      {{ d.stat_card(stats.averageWorkedHoursPerPerson|number_format(1), 'manage.statistics.stat.average_hours'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-2 fw-bold', labelClass: 'stat-caption text-muted'
+      }) }}
+    </div>
+
+    <div class="row row-cards mb-4">
+      {{ d.stat_card(stats.slotsFilled|number_format(0) ~ ' / ' ~ stats.slotsNeeded|number_format(0), 'manage.statistics.stat.slots'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-2 fw-bold', labelClass: 'stat-caption text-muted',
+        hint: (stats.fillRate * 100)|number_format(0) ~ '%'
+      }) }}
+      {{ d.stat_card(stats.usersActiveVolunteer|number_format(0) ~ ' / ' ~ stats.usersActiveStaff|number_format(0), 'manage.statistics.stat.split'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-2 fw-bold', labelClass: 'stat-caption text-muted'
+      }) }}
+      {{ d.stat_card(stats.departmentsWithShifts|number_format(0), 'manage.statistics.stat.departments'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-2 fw-bold', labelClass: 'stat-caption text-muted',
+        hint: stats.busiestDepartment ? 'manage.statistics.stat.busiest'|trans({'%name%': stats.busiestDepartment}) : ''
+      }) }}
+      {{ d.stat_card(stats.noshows|number_format(0), 'manage.statistics.stat.noshows'|trans, {
+        col: 'col-6 col-md-3', size: 'stat-figure fs-2 fw-bold', labelClass: 'stat-caption text-muted',
+        hint: 'manage.statistics.stat.entries'|trans({'%count%': stats.entriesTotal|number_format(0)})
+      }) }}
+    </div>
+
+    <div class="row row-cards mb-4">
+      <div class="col-12 col-lg-6">
+        {{ d.card_start('manage.statistics.card.more'|trans) }}
+          {{ d.definition_list([
+            {label: 'manage.statistics.more.participation'|trans, value: (stats.participationRate * 100)|number_format(1) ~ '%'},
+            {label: 'manage.statistics.more.staff_accounts'|trans, value: stats.usersStaff|number_format(0)},
+            {label: 'manage.statistics.more.locations'|trans, value: stats.locationsUsed|number_format(0)},
+            {label: 'manage.statistics.more.longest_shift'|trans, value: stats.longestSingleShiftHours|number_format(1)},
+            {label: 'manage.statistics.more.assignments'|trans, value: stats.entriesAssignment|number_format(0)},
+            {label: 'manage.statistics.more.applications'|trans, value: stats.entriesApplication|number_format(0)}
+          ]) }}
+        {{ d.card_end() }}
+      </div>
+    </div>
+
+    <section class="fun-section pt-4 mt-2">
+      <h2 class="h4 mb-1">{{ 'manage.statistics.section.fun'|trans }}</h2>
+      <div class="alert alert-info py-2 presentation-hide" role="note">
+        <span class="small">{{ 'manage.statistics.section.fun_warning'|trans }}</span>
+      </div>
+
+      {% if derived is empty and tallyFacts is empty %}
+        {{ d.empty_state('manage.statistics.fun.empty.title'|trans, {
+          message: 'manage.statistics.fun.empty.message'|trans
+        }) }}
+      {% else %}
+        <div class="row row-cards">
+          {% for fact in derived %}{{ _self.fun_card(fact) }}{% endfor %}
+          {% for fact in tallyFacts %}{{ _self.fun_card(fact) }}{% endfor %}
+        </div>
+
+        {% if not hasTallies %}
+          <p class="text-muted small mt-3 presentation-hide">
+            {{ 'manage.statistics.fun.add_tallies'|trans }}
+            <a href="{{ path('app_manage_statistics_tallies') }}">{{ 'manage.statistics.action.edit_tallies'|trans }}</a>
+          </p>
+        {% endif %}
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

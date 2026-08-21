@@ -7832,3 +7832,370 @@ msgstr "How far ahead of a shift a Critter may collect a wristband. A shift alre
 msgid "shift.filter.clear"
 msgstr "Clear filters"
 
+
+# ==========================================================================
+# manage.statistics.* - closing-ceremony statistics dashboard
+# ==========================================================================
+
+msgid "manage.index.card.statistics.title"
+msgstr "Event statistics"
+
+msgid "manage.index.card.statistics.desc"
+msgstr "Totals for the whole event, ready to present at the closing ceremony."
+
+msgid "manage.statistics.page.title"
+msgstr "Event statistics"
+
+msgid "manage.statistics.page.subtitle"
+msgstr "What the event added up to."
+
+msgid "manage.statistics.action.refresh"
+msgstr "Refresh"
+
+msgid "manage.statistics.action.edit_tallies"
+msgstr "Edit hand-counted figures"
+
+msgid "manage.statistics.action.back_to_stats"
+msgstr "Back to statistics"
+
+msgid "manage.statistics.action.present"
+msgstr "Presentation mode"
+
+msgid "manage.statistics.action.exit_present"
+msgstr "Leave presentation mode"
+
+msgid "manage.statistics.scope.window"
+msgstr "Covering %from% to %to%"
+
+msgid "manage.statistics.scope.unbounded"
+msgstr "Covering everything recorded, because no event dates are configured"
+
+msgid "manage.statistics.scope.generated"
+msgstr "calculated %at%"
+
+msgid "manage.statistics.section.base"
+msgstr "Base numbers"
+
+msgid "manage.statistics.section.base_help"
+msgstr "Counted from the records. Draft shifts are left out, and time a person spent on two things at once is counted once."
+
+msgid "manage.statistics.section.fun"
+msgstr "Just for fun"
+
+msgid "manage.statistics.section.fun_warning"
+msgstr "Estimates, not measurements. Each figure below multiplies a real total by the assumption printed beneath it. Treat them as entertainment, and keep them out of any report."
+
+msgid "manage.statistics.stat.shifts"
+msgstr "Shifts"
+
+msgid "manage.statistics.stat.people_active"
+msgstr "People who worked"
+
+msgid "manage.statistics.stat.hours_worked"
+msgstr "Hours worked"
+
+msgid "manage.statistics.stat.hours_worked_hint"
+msgstr "wall-clock, overlaps merged"
+
+msgid "manage.statistics.stat.registered"
+msgstr "Registered accounts"
+
+msgid "manage.statistics.stat.slots"
+msgstr "Slots filled"
+
+msgid "manage.statistics.stat.split"
+msgstr "Volunteers / staff who worked"
+
+msgid "manage.statistics.stat.departments"
+msgstr "Departments running shifts"
+
+msgid "manage.statistics.stat.busiest"
+msgstr "busiest: %name%"
+
+msgid "manage.statistics.stat.noshows"
+msgstr "No-shows"
+
+msgid "manage.statistics.stat.entries"
+msgstr "of %count% signups"
+
+msgid "manage.statistics.card.hours"
+msgstr "Hours"
+
+msgid "manage.statistics.card.shifts"
+msgstr "Shifts by audience"
+
+msgid "manage.statistics.hours.wallclock"
+msgstr "Wall-clock"
+
+msgid "manage.statistics.hours.credited"
+msgstr "Credited"
+
+msgid "manage.statistics.hours.planned"
+msgstr "Planned"
+
+msgid "manage.statistics.hours.worked"
+msgstr "Worked"
+
+msgid "manage.statistics.hours.by_volunteers"
+msgstr "by volunteers"
+
+msgid "manage.statistics.hours.by_staff"
+msgstr "by staff"
+
+msgid "manage.statistics.hours.duty"
+msgstr "of which on duty"
+
+msgid "manage.statistics.hours.worklog"
+msgstr "of which logged by hand"
+
+msgid "manage.statistics.shifts.audience"
+msgstr "Offered to"
+
+msgid "manage.statistics.shifts.count"
+msgstr "Shifts"
+
+msgid "manage.statistics.shifts.hours"
+msgstr "Hours"
+
+msgid "manage.statistics.shifts.total"
+msgstr "Total"
+
+msgid "manage.statistics.shifts.draft"
+msgstr "Drafts, never published"
+
+msgid "manage.statistics.fun.empty.title"
+msgstr "Nothing to compare yet"
+
+msgid "manage.statistics.fun.empty.message"
+msgstr "Once shifts have been worked, this section fills up on its own."
+
+msgid "manage.statistics.fun.add_tallies"
+msgstr "Counted something by hand this event, like cups of coffee?"
+
+msgid "manage.statistics.fun.distance.caption"
+msgstr "kilometres walked on shift"
+
+msgid "manage.statistics.fun.distance.basis"
+msgstr "assumes %pace% km/h average movement while on shift"
+
+msgid "manage.statistics.fun.scale.basis"
+msgstr "reference distance: %km% km"
+
+msgid "manage.statistics.fun.scale.marathon.caption"
+msgstr "marathons"
+
+msgid "manage.statistics.fun.scale.germany.caption"
+msgstr "times the length of Germany"
+
+msgid "manage.statistics.fun.scale.earth.caption"
+msgstr "times around the equator"
+
+msgid "manage.statistics.fun.scale.moon.caption"
+msgstr "times to the Moon"
+
+msgid "manage.statistics.fun.nonstop.caption"
+msgstr "years of one person working non-stop"
+
+msgid "manage.statistics.fun.nonstop.basis"
+msgstr "no sleep, no breaks, all day every day"
+
+msgid "manage.statistics.fun.careers.caption"
+msgstr "entire working careers"
+
+msgid "manage.statistics.fun.careers.basis"
+msgstr "assumes a career of 40 years at 1,700 hours a year"
+
+msgid "manage.statistics.fun.fulltime.caption"
+msgstr "full-time staff for the whole event"
+
+msgid "manage.statistics.fun.fulltime.basis"
+msgstr "assumes 8-hour days across %days% days of event"
+
+msgid "manage.statistics.fun.films.caption"
+msgstr "feature films' worth of time"
+
+msgid "manage.statistics.fun.films.basis"
+msgstr "assumes a two-hour film"
+
+msgid "manage.statistics.fun.bananas.caption"
+msgstr "bananas of energy burned"
+
+msgid "manage.statistics.fun.bananas.basis"
+msgstr "assumes %kcal% kcal an hour on shift, 105 kcal a banana"
+
+msgid "manage.statistics.fun.coaches.caption"
+msgstr "coaches needed to move everyone"
+
+msgid "manage.statistics.fun.coaches.basis"
+msgstr "assumes %seats% seats a coach"
+
+msgid "manage.statistics.fun.coffee_bathtubs.caption"
+msgstr "bathtubs of coffee"
+
+msgid "manage.statistics.fun.coffee_bathtubs.basis"
+msgstr "%litres% litres in total, at %cup% litres a cup"
+
+msgid "manage.statistics.fun.caffeine.caption"
+msgstr "grams of caffeine consumed"
+
+msgid "manage.statistics.fun.caffeine.basis"
+msgstr "assumes %mg% mg a cup"
+
+msgid "manage.statistics.fun.value.caption"
+msgstr "%currency% of donated time"
+
+msgid "manage.statistics.fun.value.basis"
+msgstr "hours worked at %rate% %currency% an hour, a notional rate nobody was paid"
+
+msgid "manage.statistics.tally.coffee.label"
+msgstr "Cups of coffee"
+
+msgid "manage.statistics.tally.coffee.caption"
+msgstr "cups of coffee"
+
+msgid "manage.statistics.tally.energy_drinks.label"
+msgstr "Energy drinks"
+
+msgid "manage.statistics.tally.energy_drinks.caption"
+msgstr "energy drinks"
+
+msgid "manage.statistics.tally.water.label"
+msgstr "Bottles of water"
+
+msgid "manage.statistics.tally.water.caption"
+msgstr "bottles of water"
+
+msgid "manage.statistics.tally.meals.label"
+msgstr "Meals served"
+
+msgid "manage.statistics.tally.meals.caption"
+msgstr "meals served"
+
+msgid "manage.statistics.tally.pizza.label"
+msgstr "Pizzas"
+
+msgid "manage.statistics.tally.pizza.caption"
+msgstr "pizzas"
+
+msgid "manage.statistics.tally.sweets.label"
+msgstr "Sweets handed out"
+
+msgid "manage.statistics.tally.sweets.caption"
+msgstr "sweets handed out"
+
+msgid "manage.statistics.tally.batteries.label"
+msgstr "Batteries used"
+
+msgid "manage.statistics.tally.batteries.caption"
+msgstr "batteries used"
+
+msgid "manage.statistics.tally.radios.label"
+msgstr "Radios handed out"
+
+msgid "manage.statistics.tally.radios.caption"
+msgstr "radios handed out"
+
+msgid "manage.statistics.tally.cable.label"
+msgstr "Metres of cable laid"
+
+msgid "manage.statistics.tally.cable.caption"
+msgstr "metres of cable laid"
+
+msgid "manage.statistics.tally.plasters.label"
+msgstr "Plasters applied"
+
+msgid "manage.statistics.tally.plasters.caption"
+msgstr "plasters applied"
+
+msgid "manage.statistics.tally.stickers.label"
+msgstr "Stickers given out"
+
+msgid "manage.statistics.tally.stickers.caption"
+msgstr "stickers given out"
+
+msgid "manage.statistics.tally.hugs.label"
+msgstr "Hugs"
+
+msgid "manage.statistics.tally.hugs.caption"
+msgstr "hugs"
+
+msgid "manage.statistics.tallies.page.title"
+msgstr "Hand-counted figures"
+
+msgid "manage.statistics.tallies.page.subtitle"
+msgstr "The things no system records. Leave anything you did not count blank and it stays off the dashboard."
+
+msgid "manage.statistics.tallies.section.counted"
+msgstr "Counted by hand"
+
+msgid "manage.statistics.tallies.section.counted_help"
+msgstr "A blank field is not zero. It means this event did not count that, and the figure is left out entirely."
+
+msgid "manage.statistics.tallies.section.value"
+msgstr "Notional hourly rate"
+
+msgid "manage.statistics.tallies.section.value_help"
+msgstr "Optional, and off by default. Fill this in only if you want the fun section to show what the volunteered hours would have cost at an hourly rate. Nobody was paid it."
+
+msgid "manage.statistics.tallies.custom.title"
+msgstr "Anything else you counted"
+
+msgid "manage.statistics.tallies.custom.help"
+msgstr "For the figures unique to this event. Rows missing a name or an amount are discarded when you save."
+
+msgid "manage.statistics.tallies.custom.add"
+msgstr "Add a figure"
+
+msgid "manage.statistics.tallies.custom.label"
+msgstr "What was counted"
+
+msgid "manage.statistics.tallies.custom.placeholder"
+msgstr "wristbands issued"
+
+msgid "manage.statistics.tallies.custom.amount"
+msgstr "How many"
+
+msgid "manage.statistics.tallies.hourly_rate.label"
+msgstr "Hourly rate"
+
+msgid "manage.statistics.tallies.hourly_rate.help"
+msgstr "Leave blank to hide this comparison."
+
+msgid "manage.statistics.tallies.currency.label"
+msgstr "Currency"
+
+msgid "manage.statistics.tallies.flash.saved"
+msgstr "Hand-counted figures saved."
+
+msgid "manage.statistics.stat.shifts_volunteer"
+msgstr "Volunteer shifts"
+
+msgid "manage.statistics.stat.shifts_staff"
+msgstr "Staff-only shifts"
+
+msgid "manage.statistics.stat.hours_scheduled"
+msgstr "Hours of shift scheduled"
+
+msgid "manage.statistics.stat.average_hours"
+msgstr "Average hours per person"
+
+msgid "manage.statistics.card.more"
+msgstr "More numbers"
+
+msgid "manage.statistics.more.participation"
+msgstr "Registered accounts that worked"
+
+msgid "manage.statistics.more.staff_accounts"
+msgstr "Staff accounts"
+
+msgid "manage.statistics.more.locations"
+msgstr "Locations used"
+
+msgid "manage.statistics.more.longest_shift"
+msgstr "Longest single shift (hours)"
+
+msgid "manage.statistics.more.assignments"
+msgstr "Confirmed assignments"
+
+msgid "manage.statistics.more.applications"
+msgstr "Applications awaiting confirmation"

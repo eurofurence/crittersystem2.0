@@ -59,6 +59,33 @@ class WorklogRepository extends ServiceEntityRepository
         return $totals;
     }
 
+    /**
+     * Manual hours worked inside the given bounds, keyed by user id. Either bound may be null,
+     * meaning unbounded on that side. Users with no worklog in range are absent.
+     *
+     * @return array<int, float>
+     */
+    public function sumHoursByUserBetween(?\DateTimeImmutable $from, ?\DateTimeImmutable $to): array
+    {
+        $qb = $this->createQueryBuilder('w')
+            ->select('IDENTITY(w.user) AS userId', 'COALESCE(SUM(w.hours), 0) AS total')
+            ->groupBy('w.user');
+
+        if ($from !== null) {
+            $qb->andWhere('w.workedAt >= :from')->setParameter('from', $from);
+        }
+        if ($to !== null) {
+            $qb->andWhere('w.workedAt <= :to')->setParameter('to', $to);
+        }
+
+        $totals = [];
+        foreach ($qb->getQuery()->getResult() as $row) {
+            $totals[(int) $row['userId']] = (float) $row['total'];
+        }
+
+        return $totals;
+    }
+
     public function sumHoursForUser(User $user): float
     {
         return (float) $this->createQueryBuilder('w')

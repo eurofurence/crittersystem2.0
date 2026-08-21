@@ -1,0 +1,58 @@
+{% extends 'base.html.twig' %}
+{% import 'components/forms/_macros.twig' as f %}
+{% import 'components/data/_macros.twig' as d %}
+
+{% block title %}{{ 'manage.statistics.tallies.page.title'|trans }}{% endblock %}
+
+{% block body %}
+  {{ d.page_header('manage.statistics.tallies.page.title'|trans, {
+    subtitle: 'manage.statistics.tallies.page.subtitle'|trans,
+    actions: [{label: 'manage.statistics.action.back_to_stats'|trans, href: path('app_manage_statistics'), class: 'btn btn-outline-secondary'}]
+  }) }}
+
+  {{ form_start(form) }}
+    {{ d.card_start('manage.statistics.tallies.section.counted'|trans, {
+      subtitle: 'manage.statistics.tallies.section.counted_help'|trans
+    }) }}
+      <div class="row">
+        {% for child in form.known %}
+          {{ f.field(child, {col: 'col-6 col-md-4 col-lg-3'}) }}
+        {% endfor %}
+      </div>
+    {{ d.card_end() }}
+
+    {{ d.card_start('manage.statistics.tallies.custom.title'|trans, {
+      subtitle: 'manage.statistics.tallies.custom.help'|trans
+    }) }}
+      <div data-controller="collection" data-prototype="{{ form_widget(form.custom.vars.prototype)|e('html_attr') }}">
+        <div data-collection-container>
+          {% for row in form.custom %}
+            <div data-collection-item class="border rounded p-2 mb-2">
+              <div class="row">
+                {{ f.field(row.label, {col: 'col-12 col-md-8'}) }}
+                {{ f.field(row.amount, {col: 'col-12 col-md-4'}) }}
+              </div>
+              <button type="button" class="btn btn-sm btn-outline-danger mt-1" data-action="collection#remove">
+                {{ 'common.action.remove'|trans }}
+              </button>
+            </div>
+          {% endfor %}
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-secondary" data-action="collection#add">
+          {{ 'manage.statistics.tallies.custom.add'|trans }}
+        </button>
+      </div>
+    {{ d.card_end() }}
+
+    {{ d.card_start('manage.statistics.tallies.section.value'|trans, {
+      subtitle: 'manage.statistics.tallies.section.value_help'|trans
+    }) }}
+      <div class="row">
+        {{ f.field(form.hourlyRate, {col: 'col-12 col-md-4'}) }}
+        {{ f.field(form.currency, {col: 'col-6 col-md-3'}) }}
+      </div>
+    {{ d.card_end() }}
+
+    <button class="btn btn-primary">{{ 'common.action.save'|trans }}</button>
+  {{ form_end(form) }}
+{% endblock %}

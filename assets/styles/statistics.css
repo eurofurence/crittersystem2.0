@@ -1,0 +1,67 @@
+/*
+ * Closing-statistics dashboard.
+ *
+ * The fun section is deliberately styled as a different kind of surface from the base numbers.
+ * Those figures are estimates built on stated assumptions, and an audience must never mistake one
+ * for a measured total, so the visual separation carries meaning rather than decoration.
+ */
+
+.stat-figure {
+    font-variant-numeric: tabular-nums;
+    line-height: 1.1;
+}
+
+.fun-section {
+    border-top: 3px double var(--tblr-border-color);
+}
+
+.fun-card {
+    background-image: linear-gradient(180deg, rgba(var(--tblr-primary-rgb), 0.05), transparent 60%);
+}
+
+.fun-basis {
+    font-size: 0.75rem;
+    opacity: 0.75;
+}
+
+/*
+ * Presentation mode. The element the controller fullscreens takes the theme background explicitly:
+ * a fullscreened element is painted against the browser's own backdrop, which is black regardless
+ * of the active theme, so a transparent surface would put dark text on black.
+ */
+.statistics-board.is-presenting {
+    background: var(--tblr-body-bg);
+    overflow-y: auto;
+    padding: 2rem;
+}
+
+.statistics-board.is-presenting .presentation-hide {
+    display: none !important;
+}
+
+.statistics-board.is-presenting .stat-figure {
+    font-size: clamp(2rem, 6vw, 5rem);
+}
+
+.statistics-board.is-presenting .stat-caption {
+    font-size: clamp(0.85rem, 1.4vw, 1.4rem);
+}
+
+.statistics-board.is-presenting .fun-basis {
+    font-size: clamp(0.7rem, 0.9vw, 1rem);
+}
+
+.statistics-board.is-presenting .card {
+    border-width: 2px;
+}
+
+/* Only reached when the browser refused fullscreen; the real fullscreen hides the chrome itself. */
+body.stats-presenting .navbar {
+    display: none;
+}
+
+@media print {
+    .statistics-board .presentation-hide {
+        display: none !important;
+    }
+}

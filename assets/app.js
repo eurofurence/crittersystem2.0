@@ -18,6 +18,7 @@ import './styles/app.css';
 import './styles/planner.css';
 import './styles/apply-grid.css';
 import './styles/user-select.css';
+import './styles/statistics.css';
 import "./js/forms.js"
 import "./js/notifications.js"
 import "./js/sentry.init.js"

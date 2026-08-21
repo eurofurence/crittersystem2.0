@@ -215,15 +215,20 @@
 {% macro stat_card(value, label, options = {}) %}
   {# Big number + caption. Wrap a set of these in <div class="row">.
      options:
-     - col: string   -- default 'col-6 col-md-3'
-     - size: string  -- default 'fs-3' (font-size class for the value)
-     - class: string -- extra classes on .card
+     - col: string        -- default 'col-6 col-md-3'
+     - size: string       -- default 'fs-3' (font-size class for the value)
+     - class: string      -- extra classes on .card
+     - labelClass: string -- default 'text-muted small' (caption classes)
+     - hint: string       -- optional third line under the caption, for a unit or an assumption
   #}
   <div class="{{ options.col|default('col-6 col-md-3') }}">
     <div class="{{ ('card text-center ' ~ options.class|default(''))|trim }}">
       <div class="card-body">
         <div class="{{ options.size|default('fs-3') }}">{{ value }}</div>
-        <div class="text-muted small">{{ label }}</div>
+        <div class="{{ options.labelClass is defined ? options.labelClass : 'text-muted small' }}">{{ label }}</div>
+        {% if options.hint is defined and options.hint %}
+          <div class="fun-basis text-muted mt-1">{{ options.hint }}</div>
+        {% endif %}
       </div>
     </div>
   </div>

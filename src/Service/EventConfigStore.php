@@ -72,6 +72,17 @@ class EventConfigStore implements ResetInterface
 
     public const ACCESS_MODES = ['public', 'staff', 'admin'];
 
+    /*
+     * Hand-counted figures behind the fun section of the closing statistics. Nothing in the
+     * application can derive these, so they are typed in once per event and stored as JSON.
+     */
+    public const KEY_STATS_TALLIES = 'stats.tallies';
+    public const KEY_STATS_CUSTOM_TALLIES = 'stats.custom_tallies';
+    public const KEY_STATS_HOURLY_RATE = 'stats.hourly_rate';
+    public const KEY_STATS_CURRENCY = 'stats.currency';
+
+    public const DEFAULT_STATS_CURRENCY = 'EUR';
+
     // Operational configuration, all admin-editable via /manage/operations.
     // Defaults must never be hard-coded at call sites - read them from here.
     public const KEY_BAN_NOSHOW_THRESHOLD = 'ban.noshow_threshold';
