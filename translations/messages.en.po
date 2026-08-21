@@ -8,6 +8,90 @@ msgstr ""
 # ui.* - global chrome (not owned by any single feature)
 # ==========================================================================
 
+msgid "common.state.published"
+msgstr "Published"
+
+msgid "shift.dossier.action.details"
+msgstr "Details"
+
+msgid "shift.dossier.action.edit"
+msgstr "Edit shift"
+
+msgid "shift.dossier.action.message"
+msgstr "Message"
+
+msgid "shift.dossier.action.staffing"
+msgstr "Manage staffing"
+
+msgid "shift.dossier.actions"
+msgstr "Tools"
+
+msgid "shift.dossier.audience"
+msgstr "Offered to"
+
+msgid "shift.dossier.batch"
+msgstr "Origin"
+
+msgid "shift.dossier.batch_created"
+msgstr "Created as part of a batch or import."
+
+msgid "shift.dossier.checked_in"
+msgstr "checked in"
+
+msgid "shift.dossier.checkin"
+msgstr "Check-in"
+
+msgid "shift.dossier.checkin_required"
+msgstr "Check-in required before this shift"
+
+msgid "shift.dossier.created_by"
+msgstr "Created by"
+
+msgid "shift.dossier.creator_unknown"
+msgstr "Unknown"
+
+msgid "shift.dossier.managers"
+msgstr "Who to ask"
+
+msgid "shift.dossier.managers_empty"
+msgstr "Nobody is assigned to manage this department."
+
+msgid "shift.dossier.managers_intro"
+msgstr "The people responsible for this department's shifts."
+
+msgid "shift.dossier.no_description.body"
+msgstr "Nobody wrote down what this shift involves. Ask %department% what the volunteer is expected to do."
+
+msgid "shift.dossier.no_description.title"
+msgstr "No description was given."
+
+msgid "shift.dossier.notes"
+msgstr "Notes"
+
+msgid "shift.dossier.origin"
+msgstr "Who made this shift"
+
+msgid "shift.dossier.override"
+msgstr "Assigned with an override: %reason%"
+
+msgid "shift.dossier.roster"
+msgstr "Who is on this shift"
+
+msgid "shift.dossier.roster_empty"
+msgstr "Nobody is on this shift yet."
+
+msgid "shift.dossier.title"
+msgstr "Shift details"
+
+msgid "shift.dossier.updated_by"
+msgstr "Last changed by"
+
+msgid "shift.dossier.volunteer"
+msgstr "Volunteer"
+
+msgid "shift.list.no_description"
+msgstr "no description"
+
 msgid "ui.app.title"
 msgstr "Critter Management System"
 
@@ -6866,8 +6950,6 @@ msgid "manage.shift_group.filter.clear"
 msgstr "Clear"
 
 
-
-
 # --- assigning a planner selection to a shift group ---
 
 msgid "planner.batch.group.label"
@@ -7731,3 +7813,4 @@ msgstr "How far ahead of a shift a Critter may collect a wristband. A shift alre
 
 msgid "shift.filter.clear"
 msgstr "Clear filters"
+

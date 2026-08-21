@@ -8,6 +8,90 @@ msgstr ""
 # ui.* - global chrome (not owned by any single feature)
 # ==========================================================================
 
+msgid "common.state.published"
+msgstr "Veröffentlicht"
+
+msgid "shift.dossier.action.details"
+msgstr "Details"
+
+msgid "shift.dossier.action.edit"
+msgstr "Schicht bearbeiten"
+
+msgid "shift.dossier.action.message"
+msgstr "Nachricht"
+
+msgid "shift.dossier.action.staffing"
+msgstr "Besetzung verwalten"
+
+msgid "shift.dossier.actions"
+msgstr "Werkzeuge"
+
+msgid "shift.dossier.audience"
+msgstr "Angeboten für"
+
+msgid "shift.dossier.batch"
+msgstr "Herkunft"
+
+msgid "shift.dossier.batch_created"
+msgstr "Als Teil eines Imports oder Stapels erstellt."
+
+msgid "shift.dossier.checked_in"
+msgstr "eingecheckt"
+
+msgid "shift.dossier.checkin"
+msgstr "Check-in"
+
+msgid "shift.dossier.checkin_required"
+msgstr "Check-in vor dieser Schicht erforderlich"
+
+msgid "shift.dossier.created_by"
+msgstr "Erstellt von"
+
+msgid "shift.dossier.creator_unknown"
+msgstr "Unbekannt"
+
+msgid "shift.dossier.managers"
+msgstr "Wen fragen"
+
+msgid "shift.dossier.managers_empty"
+msgstr "Für dieses Ressort ist niemand als Verantwortliche:r eingetragen."
+
+msgid "shift.dossier.managers_intro"
+msgstr "Die Verantwortlichen für die Schichten dieses Ressorts."
+
+msgid "shift.dossier.no_description.body"
+msgstr "Es wurde nicht festgehalten, worum es in dieser Schicht geht. Frag %department%, was die Person tun soll."
+
+msgid "shift.dossier.no_description.title"
+msgstr "Keine Beschreibung vorhanden."
+
+msgid "shift.dossier.notes"
+msgstr "Notizen"
+
+msgid "shift.dossier.origin"
+msgstr "Wer diese Schicht angelegt hat"
+
+msgid "shift.dossier.override"
+msgstr "Mit Ausnahme zugewiesen: %reason%"
+
+msgid "shift.dossier.roster"
+msgstr "Wer auf dieser Schicht steht"
+
+msgid "shift.dossier.roster_empty"
+msgstr "Auf dieser Schicht steht noch niemand."
+
+msgid "shift.dossier.title"
+msgstr "Schichtdetails"
+
+msgid "shift.dossier.updated_by"
+msgstr "Zuletzt geändert von"
+
+msgid "shift.dossier.volunteer"
+msgstr "Helfer:in"
+
+msgid "shift.list.no_description"
+msgstr "keine Beschreibung"
+
 msgid "ui.app.title"
 msgstr "Critter Management System"
 
@@ -6860,8 +6944,6 @@ msgid "manage.shift_group.filter.clear"
 msgstr "Zurücksetzen"
 
 
-
-
 # --- Auswahl im Planer einer Schichtgruppe zuordnen ---
 
 msgid "planner.batch.group.label"
@@ -7723,3 +7805,4 @@ msgstr "How far ahead of a shift a Critter may collect a wristband. A shift alre
 
 msgid "shift.filter.clear"
 msgstr "Filter zurücksetzen"
+

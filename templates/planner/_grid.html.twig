@@ -51,6 +51,7 @@
               <span class="planner-block-time"
                 >{{ shift.startsAt|app_time }}<span class="planner-block-to">–{{ shift.endsAt|app_time }}</span></span>
               {% if shift.draft %}<span class="planner-block-badge">{{ 'planner.badge.draft'|trans }}</span>{% endif %}
+              {% if shift.description is null %}<span class="planner-block-badge planner-block-nodesc" title="{{ 'shift.list.no_description'|trans }}" aria-hidden="true">!</span>{% endif %}
             </span>
             {# The title first: a column of task names alone reads as one repeated word, and the
                title is what tells two shifts of the same task apart. #}

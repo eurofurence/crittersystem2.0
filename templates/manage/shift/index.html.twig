@@ -32,7 +32,10 @@
       <tbody>
         {% for shift in shifts %}
           <tr class="{{ shift.past ? 'opacity-75' : '' }}">
-            <td class="fw-semibold">{{ shift.title }}</td>
+            <td class="fw-semibold">
+              {{ shift.title }}
+              {% if shift.description is null %}{{ d.badge('shift.list.no_description'|trans, 'bg-yellow-lt', {class: 'ms-1 fw-normal'}) }}{% endif %}
+            </td>
             <td class="small">
               {{ shift.startsAt|app_datetime }} – {{ shift.endsAt|app_time }}
               <div class="text-muted">{{ shift.durationHours }}h{% if shift.past %} · {{ 'manage.shift.label.past'|trans }}{% endif %}</div>

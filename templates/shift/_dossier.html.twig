@@ -1,0 +1,198 @@
+{# Everything known about one shift, already filtered for the viewer by ShiftDossierPresenter.
+   Rendered inside the shift page and served alone into a dialog, so it must stand on its own and
+   must not decide access for itself: `privileged` is the answer, not a hint. #}
+{% import 'components/data/_macros.twig' as d %}
+{% import 'components/icon/_macros.twig' as i %}
+{% import 'components/notification/_macros.twig' as n %}
+
+{% if heading is defined and heading %}
+  <div class="mb-3">
+    <h3 class="mb-1">{{ shift.title }}</h3>
+    <div class="text-secondary">{{ shift.startsAt|app_datetime }} - {{ shift.endsAt|app_time }} ({{ shift.durationHours }}h)</div>
+  </div>
+{% endif %}
+
+{{ d.card_start('shift.dossier.title'|trans) }}
+  <dl class="row mb-0">
+    <dt class="col-4">{{ 'common.label.department'|trans }}</dt>
+    <dd class="col-8">
+      {% if shift.department %}
+        {% if canViewDepartment %}
+          <a href="{{ path('app_department_show', {id: shift.department.uuid}) }}">{{ shift.department.name }}</a>
+        {% else %}
+          {{ shift.department.name }}
+        {% endif %}
+      {% else %}-{% endif %}
+    </dd>
+    <dt class="col-4">{{ 'common.label.type'|trans }}</dt>
+    <dd class="col-8">{{ shift.shiftTask ? shift.shiftTask.name : '-' }}</dd>
+    <dt class="col-4">{{ 'common.label.location'|trans }}</dt>
+    <dd class="col-8">{{ shift.location ? shift.location.fullName : '-' }}</dd>
+    <dt class="col-4">{{ 'common.label.when'|trans }}</dt>
+    <dd class="col-8">{{ shift.startsAt|app_datetime }} - {{ shift.endsAt|app_time }} ({{ shift.durationHours }}h)</dd>
+    {% if shift.requireCheckin %}
+      <dt class="col-4">{{ 'shift.dossier.checkin'|trans }}</dt>
+      <dd class="col-8">{{ d.badge('shift.dossier.checkin_required'|trans, 'bg-yellow-lt') }}</dd>
+    {% endif %}
+    {% if privileged %}
+      <dt class="col-4">{{ 'shift.dossier.audience'|trans }}</dt>
+      <dd class="col-8">{{ ('planner.audience.' ~ shift.audience.value)|trans }}</dd>
+      <dt class="col-4">{{ 'common.label.status'|trans }}</dt>
+      <dd class="col-8">
+        {% if shift.draft %}{{ d.badge('common.state.draft'|trans, 'bg-yellow-lt') }}
+        {% else %}{{ d.badge('common.state.published'|trans, 'bg-green-lt') }}{% endif %}
+      </dd>
+    {% endif %}
+    {% if shift.url %}
+      <dt class="col-4">{{ 'shift.show.link'|trans }}</dt>
+      <dd class="col-8"><a href="{{ shift.url }}">{{ shift.url }}</a></dd>
+    {% endif %}
+  </dl>
+
+  <hr>
+
+  {% if descriptionMissing %}
+    {# The reason this screen exists: an empty description is the thing the operator has to route
+       around, so it is stated with the person to ask rather than left blank. #}
+    {% set missing %}
+      <strong>{{ 'shift.dossier.no_description.title'|trans }}</strong>
+      {{ 'shift.dossier.no_description.body'|trans({'%department%': shift.department ? shift.department.name : '-'}) }}
+    {% endset %}
+    {{ n.alert('warning', '', {messageHtml: missing, icon: '!'}) }}
+  {% else %}
+    <p class="mb-0">{{ shift.description|nl2br }}</p>
+  {% endif %}
+{{ d.card_end() }}
+
+{% if siblings is not empty %}
+  {{ d.card_start('shift.group.heading'|trans({'%name%': shift.shiftGroup.name}), {
+    headerClass: 'card-header fw-semibold', titleTag: 'span', titleClass: ''
+  }) }}
+    <p class="mb-2">{{ 'shift.group.show_intro'|trans({'%count%': siblings|length + 1}) }}</p>
+    {% if shift.shiftGroup.description %}<p class="text-secondary">{{ shift.shiftGroup.description }}</p>{% endif %}
+    <ul class="list-unstyled mb-0">
+      {% for sibling in siblings %}
+        <li class="mb-1">
+          <a href="{{ path('app_shift_show', {id: sibling.uuid}) }}" class="text-decoration-none">{{ sibling.title }}</a>
+          <span class="text-muted small d-block">
+            {{ sibling.startsAt|app_datetime }} - {{ sibling.endsAt|app_time }}
+            {% if sibling.location %} · {{ sibling.location.fullName }}{% endif %}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {{ d.card_end() }}
+{% endif %}
+
+{{ d.card_start('shift.show.staffing'|trans, {bodyClass: ''}) }}
+  {% if staffing is empty %}
+    <div class="card-body">{{ d.empty_inline('shift.show.no_roles'|trans) }}</div>
+  {% else %}
+    {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table'}) }}
+      <thead><tr><th>{{ 'common.label.role'|trans }}</th><th>{{ 'shift.show.filled'|trans }}</th><th>{{ 'common.label.status'|trans }}</th></tr></thead>
+      <tbody>
+        {% for row in staffing %}
+          <tr>
+            <td>{{ row.type.name }}</td>
+            <td>{{ row.assigned }} / {{ row.needed }}</td>
+            <td>
+              {% if row.assigned >= row.needed %}{{ d.badge('common.state.full'|trans, 'bg-green-lt') }}
+              {% else %}{{ d.badge('shift.show.open_count'|trans({'%count%': row.needed - row.assigned}), 'bg-yellow-lt') }}{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    {{ d.table_end({responsive: false}) }}
+  {% endif %}
+{{ d.card_end({bodyClass: ''}) }}
+
+{% if privileged %}
+  {{ d.card_start('shift.dossier.roster'|trans, {bodyClass: ''}) }}
+    {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table'}) }}
+      <thead><tr><th>{{ 'shift.dossier.volunteer'|trans }}</th><th>{{ 'common.label.role'|trans }}</th><th>{{ 'common.label.status'|trans }}</th><th>{{ 'shift.dossier.notes'|trans }}</th></tr></thead>
+      <tbody>
+        {% for entry in roster %}
+          <tr>
+            <td>{{ entry.user|display_name }}</td>
+            <td>{{ entry.volunteerType.name }}</td>
+            <td>
+              {{ d.badge(entry.assignment ? 'backstage.state.assigned'|trans : 'backstage.state.applied'|trans, entry.assignment ? 'bg-green-lt' : 'bg-secondary-lt') }}
+              {% if entry.noshow %}{{ d.badge('common.state.no_show'|trans, 'bg-red-lt', {class: 'ms-1'}) }}{% endif %}
+              {% if entry.checkedIn %}{{ d.badge('shift.dossier.checked_in'|trans, 'bg-blue-lt', {class: 'ms-1'}) }}{% endif %}
+            </td>
+            <td class="small text-secondary">
+              {% if entry.userComment %}<div>{{ entry.userComment }}</div>{% endif %}
+              {% if entry.overridden %}<div>{{ 'shift.dossier.override'|trans({'%reason%': entry.overrideReason ?: '-'}) }}</div>{% endif %}
+              {% if entry.noshowComment %}<div>{{ entry.noshowComment }}</div>{% endif %}
+            </td>
+          </tr>
+        {% else %}
+          {{ d.empty_row(4, 'shift.dossier.roster_empty'|trans) }}
+        {% endfor %}
+      </tbody>
+    {{ d.table_end({responsive: false}) }}
+  {{ d.card_end({bodyClass: ''}) }}
+
+  {{ d.card_start('shift.dossier.origin'|trans) }}
+    <dl class="row mb-0">
+      <dt class="col-4">{{ 'shift.dossier.created_by'|trans }}</dt>
+      <dd class="col-8">
+        {% if shift.createdBy %}
+          {{ shift.createdBy|display_name }}
+          <span class="text-secondary small d-block">{{ shift.createdAt|app_datetime }}</span>
+          {% if canMessage %}
+            <a class="btn btn-sm btn-outline-primary mt-1" href="{{ path('app_messages_with', {id: shift.createdBy.uuid}) }}">
+              {{ i.icon('message', {class: 'icon-1 me-1'}) }}{{ 'shift.dossier.action.message'|trans }}
+            </a>
+          {% endif %}
+        {% else %}
+          {{ 'shift.dossier.creator_unknown'|trans }}
+          <span class="text-secondary small d-block">{{ shift.createdAt|app_datetime }}</span>
+        {% endif %}
+      </dd>
+      <dt class="col-4">{{ 'shift.dossier.updated_by'|trans }}</dt>
+      <dd class="col-8">
+        {% if shift.updatedBy %}{{ shift.updatedBy|display_name }}{% else %}{{ 'shift.dossier.creator_unknown'|trans }}{% endif %}
+        <span class="text-secondary small d-block">{{ shift.updatedAt|app_datetime }}</span>
+      </dd>
+      {% if shift.transactionId %}
+        <dt class="col-4">{{ 'shift.dossier.batch'|trans }}</dt>
+        <dd class="col-8">{{ 'shift.dossier.batch_created'|trans }}</dd>
+      {% endif %}
+    </dl>
+  {{ d.card_end() }}
+
+  {{ d.card_start('shift.dossier.managers'|trans) }}
+    <p class="text-secondary small">{{ 'shift.dossier.managers_intro'|trans }}</p>
+    {% if managers is empty %}
+      {{ d.empty_inline('shift.dossier.managers_empty'|trans) }}
+    {% else %}
+      <ul class="list-unstyled mb-0">
+        {% for manager in managers %}
+          <li class="d-flex align-items-center justify-content-between py-1">
+            <span>{{ manager|display_name }}</span>
+            {% if canMessage %}
+              <a class="btn btn-sm btn-outline-primary" href="{{ path('app_messages_with', {id: manager.uuid}) }}">
+                {{ i.icon('message', {class: 'icon-1 me-1'}) }}{{ 'shift.dossier.action.message'|trans }}
+              </a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  {{ d.card_end() }}
+{% endif %}
+
+{# Every link is gated on the privilege its destination enforces, so none of them can lead to a 403. #}
+{% if canSeeStaffing or canEditShift %}
+  {{ d.card_start('shift.dossier.actions'|trans) }}
+    <div class="d-flex flex-wrap gap-2">
+      {% if canSeeStaffing %}
+        <a class="btn btn-outline-secondary" href="{{ path('app_shift_staffing', {id: shift.uuid}) }}">{{ 'shift.dossier.action.staffing'|trans }}</a>
+      {% endif %}
+      {% if canEditShift %}
+        <a class="btn btn-outline-secondary" href="{{ path('app_manage_shift_edit', {id: shift.uuid}) }}">{{ 'shift.dossier.action.edit'|trans }}</a>
+      {% endif %}
+    </div>
+  {{ d.card_end() }}
+{% endif %}

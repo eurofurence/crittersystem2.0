@@ -298,6 +298,18 @@
     }
 }
 
+/*
+ * A shift nobody described sends volunteers to the desk asking what it is, so the gap is marked
+ * where the manager plans rather than only where the damage shows up. It shares the badge rules so
+ * a narrow block drops it the same way, and it is decorative: the marker repeats nothing the
+ * accessible name needs, and the title carries the wording.
+ */
+.planner-block-nodesc {
+    font-weight: 700;
+    opacity: 1;
+    color: var(--tblr-warning);
+}
+
 .planner-block-overnight {
     position: absolute;
     bottom: 0;

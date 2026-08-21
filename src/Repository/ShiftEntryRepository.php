@@ -149,6 +149,8 @@ class ShiftEntryRepository extends ServiceEntityRepository
             ->addSelect('grpShifts')
             ->leftJoin('s.shiftTask', 'task')
             ->addSelect('task')
+            ->leftJoin('s.department', 'dept')
+            ->addSelect('dept')
             ->leftJoin('s.location', 'loc')
             ->addSelect('loc')
             ->leftJoin('loc.parent', 'locParent')

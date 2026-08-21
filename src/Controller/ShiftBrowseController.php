@@ -15,6 +15,7 @@ use App\Service\CheckInMessageProvider;
 use App\Service\DisplaySettings;
 use App\Service\HoursCalculator;
 use App\Service\Shift\CheckInPolicy;
+use App\Service\Shift\ShiftDossierPresenter;
 use App\Service\Shift\ShiftEligibility;
 use App\Service\Shift\ShiftFilterMemory;
 use App\Service\Shift\ShiftGroupResolver;
@@ -52,6 +53,7 @@ final class ShiftBrowseController extends AbstractController
         private readonly CheckInPolicy $checkIn,
         private readonly CheckInMessageProvider $checkInMessage,
         private readonly ShiftFilterMemory $filterMemory,
+        private readonly ShiftDossierPresenter $dossier,
     ) {
     }
 
@@ -156,11 +158,35 @@ final class ShiftBrowseController extends AbstractController
 
         return $this->render('shift/show.html.twig', [
             'shift' => $shift,
-            'availability' => $this->signup->availability($shift),
             'myEntry' => $this->entries->findOneByShiftAndUser($shift, $user),
             'signupOptions' => $this->signup->signupOptions($shift, $user),
-            'groupSiblings' => $this->groups->isFullyVisibleTo($shift, $user) ? $this->groups->siblingsOf($shift) : [],
+            'dossier' => $this->dossier->present($shift, $user),
         ]);
+    }
+
+    /**
+     * The dossier on its own, for the dialog that opens it from a shift list.
+     *
+     * Same shift, same viewer, same filtering as the page: {@see ShiftDossierPresenter} decides what
+     * this answers with, so the dialog can never show what the page would withhold. A shift the
+     * viewer may not see answers 404 here too, or the dialog would confirm it exists.
+     *
+     * This is a fragment and is injected into a page, so it must never be answered with a whole
+     * document. Nothing may be allowed to redirect it: fetch follows redirects, and the 200 that
+     * comes back would carry an entire page into the dialog body.
+     */
+    #[IsGranted('shift:view')]
+    #[Route('/shifts/{id}/info', name: 'app_shift_info', methods: ['GET'], requirements: ['id' => Requirement::UUID])]
+    public function info(#[MapEntity(mapping: ['id' => 'uuid'])] Shift $shift): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$this->visibility->isVisibleTo($shift, $user)) {
+            throw $this->createNotFoundException();
+        }
+
+        return $this->render('shift/_dossier.html.twig', [...$this->dossier->present($shift, $user), 'heading' => true]);
     }
 
     /**

@@ -3,7 +3,10 @@
 <div class="card-body">
   <h3 class="card-title d-flex align-items-center justify-content-between">
     {{ 'planner.panel.single.title'|trans }}
-    {% if shift.draft %}{{ d.badge('planner.badge.draft'|trans, 'bg-yellow-lt') }}{% else %}{{ d.badge('planner.badge.published'|trans, 'bg-green-lt') }}{% endif %}
+    <span>
+      {% if shift.description is null %}{{ d.badge('shift.list.no_description'|trans, 'bg-yellow-lt', {class: 'me-1'}) }}{% endif %}
+      {% if shift.draft %}{{ d.badge('planner.badge.draft'|trans, 'bg-yellow-lt') }}{% else %}{{ d.badge('planner.badge.published'|trans, 'bg-green-lt') }}{% endif %}
+    </span>
   </h3>
 
   <form

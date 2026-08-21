@@ -486,8 +486,18 @@
                   <tr>
                     <td class="small text-nowrap">{{ shift.startsAt|app_date }} · {{ shift.startsAt|app_time }}–{{ shift.endsAt|app_time }}</td>
                     <td>
-                      {{ shift.title }}
+                      {# Stays a working link without JavaScript: the shift page renders the same dossier. #}
+                      <a href="{{ path('app_shift_show', {id: shift.uuid}) }}"
+                         data-controller="shift-dossier"
+                         data-action="shift-dossier#open"
+                         data-shift-dossier-url-value="{{ path('app_shift_info', {id: shift.uuid}) }}"
+                         data-shift-dossier-title-value="{{ shift.title }}"
+                         data-shift-dossier-close-label-value="{{ 'common.action.close'|trans }}">{{ shift.title }}</a>
                       {% if shift.distinctTaskName %}<div class="text-secondary small">{{ shift.distinctTaskName }}</div>{% endif %}
+                      <div class="text-secondary small">
+                        {% if shift.department %}{{ shift.department.name }}{% endif %}
+                        {% if shift.description is null %}{{ d.badge('shift.list.no_description'|trans, 'bg-yellow-lt', {class: 'ms-1'}) }}{% endif %}
+                      </div>
                     </td>
                     <td class="small text-muted">{{ shift.location ? shift.location.fullName : '-' }}</td>
                     <td>
