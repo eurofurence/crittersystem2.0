@@ -2,19 +2,29 @@
 
 namespace App\Entity;
 
+use App\Entity\Concern\HasPublicUuid;
 use App\Repository\GoodieDistributionRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Uid\Uuid;
 
 /**
  * Audit record of a goodie handed to a volunteer, snapshotting their credited
- * hours at the moment of distribution
+ * hours at the moment of distribution.
+ *
+ * The row is never deleted. A handover given in error is revoked, which keeps the record and the
+ * name of whoever undid it while taking the quantity out of every count: per-person limits, the
+ * eligibility tiers, the volunteer's own list and the desk statistics all ignore revoked rows.
+ * A revoked row therefore makes the item claimable again. Only the desk history and the GDPR
+ * export still show it, because that is where the correction has to remain visible.
  */
 #[ORM\Entity(repositoryClass: GoodieDistributionRepository::class)]
 #[ORM\Table(name: 'goodie_distributions')]
 #[ORM\HasLifecycleCallbacks]
 class GoodieDistribution
 {
+    use HasPublicUuid;
+
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
@@ -55,8 +65,33 @@ class GoodieDistribution
     #[ORM\Column(name: 'certification_override_reason', type: Types::TEXT, nullable: true)]
     private ?string $certificationOverrideReason = null;
 
+    #[ORM\Column(name: 'revoked_at', nullable: true)]
+    private ?\DateTimeImmutable $revokedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'revoked_by', nullable: true, onDelete: 'SET NULL')]
+    private ?User $revokedBy = null;
+
+    #[ORM\Column(name: 'revoke_reason', type: Types::TEXT, nullable: true)]
+    private ?string $revokeReason = null;
+
+    /** Quantity this row was created with; non-null is the record that it was corrected afterwards. */
+    #[ORM\Column(name: 'original_quantity', nullable: true)]
+    private ?int $originalQuantity = null;
+
+    #[ORM\Column(name: 'corrected_at', nullable: true)]
+    private ?\DateTimeImmutable $correctedAt = null;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[ORM\JoinColumn(name: 'corrected_by', nullable: true, onDelete: 'SET NULL')]
+    private ?User $correctedBy = null;
+
+    #[ORM\Column(name: 'correction_reason', type: Types::TEXT, nullable: true)]
+    private ?string $correctionReason = null;
+
     public function __construct(User $user, GoodieItem $item, int $quantity = 1)
     {
+        $this->uuid = Uuid::v4();
         $this->user = $user;
         $this->item = $item;
         $this->itemName = $item->getName();
@@ -88,9 +123,26 @@ class GoodieDistribution
         return $this->quantity;
     }
 
-    public function setQuantity(int $quantity): static
+    /**
+     * Amend how many were actually handed over, keeping what the row first said.
+     *
+     * A correction cannot empty the handover: zero is what {@see revoke()} means, and letting two
+     * different states both say "nothing was given" would leave the history unable to tell a typo
+     * from a withdrawal.
+     *
+     * @throws \InvalidArgumentException when the new quantity is below 1
+     */
+    public function correctQuantity(int $quantity, User $by, ?string $reason = null): static
     {
+        if ($quantity < 1) {
+            throw new \InvalidArgumentException('A corrected quantity must be at least 1; revoke the handover instead.');
+        }
+
+        $this->originalQuantity ??= $this->quantity;
         $this->quantity = $quantity;
+        $this->correctedAt = new \DateTimeImmutable();
+        $this->correctedBy = $by;
+        $this->correctionReason = $reason;
 
         return $this;
     }
@@ -157,5 +209,64 @@ class GoodieDistribution
     public function isCertificationOverridden(): bool
     {
         return $this->certificationOverrideReason !== null;
+    }
+
+    public function isRevoked(): bool
+    {
+        return $this->revokedAt !== null;
+    }
+
+    /** Revoking twice keeps the first actor and reason: the handover was already undone. */
+    public function revoke(User $by, ?string $reason = null): static
+    {
+        if ($this->revokedAt !== null) {
+            return $this;
+        }
+
+        $this->revokedAt = new \DateTimeImmutable();
+        $this->revokedBy = $by;
+        $this->revokeReason = $reason;
+
+        return $this;
+    }
+
+    public function getRevokedAt(): ?\DateTimeImmutable
+    {
+        return $this->revokedAt;
+    }
+
+    public function getRevokedBy(): ?User
+    {
+        return $this->revokedBy;
+    }
+
+    public function getRevokeReason(): ?string
+    {
+        return $this->revokeReason;
+    }
+
+    public function isQuantityCorrected(): bool
+    {
+        return $this->originalQuantity !== null;
+    }
+
+    public function getOriginalQuantity(): ?int
+    {
+        return $this->originalQuantity;
+    }
+
+    public function getCorrectedAt(): ?\DateTimeImmutable
+    {
+        return $this->correctedAt;
+    }
+
+    public function getCorrectedBy(): ?User
+    {
+        return $this->correctedBy;
+    }
+
+    public function getCorrectionReason(): ?string
+    {
+        return $this->correctionReason;
     }
 }

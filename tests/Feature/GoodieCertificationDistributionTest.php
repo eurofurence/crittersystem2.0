@@ -72,19 +72,29 @@ final class GoodieCertificationDistributionTest extends DatabaseWebTestCase
     }
 
     /**
-     * Submits the handover form the desk actually sees, so the request carries the CSRF token the
-     * page minted rather than one manufactured out of band.
+     * Submits the handover the desk actually sees, so the request carries the CSRF token the page
+     * minted rather than one manufactured out of band.
+     *
+     * An item the volunteer is qualified for is handed over from the open tab, which posts the
+     * bulk form with the row's button; a gated one only appears in the override pane, with its own
+     * reason field.
      */
     private function give(User $volunteer, GoodieItem $item, ?string $overrideReason = null): void
     {
         $crawler = $this->client->request('GET', '/backstage/distribute/'.$volunteer->getUuid());
         self::assertResponseIsSuccessful();
 
-        $form = $crawler
-            ->filter('form[action*="/give"] input[name="item"][value="'.$item->getUuid().'"]')
-            ->closest('form')
-            ->form();
+        $row = $crawler->filter('button[name="only"][value="'.$item->getUuid().'"]');
+        if (\count($row) > 0) {
+            $this->client->submit($row->form());
 
+            return;
+        }
+
+        $override = $crawler->filter('form[action*="/give"] input[name="item"][value="'.$item->getUuid().'"]');
+        self::assertGreaterThan(0, \count($override), 'the desk was offered no way at all to hand this item over');
+
+        $form = $override->closest('form')->form();
         $form['quantity'] = '1';
         if ($form->has('override_reason')) {
             $form['override_reason'] = (string) $overrideReason;

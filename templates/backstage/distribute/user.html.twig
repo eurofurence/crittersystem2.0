@@ -10,6 +10,7 @@
 {% block container_class %}container-fluid{% endblock %}
 
 {% block body %}
+  <div data-controller="restore-view">
   {% set headerActions = [{label: 'backstage.locate.action.back_to_search'|trans, href: path('app_backstage_distribute'), class: 'btn btn-outline-secondary'}] %}
   {% if canViewProfile %}
     {% set headerActions = headerActions|merge([{label: 'backstage.locate.action.view_profile'|trans, href: path('app_profile_show', {id: user.uuid}), class: 'btn btn-outline-primary'}]) %}
@@ -203,20 +204,40 @@
           </ul>
 
           <div class="tab-content">
+            {# One form over the whole table: the row buttons post it with `only` set, so ticking
+               several items and handing over a single one take the same path and the same rules. #}
             <div id="goodie-pane-open" class="tab-pane active show" role="tabpanel">
+              {% if canGiveGoodies %}
+                <div data-controller="bulk-select">
+                <form method="post" action="{{ path('app_backstage_distribute_give_bulk', {id: user.uuid}) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('give-bulk' ~ user.id) }}">
+              {% endif %}
               <div class="deck-scroll">
                 {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table table-thead-sticky'}) }}
                   <thead>
                     <tr>
+                      {% if canGiveGoodies %}
+                        <th class="w-1">
+                          <input type="checkbox" class="form-check-input m-0" data-bulk-select-target="all"
+                                 data-action="change->bulk-select#toggleAll" aria-label="{{ 'backstage.locate.action.select_all'|trans }}">
+                        </th>
+                      {% endif %}
                       <th>{{ 'backstage.table.item'|trans }}</th>
                       <th class="w-1">{{ 'backstage.table.required'|trans }}</th>
                       <th class="w-1">{{ 'backstage.locate.table.left'|trans }}</th>
-                      {% if canGiveGoodies %}<th class="w-1"></th>{% endif %}
+                      {% if canGiveGoodies %}<th class="w-1">{{ 'backstage.label.qty'|trans }}</th><th class="w-1"></th>{% endif %}
                     </tr>
                   </thead>
                   <tbody>
                     {% for r in eligible %}
                       <tr>
+                        {% if canGiveGoodies %}
+                          <td>
+                            <input type="checkbox" class="form-check-input m-0" name="items[]" value="{{ r.item.uuid }}"
+                                   data-bulk-select-target="item" data-action="change->bulk-select#refresh"
+                                   aria-label="{{ 'backstage.locate.action.select_item'|trans({'%item%': r.item.name}) }}">
+                          </td>
+                        {% endif %}
                         <td>
                           {{ r.item.name }}
                           {% if r.item.description %}<div class="text-secondary small">{{ r.item.description }}</div>{% endif %}
@@ -225,22 +246,33 @@
                         <td class="text-secondary">{{ r.remaining is null ? '∞' : r.remaining }}</td>
                         {% if canGiveGoodies %}
                           <td>
-                            <form method="post" action="{{ path('app_backstage_distribute_give', {id: user.uuid}) }}" class="d-flex gap-1 flex-nowrap">
-                              <input type="hidden" name="_token" value="{{ csrf_token('give' ~ user.id) }}">
-                              <input type="hidden" name="item" value="{{ r.item.uuid }}">
-                              <input type="number" name="quantity" value="1" min="1" style="width: 4.5rem"
-                                     class="form-control form-control-sm" aria-label="{{ 'backstage.label.qty'|trans }}">
-                              <button class="btn btn-sm btn-primary">{{ 'backstage.locate.action.give'|trans }}</button>
-                            </form>
+                            <input type="number" name="quantities[{{ r.item.uuid }}]" value="1" min="1"
+                                   {% if r.remaining is not null %}max="{{ r.remaining }}"{% endif %} style="width: 4.5rem"
+                                   class="form-control form-control-sm" aria-label="{{ 'backstage.label.qty'|trans }}">
+                          </td>
+                          <td>
+                            <button name="only" value="{{ r.item.uuid }}" class="btn btn-sm btn-primary text-nowrap">{{ 'backstage.locate.action.give'|trans }}</button>
                           </td>
                         {% endif %}
                       </tr>
                     {% else %}
-                      {{ d.empty_row(canGiveGoodies ? 4 : 3, 'backstage.locate.empty.no_claimable'|trans) }}
+                      {{ d.empty_row(canGiveGoodies ? 6 : 3, 'backstage.locate.empty.no_claimable'|trans) }}
                     {% endfor %}
                   </tbody>
                 {{ d.table_end({responsive: false}) }}
               </div>
+              {% if canGiveGoodies %}
+                  <div class="card-footer d-flex flex-wrap gap-2 align-items-center">
+                    <input type="text" name="notes" maxlength="255" class="form-control form-control-sm w-auto flex-grow-1"
+                           placeholder="{{ 'backstage.locate.placeholder.shared_notes'|trans }}" aria-label="{{ 'backstage.locate.placeholder.shared_notes'|trans }}">
+                    <button class="btn btn-sm btn-success text-nowrap" data-bulk-select-target="submit" disabled>
+                      {{ i.icon('gift', {class: 'icon-1 me-1'}) }}{{ 'backstage.locate.action.give_selected'|trans }}
+                      (<span data-bulk-select-target="count">0</span>)
+                    </button>
+                  </div>
+                </form>
+                </div>
+              {% endif %}
             </div>
 
             {% if canGiveGoodies %}
@@ -326,27 +358,116 @@
               </div>
             </div>
 
+            {# A revoked handover keeps its row: it stops counting everywhere else, and the desk has
+               to be able to see that the correction happened. The quantity fields belong to the
+               separate correction form through their `form` attribute, so saving a number does not
+               submit the revoke the surrounding form carries. #}
             <div id="goodie-pane-history" class="tab-pane" role="tabpanel">
+              {% if canGiveGoodies %}
+                {% set correctFormId = 'goodie-correct-form' %}
+                <div data-controller="bulk-select">
+                <form method="post" action="{{ path('app_backstage_distribute_revoke', {id: user.uuid}) }}"
+                      data-controller="confirm"
+                      data-confirm-message-value="{{ 'backstage.locate.confirm.revoke'|trans }}"
+                      data-confirm-title-value="{{ 'backstage.locate.action.revoke'|trans }}"
+                      data-confirm-confirm-label-value="{{ 'backstage.locate.action.revoke'|trans }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('revoke' ~ user.id) }}">
+              {% endif %}
               <div class="deck-scroll">
                 {{ d.table_start({responsive: false, hover: false, class: 'table-vcenter card-table table-thead-sticky'}) }}
-                  <thead><tr><th>{{ 'common.label.when'|trans }}</th><th>{{ 'backstage.table.item'|trans }}</th><th class="w-1">{{ 'backstage.label.qty'|trans }}</th><th>{{ 'backstage.table.by'|trans }}</th></tr></thead>
+                  <thead>
+                    <tr>
+                      {% if canGiveGoodies %}
+                        <th class="w-1">
+                          <input type="checkbox" class="form-check-input m-0" data-bulk-select-target="all"
+                                 data-action="change->bulk-select#toggleAll" aria-label="{{ 'backstage.locate.action.select_all'|trans }}">
+                        </th>
+                      {% endif %}
+                      <th>{{ 'common.label.when'|trans }}</th>
+                      <th>{{ 'backstage.table.item'|trans }}</th>
+                      <th class="w-1">{{ 'backstage.label.qty'|trans }}</th>
+                      <th>{{ 'backstage.table.by'|trans }}</th>
+                      {% if canGiveGoodies %}<th class="w-1"></th>{% endif %}
+                    </tr>
+                  </thead>
                   <tbody>
                     {% for dist in history %}
-                      <tr>
+                      {% set revoked = dist.revoked %}
+                      <tr class="{{ revoked ? 'opacity-75' : '' }}">
+                        {% if canGiveGoodies %}
+                          <td>
+                            {% if not revoked %}
+                              <input type="checkbox" class="form-check-input m-0" name="distributions[]" value="{{ dist.uuid }}"
+                                     data-bulk-select-target="item" data-action="change->bulk-select#refresh"
+                                     aria-label="{{ 'backstage.locate.action.select_item'|trans({'%item%': dist.itemName}) }}">
+                            {% endif %}
+                          </td>
+                        {% endif %}
                         <td class="small">{{ dist.distributedAt|app_datetime }}</td>
                         <td>
-                          {{ dist.itemName }}
+                          <span class="{{ revoked ? 'text-decoration-line-through text-muted' : '' }}">{{ dist.itemName }}</span>
                           <div class="text-secondary small">{{ 'backstage.table.hours_then'|trans }}: {{ dist.hoursAtDistribution|round(2) }}</div>
+                          {% if revoked %}
+                            <div class="small mt-1">
+                              {{ d.badge('backstage.locate.state.revoked'|trans, 'bg-red-lt') }}
+                              <span class="text-muted">{{ dist.revokedAt|app_datetime }}{% if dist.revokedBy %} · {{ dist.revokedBy.name }}{% endif %}</span>
+                              {% if dist.revokeReason %}<div class="text-muted">{{ dist.revokeReason }}</div>{% endif %}
+                            </div>
+                          {% elseif dist.quantityCorrected %}
+                            <div class="small text-muted mt-1">
+                              {{ 'backstage.locate.corrected_from'|trans({'%count%': dist.originalQuantity}) }}
+                              {% if dist.correctedBy %} · {{ dist.correctedBy.name }}{% endif %}
+                              {% if dist.correctionReason %}<div>{{ dist.correctionReason }}</div>{% endif %}
+                            </div>
+                          {% endif %}
                         </td>
-                        <td>{{ dist.quantity }}</td>
+                        <td>
+                          {% if canGiveGoodies and not revoked %}
+                            <div class="d-flex gap-1 flex-nowrap">
+                              <input type="number" form="{{ correctFormId }}" name="quantities[{{ dist.uuid }}]"
+                                     value="{{ dist.quantity }}" min="1" style="width: 4.5rem" class="form-control form-control-sm"
+                                     aria-label="{{ 'backstage.label.qty'|trans }}">
+                              <button form="{{ correctFormId }}" name="distribution" value="{{ dist.uuid }}"
+                                      class="btn btn-sm btn-outline-secondary" title="{{ 'backstage.locate.action.save_quantity'|trans }}">
+                                {{ i.icon('check', {class: 'icon-1'}) }}
+                              </button>
+                            </div>
+                          {% else %}
+                            {{ dist.quantity }}
+                          {% endif %}
+                        </td>
                         <td class="small text-muted">{{ dist.distributedBy ? dist.distributedBy.name : '-' }}</td>
+                        {% if canGiveGoodies %}
+                          <td>
+                            {% if not revoked %}
+                              <button name="distribution" value="{{ dist.uuid }}" class="btn btn-sm btn-outline-danger text-nowrap">
+                                {{ 'backstage.locate.action.revoke'|trans }}
+                              </button>
+                            {% endif %}
+                          </td>
+                        {% endif %}
                       </tr>
                     {% else %}
-                      {{ d.empty_row(4, 'backstage.locate.empty.no_history'|trans) }}
+                      {{ d.empty_row(canGiveGoodies ? 6 : 4, 'backstage.locate.empty.no_history'|trans) }}
                     {% endfor %}
                   </tbody>
                 {{ d.table_end({responsive: false}) }}
               </div>
+              {% if canGiveGoodies %}
+                  <div class="card-footer d-flex flex-wrap gap-2 align-items-center">
+                    <input type="text" name="reason" maxlength="255" class="form-control form-control-sm w-auto flex-grow-1"
+                           placeholder="{{ 'backstage.locate.placeholder.revoke_reason'|trans }}" aria-label="{{ 'backstage.locate.placeholder.revoke_reason'|trans }}">
+                    <button class="btn btn-sm btn-outline-danger text-nowrap" data-bulk-select-target="submit" disabled>
+                      {{ 'backstage.locate.action.revoke_selected'|trans }}
+                      (<span data-bulk-select-target="count">0</span>)
+                    </button>
+                  </div>
+                </form>
+                <form method="post" id="{{ correctFormId }}" action="{{ path('app_backstage_distribute_correct', {id: user.uuid}) }}">
+                  <input type="hidden" name="_token" value="{{ csrf_token('revoke' ~ user.id) }}">
+                </form>
+                </div>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -383,5 +504,6 @@
         {{ d.card_end({bodyClass: ''}) }}
       </div>
     {% endif %}
+  </div>
   </div>
 {% endblock %}

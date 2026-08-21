@@ -752,17 +752,41 @@ msgstr "Locate User"
 msgid "backstage.empty.no_distributions"
 msgstr "No distributions yet."
 
+msgid "backstage.flash.already_revoked"
+msgstr "That hand-out was already revoked."
+
 msgid "backstage.flash.checked_in"
 msgstr "%name% checked in."
 
 msgid "backstage.flash.checkin_removed"
 msgstr "Check-in removed for %name%."
 
+msgid "backstage.flash.correct_min_quantity"
+msgstr "A quantity of at least 1 is needed; revoke the hand-out instead."
+
+msgid "backstage.flash.correct_over_limit"
+msgstr "That would pass the limit of %max% per person for %item%."
+
+msgid "backstage.flash.corrected"
+msgstr "Corrected %item% to %count%."
+
 msgid "backstage.flash.gave"
 msgstr "Gave %count% × %item% to %name%."
 
+msgid "backstage.flash.gave_bulk"
+msgstr "Handed %count% item(s) to %name%."
+
+msgid "backstage.flash.give_failed"
+msgstr "Could not give %item%: %reason%"
+
 msgid "backstage.flash.hours_recalculated"
 msgstr "Hours recalculated."
+
+msgid "backstage.flash.nothing_selected"
+msgstr "Nothing was selected."
+
+msgid "backstage.flash.revoked"
+msgstr "Revoked %count% hand-out(s)."
 
 msgid "backstage.flash.unknown_item"
 msgstr "Unknown item."
@@ -896,6 +920,9 @@ msgstr "Check in"
 msgid "backstage.locate.action.give_anyway"
 msgstr "Give anyway"
 
+msgid "backstage.locate.action.give_selected"
+msgstr "Give selected"
+
 msgid "backstage.locate.action.give"
 msgstr "Give"
 
@@ -907,6 +934,21 @@ msgstr "↻ Recalculate"
 
 msgid "backstage.locate.action.remove_checkin"
 msgstr "Remove check-in"
+
+msgid "backstage.locate.action.revoke"
+msgstr "Revoke"
+
+msgid "backstage.locate.action.revoke_selected"
+msgstr "Revoke selected"
+
+msgid "backstage.locate.action.save_quantity"
+msgstr "Save the corrected quantity"
+
+msgid "backstage.locate.action.select_all"
+msgstr "Select all"
+
+msgid "backstage.locate.action.select_item"
+msgstr "Select %item%"
 
 msgid "backstage.locate.action.view_profile"
 msgstr "View full profile"
@@ -923,11 +965,17 @@ msgstr "Checked in"
 msgid "backstage.locate.confirm.remove_checkin"
 msgstr "Remove the check-in for %name%?"
 
+msgid "backstage.locate.confirm.revoke"
+msgstr "Revoke this hand-out? It stops counting towards what this volunteer has received, and the item becomes claimable again."
+
 msgid "backstage.locate.contact"
 msgstr "Contact"
 
 msgid "backstage.locate.contact_options"
 msgstr "Contact options"
+
+msgid "backstage.locate.corrected_from"
+msgstr "Corrected from %count%"
 
 msgid "backstage.locate.credited_hours"
 msgstr "Credited hours:"
@@ -980,6 +1028,12 @@ msgstr "Missing:"
 msgid "backstage.locate.placeholder.override_reason"
 msgstr "Why this is being handed over regardless"
 
+msgid "backstage.locate.placeholder.revoke_reason"
+msgstr "Why is this being revoked? (optional)"
+
+msgid "backstage.locate.placeholder.shared_notes"
+msgstr "Note for every item handed over (optional)"
+
 msgid "backstage.locate.remaining"
 msgstr "%count% left"
 
@@ -1009,6 +1063,9 @@ msgstr "Goodies distribution"
 
 msgid "backstage.locate.shifts.title"
 msgstr "Shifts"
+
+msgid "backstage.locate.state.revoked"
+msgstr "Revoked"
 
 msgid "backstage.locate.tab.open"
 msgstr "Open"

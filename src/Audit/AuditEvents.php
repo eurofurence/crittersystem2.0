@@ -27,6 +27,7 @@ final class AuditEvents
     public const CHAT = 'CHAT';
     public const CALL = 'CALL';
     public const CERTIFICATION = 'CERTIFICATION';
+    public const GOODIE = 'GOODIE';
 
     // Actions
     public const LOGIN = 'LOGIN';

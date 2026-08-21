@@ -752,17 +752,41 @@ msgstr "Nutzer finden"
 msgid "backstage.empty.no_distributions"
 msgstr "Noch keine Verteilungen."
 
+msgid "backstage.flash.already_revoked"
+msgstr "Diese Ausgabe wurde bereits zurückgenommen."
+
 msgid "backstage.flash.checked_in"
 msgstr "%name% hat eingecheckt."
 
 msgid "backstage.flash.checkin_removed"
 msgstr "Check-in für %name% entfernt."
 
+msgid "backstage.flash.correct_min_quantity"
+msgstr "Es wird mindestens die Menge 1 benötigt; nimm die Ausgabe stattdessen zurück."
+
+msgid "backstage.flash.correct_over_limit"
+msgstr "Damit würde das Limit von %max% pro Person für %item% überschritten."
+
+msgid "backstage.flash.corrected"
+msgstr "%item% auf %count% korrigiert."
+
 msgid "backstage.flash.gave"
 msgstr "%count% × %item% an %name% übergeben."
 
+msgid "backstage.flash.gave_bulk"
+msgstr "%count% Artikel an %name% ausgegeben."
+
+msgid "backstage.flash.give_failed"
+msgstr "%item% konnte nicht ausgegeben werden: %reason%"
+
 msgid "backstage.flash.hours_recalculated"
 msgstr "Stunden neu berechnet."
+
+msgid "backstage.flash.nothing_selected"
+msgstr "Es wurde nichts ausgewählt."
+
+msgid "backstage.flash.revoked"
+msgstr "%count% Ausgabe(n) zurückgenommen."
 
 msgid "backstage.flash.unknown_item"
 msgstr "Unbekannter Artikel."
@@ -896,6 +920,9 @@ msgstr "Check-in"
 msgid "backstage.locate.action.give_anyway"
 msgstr "Trotzdem ausgeben"
 
+msgid "backstage.locate.action.give_selected"
+msgstr "Ausgewählte ausgeben"
+
 msgid "backstage.locate.action.give"
 msgstr "Ausgeben"
 
@@ -907,6 +934,21 @@ msgstr "↻ Neu berechnen"
 
 msgid "backstage.locate.action.remove_checkin"
 msgstr "Check-in entfernen"
+
+msgid "backstage.locate.action.revoke"
+msgstr "Zurücknehmen"
+
+msgid "backstage.locate.action.revoke_selected"
+msgstr "Ausgewählte zurücknehmen"
+
+msgid "backstage.locate.action.save_quantity"
+msgstr "Korrigierte Menge speichern"
+
+msgid "backstage.locate.action.select_all"
+msgstr "Alle auswählen"
+
+msgid "backstage.locate.action.select_item"
+msgstr "%item% auswählen"
 
 msgid "backstage.locate.action.view_profile"
 msgstr "Vollständiges Profil ansehen"
@@ -923,11 +965,17 @@ msgstr "Eingecheckt"
 msgid "backstage.locate.confirm.remove_checkin"
 msgstr "Check-in für %name% entfernen?"
 
+msgid "backstage.locate.confirm.revoke"
+msgstr "Diese Ausgabe zurücknehmen? Sie zählt dann nicht mehr zu dem, was diese Person erhalten hat, und der Artikel kann erneut ausgegeben werden."
+
 msgid "backstage.locate.contact"
 msgstr "Kontakt"
 
 msgid "backstage.locate.contact_options"
 msgstr "Kontaktmöglichkeiten"
+
+msgid "backstage.locate.corrected_from"
+msgstr "Korrigiert von %count%"
 
 msgid "backstage.locate.credited_hours"
 msgstr "Angerechnete Stunden:"
@@ -980,6 +1028,12 @@ msgstr "Fehlt:"
 msgid "backstage.locate.placeholder.override_reason"
 msgstr "Warum wird trotzdem ausgegeben"
 
+msgid "backstage.locate.placeholder.revoke_reason"
+msgstr "Warum wird das zurückgenommen? (optional)"
+
+msgid "backstage.locate.placeholder.shared_notes"
+msgstr "Notiz für alle ausgegebenen Artikel (optional)"
+
 msgid "backstage.locate.remaining"
 msgstr "%count% übrig"
 
@@ -1009,6 +1063,9 @@ msgstr "Goodie-Ausgabe"
 
 msgid "backstage.locate.shifts.title"
 msgstr "Schichten"
+
+msgid "backstage.locate.state.revoked"
+msgstr "Zurückgenommen"
 
 msgid "backstage.locate.tab.open"
 msgstr "Offen"

@@ -116,7 +116,12 @@ final class DataExportBuilder
         return ['total' => $total, 'entries' => $entries];
     }
 
-    /** @return array<int, array<string, mixed>> */
+    /**
+     * Revoked handovers are exported too, marked as such. They are still data held about the person,
+     * and leaving them out would show a record the desk has corrected as if it never existed.
+     *
+     * @return array<int, array<string, mixed>>
+     */
     private function goodies(User $user): array
     {
         $rows = $this->em->getRepository(GoodieDistribution::class)->findBy(['user' => $user]);
@@ -125,6 +130,7 @@ final class DataExportBuilder
             'item' => $g->getItemName(),
             'quantity' => $g->getQuantity(),
             'received_at' => $g->getDistributedAt()->format(\DATE_ATOM),
+            'revoked_at' => $g->getRevokedAt()?->format(\DATE_ATOM),
         ], $rows);
     }
 }
