@@ -147,6 +147,8 @@ services:
       database:
         condition: service_healthy
 
+    restart: unless-stopped
+
     networks:
       - critter-dev-net
 
@@ -176,6 +178,8 @@ services:
     depends_on:
       database:
         condition: service_healthy
+      app:
+        condition: service_started
 
     restart: unless-stopped
 
