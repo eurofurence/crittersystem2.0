@@ -51,7 +51,7 @@
   {{ d.card_end() }}
 </div>
   <div class="row g-3">
-      <div class="card col-2">
+      <div class="card col-12 col-lg-6 col-xl-3">
           <div class="card-body reward">
               <div class="card-title d-flex align-items-center gap-2">
                   <i class="ti"></i> {{ 'profile.card.goodies'|trans }}
@@ -67,7 +67,7 @@
           </div>
       </div>
 
-    <div class="col-10">
+    <div class="col-12 col-lg-6 col-xl-9">
       {% set workHistoryActions %}
           {% if canAddWorklog %}
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#add-worklog-modal">{{ 'profile.action.add_worklog'|trans }}</button>
