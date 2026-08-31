@@ -194,7 +194,7 @@ final class TwoFactorController extends AbstractController
     private function notify(User $user, string $subject, string $body): void
     {
         $this->mailer->send(
-            (new Email())->from('noreply@critter.example')->to($user->getEmail())->subject($subject)->text($body),
+            (new Email())->to($user->getEmail())->subject($subject)->text($body),
         );
     }
 

@@ -12,8 +12,6 @@ use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 /** Sends the account-invitation email with the one-time confirmation link. */
 final class InviteMailer
 {
-    private const FROM = 'noreply@critter.example';
-
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly UrlGeneratorInterface $urlGenerator,
@@ -30,7 +28,7 @@ final class InviteMailer
             .$url."\n\nIf you did not expect this, you can ignore this email.";
 
         $this->mailer->send(
-            (new Email())->from(self::FROM)->to($user->getEmail())
+            (new Email())->to($user->getEmail())
                 ->subject('Your volunteer account invitation')->text($body),
         );
     }

@@ -47,6 +47,20 @@ class InviteToken
         $this->expiresAt ??= $this->createdAt->modify('+'.self::TTL_HOURS.' hours');
     }
 
+    /**
+     * Rotate an outstanding invitation in place. Updating the existing row keeps
+     * the one-token-per-user invariant while making the previous URL unusable as
+     * soon as the transaction is committed.
+     */
+    public function renew(string $token, ?\DateTimeImmutable $now = null): static
+    {
+        $this->token = $token;
+        $this->createdAt = $now ?? new \DateTimeImmutable();
+        $this->expiresAt = $this->createdAt->modify('+'.self::TTL_HOURS.' hours');
+
+        return $this;
+    }
+
     public function getId(): ?int
     {
         return $this->id;

@@ -10,6 +10,19 @@ window.bootstrap = bootstrap;
 
 bootstrap.Dropdown.Default.popperConfig = (config) => ({ ...config, strategy: 'fixed' });
 
+function initializePopovers() {
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach((element) => {
+        bootstrap.Popover.getOrCreateInstance(element);
+    });
+}
+
+document.addEventListener('turbo:load', initializePopovers);
+document.addEventListener('turbo:before-cache', () => {
+    document.querySelectorAll('[data-bs-toggle="popover"]').forEach((element) => {
+        bootstrap.Popover.getInstance(element)?.dispose();
+    });
+});
+
 // Tabler 1.4 design system (Bootstrap 5 theme) - replaces stock Bootstrap CSS.
 import "@tabler/core/dist/css/tabler.min.css";
 import "@tabler/icons-webfont/dist/tabler-icons.min.css";

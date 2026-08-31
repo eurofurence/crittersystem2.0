@@ -84,7 +84,7 @@ final class UserController extends AbstractController
             'details' => ['two_factor' => 'reset_by_admin', 'critical' => true],
         ]);
         $this->mailer->send(
-            (new Email())->from('noreply@critter.example')->to($user->getEmail())
+            (new Email())->to($user->getEmail())
                 ->subject('Your two-factor authentication was reset')
                 ->text('An administrator reset the two-factor authentication on your account. Please set it up again. If you did not expect this, contact us immediately.'),
         );

@@ -1,5 +1,6 @@
 {% extends 'base.html.twig' %}
 {% import 'components/data/_macros.twig' as d %}
+{% import 'components/icon/_macros.twig' as i %}
 
 {% block title %}{{ 'manage.user.page.title'|trans }}{% endblock %}
 
@@ -42,7 +43,26 @@
             <span class="fw-semibold">{{ u.name }}</span> <span class="text-muted small">#{{ u.id }}</span>
             {% for b in u.badges %}{{ d.badge(b.name, 'text-bg-' ~ b.color, {class: 'ms-1'}) }}{% endfor %}
           </td>
-          <td class="small">{{ u.email|pii_email }}</td>
+          <td class="small">
+            <span>{{ u.email|pii_email }}</span>
+            {% set mayManageInvite = is_granted('global:admin') or ('ROLE_ADMIN' not in u.roles and 'ROLE_SUBADMIN' not in u.roles) %}
+            {% if is_granted('user:create') and mayManageInvite and not u.ssoManaged and not u.onboardingCompleted %}
+              <form method="post" action="{{ path('app_manage_user_resend_invite', {id: u.uuid}) }}" class="d-inline ms-1"
+                    data-controller="confirm"
+                    data-confirm-title-value="Resend invitation"
+                    data-confirm-message-value="Send a fresh 24-hour invitation to this account? The previous invitation link will stop working."
+                    data-confirm-confirm-label-value="Resend"
+                    data-confirm-variant-value="primary">
+                <input type="hidden" name="_token" value="{{ csrf_token('resend-invite' ~ u.id) }}">
+                <button type="submit" class="btn btn-sm btn-ghost-primary p-1" aria-label="Resend invitation"
+                        data-bs-toggle="popover" data-bs-trigger="hover focus" data-bs-placement="top"
+                        data-bs-title="Resend invitation"
+                        data-bs-content="Send a fresh invitation link valid for 24 hours. The previous link will stop working.">
+                  {{ i.icon('mail') }}
+                </button>
+              </form>
+            {% endif %}
+          </td>
           <td class="small">{{ u.positionBadge ? u.positionBadge.name : '-' }}</td>
           <td>
             {% if u.onboardingCompleted %}{{ d.badge('common.state.yes'|trans, 'text-bg-success') }}{% else %}{{ d.badge('common.state.pending'|trans, 'text-bg-warning') }}{% endif %}
